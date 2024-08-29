@@ -1,0 +1,30 @@
+mat-toolbar {
+    background-color: #240A39;
+    color: white;
+    position: sticky;
+    z-index: 2;
+    top: 0;
+    width: 100%;
+}
+
+.header-item {
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: white;
+}
+
+.header-menu button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 0;
+    outline: none;
+    background-color: #7A10CB;
+    color: white;
+    text-transform: capitalize;
+}
+
+.example-spacer {
+    flex: 1 1 auto;
+}

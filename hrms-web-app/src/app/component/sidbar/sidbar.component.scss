@@ -1,0 +1,39 @@
+mat-nav-list {
+    margin-top: 4rem;
+
+}
+
+mat-divider {
+    outline: none;
+}
+
+.side-menu {
+    display: flex;
+    margin-left: 1rem;
+    color: rgb(146, 204, 204);
+    margin-top: 20px;
+    text-transform: capitalize;
+    font-weight: 500;
+}
+
+.side-menu:hover {
+    border-radius: 50px;
+    border: 2px solid gray;
+    padding: 0;
+    background-color: rgba(160, 159, 159, 0.473);
+    color: white;
+    width: 50%;
+    transition: 2s ease;
+}
+
+.side-menu .item {
+    display: flex;
+    font-size: 15px;
+    padding: 5px;
+
+}
+
+.side-menu .item mat-icon {
+    font-size: 20px;
+    margin-right: 0.5rem;
+}
