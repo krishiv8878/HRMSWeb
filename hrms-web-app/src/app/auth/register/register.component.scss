@@ -13,7 +13,7 @@ form {
     border-radius: 15px;
 }
 
-.login-form {
+.register-form {
     display: grid;
     width: 22.2rem;
 }
@@ -25,12 +25,12 @@ p {
     text-align: center;
 }
 
-.login-btn {
+.register-btn {
     display: flex;
     justify-content: center;
 }
 
-.login-btn button {
+.register-btn button {
     padding: 10px 20px;
     border: none;
     outline: none;
@@ -41,12 +41,12 @@ p {
     font-size: 15px;
 }
 
-.login-btn button:hover {
+.register-btn button:hover {
     transition: 2s ease;
     background: #b065e9;
 }
 
-.login-info {
+.register-info {
     font-size: 15px;
 }
 
@@ -56,7 +56,7 @@ p {
         box-shadow: 0 0 0;
     }
 
-    .login-form {
+    .register-form {
         width: 15.2rem;
     }
 }
@@ -74,14 +74,14 @@ p {
         box-shadow: 3px 3px 25px #303393;
     }
 
-    .login-form {
+    .register-form {
         width: 22.2rem;
     }
 }
 
 @media only screen and (max-width: 1469px) {
 
-    .login-form {
+    .register-form {
         width: 15.2rem;
     }
 }
