@@ -23,8 +23,13 @@ mat-toolbar {
     background-color: #7A10CB;
     color: white;
     text-transform: capitalize;
+    padding: 10px 20px;    
+    font-weight: 500;
+    font-size: 15px;
 }
-
+.header-menu button:hover{
+    background: #9a5cca;
+}
 .example-spacer {
     flex: 1 1 auto;
 }
