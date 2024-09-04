@@ -35,6 +35,7 @@ $hrms-web-app-theme: mat.define-theme((
 // Comment out the line below if you want to use the deprecated `color` inputs.
 // @include mat.color-variants-backwards-compatibility($hrms-web-app-theme);
 /* You can add global styles to this file, and also import other style files */
-
+@import "ag-grid-community/styles/ag-grid.css";
+@import 'ag-grid-community/styles/ag-theme-quartz.css';
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
