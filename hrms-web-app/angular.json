@@ -26,12 +26,15 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
+              "src/assets",
               {
                 "glob": "**/*",
                 "input": "public"
               }
             ],
             "styles": [
+              "ag-grid-community/styles/ag-grid.css",
+              "ag-grid-community/styles/ag-theme-quartz.css",
               "src/styles.scss"
             ],
             "scripts": [],

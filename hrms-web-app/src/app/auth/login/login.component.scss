@@ -1,0 +1,87 @@
+
+form {
+    display: inline-grid;
+    justify-content: center;
+    align-items: center;
+    top: 50%;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 3px 3px 25px #303393;
+    width: 25%;
+    padding: 30px;
+    border-radius: 15px;
+}
+
+.login-form {
+    display: grid;
+    width: 22.2rem;
+}
+
+p {
+    font-weight: 600;
+    text-transform: capitalize;
+    font-size: 2.6rem;
+    text-align: center;
+}
+
+.login-btn {
+    display: flex;
+    justify-content: center;
+}
+
+.login-btn button {
+    padding: 10px 20px;
+    border: none;
+    outline: none;
+    background: #7A10CB;
+    color: white;
+    text-transform: capitalize;
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.login-btn button:hover {
+    transition: 2s ease;
+    background: #b065e9;
+}
+
+.login-info {
+    font-size: 15px;
+}
+
+@media only screen and (max-width: 600px) {
+    form {
+        width: 55%;
+        box-shadow: 0 0 0;
+    }
+
+    .login-form {
+        width: 15.2rem;
+    }
+}
+
+@media only screen and (max-width: 928px) {
+    form {
+        width: 55%;
+        box-shadow: 3px 3px 25px #303393;
+    }
+}
+
+@media only screen and (max-width: 1013px) {
+    form {
+        width: 55%;
+        box-shadow: 3px 3px 25px #303393;
+    }
+
+    .login-form {
+        width: 22.2rem;
+    }
+}
+
+@media only screen and (max-width: 1469px) {
+
+    .login-form {
+        width: 15.2rem;
+    }
+}

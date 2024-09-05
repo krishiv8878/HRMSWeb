@@ -1,1 +1,6 @@
-<p>home works!</p>
+<div class="hero-img" [ngStyle]="{backgroungImage: 'url('+image+')'}">  
+    <div class="data">
+        <ag-grid-angular style="height: 90vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="ColDefs" class="ag-theme-quartz"  [defaultColDef]="defaultColDef"  [pagination]="pagination"  [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    </div>
+</div>
+
