@@ -3,14 +3,14 @@ import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import {MatDividerModule} from '@angular/material/divider';
 import {MatSidenavModule} from '@angular/material/sidenav';
-// import { HomeComponent } from "./components/home/home.component";
+import { HomeComponent } from "./component/home/home.component";
 import { HeaderComponent } from './component/header/header.component';
 import { SidbarComponent } from './component/sidbar/sidbar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, MatDividerModule, MatSidenavModule, CommonModule, HeaderComponent, SidbarComponent],
+  imports: [RouterOutlet, MatDividerModule, MatSidenavModule, CommonModule, HeaderComponent, SidbarComponent, HomeComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
