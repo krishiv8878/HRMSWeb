@@ -1,0 +1,35 @@
+button{
+    border: none;
+    outline: none;
+    background: transparent;
+    padding-top: 5px;
+    
+}
+.button{
+    gap: 6px;
+    display: flex;
+}
+.edit{
+    background: blue;
+    color: white;
+    font-size: 15px;
+    border-radius: 10px;
+    height: 30px;
+    width: 30px;
+
+}
+.delete{
+    background: red;
+    color: white;
+    font-size: 15px;
+    border-radius: 10px;
+    height: 30px;
+    width: 30px;
+
+}
+mat-icon{
+    font-size: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: self-start;
+}
