@@ -7,11 +7,12 @@ import { HeaderComponent } from './component/header/header.component';
 import { SidbarComponent } from './component/sidbar/sidbar.component';
 import { LoginComponent } from "./auth/login/login.component";
 import { HomeComponent } from "./component/home/home.component";
+import { RegisterComponent } from "./auth/register/register.component";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, MatDividerModule, MatSidenavModule, CommonModule, HeaderComponent, SidbarComponent, LoginComponent, HomeComponent],
+  imports: [RouterOutlet, MatDividerModule, MatSidenavModule, CommonModule, HeaderComponent, SidbarComponent, LoginComponent, HomeComponent, RegisterComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
