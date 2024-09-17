@@ -6,17 +6,18 @@ import { AboutComponent } from './component/pages/about/about.component';
 import { ServicesComponent } from './component/pages/services/services.component';
 
 export const routes: Routes = [
+    // {
+    //     path: '',  children: [
+    //         {
+    //             path: 'login', component: LoginComponent,
+    //         },
+    //         {
+    //             path: 'register', component: RegisterComponent,
+    //         },
+    //     ]
+    // },
     {
-        path: '', redirectTo: "login", pathMatch: 'full'
-    },
-    {
-        path: 'home', component: HomeComponent
-    },
-    {
-        path: 'login', component: LoginComponent,
-    },
-    {
-        path: 'register', component: RegisterComponent,
+        path: '', component: HomeComponent
     },
     {
         path: 'about', component: AboutComponent

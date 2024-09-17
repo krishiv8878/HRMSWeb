@@ -4,7 +4,7 @@ import { MatFormField } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+// import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
@@ -16,7 +16,7 @@ import { HttpClient } from '@angular/common/http';
 export class RegisterComponent {
   // constructor() { }
   formBuilder = inject(FormBuilder)
-  http = inject(HttpClient)
+  // http = inject(HttpClient)
   registretion = this.formBuilder.group({
     fname: ['', [Validators.required]],
     lname: ['', [Validators.required]],
