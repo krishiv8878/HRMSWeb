@@ -7,7 +7,7 @@ import { ICellRendererParams } from 'ag-grid-community';
   standalone: true,
   imports: [MatIconModule],
   template: `<div class="button">
-  <button class="edit"><mat-icon>edit</mat-icon></button> 
+  <button class="edit" (click)="onEdit()"><mat-icon>edit</mat-icon></button> 
   <button class="delete"><mat-icon>delete</mat-icon></button>
   </div> `,
   styleUrl: './action.component.scss'
@@ -16,4 +16,7 @@ export class ActionComponent implements ICellRendererAngularComp {
   public value!: string;
   agInit(params: ICellRendererParams) { this.value = params.value }
   refresh(params: ICellRendererParams) { return true }
+  onEdit(){
+   
+  }
 }

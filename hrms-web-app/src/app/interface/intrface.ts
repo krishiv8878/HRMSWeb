@@ -1,7 +1,7 @@
-export interface IEmployee {
-    id?: number
-    firstname: string
-    lastname: string
-    email: string
-    address: string
-}
+// export interface IEmployee {
+//     id?: number
+//     firstName: string
+//     lastname: string
+//     emailAddress: string
+//     address: string
+// }
