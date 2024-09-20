@@ -1,5 +1,5 @@
 mat-toolbar {
-    background-color: #240A39;
+    background-color: #4fa6d5;
     color: white;
     position: sticky;
     z-index: 2;
@@ -20,15 +20,19 @@ mat-toolbar {
     align-items: center;
     border: 0;
     outline: none;
-    background-color: #7A10CB;
-    color: white;
+    background-color: white;
+    color: #4fa6d5;
     text-transform: capitalize;
     padding: 10px 20px;    
-    font-weight: 500;
-    font-size: 15px;
+    font-weight: 600;
+    font-size: 20px;
+    border-radius: 20px;
 }
 .header-menu button:hover{
-    background: #9a5cca;
+    background: #3b799b;
+    transition: 2s ease;
+    color: white;
+    border: 5px solid #4fa6d5;
 }
 .example-spacer {
     flex: 1 1 auto;

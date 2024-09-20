@@ -1,25 +1,16 @@
  <div class="login-img">
-    <form>
+    <form [formGroup]="login" (ngSubmit)="logindata()">
         <p>Login</p>
         <div class="login-form">
-            <mat-form-field>
-                <mat-label>First Name</mat-label>
-                <input type="text" matInput placeholder="Enter your First Name">
-            </mat-form-field>
-    
-            <mat-form-field>
-                <mat-label>Last Name</mat-label>
-                <input type="text" matInput placeholder="Enter your Last Name">
-            </mat-form-field>
-    
+              
             <mat-form-field>
                 <mat-label>email</mat-label>
-                <input type="email" matInput placeholder="Enter your Name">
+                <input type="email" matInput placeholder="Enter your Name" formControlName="email">
             </mat-form-field>
     
             <mat-form-field>
                 <mat-label>password</mat-label>
-                <input type="text" matInput placeholder="Enter your Name">
+                <input type="password" matInput placeholder="Enter your Name" formControlName="password">
             </mat-form-field>
     
             <div class="login-btn">

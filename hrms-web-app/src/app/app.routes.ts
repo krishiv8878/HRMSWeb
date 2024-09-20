@@ -7,18 +7,21 @@ import { ServicesComponent } from './component/pages/services/services.component
 
 export const routes: Routes = [
     {
-        path: '', component: HomeComponent, pathMatch: 'full'                
+        path: '', redirectTo: "login", pathMatch: 'full'
     },
     {
-        path: 'login', component: LoginComponent, 
+        path: 'home', component: HomeComponent
     },
     {
-        path: 'register', component: RegisterComponent, 
+        path: 'login', component: LoginComponent,
     },
     {
-        path: 'about', component:AboutComponent
+        path: 'register', component: RegisterComponent,
     },
     {
-        path:'services', component:ServicesComponent
+        path: 'about', component: AboutComponent
+    },
+    {
+        path: 'services', component: ServicesComponent
     }
 ];
