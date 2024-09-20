@@ -9,7 +9,6 @@ import { LoginComponent } from "./auth/login/login.component";
 import { HomeComponent } from "./component/home/home.component";
 import { RegisterComponent } from "./auth/register/register.component";
 
-
 @Component({
   selector: 'app-root',
   standalone: true,

@@ -3,7 +3,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormField } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-// import { HttpClient } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -13,7 +13,7 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 })
 export class LoginComponent {
   formBuilder = inject(FormBuilder)
-  // http = inject(HttpClient)
+  http = inject(HttpClient)
   constructor() { }
 
   login = this.formBuilder.group({
