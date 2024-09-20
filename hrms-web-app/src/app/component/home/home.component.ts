@@ -1,73 +1,60 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AgGridAngular, AgGridModule } from "ag-grid-angular";
-import { ColDef, GridReadyEvent } from "ag-grid-community";
+import { ColDef, ICellRendererParams } from "ag-grid-community";
 import { MatIconModule } from '@angular/material/icon';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
-// import { IOlympicData } from '../../interface/intrface';
-
+// import { IEmployee } from '../../interface/intrface';
 import { ActionComponent } from '../action/action.component';
 import { ModalComponent } from '../modal/modal.component';
+import { HttpClientModule } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { AnyAaaaRecord } from 'dns';
+import { EmployeeService } from '../../services/employee/employee.service';
+
+
 
 @Component({
 
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, AgGridAngular, AgGridModule, MatIconModule, HttpClientModule],
+  imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule],
   templateUrl: './home.component.html',
-  styleUrl: './home.component.scss'
-
+  styleUrl: './home.component.scss',
+  providers: [EmployeeService]
 })
 
 export class HomeComponent {
+  service = inject(EmployeeService)
+  router = inject(Router)
+  // image = '/src/assets/images/download.jpg';
 
-  constructor(private http: HttpClient) { }
-  image = '/src/assets/images/download.jpg';
-  // public rowData!: IOlympicData[];
-  // onGridReady(params: GridReadyEvent<IOlympicData>) {
+  public columnDefs: ColDef[] = [
+    { field: "id", floatingFilter: true, filter: true, flex: 1 },
+    { field: "firstName", floatingFilter: true, filter: true, flex: 1 },
+    { field: "lastName", floatingFilter: true, filter: true, flex: 1 },
+    { field: "emailAddress", floatingFilter: true, filter: true, flex: 2 },
+    { field: "mobileNumber", floatingFilter: true, filter: true, flex: 1 },
+    { field: "permanentAddress", floatingFilter: true, filter: true, flex: 1 },
+    { field: "gender", floatingFilter: true, filter: true, flex: 1 },
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
+    { field: "action", flex: 1, cellRenderer:ActionComponent }
 
-  //   this.http.get < IOlympicData[] > ("https://www.ag-grid.com/example-assets/olympic-winners.json").subscribe((data) => (this.rowData = data));
+  ]
+  rowData: any;
+  constructor() { this.columnDefs }
 
-  // }
+  ngOnInit() {
+    this.service.getAllemployee().subscribe((response: any) => {
+      this.rowData = response.data;
+    })
+  }
 
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];
 
-  public rowData: any[] | null = [
-    { id: 1, firstname: "Toyota", lastname: "Celica", email: "example@getMaxListeners.com", address: "abc" },
-    { id: 2, firstname: "Ford", lastname: "Mondeo", email: "example@getMaxListeners.com", address: "abc" },
-    { id: 3, firstname: "Porsche", lastname: "Boxster", email: "example@getMaxListeners.com", address: "abc" },
-    { id: 4, firstname: "BMW", lastname: "M50", email: "example@getMaxListeners.com", address: "abc" },
-    { id: 5, firstname: "Aston Martin", lastname: "DBX", email: "example@getMaxListeners.com", address: "abc" },
-
-  ];
-
   defaultColDef: ColDef = {
-    // flex:1
-    // width:150,
-
+    resizable: true,
   };
-
-  ColDefs: ColDef[] = [
-    { field: "id", floatingFilter: true, filter: true, flex: 1 },
-    { field: "firstname", floatingFilter: true, filter: true, flex: 1 },
-    { field: "lastname", floatingFilter: true, filter: true, flex: 1 },
-    { field: "email", floatingFilter: true, filter: true, flex: 2 },
-    { field: "address", floatingFilter: true, filter: true, flex: 1 },
-    { field: "active", flex: 1, cellRenderer: ModalComponent },
-    { field: "action", flex: 1, cellRenderer: ActionComponent }
-
-  ]
-
-  // public ColDefs: ColDef[] = [
-  //   { field: "athlete", sort: "desc" },
-  //   { field: "age", width: 90 },
-  //   { field: "country" },
-  //   { field: "year", width: 120, unSortIcon: true },
-  //   { field: "date" },
-  //   { field: "sport" },
-  //   { field: "sport" },
-  //   { field: "sport" },
-  // ];
+  
 }

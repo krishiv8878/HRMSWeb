@@ -6,9 +6,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
   selector: 'app-modal',
   standalone: true,
   imports: [MatSlideToggleModule],
-  template: `
-   <button><mat-slide-toggle></mat-slide-toggle></button>
-  `,
+  template: ` <button ><mat-slide-toggle></mat-slide-toggle></button>  `,
   styleUrl: './modal.component.scss'
 })
 export class ModalComponent implements ICellRendererAngularComp {
