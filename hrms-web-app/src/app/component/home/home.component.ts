@@ -7,8 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { ActionComponent } from '../action/action.component';
 import { ModalComponent } from '../modal/modal.component';
 import { HttpClientModule } from '@angular/common/http';
-import { EmployeeserviceService } from '../../services/employeeservice.service';
 import { Router } from '@angular/router';
+import { AnyAaaaRecord } from 'dns';
+import { EmployeeService } from '../../services/employee/employee.service';
 
 
 
@@ -19,11 +20,11 @@ import { Router } from '@angular/router';
   imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
-  providers: [EmployeeserviceService]
+  providers: [EmployeeService]
 })
 
 export class HomeComponent {
-  service = inject(EmployeeserviceService)
+  service = inject(EmployeeService)
   router = inject(Router)
   // image = '/src/assets/images/download.jpg';
 
@@ -35,18 +36,16 @@ export class HomeComponent {
     { field: "mobileNumber", floatingFilter: true, filter: true, flex: 1 },
     { field: "permanentAddress", floatingFilter: true, filter: true, flex: 1 },
     { field: "gender", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1, cellRenderer:(params: ICellRendererParams)=>params.value? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>`: `'<i class="fa-solid fa-toggle-off"></i>`  },
-    { field: "action", flex: 1, cellRenderer: ActionComponent }
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
+    { field: "action", flex: 1, cellRenderer:ActionComponent }
 
   ]
   rowData: any;
   constructor() { this.columnDefs }
 
   ngOnInit() {
-    this.service.getAllemployee().subscribe((response:any) => {
-     
-        this.rowData = response.data;
-     
+    this.service.getAllemployee().subscribe((response: any) => {
+      this.rowData = response.data;
     })
   }
 
@@ -55,6 +54,7 @@ export class HomeComponent {
   paginationPageSizeSelector = [5, 10, 20];
 
   defaultColDef: ColDef = {
-    resizable: true
+    resizable: true,
   };
+  
 }
