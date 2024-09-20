@@ -8,7 +8,7 @@ import { SidbarComponent } from './component/sidbar/sidbar.component';
 import { LoginComponent } from "./auth/login/login.component";
 import { HomeComponent } from "./component/home/home.component";
 import { RegisterComponent } from "./auth/register/register.component";
-import { AgGridModule } from 'ag-grid-angular';
+
 
 @Component({
   selector: 'app-root',
