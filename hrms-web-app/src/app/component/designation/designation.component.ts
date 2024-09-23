@@ -23,11 +23,11 @@ export class DesignationComponent {
     { field: "designationName", floatingFilter: true, filter: true, flex: 1 },
     { field: "createdDate", floatingFilter: true, filter: true, flex: 1 },
     { field: "createdBy", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1, cellRenderer:(params: ICellRendererParams)=>params.value? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>`: `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
   ];
 
   ngOnInit() {
-    this.services.getAlldesignation().subscribe((response: any) => {
+    this.services.getData().subscribe((response: any) => {
       this.rowData = response.data;
       console.log(response)
     })

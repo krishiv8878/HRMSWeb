@@ -21,10 +21,10 @@ export class SkillComponent {
     { field: "skillName", floatingFilter: true, filter: true, flex: 1 },
     { field: "updatedBy", floatingFilter: true, filter: true, flex: 1 },
     { field: "updatedDate", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive",flex: 1, cellRenderer:(params:ICellRendererParams)=>params.value? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>`: `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
   ]
   ngOnInit() {
-    this.services.getskill().subscribe((response:any) => {
+    this.services.getData().subscribe((response: any) => {
       this.rowData = response.data;
     })
   }

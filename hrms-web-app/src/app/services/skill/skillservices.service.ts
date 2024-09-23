@@ -1,15 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SkillservicesService {
   constructor() { }
-  apiUrl = "http://localhost:5220/api/Skill"
+  apiUrl = environment.host
   http = inject(HttpClient)
 
-  getskill() {
-    return this.http.get<any[]>(this.apiUrl + "/GetSkills");
+  getData() {
+    return this.http.get<any[]>(this.apiUrl + "/Skill/GetSkills");
   }
 }
