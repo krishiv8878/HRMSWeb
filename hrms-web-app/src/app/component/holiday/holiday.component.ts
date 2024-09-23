@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { Router } from '@angular/router';
-import { ColDef } from 'ag-grid-community';
+import { ColDef, ICellRendererParams } from 'ag-grid-community';
 
 @Component({
   selector: 'app-holiday',
@@ -21,7 +21,7 @@ export class HolidayComponent {
     { field: "holidayName", floatingFilter: true, filter: true, flex: 1 },
     { field: "createdDate", floatingFilter: true, filter: true, flex: 1 },
     { field: "description", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1 },
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
   ]
   rowData: any;
 

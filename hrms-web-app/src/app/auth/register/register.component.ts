@@ -22,7 +22,7 @@ export class RegisterComponent {
     lname: ['', [Validators.required]],
     email: ['', [Validators.required]],
     phone: ['', [Validators.required]],
-    password: ['', [Validators.required]]
+    password: ['', [Validators.required,Validators.minLength(6)]]
   })
   ngOnInit() { }
 

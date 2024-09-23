@@ -11,6 +11,6 @@ export class SkillservicesService {
   http = inject(HttpClient)
 
   getData() {
-    return this.http.get<any[]>(this.apiUrl + "/Skill/GetSkills");
+    return this.http.get<any[]>(`${this.apiUrl}/Skill/GetSkills`);
   }
 }
