@@ -8,7 +8,6 @@ import { ActionComponent } from '../action/action.component';
 import { ModalComponent } from '../modal/modal.component';
 import { HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { AnyAaaaRecord } from 'dns';
 import { EmployeeService } from '../../services/employee/employee.service';
 
 
@@ -44,7 +43,7 @@ export class HomeComponent {
   constructor() { this.columnDefs }
 
   ngOnInit() {
-    this.service.getAllemployee().subscribe((response: any) => {
+    this.service.getData().subscribe((response: any) => {
       this.rowData = response.data;
     })
   }

@@ -1,15 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DesignationservicesService {
   constructor() { }
-  apiUrl = "http://localhost:5220/api/Designation"
+  apiUrl = environment.host
   http = inject(HttpClient)
 
-  getAlldesignation(){
-   return this.http.get<any[]>(this.apiUrl + "/GetDesignations")
+  getData(){
+   return this.http.get<any[]>(this.apiUrl + "/Designation/GetDesignations")
   }
 }

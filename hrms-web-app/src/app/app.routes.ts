@@ -6,6 +6,9 @@ import { AboutComponent } from './component/pages/about/about.component';
 import { ServicesComponent } from './component/pages/services/services.component';
 import { DesignationComponent } from './component/designation/designation.component';
 import { SkillComponent } from './component/skill/skill.component';
+import { HolidayComponent } from './component/holiday/holiday.component';
+import { CandidateComponent } from './component/candidate/candidate.component';
+import { AssetsmasterComponent } from './component/assetsmaster/assetsmaster.component';
 
 export const routes: Routes = [
     {
@@ -32,5 +35,14 @@ export const routes: Routes = [
     },
     {
         path:'skill', component:SkillComponent
+    },
+    {
+        path:'holiday', component:HolidayComponent
+    },
+    {
+        path:'candidate', component:CandidateComponent
+    },
+    {
+        path:'assets', component:AssetsmasterComponent
     }
 ];
