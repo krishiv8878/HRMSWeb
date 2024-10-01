@@ -1,0 +1,49 @@
+<div class="form">
+    <form action="" [formGroup]="employeeform" (ngSubmit)="submitdata()">
+        <p>edit employee data</p>
+        <div class="employee-form">
+            <mat-form-field appearance="outline">
+                <mat-label>first name</mat-label>
+                <input type="text" matInput placeholder="Enter your first Name" formControlName="firstName">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>last name</mat-label>
+                <input type="text" matInput placeholder="Enter your last Name" formControlName="lastName">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>email</mat-label>
+                <input type="text" matInput placeholder="Enter your email" formControlName="emailAddress">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>phone no</mat-label>
+                <input type="nuumber" matInput placeholder="Enter your No" formControlName="mobileNumber">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>address</mat-label>
+                <input type="text" matInput placeholder="Enter your address" formControlName="address">
+            </mat-form-field>
+
+            <mat-radio-group>
+                <mat-label><b>gender</b></mat-label>
+                <mat-radio-button>male</mat-radio-button>
+                <mat-radio-button>female</mat-radio-button>
+            </mat-radio-group>
+
+            <mat-radio-group>
+                <mat-label><b>action</b></mat-label>
+                <mat-radio-button>active</mat-radio-button>
+                <mat-radio-button>inactive</mat-radio-button>
+            </mat-radio-group>
+
+
+            <div class="button-btn">
+                <button class="edit-btn">update</button>
+                <button class="cancel-btn">cancel</button>
+            </div>
+        </div>
+    </form>
+</div>

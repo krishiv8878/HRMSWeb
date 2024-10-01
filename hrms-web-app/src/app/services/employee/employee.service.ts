@@ -5,18 +5,21 @@ import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
-  
+
 })
-export class EmployeeService {   
+export class EmployeeService {
   http = inject(HttpClient)
   apiUrl = environment.host
   constructor() { }
 
 
-  getData() {
+  getAllData() {
     return this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
   }
-  updateItem(id: string, data: any) {
-    return this.http.put(this.apiUrl+"/Employee/UpdateEmployee", data);
+  getData(employeeId: number) {
+    return this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees/" + employeeId)
+  }
+  updateItem(data: any) {
+    return this.http.put(this.apiUrl + `/Employee/UpdateEmployee/`, data);
   }
 }

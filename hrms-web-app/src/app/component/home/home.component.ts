@@ -5,18 +5,18 @@ import { ColDef, ICellRendererParams } from "ag-grid-community";
 import { MatIconModule } from '@angular/material/icon';
 // import { IEmployee } from '../../interface/intrface';
 import { ActionComponent } from '../action/action.component';
-import { ModalComponent } from '../modal/modal.component';
 import { HttpClientModule } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EmployeeService } from '../../services/employee/employee.service';
-
+import { EmployeeComponent } from '../../modal/employee/employee.component';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog'
 
 
 @Component({
 
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule],
+  imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule, MatDialogModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   providers: [EmployeeService]
@@ -25,7 +25,9 @@ import { EmployeeService } from '../../services/employee/employee.service';
 export class HomeComponent {
   service = inject(EmployeeService)
   router = inject(Router)
+  route = inject(ActivatedRoute)
   // image = '/src/assets/images/download.jpg';
+  dialog = inject(MatDialog)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true, flex: 1 },
@@ -36,14 +38,16 @@ export class HomeComponent {
     { field: "permanentAddress", floatingFilter: true, filter: true, flex: 1 },
     { field: "gender", floatingFilter: true, filter: true, flex: 1 },
     { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
-    { field: "action", flex: 1, cellRenderer:ActionComponent }
-
+    { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { onEdit: this.onEdit.bind(this) } }
   ]
+
   rowData: any;
   constructor() { this.columnDefs }
-
+  employeeId!: number;
+  
   ngOnInit() {
-    this.service.getData().subscribe((response: any) => {
+   
+    this.service.getAllData().subscribe((response: any) => {
       this.rowData = response.data;
     })
   }
@@ -55,5 +59,13 @@ export class HomeComponent {
   defaultColDef: ColDef = {
     resizable: true,
   };
-  
+
+  onEdit(data: any) {
+    // console.log("employee data define",data)
+    this.dialog.open(EmployeeComponent, {
+      width: '30px',
+      height: 'auto',
+      data
+    })
+  }
 }
