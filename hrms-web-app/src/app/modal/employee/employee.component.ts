@@ -1,64 +1,81 @@
-import { Component, inject } from '@angular/core';
+import { Component, Inject, inject } from '@angular/core';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormField } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatRadioModule } from '@angular/material/radio';
 import { EmployeeService } from '../../services/employee/employee.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-employee',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule,CommonModule],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule],
   templateUrl: './employee.component.html',
   styleUrl: './employee.component.scss'
 })
 export class EmployeeComponent {
 
-  constructor() { }
+  constructor(
+    private _dialogref: MatDialogRef<EmployeeComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) { }
+
   formBuilder = inject(FormBuilder)
   services = inject(EmployeeService)
   route = inject(ActivatedRoute)
-  data: any;
+  router = inject(Router)
+  // data!: any;
   employeeId!: number;
+  isEdit = false;
 
-
-  employeeform = this.formBuilder.group({
-    id: 0,
+  Employeeform = this.formBuilder.group({
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required]],
-    mobileNumber: ['', [Validators.required]],
-    address: ['', [Validators.required]]
+    mobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
+    permanentAddress: ['', [Validators.required]],
+    gender: '',
+    currentAddress: ['', [Validators.required]],
+    dateOfJoining: [''],
+    isActive: ['']
   })
 
   ngOnInit() {
-    // this.employeeId = this.route.snapshot.params['id'];
-    // console.log("define id", this.employeeId)
-    // if (this.employeeId!>0) {
-    //   this.services.getData(this.data).subscribe((res:any) => {
-    //     this.employeeform.setValue(res)
-    //     console.log("result data", res)
-    //   })
-    // }else{
-    //  console.log("data not found")
-    // }
+    this.Employeeform.patchValue(this.data);
+    if (this.data) {
+      this.isEdit = true;
+      // this.services.getData(this.data).subscribe((result) => {
+      //   console.log("form ", result)
+      // })
+    }
   }
 
+
   submitdata() {
-    const employee: any = {
-      firstName: this.employeeform.value.firstName!,
-      lastName: this.employeeform.value.lastName!,
-      emailAddress: this.employeeform.value.emailAddress!,
-      mobileNumber: this.employeeform.value.mobileNumber!,
-      address: this.employeeform.value.address!,
+    if (this.isEdit) {
+      this.services.updateData(this.Employeeform.value).subscribe({
+        next: (val: any) => {
+          console.log('update successfully')
+          this._dialogref.close(true);
+        }, error: (err) => {
+          console.log("err msg", err)
+        }
+      })
+    } else {
+      this.services.createData(this.Employeeform.value).subscribe({
+        next: (val: any) => {
+          console.log("successfully add")
+          alert('data successfully add')
+          this._dialogref.close(true);
+        }, error: (err) => {
+          console.log(err)
+        }
+      })
     }
-    this.services.updateItem(employee).subscribe((res) => {
-      console.log("success", res)
-      // this.employeeform.patchValue(res)
-    })
   }
 
 }

@@ -1,49 +1,73 @@
 <div class="form">
-    <form action="" [formGroup]="employeeform" (ngSubmit)="submitdata()">
+    <form action="" [formGroup]="Employeeform" (ngSubmit)="submitdata()">
+        @if (isEdit) {
         <p>edit employee data</p>
-        <div class="employee-form">
+        }@else {
+        <p>add employee data</p>
+        }
+        <!-- <div class="employee-form"> -->
             <mat-form-field appearance="outline">
                 <mat-label>first name</mat-label>
-                <input type="text" matInput placeholder="Enter your first Name" formControlName="firstName">
+                <input type="text" matInput name="firstName" placeholder="Enter your first Name"
+                    formControlName="firstName">
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>last name</mat-label>
-                <input type="text" matInput placeholder="Enter your last Name" formControlName="lastName">
+                <input type="text" matInput name="lastName" placeholder="Enter your last Name"
+                    formControlName="lastName">
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>email</mat-label>
-                <input type="text" matInput placeholder="Enter your email" formControlName="emailAddress">
+                <input type="text" matInput name="emailAddress" placeholder="Enter your email"
+                    formControlName="emailAddress">
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>phone no</mat-label>
-                <input type="nuumber" matInput placeholder="Enter your No" formControlName="mobileNumber">
+                <input type="text" matInput name="mobileNumber" placeholder="Enter your No"
+                    formControlName="mobileNumber">
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-                <mat-label>address</mat-label>
-                <input type="text" matInput placeholder="Enter your address" formControlName="address">
+                <mat-label>permanentAddress</mat-label>
+                <input type="text" matInput name="permanentAddress" placeholder="Enter your address"
+                    formControlName="permanentAddress">
             </mat-form-field>
 
-            <mat-radio-group>
+            <mat-form-field appearance="outline">
+                <mat-label>currentAddress</mat-label>
+                <input type="text" matInput name="createdDate" placeholder="Enter your address"
+                    formControlName="currentAddress">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>dateOfJoining</mat-label>
+                <input type="date" matInput name="dateOfJoining" formControlName="dateOfJoining">
+            </mat-form-field>
+
+            <mat-radio-group formControlName="gender">
                 <mat-label><b>gender</b></mat-label>
-                <mat-radio-button>male</mat-radio-button>
-                <mat-radio-button>female</mat-radio-button>
+                <mat-radio-button value="male">m</mat-radio-button>
+                <mat-radio-button value="female">f</mat-radio-button>
             </mat-radio-group>
 
-            <mat-radio-group>
-                <mat-label><b>action</b></mat-label>
-                <mat-radio-button>active</mat-radio-button>
-                <mat-radio-button>inactive</mat-radio-button>
-            </mat-radio-group>
+            <mat-checkbox formControlName="isActive">active</mat-checkbox>
 
-
+            @if(isEdit){
             <div class="button-btn">
                 <button class="edit-btn">update</button>
                 <button class="cancel-btn">cancel</button>
             </div>
-        </div>
+            }@else {
+            <div class="button-btn">
+                <button class="edit-btn" routerLink="createdDate">add</button>
+                <button class="cancel-btn">cancel</button>
+            </div>
+            }
+
+
+        <!-- </div> -->
     </form>
 </div>
