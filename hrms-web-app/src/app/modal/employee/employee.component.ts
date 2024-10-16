@@ -8,12 +8,14 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-
+import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 @Component({
   selector: 'app-employee',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  providers: [provideNativeDateAdapter()],
   templateUrl: './employee.component.html',
   styleUrl: './employee.component.scss'
 })
@@ -33,6 +35,7 @@ export class EmployeeComponent {
   isEdit = false;
 
   Employeeform = this.formBuilder.group({
+    id:[],
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required]],
@@ -46,6 +49,7 @@ export class EmployeeComponent {
 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
+    console.log('update data',this.data)
     if (this.data) {
       this.isEdit = true;
       // this.services.getData(this.data).subscribe((result) => {
@@ -57,9 +61,10 @@ export class EmployeeComponent {
 
   submitdata() {
     if (this.isEdit) {
-      this.services.updateData(this.Employeeform.value).subscribe({
+      this.services.updateData(this.Employeeform.value).subscribe({        
         next: (val: any) => {
-          console.log('update successfully')
+          // console.log('update successfully')
+          alert("data updated successfully")
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -68,8 +73,8 @@ export class EmployeeComponent {
     } else {
       this.services.createData(this.Employeeform.value).subscribe({
         next: (val: any) => {
-          console.log("successfully add")
-          alert('data successfully add')
+          // console.log("successfully add")
+          alert('data add successfully')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

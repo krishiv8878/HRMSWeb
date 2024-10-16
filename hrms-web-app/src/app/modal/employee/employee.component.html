@@ -5,69 +5,76 @@
         }@else {
         <p>add employee data</p>
         }
-        <!-- <div class="employee-form"> -->
+        <div class="employee-form">
+            <div class="row">
+                <mat-form-field appearance="outline">
+                    <mat-label>first name</mat-label>
+                    <input type="text" matInput name="firstName" placeholder="Enter Your First Name"
+                        formControlName="firstName">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>last name</mat-label>
+                    <input type="text" matInput name="lastName" placeholder="Enter Your Last Name"
+                        formControlName="lastName">
+                </mat-form-field>
+            </div>
+            <div class="row">
+                <mat-form-field appearance="outline">
+                    <mat-label>email</mat-label>
+                    <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
+                        formControlName="emailAddress">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>phone no</mat-label>
+                    <input type="text" matInput name="mobileNumber" placeholder="Enter Your No"
+                        formControlName="mobileNumber">
+                </mat-form-field>
+            </div>
+            <div class="row">
+                <mat-form-field appearance="outline">
+                    <mat-label>permanentAddress</mat-label>
+                    <input type="text" matInput name="permanentAddress" placeholder="Enter Your Permanet Address"
+                        formControlName="permanentAddress">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>currentAddress</mat-label>
+                    <input type="text" matInput name="createdDate" placeholder="Enter Your Current Address"
+                        formControlName="currentAddress">
+                </mat-form-field>
+            </div>
+            <div class="row">
+                <mat-radio-group formControlName="gender">
+                    <mat-label><b>gender</b></mat-label>
+                    <mat-radio-button value="male">Male</mat-radio-button>
+                    <mat-radio-button value="female">female</mat-radio-button>
+                </mat-radio-group>
+                <mat-checkbox formControlName="isActive">active</mat-checkbox>
+            </div>
             <mat-form-field appearance="outline">
-                <mat-label>first name</mat-label>
-                <input type="text" matInput name="firstName" placeholder="Enter your first Name"
-                    formControlName="firstName">
+                <mat-label>joining date</mat-label>
+                <input matInput [matDatepicker]="picker" formControlName="dateOfJoining">
+                <mat-hint>MM/DD/YYYY</mat-hint>
+                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-                <mat-label>last name</mat-label>
-                <input type="text" matInput name="lastName" placeholder="Enter your last Name"
-                    formControlName="lastName">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>email</mat-label>
-                <input type="text" matInput name="emailAddress" placeholder="Enter your email"
-                    formControlName="emailAddress">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>phone no</mat-label>
-                <input type="text" matInput name="mobileNumber" placeholder="Enter your No"
-                    formControlName="mobileNumber">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>permanentAddress</mat-label>
-                <input type="text" matInput name="permanentAddress" placeholder="Enter your address"
-                    formControlName="permanentAddress">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>currentAddress</mat-label>
-                <input type="text" matInput name="createdDate" placeholder="Enter your address"
-                    formControlName="currentAddress">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>dateOfJoining</mat-label>
-                <input type="date" matInput name="dateOfJoining" formControlName="dateOfJoining">
-            </mat-form-field>
-
-            <mat-radio-group formControlName="gender">
-                <mat-label><b>gender</b></mat-label>
-                <mat-radio-button value="male">m</mat-radio-button>
-                <mat-radio-button value="female">f</mat-radio-button>
-            </mat-radio-group>
-
-            <mat-checkbox formControlName="isActive">active</mat-checkbox>
 
             @if(isEdit){
-            <div class="button-btn">
-                <button class="edit-btn">update</button>
-                <button class="cancel-btn">cancel</button>
+            <div class="button-btn" mat-dialog-actions>
+                <button mat-flat-button class="edit-btn">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
             </div>
             }@else {
             <div class="button-btn">
-                <button class="edit-btn" routerLink="createdDate">add</button>
-                <button class="cancel-btn">cancel</button>
+                <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
             </div>
             }
 
 
-        <!-- </div> -->
+        </div>
     </form>
 </div>

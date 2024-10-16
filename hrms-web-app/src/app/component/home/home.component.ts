@@ -11,6 +11,7 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { EmployeeComponent } from '../../modal/employee/employee.component';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { TogglebuttonComponent } from '../togglebutton/togglebutton.component';
 
 @Component({
 
@@ -38,7 +39,9 @@ export class HomeComponent {
     { field: "permanentAddress", floatingFilter: true, filter: true, flex: 1 },
     { field: "dateOfJoining", floatingFilter: true, filter: true, flex: 1 },
     { field: "gender", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
+    // { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
+    { field: "isActive", flex: 1, cellRenderer: TogglebuttonComponent },
+
     { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
 
@@ -65,9 +68,15 @@ export class HomeComponent {
   };
 
   Edit(data: any) {
-    this.dialog.open(EmployeeComponent, {     
+    const dialogRef = this.dialog.open(EmployeeComponent, {
       data,
     })
+    dialogRef.afterClosed().subscribe({
+      next: (val) => {
+        this.getAllData();
+      }
+    })
+
   }
 
   Delete(employeeId: number) {
