@@ -61,7 +61,7 @@ export class EmployeeComponent {
 
   submitdata() {
     if (this.isEdit) {
-      this.services.updateData(this.Employeeform.value).subscribe({
+      this.services.updateData(this.Employeeform.value).subscribe({        
         next: (val: any) => {
           // console.log('update successfully')
           alert("data updated successfully")
