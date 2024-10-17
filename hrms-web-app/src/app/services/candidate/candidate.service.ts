@@ -13,4 +13,13 @@ export class CandidateService {
   getData() {
     return this.http.get<any[]>(this.apiUrl + "/Candidate/GetCandidates")
   }
+  createData(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/Candidate/AddCandidate`, data)
+  }
+  updateData(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/Candidate/UpdateCandidate/`, data);
+  }
+  // DeleteData(employeeId: any) {
+  //   return this.http.delete(this.apiUrl + `/Candidate/DeleteCandidate`, employeeId);
+  // }
 }

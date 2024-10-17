@@ -54,6 +54,13 @@ export class HomeComponent {
     this.getAllData();
 
   }
+  active(data: any) {
+    if (data.isActive) {
+      data.isActive = 1
+    } else {
+      data.isActive = 0
+    }
+  }
   getAllData() {
     this.service.getAllData().subscribe((response: any) => {
       this.rowData = response.data;
@@ -79,9 +86,14 @@ export class HomeComponent {
 
   }
 
-  Delete(employeeId: number) {
+  Delete(employeeId: any) {
+    // console.log("delete employee dataaa", employeeId)
     this.service.DeleteData(employeeId).subscribe(() => {
-      console.log("delete")
+      console.log("delete employee data")
+
+      // employeeId.isDeleted = true;
+      // employeeId.isActive = false;
+
     })
   }
 
