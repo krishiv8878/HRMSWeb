@@ -10,7 +10,15 @@ export class SkillservicesService {
   apiUrl = environment.host
   http = inject(HttpClient)
 
-  getData() {
+  getSkill() {
     return this.http.get<any[]>(`${this.apiUrl}/Skill/GetSkills`);
+  }
+
+  createSkill(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/Skill/AddSkills/`, data)
+  }
+
+  updateSkill(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/Skill/UpdateSkill/`, data);
   }
 }
