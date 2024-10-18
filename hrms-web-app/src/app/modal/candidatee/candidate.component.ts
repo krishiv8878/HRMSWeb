@@ -28,7 +28,7 @@ export class CandidateeComponent {
     @Inject(MAT_DIALOG_DATA) public data: any) { }
 
   CandidateForm = this.fomBuilder.group({
-    id: [],
+    id: 0,
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required]],

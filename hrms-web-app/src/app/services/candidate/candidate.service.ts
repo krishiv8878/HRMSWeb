@@ -19,7 +19,7 @@ export class CandidateService {
   updateData(data: any) {
     return this.http.put<any[]>(this.apiUrl + `/Candidate/UpdateCandidate/`, data);
   }
-  // DeleteData(employeeId: any) {
-  //   return this.http.delete(this.apiUrl + `/Candidate/DeleteCandidate`, employeeId);
-  // }
+  DeleteData(candidateId: any) {
+    return this.http.delete(this.apiUrl + `/Candidate/DeleteCandidate?candidateId=`+ candidateId);
+  }
 }

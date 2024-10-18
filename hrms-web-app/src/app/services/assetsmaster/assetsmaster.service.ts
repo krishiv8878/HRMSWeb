@@ -13,4 +13,13 @@ export class AssetsmasterService {
   getData() {
     return this.http.get<any[]>(this.apiUrl + "/AssetsMaster/GetAssetsMaster")
   }
+  createData(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/AssetsMaster/AddAssetsMaster`, data)
+  }
+  updateData(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/AssetsMaster/UpdateAssetsMaster/`, data);
+  }
+  DeleteData(AssetsMasterId: any) {
+    return this.http.delete(this.apiUrl + `/AssetsMaster/DeleteAssetsMaster?AssetsMasterId=`+ AssetsMasterId);
+  }
 }
