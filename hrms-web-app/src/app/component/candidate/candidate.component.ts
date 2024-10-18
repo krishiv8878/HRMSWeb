@@ -28,7 +28,7 @@ export class CandidateComponent {
     { field: "mobileNumber", floatingFilter: true, filter: true, flex: 1 },
     { field: "totalExperience", floatingFilter: true, filter: true, flex: 1 },
     { field: "currentSalary", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
 
@@ -61,8 +61,20 @@ export class CandidateComponent {
       }
     })
   }
-  Delete() {
+  Delete(candidateId: any) {
+    // console.log("delete employee dataaa", candidateId)
+    if (candidateId != null) {
+      this.services.DeleteData(candidateId).subscribe(() => {
+        candidateId.isDeleted = true;
+        candidateId.isActive = false;
 
+      })
+      this.services.DeleteData(candidateId).subscribe({
+        next: (res) => {
+          this.getData();
+        }
+      })
+    }
   }
   openAddForm() {
     const dialogRef = this.dialog.open(CandidateeComponent);

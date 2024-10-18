@@ -9,7 +9,7 @@ mat-divider {
 
 .side-menu {
     display: flex;
-    margin-left: 1rem;   
+    margin-left: 1rem;
     margin-top: 20px;
     text-transform: capitalize;
     font-weight: 500;
@@ -36,7 +36,35 @@ mat-divider {
     font-size: 20px;
     margin-right: 0.5rem;
 }
-.side-menu a{
+
+.side-menu a {
     text-decoration: none;
     color: white;
+}
+
+.log-icon {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    align-items: center;
+    text-align: start;
+    color: black;
+    padding: 15px;
+    font-size: 25px;
+
+    a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-transform: capitalize;
+        font-size: 25px;
+        font-weight: 500;
+        color: white;
+
+        mat-icon{
+            font-size: 40px;
+            display: table;
+        }
+    }
 }

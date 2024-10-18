@@ -1,1 +1,93 @@
-<p>assetsmasters works!</p>
+<div class="form">
+    <form action="" [formGroup]="Assets" (ngSubmit)="submitdata()">
+        @if (isEdit) {
+        <p>edit assetsmaster data</p>
+        }@else {
+        <p>add assetsmaster data</p>
+        }
+        <div class="employee-form">
+            <div class="row">
+                <mat-form-field appearance="outline">
+                    <mat-label>assetsMaster Name</mat-label>
+                    <input type="text" matInput name="assetsMasterName" placeholder="Enter Your First Name"
+                        formControlName="assetsMasterName">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>serialNumber</mat-label>
+                    <input type="text" matInput name="serialNumber" placeholder="Enter Your Email"
+                        formControlName="serialNumber">
+                </mat-form-field>
+            </div>
+            <div class="row">
+
+                <mat-form-field appearance="outline">
+                    <mat-label>description</mat-label>
+                    <input matInput [matDatepicker]="picker2" formControlName="description">
+                    <mat-hint>MM/DD/YYYY</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                    <mat-datepicker #picker2></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>createdBy</mat-label>
+                    <input type="text" matInput name="createdBy" placeholder="Enter Your No"
+                        formControlName="createdBy">
+                </mat-form-field>
+            </div>
+
+            <div class="row">
+                <mat-form-field appearance="outline">
+                    <mat-label>updatedBy</mat-label>
+                    <input type="text" matInput name="updatedBy" placeholder="Enter Your Permanet Address"
+                        formControlName="updatedBy">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>createdDate</mat-label>
+                    <input matInput [matDatepicker]="picker" formControlName="createdDate">
+                    <mat-hint>MM/DD/YYYY</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
+
+            </div>
+
+            <div class="row">
+
+                <mat-form-field appearance="outline">
+                    <mat-label>dateOfPurchase</mat-label>
+                    <input matInput [matDatepicker]="picker3" formControlName="dateOfPurchase">
+                    <mat-hint>MM/DD/YYYY</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
+                    <mat-datepicker #picker3></mat-datepicker>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                    <mat-label>updatedDate</mat-label>
+                    <input matInput [matDatepicker]="picker4" formControlName="updatedDate">
+                    <mat-hint>MM/DD/YYYY</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
+                    <mat-datepicker #picker4></mat-datepicker>
+                </mat-form-field>
+            </div>
+            <div class="row">
+                <mat-checkbox formControlName="isActive">active</mat-checkbox>
+            </div>
+
+            @if(isEdit){
+            <div class="button-btn" mat-dialog-actions>
+                <button mat-flat-button class="edit-btn">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }@else {
+            <div class="button-btn">
+                <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }
+
+
+        </div>
+    </form>
+</div>
