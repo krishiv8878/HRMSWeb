@@ -39,8 +39,8 @@ export class HomeComponent {
     { field: "permanentAddress", floatingFilter: true, filter: true, flex: 1 },
     { field: "dateOfJoining", floatingFilter: true, filter: true, flex: 1 },
     { field: "gender", floatingFilter: true, filter: true, flex: 1 },
-    // { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
-    { field: "isActive", flex: 1, cellRenderer: TogglebuttonComponent },
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off"></i>` },
+    // { field: "isActive", flex: 1, cellRenderer: TogglebuttonComponent },
 
     { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
@@ -73,7 +73,7 @@ export class HomeComponent {
   defaultColDef: ColDef = {
     resizable: true,
   };
-
+  data: any;
   Edit(data: any) {
     const dialogRef = this.dialog.open(EmployeeComponent, {
       data,
@@ -88,13 +88,18 @@ export class HomeComponent {
 
   Delete(employeeId: any) {
     // console.log("delete employee dataaa", employeeId)
-    this.service.DeleteData(employeeId).subscribe(() => {
-      console.log("delete employee data")
+    if (employeeId != null) {
+      this.service.DeleteData(employeeId).subscribe(() => {
+        employeeId.isDeleted = true;
+        employeeId.isActive = false;
 
-      // employeeId.isDeleted = true;
-      // employeeId.isActive = false;
-
-    })
+      })
+      this.service.DeleteData(employeeId).subscribe({
+        next: (res) => {
+          this.getAllData();
+        }
+      })
+    }
   }
 
   openAddForm() {

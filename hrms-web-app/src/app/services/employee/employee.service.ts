@@ -27,6 +27,6 @@ export class EmployeeService {
     return this.http.put<any[]>(this.apiUrl + `/Employee/UpdateEmployee/`, data);
   }
   DeleteData(employeeId: any) {
-    return this.http.delete(this.apiUrl + `/Employee/DeleteEmployee`, employeeId);
+    return this.http.delete(this.apiUrl + `/Employee/DeleteEmployee?employeeId=`+ employeeId);
   }
 }

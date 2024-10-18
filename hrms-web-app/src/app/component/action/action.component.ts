@@ -35,7 +35,7 @@ export class ActionComponent implements ICellRendererAngularComp {
   }
 
   onDelete(data: any) {
-    this.params.Delete(this.params.data)
+    this.params.Delete(this.params.data.id)
   }
 }
 

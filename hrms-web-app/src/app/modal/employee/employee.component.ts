@@ -31,11 +31,11 @@ export class EmployeeComponent {
   route = inject(ActivatedRoute)
   router = inject(Router)
   // data!: any;
-  employeeId!: number;
+  // id!: number;
   isEdit = false;
 
   Employeeform = this.formBuilder.group({
-    id:[],
+    id: 0,
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required]],
@@ -49,7 +49,7 @@ export class EmployeeComponent {
 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
-    console.log('update data',this.data)
+    console.log('update data', this.data)
     if (this.data) {
       this.isEdit = true;
       // this.services.getData(this.data).subscribe((result) => {
@@ -61,7 +61,7 @@ export class EmployeeComponent {
 
   submitdata() {
     if (this.isEdit) {
-      this.services.updateData(this.Employeeform.value).subscribe({        
+      this.services.updateData(this.Employeeform.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           alert("data updated successfully")
