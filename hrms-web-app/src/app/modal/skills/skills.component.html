@@ -1,0 +1,79 @@
+
+<div class="form">
+    <form action="" [formGroup]="Skillform" (ngSubmit)="submitdata()">
+        @if (isEdit) {
+        <p>edit employee data</p>
+        }@else {
+        <p>add employee data</p>
+        }
+        <div class="employee-form">
+            <div class="row">
+                <mat-form-field appearance="outline">
+                    <mat-label>Skill Name</mat-label>
+                    <input type="text" matInput name="skillName" placeholder="Enter Your SkillName"
+                        formControlName="skillName">
+                </mat-form-field>
+
+                
+            </div>
+            <div class="row">
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Updated By</mat-label>
+                    <input type="text" matInput name="updatedBy"
+                        formControlName="updatedBy">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Updated Date</mat-label>
+                    <input matInput [matDatepicker]="picker" formControlName="updatedDate">
+                    <mat-hint>MM/DD/YYYY</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
+
+               
+            </div>
+            <div class="row">
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Created By</mat-label>
+                    <input type="text" matInput name="createdBy"
+                        formControlName="createdBy">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>createdDate</mat-label>
+                    <input matInput [matDatepicker]="picker2" formControlName="createdDate">
+                    <mat-hint>MM/DD/YYYY</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                    <mat-datepicker #picker2></mat-datepicker>
+                </mat-form-field> 
+
+               
+
+            </div>
+
+            <div class="row">
+
+                <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+
+            </div>
+
+
+            @if(isEdit){
+            <div class="button-btn" mat-dialog-actions>
+                <button mat-flat-button class="edit-btn">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }@else {
+            <div class="button-btn">
+                <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }
+
+
+        </div>
+    </form>
+</div>
