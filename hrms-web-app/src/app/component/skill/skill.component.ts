@@ -33,8 +33,8 @@ export class SkillComponent {
     { field: "updatedDate", floatingFilter: true, filter: true, flex: 1 },
     { field: "createdBy", floatingFilter: true, filter: true, flex: 1 },
     { field: "createdDate", floatingFilter: true, filter: true, flex: 1 },
-    // { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
-    { field: "isActive", flex: 1, cellRenderer: TogglebuttonComponent },
+    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
+    // { field: "isActive", flex: 1, cellRenderer: TogglebuttonComponent },
 
     { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
@@ -70,12 +70,22 @@ export class SkillComponent {
 
   }
 
-  Delete(employeeId: number) {
-    // this.  services = inject(SkillservicesService)
-    // .DeleteData(employeeId).subscribe(() => {
-    //   console.log("delete")
-    // })
+  Delete(skillId: any) {
+    // console.log("delete employee dataaa", employeeId)
+    if (skillId != null) {
+      this.services.DeleteSkill(skillId).subscribe(() => {
+        skillId.isDeleted = true;
+        skillId.isActive = false;
+ 
+      })
+      this.services.DeleteSkill(skillId).subscribe({
+        next: (res) => {
+          this.getSkill();
+        }
+      })
+    }
   }
+
 
   openSkillForm() {
     const dialogRef = this.dialog.open(SkillsComponent);

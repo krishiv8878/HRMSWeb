@@ -21,4 +21,9 @@ export class SkillservicesService {
   updateSkill(data: any) {
     return this.http.put<any[]>(this.apiUrl + `/Skill/UpdateSkill/`, data);
   }
+
+  DeleteSkill(skillId: any) {
+    return this.http.delete(this.apiUrl + `/Skill/DeleteSkill?skillId=`+ skillId);
+  }
+ 
 }

@@ -34,7 +34,7 @@ export class SkillsComponent {
   isEdit = false;
 
   Skillform = this.formBuilder.group({
-    id:[],
+    id:0,
     skillName: ['', [Validators.required]],
     updatedBy: [''],
     updatedDate: [''],
