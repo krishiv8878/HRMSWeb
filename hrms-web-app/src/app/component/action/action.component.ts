@@ -29,12 +29,12 @@ export class ActionComponent implements ICellRendererAngularComp {
   refresh(params: ICellRendererParams) { return true }
   params: any;
 
-  onEdit(data: any) {   
-  const editdata = this.params.Edit(this.params.data)
-  console.log('edit data',editdata)   
+  onEdit(data: any) {
+    this.params.Edit(this.params.data)
+
   }
 
-  onDelete(data:any) {
+  onDelete(data: any) {
     this.params.Delete(this.params.data.id)
   }
 }
