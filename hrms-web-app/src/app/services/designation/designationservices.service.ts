@@ -13,4 +13,13 @@ export class DesignationservicesService {
   getData(){
    return this.http.get<any[]>(this.apiUrl + "/Designation/GetDesignations")
   }
+  createData(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/Designation/AddDesignation`, data)
+  }
+  updateData(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/Designation/UpdateDesignation/`, data);
+  }
+  DeleteData(DesignationId: any) {
+    return this.http.delete(this.apiUrl + `/Designation/DeleteDesignation?DesignationId=`+ DesignationId);
+  }
 }
