@@ -10,7 +10,19 @@ export class HolidayservicesService {
   apiUrl = environment.host
   http = inject(HttpClient)
 
-  getData(){
+  getHoliday(){
     return this.http.get<any[]>(this.apiUrl + "/Holiday/GetHolidays")
+  }
+
+  createHoliday(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/Holiday/AddHoliday/`, data)
+  }
+
+  updateHoliday(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/Holiday/UpdateHoliday/`, data);
+  }
+
+  DeleteHoliday(holidayId: any) {
+    return this.http.delete(this.apiUrl + `/Holiday/DeleteHoliday?holidayId=`+ holidayId);
   }
 }
