@@ -9,6 +9,7 @@ import { SkillComponent } from './component/skill/skill.component';
 import { HolidayComponent } from './component/holiday/holiday.component';
 import { CandidateComponent } from './component/candidate/candidate.component';
 import { AssetsmasterComponent } from './component/assetsmaster/assetsmaster.component';
+import { ProjectmasterComponent } from './component/projectmaster/projectmaster.component';
 
 export const routes: Routes = [
     {
@@ -44,5 +45,8 @@ export const routes: Routes = [
     },
     {
         path:'assets', component:AssetsmasterComponent
+    },
+    {
+        path:'project', component:ProjectmasterComponent
     }
 ];

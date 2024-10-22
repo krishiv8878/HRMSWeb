@@ -16,10 +16,7 @@ export class EmployeeService {
 
   getAllData() {
     return this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
-  }
-  // getData(data: any) {
-  //   return this.http.get(this.apiUrl + `/Employee/GetEmployees/` + data)
-  // }
+  } 
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/Employee/AddEmployee`, data)
   }
