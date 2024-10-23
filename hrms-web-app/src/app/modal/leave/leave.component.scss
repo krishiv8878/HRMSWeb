@@ -1,0 +1,38 @@
+.form {
+    padding: 2vw;
+
+    p {
+        text-transform: capitalize;
+        font-size: 25px;
+        font-weight: 500;
+        text-align: center;
+    }
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+
+    mat-form-field {
+        width: 100%;
+    }
+}
+
+.employee-form {
+    display: inline-grid;
+}
+
+.button-btn {
+    display: flex;
+    gap: 10PX;
+    padding-top: 10px;
+    justify-content: center;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    text-transform: capitalize;
+    font-size: 15px;
+    font-weight: 500;
+}

@@ -1,38 +1,33 @@
 <div class="form">
-    <form action="" [formGroup]="project" (ngSubmit)="submitdata()">
+    <form action="" [formGroup]="leavetype" (ngSubmit)="submitdata()">
         @if (isEdit) {
-        <p>edit projectMaster data</p>
+        <p>edit leavetype data</p>
         }@else {
-        <p>add projectMaster data</p>
+        <p>add leavetype data</p>
         }
         <div class="employee-form">
             <div class="row">
                 <mat-form-field appearance="outline">
-                    <mat-label>clientName</mat-label>
-                    <input type="text" matInput name="clientName" placeholder="Enter Your clientName"
-                        formControlName="clientName">
+                    <mat-label>leaveName</mat-label>
+                    <input type="text" matInput name="leaveName" placeholder="Enter Your leaveName"
+                        formControlName="leaveName">
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                    <mat-label>projectName</mat-label>
-                    <input type="text" matInput name="projectName" placeholder="Enter Your projectName"
-                        formControlName="projectName">
+                    <mat-label>leaveType</mat-label>
+                    <input type="text" matInput name="leaveType" placeholder="Enter Your leaveType"
+                        formControlName="leaveType">
                 </mat-form-field>
+
             </div>
             
             <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>clientRegion</mat-label>
-                    <input type="text" matInput name="clientRegion" formControlName="clientRegion">
-                </mat-form-field>
 
                 <mat-form-field appearance="outline">
                     <mat-label>updatedBy</mat-label>
                     <input type="text" matInput name="updatedBy" formControlName="updatedBy">
                 </mat-form-field>
-            </div>
 
-            <div class="row">
                 <mat-form-field appearance="outline">
                     <mat-label>Updated Date</mat-label>
                     <input matInput [matDatepicker]="picker" formControlName="updatedDate">
@@ -40,15 +35,15 @@
                     <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                     <mat-datepicker #picker></mat-datepicker>
                 </mat-form-field>
+            </div>
+            <div class="row">
+
 
                 <mat-form-field appearance="outline">
                     <mat-label>Created By</mat-label>
                     <input type="text" matInput name="createdBy" formControlName="createdBy">
                 </mat-form-field>
 
-            </div>
-
-            <div class="row">
                 <mat-form-field appearance="outline">
                     <mat-label>createdDate</mat-label>
                     <input matInput [matDatepicker]="picker2" formControlName="createdDate">
@@ -56,7 +51,9 @@
                     <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
                     <mat-datepicker #picker2></mat-datepicker>
                 </mat-form-field>
+            </div>
 
+            <div class="row">
                 <mat-form-field appearance="outline">
                     <mat-label>description</mat-label>
                     <input matInput [matDatepicker]="picker3" formControlName="description">
