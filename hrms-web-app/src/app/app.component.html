@@ -1,15 +1,2 @@
-<mat-drawer-container>
-
-  <mat-drawer-content>
-    <app-header (toggleSidebarForMe)="sidebarToggler()" />
-    <router-outlet />  
-  </mat-drawer-content>
-
-  <mat-drawer mode="side" [opened]="sidebaropen">
-    <app-sidbar />
-  </mat-drawer>
-
-</mat-drawer-container>
-
-
-<!-- <router-outlet/> -->
+<!-- <app-index/> -->
+<router-outlet/>

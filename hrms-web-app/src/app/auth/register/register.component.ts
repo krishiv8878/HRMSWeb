@@ -4,6 +4,8 @@ import { MatFormField } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/authentication/auth.service';
 // import { HttpClient } from '@angular/common/http';
 
 @Component({
@@ -14,19 +16,30 @@ import { CommonModule } from '@angular/common';
   styleUrl: './register.component.scss'
 })
 export class RegisterComponent {
-  // constructor() { }
+  constructor() { }
+  services = inject(AuthService)
   formBuilder = inject(FormBuilder)
+  router = inject(Router)
   // http = inject(HttpClient)
   registretion = this.formBuilder.group({
-    fname: ['', [Validators.required]],
-    lname: ['', [Validators.required]],
+    id: 0,
+    FirstName: ['', [Validators.required]],
+    LastName: ['', [Validators.required]],
     email: ['', [Validators.required]],
-    phone: ['', [Validators.required]],
-    password: ['', [Validators.required,Validators.minLength(6)]]
+    MobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
+    Address: ['', [Validators.required]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
   })
   ngOnInit() { }
 
   submit() {
+    if (this.registretion.valid) {
+      this.services.createRegister(this.registretion.value).subscribe(() => {
+        console.log(this.registretion.value)
+        this.registretion.reset()
+        this.router.navigateByUrl('login')
+      })
 
+    }
   }
 }

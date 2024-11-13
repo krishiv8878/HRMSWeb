@@ -11,6 +11,8 @@ import { CandidateComponent } from './component/candidate/candidate.component';
 import { AssetsmasterComponent } from './component/assetsmaster/assetsmaster.component';
 import { ProjectmasterComponent } from './component/projectmaster/projectmaster.component';
 import { LeavetypeComponent } from './component/leavetype/leavetype.component';
+import { IndexComponent } from './component/index/index.component';
+
 
 export const routes: Routes = [
     {
@@ -52,5 +54,8 @@ export const routes: Routes = [
     },
     {
         path:'leavetype', component:LeavetypeComponent
+    },
+    {
+        path:'index', component:IndexComponent
     }
 ];
