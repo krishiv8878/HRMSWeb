@@ -16,46 +16,44 @@ import { IndexComponent } from './component/index/index.component';
 
 export const routes: Routes = [
     {
-        path: '',  children: [
+        path: '', redirectTo: '/login', pathMatch: 'full'
+    },
+    {
+        path: 'login', component: LoginComponent,
+    },
+    {
+        path: 'index', component: IndexComponent, children: [
+
             {
-                path: 'login', component: LoginComponent,
+                path: 'home', component: HomeComponent
             },
             {
-                path: 'register', component: RegisterComponent,
+                path: 'about', component: AboutComponent
+            },
+            {
+                path: 'services', component: ServicesComponent
+            },
+            {
+                path: 'designation', component: DesignationComponent
+            },
+            {
+                path: 'skill', component: SkillComponent
+            },
+            {
+                path: 'holiday', component: HolidayComponent
+            },
+            {
+                path: 'candidate', component: CandidateComponent
+            },
+            {
+                path: 'assets', component: AssetsmasterComponent
+            },
+            {
+                path: 'project', component: ProjectmasterComponent
+            },
+            {
+                path: 'leavetype', component: LeavetypeComponent
             },
         ]
-    },
-    {
-        path: 'home', component: HomeComponent
-    },
-    {
-        path: 'about', component: AboutComponent
-    },
-    {
-        path: 'services', component: ServicesComponent
-    },
-    {
-        path:'designation', component:DesignationComponent
-    },
-    {
-        path:'skill', component:SkillComponent
-    },
-    {
-        path:'holiday', component:HolidayComponent
-    },
-    {
-        path:'candidate', component:CandidateComponent
-    },
-    {
-        path:'assets', component:AssetsmasterComponent
-    },
-    {
-        path:'project', component:ProjectmasterComponent
-    },
-    {
-        path:'leavetype', component:LeavetypeComponent
-    },
-    {
-        path:'index', component:IndexComponent
     }
 ];

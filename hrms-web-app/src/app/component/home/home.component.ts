@@ -11,14 +11,12 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { EmployeeComponent } from '../../modal/employee/employee.component';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { IndexComponent } from "../index/index.component";
 
 
 @Component({
-
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule, MatDialogModule, MatButtonModule, IndexComponent],
+  imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule, MatDialogModule, MatButtonModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   providers: [EmployeeService]
