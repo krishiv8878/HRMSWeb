@@ -12,6 +12,7 @@ import { AssetsmasterComponent } from './component/assetsmaster/assetsmaster.com
 import { ProjectmasterComponent } from './component/projectmaster/projectmaster.component';
 import { LeavetypeComponent } from './component/leavetype/leavetype.component';
 import { IndexComponent } from './component/index/index.component';
+import { ContactComponent } from './component/pages/contact/contact.component';
 
 
 export const routes: Routes = [
@@ -20,6 +21,9 @@ export const routes: Routes = [
     },
     {
         path: 'login', component: LoginComponent,
+    },
+    {
+        path:'register', component:RegisterComponent,
     },
     {
         path: 'index', component: IndexComponent, children: [
@@ -54,6 +58,9 @@ export const routes: Routes = [
             {
                 path: 'leavetype', component: LeavetypeComponent
             },
+            {
+                path:'contact', component:ContactComponent
+            }
         ]
     }
 ];
