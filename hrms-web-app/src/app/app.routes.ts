@@ -58,6 +58,9 @@ export const routes: Routes = [
             {
                 path: 'leavetype', component: LeavetypeComponent
             },
+            {
+                path:'contact', component:ContactComponent
+            }
         ]
     }
 ];
