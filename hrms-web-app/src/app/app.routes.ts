@@ -23,9 +23,6 @@ export const routes: Routes = [
         path: 'login', component: LoginComponent,
     },
     {
-        path:'register', component:RegisterComponent,
-    },
-    {
         path: 'index', component: IndexComponent, children: [
 
             {
@@ -58,9 +55,6 @@ export const routes: Routes = [
             {
                 path: 'leavetype', component: LeavetypeComponent
             },
-            {
-                path:'contact', component:ContactComponent
-            }
         ]
     }
 ];
