@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { HttpClientModule } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-skill',
@@ -25,6 +26,7 @@ export class SkillComponent {
   router = inject(Router)
   route = inject(ActivatedRoute)
   dialog = inject(MatDialog)
+  toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true, flex: 1 },
@@ -42,9 +44,9 @@ export class SkillComponent {
   constructor() { this.columnDefs }
 
   ngOnInit() {
-   this.getSkill();
+    this.getSkill();
   }
-  getSkill(){
+  getSkill() {
     this.services.getSkill().subscribe((response: any) => {
       this.rowData = response.data;
     })
@@ -76,11 +78,12 @@ export class SkillComponent {
       this.services.DeleteSkill(skillId).subscribe(() => {
         skillId.isDeleted = true;
         skillId.isActive = false;
- 
+
       })
       this.services.DeleteSkill(skillId).subscribe({
         next: (res) => {
           this.getSkill();
+          this.toaster.success('successfully delete data', 'delete')
         }
       })
     }
@@ -96,5 +99,5 @@ export class SkillComponent {
         }
       }
     })
-}
+  }
 }

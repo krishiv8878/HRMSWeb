@@ -9,6 +9,7 @@ import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material
 import { MatFormField, MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-leave',
@@ -25,6 +26,7 @@ export class LeaveComponent {
   services = inject(LeavetypeService)
   formbuilder = inject(FormBuilder)
   isEdit = false;
+  toaster = inject(ToastrService)
 
   leavetype = this.formbuilder.group({
     id: 0,
@@ -50,7 +52,7 @@ export class LeaveComponent {
       this.services.updateData(this.leavetype.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          alert("data updated successfully")
+          this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -60,7 +62,7 @@ export class LeaveComponent {
       this.services.createData(this.leavetype.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          alert('data add successfully')
+          this.toaster.success('successfully add data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

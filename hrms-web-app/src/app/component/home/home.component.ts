@@ -11,6 +11,7 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { EmployeeComponent } from '../../modal/employee/employee.component';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { ToastrService } from 'ngx-toastr';
 
 
 @Component({
@@ -26,7 +27,7 @@ export class HomeComponent {
   service = inject(EmployeeService)
   router = inject(Router)
   route = inject(ActivatedRoute)
-  // image = '/src/assets/images/download.jpg';
+  toaster = inject(ToastrService)
   dialog = inject(MatDialog)
 
   public columnDefs: ColDef[] = [
@@ -66,7 +67,7 @@ export class HomeComponent {
   defaultColDef: ColDef = {
     resizable: true,
   };
-  
+
   Edit(data: any) {
     const dialogRef = this.dialog.open(EmployeeComponent, {
       data,
@@ -90,6 +91,7 @@ export class HomeComponent {
       this.service.DeleteData(employeeId).subscribe({
         next: (res) => {
           this.getAllData();
+          this.toaster.error('successfully delete data', 'delete')
         }
       })
     }

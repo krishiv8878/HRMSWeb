@@ -1,4 +1,3 @@
-
 form {
     display: inline-grid;
     justify-content: center;
@@ -8,20 +7,20 @@ form {
     left: 50%;
     transform: translate(-50%, -50%);
     box-shadow: 3px 3px 25px #303393;
-    width: 25%;
-    padding: 30px;
-    border-radius: 15px;
+    // width: 25%;
+    padding: 2.5rem;
+    border-radius: 0px 90px;
 }
 
 .register-form {
     display: grid;
-    width: 22.2rem;
+    width: 19.2rem;
 }
 
 p {
-    font-weight: 600;
+    font-weight: 500;
     text-transform: capitalize;
-    font-size: 2.6rem;
+    font-size: 24px;
     text-align: center;
 }
 

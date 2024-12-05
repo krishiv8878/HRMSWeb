@@ -10,11 +10,12 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.service';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-assetsmasters',
   standalone: true,
-  imports: [MatButtonModule, MatFormField,MatDialogClose, MatInputModule, CommonModule, ReactiveFormsModule, MatRadioModule, MatCheckboxModule, MatDatepickerModule],
+  imports: [MatButtonModule, MatFormField, MatDialogClose, MatInputModule, CommonModule, ReactiveFormsModule, MatRadioModule, MatCheckboxModule, MatDatepickerModule],
   providers: [provideNativeDateAdapter()],
   templateUrl: './assetsmasters.component.html',
   styleUrl: './assetsmasters.component.scss'
@@ -24,7 +25,7 @@ export class AssetsmastersComponent {
   services = inject(AssetsmasterService)
   route = inject(ActivatedRoute)
   isEdit = false;
-
+  toaster = inject(ToastrService)
 
   constructor(private _dialogref: MatDialogRef<AssetsmastersComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
@@ -37,22 +38,22 @@ export class AssetsmastersComponent {
     dateOfPurchase: ['', [Validators.required, Validators.maxLength(10)]],
     createdBy: ['', [Validators.required]],
     createdDate: ['', [Validators.required]],
-    updatedBy: ['',[Validators.required]],
-    updatedDate:['',[Validators.required]],
+    updatedBy: ['', [Validators.required]],
+    updatedDate: ['', [Validators.required]],
     isActive: ['']
   })
   ngOnInit() {
     this.Assets.patchValue(this.data);
     if (this.data) {
-      this.isEdit = true;     
+      this.isEdit = true;
     }
   }
-  submitdata() {    
+  submitdata() {
     if (this.isEdit) {
       this.services.updateData(this.Assets.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          alert("data updated successfully")
+          this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -62,7 +63,7 @@ export class AssetsmastersComponent {
       this.services.createData(this.Assets.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          alert('data add successfully')
+          this.toaster.success('successfully add data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

@@ -1,41 +1,41 @@
 <div class="register-img">
-    <form [formGroup]="registretion" (ngSubmit)="submit()">  
+    <form [formGroup]="registretion" (ngSubmit)="submit()">
         <p>register</p>
         <div class="register-form">
-            <mat-form-field>
+            <mat-form-field appearance="outline">
                 <mat-label>First Name</mat-label>
-                <input type="text" matInput placeholder="Enter your First Name" formControlName="FirstName">
+                <input type="text" matInput placeholder="Enter Your FirstName" formControlName="FirstName">
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field appearance="outline">
                 <mat-label>Last Name</mat-label>
-                <input type="text" matInput placeholder="Enter your Last Name" formControlName="LastName">
+                <input type="text" matInput placeholder="Enter Your LastName" formControlName="LastName">
             </mat-form-field>
 
-            <mat-form-field>
-                <mat-label>email</mat-label>
-                <input type="email" matInput placeholder="Enter your Name"  formControlName="email">
+            <mat-form-field appearance="outline">
+                <mat-label>Email</mat-label>
+                <input type="email" matInput placeholder="Enter Your Email" formControlName="email">
             </mat-form-field>
 
-            <mat-form-field>
-                <mat-label>phone</mat-label>
-                <input type="text" matInput placeholder="Enter your phone No" formControlName="MobileNumber">
+            <mat-form-field appearance="outline">
+                <mat-label>Phone</mat-label>
+                <input type="text" matInput placeholder="Enter Your phoneNo" formControlName="MobileNumber">
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field appearance="outline">
                 <mat-label>Address</mat-label>
-                <input type="text" matInput placeholder="Enter your Address" formControlName="Address">
+                <input type="text" matInput placeholder="Enter Your Address" formControlName="Address">
             </mat-form-field>
 
-            <mat-form-field>
-                <mat-label>password</mat-label>
-                <input type="password" matInput placeholder="Enter your Name" formControlName="password">
+            <mat-form-field appearance="outline">
+                <mat-label>Password</mat-label>
+                <input type="password" matInput placeholder="Enter Your Password" formControlName="password">
             </mat-form-field>
 
             <div class="register-btn">
                 <button>register</button>
             </div>
-            <p class="register-info">  Already have an account? <a href="login">login</a></p>
+            <p class="register-info"> Already have an account? <a href="login">login</a></p>
         </div>
     </form>
 </div>

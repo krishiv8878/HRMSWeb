@@ -11,6 +11,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
+import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-employee',
   standalone: true,
@@ -30,8 +31,7 @@ export class EmployeeComponent {
   services = inject(EmployeeService)
   route = inject(ActivatedRoute)
   router = inject(Router)
-  // data!: any;
-  // id!: number;
+  toaster = inject(ToastrService)
   isEdit = false;
 
   Employeeform = this.formBuilder.group({
@@ -64,7 +64,7 @@ export class EmployeeComponent {
       this.services.updateData(this.Employeeform.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          alert("data updated successfully")
+          this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -74,7 +74,7 @@ export class EmployeeComponent {
       this.services.createData(this.Employeeform.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          alert('data add successfully')
+          this.toaster.success('successfully add data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

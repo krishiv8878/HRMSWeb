@@ -9,6 +9,7 @@ import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material
 import { MatFormField, MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { DesignationservicesService } from '../../services/designation/designationservices.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-designations',
@@ -25,6 +26,8 @@ export class DesignationsComponent {
   formbuilder = inject(FormBuilder)
   services = inject(DesignationservicesService)
   isEdit = false;
+  toaster = inject(ToastrService)
+
   designation = this.formbuilder.group({
     id: 0,
     designationName: ['', [Validators.required]],
@@ -47,7 +50,7 @@ export class DesignationsComponent {
       this.services.updateData(this.designation.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          alert("data updated successfully")
+          this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -57,7 +60,7 @@ export class DesignationsComponent {
       this.services.createData(this.designation.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          alert('data add successfully')
+          this.toaster.success('successfully add data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

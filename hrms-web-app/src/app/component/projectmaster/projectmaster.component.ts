@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { ProjectComponent } from '../../modal/project/project.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-projectmaster',
@@ -19,6 +20,7 @@ export class ProjectmasterComponent {
   services = inject(ProjectsService)
   dialog = inject(MatDialog)
   router = inject(Router)
+  toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true, flex: 1 },
@@ -73,6 +75,7 @@ export class ProjectmasterComponent {
       this.services.DeleteData(DesignationId).subscribe({
         next: (res) => {
           this.getData();
+          this.toaster.success('successfully delete data', 'delete')
         }
       })
     }

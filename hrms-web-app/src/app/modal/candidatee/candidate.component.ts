@@ -10,6 +10,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-candidate',
@@ -23,6 +24,7 @@ export class CandidateeComponent {
   services = inject(CandidateService)
   route = inject(ActivatedRoute)
   isEdit = false;
+  toaster = inject(ToastrService)
 
   constructor(private _dialogref: MatDialogRef<CandidateeComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
@@ -35,24 +37,24 @@ export class CandidateeComponent {
     mobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
     totalExperience: ['', [Validators.required]],
     relevantExperience: ['', [Validators.required]],
-    expectedSalary: ['',[Validators.required]],
-    currentSalary:['',[Validators.required]],
-    noticePeriod:['',[Validators.required]],
+    expectedSalary: ['', [Validators.required]],
+    currentSalary: ['', [Validators.required]],
+    noticePeriod: ['', [Validators.required]],
     isActive: ['']
   })
 
   ngOnInit() {
     this.CandidateForm.patchValue(this.data);
     if (this.data) {
-      this.isEdit = true;     
+      this.isEdit = true;
     }
   }
-  submitdata() {    
+  submitdata() {
     if (this.isEdit) {
       this.services.updateData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          alert("data updated successfully")
+          this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -62,7 +64,7 @@ export class CandidateeComponent {
       this.services.createData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          alert('data add successfully')
+          this.toaster.success('successfully add data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

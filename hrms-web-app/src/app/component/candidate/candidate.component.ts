@@ -8,6 +8,7 @@ import { ActionComponent } from '../action/action.component';
 import { MatDialog } from '@angular/material/dialog';
 import { CandidateeComponent } from '../../modal/candidatee/candidate.component';
 import { MatButtonModule } from '@angular/material/button';
+import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-candidate',
   standalone: true,
@@ -19,6 +20,7 @@ export class CandidateComponent {
   services = inject(CandidateService)
   router = inject(Router)
   dialog = inject(MatDialog)
+  toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true, flex: 1 },
@@ -72,6 +74,7 @@ export class CandidateComponent {
       this.services.DeleteData(candidateId).subscribe({
         next: (res) => {
           this.getData();
+          this.toaster.success('successfully delete data', 'delete')
         }
       })
     }

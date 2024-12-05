@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { LeaveComponent } from '../../modal/leave/leave.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-leavetype',
@@ -17,7 +18,7 @@ import { LeaveComponent } from '../../modal/leave/leave.component';
 export class LeavetypeComponent {
   services = inject(LeavetypeService)
   dialog = inject(MatDialog)
-
+  toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true, flex: 1 },
@@ -72,6 +73,7 @@ export class LeavetypeComponent {
       this.services.DeleteData(DesignationId).subscribe({
         next: (res) => {
           this.getAllData();
+          this.toaster.success('successfully delete data', 'delete')
         }
       })
     }

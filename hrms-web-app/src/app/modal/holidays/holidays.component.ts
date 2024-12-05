@@ -10,6 +10,7 @@ import { MatFormField, MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-holiday',
@@ -29,24 +30,24 @@ export class HolidaysComponent {
   services = inject(HolidayservicesService)
   route = inject(ActivatedRoute)
   router = inject(Router)
-  // data!: any;
+  toaster = inject(ToastrService)
   holidayId!: number;
   isEdit = false;
 
   Holidayform = this.formBuilder.group({
-    id:0,
+    id: 0,
     holidayName: ['', [Validators.required]],
     description: [''],
     updatedBy: [''],
     updatedDate: [''],
     createdBy: [''],
-    createdDate:[''],
+    createdDate: [''],
     isActive: ['']
   })
 
   ngOnInit() {
     this.Holidayform.patchValue(this.data);
-    console.log('update data',this.data)
+    console.log('update data', this.data)
     if (this.data) {
       this.isEdit = true;
       // this.services.getSkill(this.data).subscribe((result) => {
@@ -58,10 +59,10 @@ export class HolidaysComponent {
 
   submitdata() {
     if (this.isEdit) {
-      this.services.updateHoliday(this.Holidayform.value).subscribe({        
+      this.services.updateHoliday(this.Holidayform.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          alert("data updated successfully")
+          this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -71,7 +72,7 @@ export class HolidaysComponent {
       this.services.createHoliday(this.Holidayform.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          alert('data add successfully')
+          this.toaster.success('successfully add data', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

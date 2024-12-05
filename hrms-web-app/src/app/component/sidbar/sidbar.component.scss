@@ -10,26 +10,24 @@ mat-divider {
 .side-menu {
     display: flex;
     margin-left: 1rem;
-    margin-top: 20px;
+    padding: 10px;
     text-transform: capitalize;
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .side-menu:hover {
-    border-radius: 50px;
-    // border: 1px solid #4fa6d5;
-    // padding: 0;
     background-color: #3b799b;
-    color: white;
-    width: 50%;
+    // color: white;
     transition: 1s ease;
+    a{
+        color: #58efff;;
+    }
 }
 
 .side-menu .item {
     display: flex;
     font-size: 15px;
     padding: 5px;
-
 }
 
 .side-menu .item mat-icon {

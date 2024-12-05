@@ -10,6 +10,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { HttpClientModule } from '@angular/common/http';
 import { HolidaysComponent } from '../../modal/holidays/holidays.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-holiday',
@@ -24,6 +25,7 @@ export class HolidayComponent {
   router = inject(Router)
   route = inject(ActivatedRoute)
   dialog = inject(MatDialog)
+  toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true, flex: 1 },
@@ -44,9 +46,9 @@ export class HolidayComponent {
 
   ngOnInit() {
     this.getHoliday();
-   }
+  }
 
-   getHoliday(){
+  getHoliday() {
     this.services.getHoliday().subscribe((response: any) => {
       this.rowData = response.data;
     })
@@ -79,11 +81,12 @@ export class HolidayComponent {
       this.services.DeleteHoliday(holidayId).subscribe(() => {
         holidayId.isDeleted = true;
         holidayId.isActive = false;
- 
+
       })
       this.services.DeleteHoliday(holidayId).subscribe({
         next: (res) => {
           this.getHoliday();
+          this.toaster.success('successfully delete data', 'delete')
         }
       })
     }
@@ -98,7 +101,7 @@ export class HolidayComponent {
         }
       }
     })
-}
+  }
 
-  
+
 }
