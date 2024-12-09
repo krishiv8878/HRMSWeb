@@ -7,59 +7,81 @@
         }
         <div class="employee-form">
             <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>first name</mat-label>
-                    <input type="text" matInput name="firstName" placeholder="Enter Your First Name"
-                        formControlName="firstName">
-                </mat-form-field>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>first name</mat-label>
+                        <input type="text" matInput name="firstName" placeholder="Enter Your First Name"
+                            formControlName="firstName">
+                    </mat-form-field>
+                </div>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>last name</mat-label>
-                    <input type="text" matInput name="lastName" placeholder="Enter Your Last Name"
-                        formControlName="lastName">
-                </mat-form-field>
-            </div>
-            <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>email</mat-label>
-                    <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
-                        formControlName="emailAddress">
-                </mat-form-field>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>last name</mat-label>
+                        <input type="text" matInput name="lastName" placeholder="Enter Your Last Name"
+                            formControlName="lastName">
+                    </mat-form-field>
+                </div>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>phone no</mat-label>
-                    <input type="text" matInput name="mobileNumber" placeholder="Enter Your No"
-                        formControlName="mobileNumber">
-                </mat-form-field>
             </div>
-            <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>permanentAddress</mat-label>
-                    <input type="text" matInput name="permanentAddress" placeholder="Enter Your Permanet Address"
-                        formControlName="permanentAddress">
-                </mat-form-field>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>currentAddress</mat-label>
-                    <input type="text" matInput name="createdDate" placeholder="Enter Your Current Address"
-                        formControlName="currentAddress">
-                </mat-form-field>
-            </div>
             <div class="row">
-                <mat-radio-group formControlName="gender">
-                    <mat-label><b>gender</b></mat-label>
-                    <mat-radio-button value="male">Male</mat-radio-button>
-                    <mat-radio-button value="female">female</mat-radio-button>
-                </mat-radio-group>
-                <mat-checkbox formControlName="isActive">active</mat-checkbox>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>email</mat-label>
+                        <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
+                            formControlName="emailAddress">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>phone no</mat-label>
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your No"
+                            formControlName="mobileNumber">
+                    </mat-form-field>
+                </div>
             </div>
-            <mat-form-field appearance="outline">
-                <mat-label>joining date</mat-label>
-                <input matInput [matDatepicker]="picker" formControlName="dateOfJoining">
-                <mat-hint>MM/DD/YYYY</mat-hint>
-                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                <mat-datepicker #picker></mat-datepicker>
-            </mat-form-field>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>permanentAddress</mat-label>
+                        <input type="text" matInput name="permanentAddress" placeholder="Enter Your Permanet Address"
+                            formControlName="permanentAddress">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>currentAddress</mat-label>
+                        <input type="text" matInput name="createdDate" placeholder="Enter Your Current Address"
+                            formControlName="currentAddress">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <mat-radio-group formControlName="gender">
+                        <mat-label><b>gender</b></mat-label>
+                        <mat-radio-button value="male">Male</mat-radio-button>
+                        <mat-radio-button value="female">female</mat-radio-button>
+                    </mat-radio-group>
+                    <mat-checkbox formControlName="isActive">active</mat-checkbox>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>joining date</mat-label>
+                        <input matInput [matDatepicker]="picker" formControlName="dateOfJoining">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
 
 
             @if(isEdit){

@@ -26,14 +26,14 @@ export class DesignationComponent {
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
-    { field: "id", floatingFilter: true, filter: true, flex: 1 },
-    { field: "designationName", floatingFilter: true, filter: true, flex: 1 },
-    { field: "createdDate", floatingFilter: true, filter: true, flex: 1 },
-    { field: "createdBy", floatingFilter: true, filter: true, flex: 1 },
-    { field: "updatedBy", floatingFilter: true, filter: true, flex: 1 },
-    { field: "updatedDate", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
-    { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
+    { field: "id", floatingFilter: true, filter: true },
+    { field: "designationName", floatingFilter: true, filter: true },
+    { field: "createdDate", floatingFilter: true, filter: true },
+    { field: "createdBy", floatingFilter: true, filter: true },
+    { field: "updatedBy", floatingFilter: true, filter: true },
+    { field: "updatedDate", floatingFilter: true, filter: true },
+    { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
+    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];
 
   ngOnInit() {

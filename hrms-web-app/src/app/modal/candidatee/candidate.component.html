@@ -5,69 +5,88 @@
         }@else {
         <p>add candidate data</p>
         }
+        
         <div class="employee-form">
             <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>first name</mat-label>
-                    <input type="text" matInput name="firstName" placeholder="Enter Your First Name"
-                        formControlName="firstName">
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                    <mat-label>last name</mat-label>
-                    <input type="text" matInput name="lastName" placeholder="Enter Your Last Name"
-                        formControlName="lastName">
-                </mat-form-field>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>first name</mat-label>
+                        <input type="text" matInput name="firstName" placeholder="Enter Your First Name"
+                            formControlName="firstName">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>last name</mat-label>
+                        <input type="text" matInput name="lastName" placeholder="Enter Your Last Name"
+                            formControlName="lastName">
+                    </mat-form-field>
+                </div>
             </div>
-            <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>email</mat-label>
-                    <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
-                        formControlName="emailAddress">
-                </mat-form-field>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>phone no</mat-label>
-                    <input type="text" matInput name="mobileNumber" placeholder="Enter Your No"
-                        formControlName="mobileNumber">
-                </mat-form-field>
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>email</mat-label>
+                        <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
+                            formControlName="emailAddress">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>phone no</mat-label>
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your No"
+                            formControlName="mobileNumber">
+                    </mat-form-field>
+                </div>
             </div>
-            <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>totalExperience</mat-label>
-                    <input type="text" matInput name="totalExperience" placeholder="Enter Your Permanet Address"
-                        formControlName="totalExperience">
-                </mat-form-field>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>relevantExperience</mat-label>
-                    <input type="text" matInput name="relevantExperience" placeholder="Enter Your Current Address"
-                        formControlName="relevantExperience">
-                </mat-form-field>
-            </div>     
             <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>currentSalary</mat-label>
-                    <input type="text" matInput name="currentSalary" placeholder="Enter Your Permanet Address"
-                        formControlName="currentSalary">
-                </mat-form-field>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>totalExperience</mat-label>
+                        <input type="text" matInput name="totalExperience" placeholder="Enter Your Permanet Address"
+                            formControlName="totalExperience">
+                    </mat-form-field>
+                </div>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>noticePeriod</mat-label>
-                    <input type="text" matInput name="noticePeriod" placeholder="Enter Your Current Address"
-                        formControlName="noticePeriod">
-                </mat-form-field>
-            </div>       
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>relevantExperience</mat-label>
+                        <input type="text" matInput name="relevantExperience" placeholder="Enter Your Current Address"
+                            formControlName="relevantExperience">
+                    </mat-form-field>
+                </div>
+            </div>
+
             <div class="row">
-                
-                <mat-form-field appearance="outline">
-                    <mat-label>expectedSalary</mat-label>
-                    <input type="number" matInput name="expectedSalary" placeholder="Enter Your Current Address"
-                        formControlName="expectedSalary">
-                </mat-form-field>
-                <mat-checkbox formControlName="isActive">active</mat-checkbox>
-            </div>         
-           
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>currentSalary</mat-label>
+                        <input type="text" matInput name="currentSalary" placeholder="Enter Your Permanet Address"
+                            formControlName="currentSalary">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>noticePeriod</mat-label>
+                        <input type="text" matInput name="noticePeriod" placeholder="Enter Your Current Address"
+                            formControlName="noticePeriod">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>expectedSalary</mat-label>
+                        <input type="number" matInput name="expectedSalary" placeholder="Enter Your Current Address"
+                            formControlName="expectedSalary">
+                    </mat-form-field>
+                    <mat-checkbox formControlName="isActive">active</mat-checkbox>
+                </div>
+            </div>
 
             @if(isEdit){
             <div class="button-btn" mat-dialog-actions>
@@ -80,7 +99,6 @@
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
             </div>
             }
-
 
         </div>
     </form>

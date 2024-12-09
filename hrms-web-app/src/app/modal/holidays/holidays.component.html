@@ -1,4 +1,3 @@
-
 <div class="form">
     <form action="" [formGroup]="Holidayform" (ngSubmit)="submitdata()">
         @if (isEdit) {
@@ -8,61 +7,67 @@
         }
         <div class="holiday-form">
             <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>Holiday Name</mat-label>
-                    <input type="text" matInput name="holidayName" placeholder="Enter Your HolidayName"
-                        formControlName="holidayName">
-                </mat-form-field>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Holiday Name</mat-label>
+                        <input type="text" matInput name="holidayName" placeholder="Enter Your HolidayName"
+                            formControlName="holidayName">
+                    </mat-form-field>
+                </div>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>Description</mat-label>
-                    <input matInput [matDatepicker]="picker2" formControlName="description">
-                    <mat-hint>MM/DD/YYYY</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-                    <mat-datepicker #picker2></mat-datepicker>
-                </mat-form-field>   
-            </div>
-            <div class="row">
-
-                <mat-form-field appearance="outline">
-                    <mat-label>Updated By</mat-label>
-                    <input type="text" matInput name="updatedBy"
-                        formControlName="updatedBy">
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                    <mat-label>Updated Date</mat-label>
-                    <input matInput [matDatepicker]="picker3" formControlName="updatedDate">
-                    <mat-hint>MM/DD/YYYY</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
-                    <mat-datepicker #picker3></mat-datepicker>
-                </mat-form-field>  
-               
-            </div>
-            <div class="row">
-
-                <mat-form-field appearance="outline">
-                    <mat-label>Created By</mat-label>
-                    <input type="text" matInput name="createdBy"
-                        formControlName="createdBy">
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                    <mat-label>Created Date</mat-label>
-                    <input matInput [matDatepicker]="picker4" formControlName="createdDate">
-                    <mat-hint>MM/DD/YYYY</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
-                    <mat-datepicker #picker4></mat-datepicker>
-                </mat-form-field> 
-
-               
-
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Description</mat-label>
+                        <input matInput [matDatepicker]="picker2" formControlName="description">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                        <mat-datepicker #picker2></mat-datepicker>
+                    </mat-form-field>
+                </div>
             </div>
 
             <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Updated By</mat-label>
+                        <input type="text" matInput name="updatedBy" formControlName="updatedBy">
+                    </mat-form-field>
+                </div>
 
-                <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Updated Date</mat-label>
+                        <input matInput [matDatepicker]="picker3" formControlName="updatedDate">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
+                        <mat-datepicker #picker3></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
 
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Created By</mat-label>
+                        <input type="text" matInput name="createdBy" formControlName="createdBy">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Created Date</mat-label>
+                        <input matInput [matDatepicker]="picker4" formControlName="createdDate">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
+                        <mat-datepicker #picker4></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+                </div>
             </div>
 
 

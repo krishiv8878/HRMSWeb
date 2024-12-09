@@ -1,5 +1,6 @@
 .form {
     padding: 2vw;
+    height: auto;
 
     p {
         text-transform: capitalize;
@@ -10,9 +11,6 @@
 }
 
 .row {
-    display: flex;
-    gap: 10px;
-
     mat-form-field {
         width: 100%;
 
@@ -22,9 +20,9 @@
     }
 }
 
-.employee-form {
-    display: inline-grid;
-}
+// .employee-form {
+//     display: inline-grid;
+// }
 
 .button-btn {
     display: flex;

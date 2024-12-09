@@ -31,18 +31,18 @@ export class HomeComponent {
   dialog = inject(MatDialog)
 
   public columnDefs: ColDef[] = [
-    { field: "id", floatingFilter: true, filter: true, flex: 1 },
-    { field: "firstName", floatingFilter: true, filter: true, flex: 1 },
-    { field: "lastName", floatingFilter: true, filter: true, flex: 1 },
-    { field: "emailAddress", floatingFilter: true, filter: true, flex: 2 },
-    { field: "mobileNumber", floatingFilter: true, filter: true, flex: 1 },
-    { field: "permanentAddress", floatingFilter: true, filter: true, flex: 1 },
-    { field: "dateOfJoining", floatingFilter: true, filter: true, flex: 1 },
-    { field: "gender", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
-    // { field: "isActive", flex: 1, cellRenderer: TogglebuttonComponent },
+    { field: "id", floatingFilter: true, filter: true },
+    { field: "firstName", floatingFilter: true, filter: true },
+    { field: "lastName", floatingFilter: true, filter: true },
+    { field: "emailAddress", floatingFilter: true, filter: true },
+    { field: "mobileNumber", floatingFilter: true, filter: true },
+    { field: "permanentAddress", floatingFilter: true, filter: true },
+    { field: "dateOfJoining", floatingFilter: true, filter: true },
+    { field: "gender", floatingFilter: true, filter: true },
+    { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
+    // { field: "isActive", cellRenderer: TogglebuttonComponent },
 
-    { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
+    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
 
   rowData: [] = [];

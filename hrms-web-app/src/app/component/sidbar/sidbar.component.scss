@@ -19,15 +19,16 @@ mat-divider {
     background-color: #3b799b;
     // color: white;
     transition: 1s ease;
-    a{
-        color: #58efff;;
-    }
+    // a{
+    //     color: #58efff;;
+    // }
 }
 
 .side-menu .item {
     display: flex;
-    font-size: 15px;
+    font-size: 16px;
     padding: 5px;
+    font-weight: 400;
 }
 
 .side-menu .item mat-icon {

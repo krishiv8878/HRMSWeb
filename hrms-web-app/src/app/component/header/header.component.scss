@@ -1,5 +1,5 @@
 mat-toolbar {
-    background-color: #4fa6d5;
+    background: linear-gradient(90deg, #1E72C2, #015BB1);
     color: white;
     position: sticky;
     z-index: 2;
@@ -14,26 +14,28 @@ mat-toolbar {
     color: white;
 }
 
-.header-menu button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 0;
-    outline: none;
-    background-color: white;
-    color: #4fa6d5;
-    text-transform: capitalize;
-    padding: 10px 20px;    
-    font-weight: 600;
-    font-size: 20px;
-    border-radius: 20px;
-}
-.header-menu button:hover{
-    background: #3b799b;
-    transition: 2s ease;
-    color: white;
-    border: 5px solid #4fa6d5;
-}
+// .header-menu button {
+//     display: flex;
+//     justify-content: center;
+//     align-items: center;
+//     border: 0;
+//     outline: none;
+//     background-color: white;
+//     color: #4fa6d5;
+//     text-transform: capitalize;
+//     padding: 10px 20px;
+//     font-weight: 600;
+//     font-size: 20px;
+//     border-radius: 20px;
+// }
+
+// .header-menu button:hover {
+//     background: #3b799b;
+//     transition: 2s ease;
+//     color: white;
+//     border: 5px solid #4fa6d5;
+// }
+
 .example-spacer {
     flex: 1 1 auto;
 }

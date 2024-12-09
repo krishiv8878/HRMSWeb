@@ -5,13 +5,13 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { HeaderComponent } from '../header/header.component';
 import { SidbarComponent } from '../sidbar/sidbar.component';
 import { RouterOutlet } from '@angular/router';
-import { HomeComponent } from "../home/home.component";
+
 
 
 @Component({
   selector: 'app-index',
   standalone: true,
-  imports: [CommonModule, MatDividerModule, MatSidenavModule, HeaderComponent, SidbarComponent, RouterOutlet, HomeComponent],
+  imports: [CommonModule, MatDividerModule, MatSidenavModule, HeaderComponent, SidbarComponent, RouterOutlet],
   templateUrl: './index.component.html',
   styleUrl: './index.component.scss'
 })

@@ -23,15 +23,15 @@ export class CandidateComponent {
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
-    { field: "id", floatingFilter: true, filter: true, flex: 1 },
-    { field: "firstName", floatingFilter: true, filter: true, flex: 1 },
-    { field: "lastName", floatingFilter: true, filter: true, flex: 1 },
-    { field: "emailAddress", floatingFilter: true, filter: true, flex: 1 },
-    { field: "mobileNumber", floatingFilter: true, filter: true, flex: 1 },
-    { field: "totalExperience", floatingFilter: true, filter: true, flex: 1 },
-    { field: "currentSalary", floatingFilter: true, filter: true, flex: 1 },
-    { field: "isActive", flex: 1, cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
-    { field: "action", flex: 1, cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
+    { field: "id", floatingFilter: true, filter: true },
+    { field: "firstName", floatingFilter: true, filter: true },
+    { field: "lastName", floatingFilter: true, filter: true },
+    { field: "emailAddress", floatingFilter: true, filter: true },
+    { field: "mobileNumber", floatingFilter: true, filter: true },
+    { field: "totalExperience", floatingFilter: true, filter: true },
+    { field: "currentSalary", floatingFilter: true, filter: true },
+    { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
+    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
 
   rowData: any;
