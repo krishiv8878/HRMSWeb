@@ -1,1 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+
+mat-drawer-container {
+    height: 100vh;
+}
+
+mat-drawer {
+    width: 200px;
+    background-color: #4fa6d5;
+    color: white;
+    position: fixed;
+    border-radius: 0;
+}
+
+mat-drawer-container {
+    height: 100vh;
+}
+
+mat-drawer {
+    width: 200px;
+    background-color: #4fa6d5;
+    color: white;
+    position: fixed;
+    border-radius: 0;
+}
+

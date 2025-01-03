@@ -1,4 +1,3 @@
-
 form {
     display: inline-grid;
     justify-content: center;
@@ -15,7 +14,7 @@ form {
 
 .login-form {
     display: grid;
-    width: 22.2rem;
+    width: 17.5rem;
 }
 
 p {
@@ -24,7 +23,7 @@ p {
     font-size: 24px;
     text-align: center;
 }
-
+ 
 .login-btn {
     display: flex;
     justify-content: center;
@@ -34,7 +33,7 @@ p {
     padding: 10px 20px;
     border: none;
     outline: none;
-    background:linear-gradient(90deg, #1E72C2, #015BB1);
+    background: linear-gradient(90deg, #1E72C2, #015BB1);
     color: white;
     text-transform: capitalize;
     font-weight: 500;
