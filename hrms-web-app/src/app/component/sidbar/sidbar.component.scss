@@ -42,38 +42,25 @@ mat-divider {
 }
 
 .log-icon {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: absolute;
+    bottom: 1rem;
+    left: 25%;
+    /* right: 0; */
     align-items: center;
-    text-align: start;
-    color: black;
-    padding: 15px;
-    font-size: 25px;
+    /* text-align: start; */
     width: 200px;
+    height: 7rem;
+    display: flex;
+    justify-content: space-evenly;
+    /* color: white !important; */
+    background: #ffffff;
+    height: 55px;
+    width: 55px;
+    border-radius: 50px;
 
-    a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-transform: capitalize;
-        font-size: 25px;
-        font-weight: 500;
+    img {
+        height: 2rem;
+        width: 2rem;
         color: white;
-        text-decoration: none;
-
-        mat-icon {
-            font-size: 30px;
-            display: table;
-            background: red;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            filter: blur(1px);
-        }
     }
 }
