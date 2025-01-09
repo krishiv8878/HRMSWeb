@@ -1,22 +1,23 @@
 <div class="form">
     <form action="" [formGroup]="Assets" (ngSubmit)="submitdata()">
         @if (isEdit) {
-        <p>edit assets </p>
+        <p>edit assetsmaster </p>
         }@else {
-        <p>add assets</p>
+        <p>add assetsmaster </p>
         }
         <div class="employee-form">
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>assetsMaster Name</mat-label>
-                        <input type="text" matInput name="assetsMasterName" placeholder="Enter Your AssetsName"
+                        <input type="text" matInput name="assetsMasterName" placeholder="Enter Your Assets Name"
                             formControlName="assetsMasterName">
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>serialNumber</mat-label>
+                        <input type="text" matInput name="serialNumber" placeholder="Enter Your SerialNumber"
                         <input type="text" matInput name="serialNumber" placeholder="Enter Your SerialNumber"
                             formControlName="serialNumber">
                     </mat-form-field>
@@ -27,10 +28,16 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>description</mat-label>
+                        <!-- <input matInput [matDatepicker]="picker2" formControlName="description">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                        <mat-datepicker #picker2></mat-datepicker> -->
+
                         <input type="text" matInput name="description" placeholder="Enter Your Description"
-                            formControlName="description">
+                        formControlName="description">
                     </mat-form-field>
                 </div>
+
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
@@ -41,8 +48,17 @@
                         <mat-datepicker #picker3></mat-datepicker>
                     </mat-form-field>
                 </div>
+                <!-- <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>dateOfPurchase</mat-label>
+                        <input matInput [matDatepicker]="picker3" formControlName="dateOfPurchase">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
+                        <mat-datepicker #picker3></mat-datepicker>
+                    </mat-form-field>
+                </div>
             </div>
-            <!-- 
+<!-- 
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
@@ -61,17 +77,16 @@
                     </mat-form-field>
                 </div>
             </div> -->
-            </div> -->
 
-            <!-- <div class="row">
-                 <div class="col-xl-6">
+            <div class="row">
+                <!-- <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>createdBy</mat-label>
                         <input type="text" matInput name="createdBy" placeholder="Enter Your No"
                             formControlName="createdBy">
                     </mat-form-field>
-                </div>
-                <div class="col-xl-6">
+                </div> -->
+                <!-- <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>updatedDate</mat-label>
                         <input matInput [matDatepicker]="picker4" formControlName="updatedDate">
@@ -79,9 +94,8 @@
                         <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
                         <mat-datepicker #picker4></mat-datepicker>
                     </mat-form-field>
-                </div>
-            </div> -->
-
+                </div> -->
+            </div>
             <div class="row">
                 <mat-checkbox formControlName="isActive">Active</mat-checkbox>
             </div>

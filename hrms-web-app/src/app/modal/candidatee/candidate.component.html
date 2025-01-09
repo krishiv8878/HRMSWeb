@@ -2,12 +2,9 @@
     <form action="" [formGroup]="CandidateForm" (ngSubmit)="submitdata()">
         @if (isEdit) {
         <p>edit candidate</p>
-        <p>edit candidate</p>
         }@else {
         <p>add candidate</p>
-        <p>add candidate</p>
         }
-
 
         <div class="employee-form">
             <div class="row">
@@ -39,7 +36,6 @@
                     <mat-form-field appearance="outline">
                         <mat-label>phone no</mat-label>
                         <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
                             formControlName="mobileNumber">
                     </mat-form-field>
                 </div>
@@ -57,8 +53,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>relevantExperience</mat-label>
-                        <input type="text" matInput name="RelevantExperience"
-                            placeholder="Enter Your RelevantExperience" formControlName="RelevantExperience">
+                        <input type="text" matInput name="relevantExperience"
+                            placeholder="Enter Your relevantExperience" formControlName="RelevantExperience">
                     </mat-form-field>
                 </div>
             </div>
@@ -67,7 +63,6 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>currentSalary</mat-label>
-                        <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
                         <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
                             formControlName="currentSalary">
                     </mat-form-field>
