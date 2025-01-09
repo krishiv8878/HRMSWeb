@@ -2,9 +2,12 @@
     <form action="" [formGroup]="CandidateForm" (ngSubmit)="submitdata()">
         @if (isEdit) {
         <p>edit candidate</p>
+        <p>edit candidate</p>
         }@else {
         <p>add candidate</p>
+        <p>add candidate</p>
         }
+
 
         <div class="employee-form">
             <div class="row">
@@ -36,6 +39,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>phone no</mat-label>
                         <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
                             formControlName="mobileNumber">
                     </mat-form-field>
                 </div>
@@ -44,7 +48,7 @@
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>totalExperience (year)</mat-label>
+                        <mat-label>totalExperience</mat-label>
                         <input type="text" matInput name="totalExperience" placeholder="Enter Your TotalExperience"
                             formControlName="totalExperience">
                     </mat-form-field>
@@ -53,8 +57,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>relevantExperience</mat-label>
-                        <input type="text" matInput name="RelevantExperience"
-                            placeholder="Enter Your RelevantExperience" formControlName="RelevantExperience">
+                        <input type="text" matInput name="relevantExperience"
+                            placeholder="Enter Your relevantExperience" formControlName="RelevantExperience">
                     </mat-form-field>
                 </div>
             </div>
@@ -63,6 +67,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>currentSalary</mat-label>
+                        <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
                         <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
                             formControlName="currentSalary">
                     </mat-form-field>
@@ -73,8 +78,10 @@
                         <mat-label>noticePeriod</mat-label>
                         <!-- <input type="text" matInput name="notice Period" placeholder="Enter Your notice Period"
                             formControlName="noticePeriod"> -->
-                        <mat-select formControlName="noticePeriod" [(value)]="numbermenu">
-                            <mat-option *ngFor="let number of numbers" [value]="number"> {{number}}</mat-option>                           
+                        <mat-select formControlName="noticePeriod">
+                            <mat-option value="15"> 15 day</mat-option>
+                            <mat-option value="2"> 1 months</mat-option>
+                            <mat-option value="3"> 3 months</mat-option>
                         </mat-select>
                     </mat-form-field>
                 </div>
