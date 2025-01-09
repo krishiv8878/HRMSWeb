@@ -1,9 +1,9 @@
 <div class="form">
     <form action="" [formGroup]="Employeeform" (ngSubmit)="submitdata()">
         @if (isEdit) {
-        <p>edit employee data</p>
+        <p>edit employee </p>
         }@else {
-        <p>add employee data</p>
+        <p>add employee </p>
         }
         <div class="employee-form">
             <div class="row">
@@ -36,8 +36,8 @@
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>phone no</mat-label>
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your No"
+                        <mat-label>phoneNo</mat-label>
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
                             formControlName="mobileNumber">
                     </mat-form-field>
                 </div>
@@ -46,15 +46,15 @@
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>permanentAddress</mat-label>
-                        <input type="text" matInput name="permanentAddress" placeholder="Enter Your Permanet Address"
+                        <mat-label>permanent Address</mat-label>
+                        <input type="text" matInput name="permanent Address" placeholder="Enter Your Permanet Address"
                             formControlName="permanentAddress">
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>currentAddress</mat-label>
-                        <input type="text" matInput name="createdDate" placeholder="Enter Your Current Address"
+                        <mat-label>current Address</mat-label>
+                        <input type="text" matInput name="current Address" placeholder="Enter Your Current Address"
                             formControlName="currentAddress">
                     </mat-form-field>
                 </div>
@@ -63,11 +63,11 @@
             <div class="row">
                 <div class="col">
                     <mat-radio-group formControlName="gender">
-                        <mat-label><b>gender</b></mat-label>
+                        <mat-label><b>Gender</b></mat-label>
                         <mat-radio-button value="male">Male</mat-radio-button>
-                        <mat-radio-button value="female">female</mat-radio-button>
+                        <mat-radio-button value="female">Female</mat-radio-button>
                     </mat-radio-group>
-                    <mat-checkbox formControlName="isActive">active</mat-checkbox>
+                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
                 </div>
             </div>
 

@@ -1,9 +1,9 @@
 <div class="form">
     <form action="" [formGroup]="project" (ngSubmit)="submitdata()">
         @if (isEdit) {
-        <p>edit projectMaster data</p>
+        <p>edit project </p>
         }@else {
-        <p>add projectMaster data</p>
+        <p>add project </p>
         }
         <div class="employee-form">
             <div class="row">
@@ -26,13 +26,13 @@
                     <input type="text" matInput name="clientRegion" formControlName="clientRegion">
                 </mat-form-field>
 
-                <mat-form-field appearance="outline">
+                <!-- <mat-form-field appearance="outline">
                     <mat-label>updatedBy</mat-label>
                     <input type="text" matInput name="updatedBy" formControlName="updatedBy">
-                </mat-form-field>
+                </mat-form-field> -->
             </div>
 
-            <div class="row">
+            <!-- <div class="row">
                 <mat-form-field appearance="outline">
                     <mat-label>Updated Date</mat-label>
                     <input matInput [matDatepicker]="picker" formControlName="updatedDate">
@@ -46,9 +46,9 @@
                     <input type="text" matInput name="createdBy" formControlName="createdBy">
                 </mat-form-field>
 
-            </div>
+            </div> -->
 
-            <div class="row">
+            <!-- <div class="row">`
                 <mat-form-field appearance="outline">
                     <mat-label>createdDate</mat-label>
                     <input matInput [matDatepicker]="picker2" formControlName="createdDate">
@@ -64,7 +64,7 @@
                     <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
                     <mat-datepicker #picker3></mat-datepicker>
                 </mat-form-field>
-            </div>
+            </div> -->
 
             <div class="row">
                 <mat-checkbox formControlName="isActive">Active</mat-checkbox>
