@@ -23,14 +23,15 @@ export class ProjectmasterComponent {
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
-    { field: "id", floatingFilter: true, filter: true },
+    // { field: "id", floatingFilter: true, filter: true },
     { field: "clientName", floatingFilter: true, filter: true },
     { field: "clientRegion", floatingFilter: true, filter: true },
+    { field: "projectName", floatingFilter: true, filter: true },
+    { field: "description", floatingFilter: true, filter: true },
     { field: "createdDate", floatingFilter: true, filter: true },
     { field: "createdBy", floatingFilter: true, filter: true },
     { field: "updatedDate", floatingFilter: true, filter: true },
-    { field: "projectName", floatingFilter: true, filter: true },
-    { field: "description", floatingFilter: true, filter: true },
+    { field: "updatedBy", floatingFilter: true, filter: true },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];

@@ -10,11 +10,11 @@ import { MatFormField, MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { ToastrService } from 'ngx-toastr';
-
+import {MatSelectModule} from '@angular/material/select';
 @Component({
   selector: 'app-leave',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
   providers: [provideNativeDateAdapter()],
   templateUrl: './leave.component.html',
   styleUrl: './leave.component.scss'

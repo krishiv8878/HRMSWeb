@@ -23,7 +23,7 @@ export class CandidateComponent {
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
-    { field: "id", floatingFilter: true, filter: true },
+    // { field: "id", floatingFilter: true, filter: true },
     { field: "firstName", floatingFilter: true, filter: true },
     { field: "lastName", floatingFilter: true, filter: true },
     { field: "emailAddress", floatingFilter: true, filter: true },
