@@ -1,58 +1,21 @@
 <div class="form">
     <form action="" [formGroup]="designation" (ngSubmit)="submitdata()">
         @if (isEdit) {
-        <p>edit designation data</p>
+        <p>edit designation</p>
         }@else {
-        <p>add designation data</p>
+        <p>add designation</p>
         }
         <div class="employee-form">
             <div class="row">
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>designationName Name</mat-label>
-                        <input type="text" matInput name="designationName" placeholder="Enter Your designationName"
+                        <input type="text" matInput name="DesignationName" placeholder="Enter Your DesignationName"
                             formControlName="designationName">
                     </mat-form-field>
                 </div>
             </div>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Updated By</mat-label>
-                        <input type="text" matInput name="updatedBy" formControlName="updatedBy">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Updated Date</mat-label>
-                        <input matInput [matDatepicker]="picker" formControlName="updatedDate">
-                        <mat-hint>MM/DD/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Created By</mat-label>
-                        <input type="text" matInput name="createdBy" formControlName="createdBy">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>createdDate</mat-label>
-                        <input matInput [matDatepicker]="picker2" formControlName="createdDate">
-                        <mat-hint>MM/DD/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-                        <mat-datepicker #picker2></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
+            
 
             <div class="row">
                 <div class="col-xl-6">
