@@ -7,14 +7,14 @@
     <span class="example-spacer"></span>
 
     <div class="header-menu" style="display: flex; gap: 5px; padding: 0 2rem;">
-      <div class="user-img">
+       <div class="user-img">
         <mat-icon>person</mat-icon>
-      </div>
-      <mat-icon [matMenuTriggerFor]="menu">keyboard_arrow_down</mat-icon>
+       </div>
+      <mat-icon  [matMenuTriggerFor]="menu">keyboard_arrow_down</mat-icon>
       <mat-menu #menu="matMenu">
-        <button mat-menu-item>profile</button>
+        <button mat-menu-item>Item 1</button>
         <button mat-menu-item>Item 2</button>
-        <button mat-menu-item> <mat-icon>power_settings_new</mat-icon>Log out</button>
+        <button mat-menu-item>Log out</button>
       </mat-menu>
       <!-- <button routerLink="login"><mat-icon>person</mat-icon>logout</button> -->
     </div>
