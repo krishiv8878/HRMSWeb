@@ -2,7 +2,9 @@
     <form action="" [formGroup]="Assets" (ngSubmit)="submitdata()">
         @if (isEdit) {
         <p>edit assets </p>
+        <p>edit assets </p>
         }@else {
+        <p>add assets</p>
         <p>add assets</p>
         }
         <div class="employee-form">
@@ -29,8 +31,11 @@
                         <mat-label>description</mat-label>
                         <input type="text" matInput name="description" placeholder="Enter Your Description"
                             formControlName="description">
+                        <input type="text" matInput name="description" placeholder="Enter Your Description"
+                            formControlName="description">
                     </mat-form-field>
                 </div>
+
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
