@@ -25,7 +25,7 @@ export class AssetsmasterComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true,},
-    { field: "assetsMasterName", floatingFilter: true, filter: true,},
+    { field: "assetsMasterName",headerName:'Asset Name', floatingFilter: true, filter: true,},
     { field: "serialNumber", floatingFilter: true, filter: true,},
     { field: "description", floatingFilter: true, filter: true,},
     { field: "dateOfPurchase", floatingFilter: true, filter: true,},
