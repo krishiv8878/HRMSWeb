@@ -44,8 +44,7 @@
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>totalExperience</mat-label>
-                        <input type="text" matInput name="totalExperience" placeholder="Enter Your TotalExperience"
+                        <mat-label>totalExperience (year)</mat-label>
                         <input type="text" matInput name="totalExperience" placeholder="Enter Your TotalExperience"
                             formControlName="totalExperience">
                     </mat-form-field>
@@ -75,7 +74,7 @@
                         <!-- <input type="text" matInput name="notice Period" placeholder="Enter Your notice Period"
                             formControlName="noticePeriod"> -->
                         <mat-select formControlName="noticePeriod" [(value)]="numbermenu">
-                            <mat-option *ngFor="let number of numbers" [value]="number"> {{number}}</mat-option>
+                            <mat-option *ngFor="let number of numbers" [value]="number"> {{number}}</mat-option>                           
                         </mat-select>
                     </mat-form-field>
                 </div>
