@@ -2,7 +2,6 @@
     <form action="" [formGroup]="CandidateForm" (ngSubmit)="submitdata()">
         @if (isEdit) {
         <p>edit candidate</p>
-        <p>edit candidate</p>
         }@else {
         <p>add candidate</p>
         }
@@ -75,10 +74,8 @@
                         <mat-label>noticePeriod</mat-label>
                         <!-- <input type="text" matInput name="notice Period" placeholder="Enter Your notice Period"
                             formControlName="noticePeriod"> -->
-                        <mat-select formControlName="noticePeriod">
-                            <mat-option value="15"> 15 day</mat-option>
-                            <mat-option value="2"> 1 months</mat-option>
-                            <mat-option value="3"> 3 months</mat-option>
+                        <mat-select formControlName="noticePeriod" [(value)]="numbermenu">
+                            <mat-option *ngFor="let number of numbers" [value]="number"> {{number}}</mat-option>
                         </mat-select>
                     </mat-form-field>
                 </div>
