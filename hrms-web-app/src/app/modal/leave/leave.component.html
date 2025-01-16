@@ -10,6 +10,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>leave</mat-label>
+                        <!-- <input type="text" matInput name="Leave" placeholder="Enter Your Leave"
+                        <mat-label>leave</mat-label> -->
                         <input type="text" matInput name="Leave" placeholder="Enter Your Leave"
                             formControlName="leaveName">
                     </mat-form-field>
@@ -20,11 +22,12 @@
                         <mat-label>leaveType</mat-label>
                         <!-- <input type="text" matInput name="LeaveType" placeholder="Enter Your LeaveType"
                             formControlName="leaveType"> -->
-                            <mat-select formControlName="leaveType">
-                                <mat-option value="Casualleave">Casual leave </mat-option>
-                                <mat-option value="Sickleave">Sick leave</mat-option>
-                                <mat-option value="Annualleave">Annual leave</mat-option>
-                            </mat-select>
+                        <mat-select formControlName="leaveType">
+                            <mat-option value="Casualleave">Casual leave </mat-option>
+                            <mat-option value="Sickleave">Sick leave</mat-option>
+                            <mat-option value="Annualleave">Annual leave</mat-option>
+                            <mat-option value="Paternityleaves">Paternity leaves</mat-option>
+                        </mat-select>
                     </mat-form-field>
                 </div>
             </div>
@@ -47,9 +50,7 @@
                     </mat-form-field>
                 </div>
             </div> -->
-<!-- 
-            </div> -->
-<!-- 
+            <!-- 
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
@@ -72,7 +73,7 @@
             <div class="row">
                 <div class="col-xl-12">
                     <mat-form-field appearance="outline">
-                        <mat-label>description</mat-label>                      
+                        <mat-label>description</mat-label>
                         <input type="text" matInput name="description" placeholder="Enter Your Description"
                             formControlName="description">
                     </mat-form-field>
