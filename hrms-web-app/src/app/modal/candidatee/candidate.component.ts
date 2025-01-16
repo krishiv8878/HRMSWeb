@@ -11,7 +11,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import {MatSelectModule} from '@angular/material/select';
+import { MatSelectModule } from '@angular/material/select';
 
 @Component({
   selector: 'app-candidate',
@@ -27,6 +27,9 @@ export class CandidateeComponent {
   isEdit = false;
   toaster = inject(ToastrService)
 
+  numbers: number[] = Array.from({ length: 90 }, (_, i) => i + 1)
+  numbermenu: number | null = null;
+  
   constructor(private _dialogref: MatDialogRef<CandidateeComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
 

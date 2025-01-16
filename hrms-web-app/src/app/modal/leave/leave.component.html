@@ -2,13 +2,17 @@
     <form action="" [formGroup]="leavetype" (ngSubmit)="submitdata()">
         @if (isEdit) {
         <p>edit leave </p>
+        <p>edit leave </p>
         }@else {
+        <p>add leave</p>
         <p>add leave</p>
         }
         <div class="employee-form">
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
+                        <mat-label>leave</mat-label>
+                        <input type="text" matInput name="Leave" placeholder="Enter Your Leave"
                         <mat-label>leave</mat-label>
                         <input type="text" matInput name="Leave" placeholder="Enter Your Leave"
                             formControlName="leaveName">
@@ -24,6 +28,7 @@
                                 <mat-option value="Casualleave">Casual leave </mat-option>
                                 <mat-option value="Sickleave">Sick leave</mat-option>
                                 <mat-option value="Annualleave">Annual leave</mat-option>
+                                <mat-option value="Paternityleaves">Paternity leaves</mat-option>
                             </mat-select>
                     </mat-form-field>
                 </div>

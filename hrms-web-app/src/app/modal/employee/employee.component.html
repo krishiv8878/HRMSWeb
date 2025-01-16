@@ -26,14 +26,25 @@
             </div>
 
             <div class="row">
-                <div class="col-xl-6">
+                <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>email</mat-label>
                         <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
                             formControlName="emailAddress">
                     </mat-form-field>
                 </div>
-
+            </div>
+            
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>joining date</mat-label>
+                        <input matInput [matDatepicker]="picker" formControlName="dateOfJoining">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>phoneNo</mat-label>
@@ -71,7 +82,7 @@
                 </div>
             </div>
 
-            <div class="row">
+            <!-- <div class="row">
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>joining date</mat-label>
@@ -81,7 +92,7 @@
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
                 </div>
-            </div>
+            </div> -->
 
 
             @if(isEdit){
