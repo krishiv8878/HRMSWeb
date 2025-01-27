@@ -9,7 +9,7 @@
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>assetsMaster Name</mat-label>
+                        <mat-label>assets Name</mat-label>
                         <input type="text" matInput name="assetsMasterName" placeholder="Enter Your AssetsName"
                             formControlName="assetsMasterName">
                     </mat-form-field>
@@ -43,17 +43,9 @@
                         <mat-datepicker #picker3></mat-datepicker>
                     </mat-form-field>
                 </div>
-                <!-- <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>dateOfPurchase</mat-label>
-                        <input matInput [matDatepicker]="picker3" formControlName="dateOfPurchase">
-                        <mat-hint>MM/DD/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
-                        <mat-datepicker #picker3></mat-datepicker>
-                    </mat-form-field>
-                </div>
+            
             </div>
-            <!-- 
+            
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
@@ -71,9 +63,9 @@
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
                 </div>
-            </div> -->
+            </div> 
 
-            <!-- <div class="row">
+                <!-- <div class="row">
                  <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>createdBy</mat-label>
@@ -90,25 +82,24 @@
                         <mat-datepicker #picker4></mat-datepicker>
                     </mat-form-field>
                 </div>
+            
             </div> -->
 
-            <div class="row">
-                <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-            </div>
+                <div class="row">
+                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+                </div>
 
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+                @if(isEdit){
+                <div class="button-btn" mat-dialog-actions>
+                    <button mat-flat-button class="edit-btn">update</button>
+                    <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+                </div>
+                }@else {
+                <div class="button-btn">
+                    <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
+                    <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+                </div>
+                }
             </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
-            </div>
-            }
-
-
-        </div>
     </form>
 </div>
