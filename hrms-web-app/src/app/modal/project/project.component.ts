@@ -30,10 +30,6 @@ export class ProjectComponent {
 
   project = this.formbuilder.group({
     id: 0,
-    createdBy: ['', [Validators.required]],
-    createdDate: ['', [Validators.required]],
-    updatedBy: ['', [Validators.required]],
-    updatedDate: ['', [Validators.required]],
     projectName: ['', [Validators.required]],
     description: ['', [Validators.required]],
     clientName: ['', [Validators.required]],

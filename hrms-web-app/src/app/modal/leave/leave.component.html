@@ -10,8 +10,6 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>leave</mat-label>
-                        <!-- <input type="text" matInput name="Leave" placeholder="Enter Your Leave"
-                        <mat-label>leave</mat-label> -->
                         <input type="text" matInput name="Leave" placeholder="Enter Your Leave"
                             formControlName="leaveName">
                     </mat-form-field>
@@ -19,9 +17,7 @@
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>leaveType</mat-label>
-                        <!-- <input type="text" matInput name="LeaveType" placeholder="Enter Your LeaveType"
-                            formControlName="leaveType"> -->
+                        <mat-label>leaveType</mat-label>                        
                         <mat-select formControlName="leaveType">
                             <mat-option value="Casualleave">Casual leave </mat-option>
                             <mat-option value="Sickleave">Sick leave</mat-option>
@@ -30,45 +26,7 @@
                         </mat-select>
                     </mat-form-field>
                 </div>
-            </div>
-
-            <!-- <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>updatedBy</mat-label>
-                        <input type="text" matInput name="updatedBy" formControlName="updatedBy">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Updated Date</mat-label>
-                        <input matInput [matDatepicker]="picker" formControlName="updatedDate">
-                        <mat-hint>MM/DD/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div> -->
-            <!-- 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Created By</mat-label>
-                        <input type="text" matInput name="createdBy" formControlName="createdBy">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>createdDate</mat-label>
-                        <input matInput [matDatepicker]="picker2" formControlName="createdDate">
-                        <mat-hint>MM/DD/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-                        <mat-datepicker #picker2></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div> -->
+            </div>           
 
             <div class="row">
                 <div class="col-xl-12">

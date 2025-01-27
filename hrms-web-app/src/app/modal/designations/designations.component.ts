@@ -31,10 +31,6 @@ export class DesignationsComponent {
   designation = this.formbuilder.group({
     id: 0,
     designationName: ['', [Validators.required]],
-    updatedBy: [''],
-    updatedDate: [''],
-    createdBy: [''],
-    createdDate: [''],
     isActive: ['']
   })
 

@@ -71,8 +71,6 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>noticePeriod</mat-label>
-                        <!-- <input type="text" matInput name="notice Period" placeholder="Enter Your notice Period"
-                            formControlName="noticePeriod"> -->
                         <mat-select formControlName="noticePeriod" [(value)]="numbermenu">
                             <mat-option *ngFor="let number of numbers" [value]="number"> {{number}}</mat-option>
                         </mat-select>

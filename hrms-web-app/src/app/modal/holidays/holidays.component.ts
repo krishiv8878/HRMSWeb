@@ -37,11 +37,7 @@ export class HolidaysComponent {
   Holidayform = this.formBuilder.group({
     id: 0,
     holidayName: ['', [Validators.required]],
-    description: [''],
-    updatedBy: [''],
-    updatedDate: [''],
-    createdBy: [''],
-    createdDate: [''],
+    description: ['', [Validators.required]],
     isActive: ['']
   })
 
@@ -64,7 +60,7 @@ export class HolidaysComponent {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
-        }, error: (err) => { 
+        }, error: (err) => {
           console.log("err msg", err)
         }
       })
