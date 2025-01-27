@@ -32,10 +32,10 @@ export class LeaveComponent {
     id: 0,
     leaveName: ['', [Validators.required]],
     leaveType: ['', [Validators.required]],
-    createdBy: ['', [Validators.required]],
-    createdDate: ['', [Validators.required]],
-    updatedBy: ['', [Validators.required]],
-    updatedDate: ['', [Validators.required]],
+    // createdBy: ['', [Validators.required]],
+    // createdDate: ['', [Validators.required]],
+    // updatedBy: ['', [Validators.required]],
+    // updatedDate: ['', [Validators.required]],
     description: ['', [Validators.required]],
     isActive: ['']
   })
