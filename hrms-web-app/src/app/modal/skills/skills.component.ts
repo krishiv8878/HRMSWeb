@@ -36,11 +36,7 @@ export class SkillsComponent {
 
   Skillform = this.formBuilder.group({
     id: 0,
-    skillName: ['', [Validators.required]],
-    updatedBy: [''],
-    updatedDate: [''],
-    createdBy: [''],
-    createdDate: [''],
+    skillName: ['', [Validators.required]],   
     isActive: ['']
   })
 

@@ -36,10 +36,6 @@ export class AssetsmastersComponent {
     description: ['', [Validators.required]],
     serialNumber: ['', [Validators.required]],
     dateOfPurchase: ['', [Validators.required, Validators.maxLength(10)]],
-    createdBy: ['', [Validators.required]],
-    createdDate: ['', [Validators.required]],
-    updatedBy: ['', [Validators.required]],
-    updatedDate: ['', [Validators.required]],
     isActive: ['']
   })
   ngOnInit() {

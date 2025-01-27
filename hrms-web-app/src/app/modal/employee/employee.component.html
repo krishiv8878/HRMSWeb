@@ -2,9 +2,7 @@
     <form action="" [formGroup]="Employeeform" (ngSubmit)="submitdata()">
         @if (isEdit) {
         <p>edit employee </p>
-        <p>edit employee </p>
         }@else {
-        <p>add employee </p>
         <p>add employee </p>
         }
         <div class="employee-form">
@@ -83,18 +81,6 @@
                     <mat-checkbox formControlName="isActive">Active</mat-checkbox>
                 </div>
             </div>
-
-            <!-- <div class="row">
-                <div class="col">
-                    <mat-form-field appearance="outline">
-                        <mat-label>joining date</mat-label>
-                        <input matInput [matDatepicker]="picker" formControlName="dateOfJoining">
-                        <mat-hint>MM/DD/YYYY</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div> -->
 
 
             @if(isEdit){
