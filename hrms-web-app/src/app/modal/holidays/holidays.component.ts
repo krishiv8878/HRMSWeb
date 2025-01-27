@@ -64,7 +64,7 @@ export class HolidaysComponent {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }, error: (err) => { 
           console.log("err msg", err)
         }
       })
