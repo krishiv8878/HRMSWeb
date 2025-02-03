@@ -11,15 +11,15 @@ export class RoleservicesService {
   constructor() { }
 
   getAllData() {
-    return this.http.get<any[]>(this.apiUrl + "/roleMaster/GetroleMaster");
+    return this.http.get<any[]>(this.apiUrl + "/RoleMaster/GetRoles");
   }
   createData(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/roleMaster/AddroleMaster`, data)
+    return this.http.post<any[]>(this.apiUrl + `/RoleMaster/AddRole`, data)
   }
   updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/roleMaster/UpdateroleMaster/`, data);
+    return this.http.put<any[]>(this.apiUrl + `/RoleMaster/UpdateRole/`, data);
   }
-  DeleteData(roleMasterId: any) {
-    return this.http.delete(this.apiUrl + `/roleMaster/DeleteroleMaster?roleMasterId=` + roleMasterId);
+  DeleteData(RoleMasterId: any) {
+    return this.http.delete(this.apiUrl + `/RoleMaster/DeleteRole?RoleId=` + RoleMasterId);
   }
 }

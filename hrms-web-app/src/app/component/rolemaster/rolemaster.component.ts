@@ -20,24 +20,20 @@ import { ActionComponent } from '../action/action.component';
 export class RolemasterComponent {
   services = inject(RoleservicesService)
   dialog = inject(MatDialog)
-  router = inject(Router)
+  router = inject(Router)                                                                 
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
-    { field: "clientName", floatingFilter: true, filter: true },
-    { field: "clientRegion", floatingFilter: true, filter: true },
-    { field: "projectName", floatingFilter: true, filter: true },
-    { field: "description", floatingFilter: true, filter: true },
-    { field: "createdDate", floatingFilter: true, filter: true },
+    { field: "roleName", floatingFilter: true, filter: true },
     { field: "createdBy", floatingFilter: true, filter: true },
-    { field: "updatedDate", floatingFilter: true, filter: true },
+    { field: "createdDate", floatingFilter: true, filter: true },
     { field: "updatedBy", floatingFilter: true, filter: true },
+    { field: "updatedDate", floatingFilter: true, filter: true },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];
-
-
+ 
   ngOnInit() {
     this.getData();
   }
@@ -67,16 +63,16 @@ export class RolemasterComponent {
       }
     })
   }
-  
-  Delete(DesignationId: any) {
-    // console.log("delete employee dataaa", DesignationId)
-    if (DesignationId != null) {
-      this.services.DeleteData(DesignationId).subscribe(() => {
-        DesignationId.isDeleted = true;
-        DesignationId.isActive = false;
+
+  Delete(RoleMasterId: any) {
+    // console.log("delete employee dataaa", RoleMasterId)
+    if (RoleMasterId != null) {
+      this.services.DeleteData(RoleMasterId).subscribe(() => {
+        RoleMasterId.isDeleted = true;
+        RoleMasterId.isActive = false;
 
       })
-      this.services.DeleteData(DesignationId).subscribe({
+      this.services.DeleteData(RoleMasterId).subscribe({
         next: (res) => {
           this.getData();
           this.toaster.success('successfully delete data', 'delete')
