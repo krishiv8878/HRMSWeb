@@ -1,0 +1,41 @@
+<div class="form">
+    <form action="" [formGroup]="roledateForm" (ngSubmit)="submitdata()">
+        @if (isEdit) {
+        <p>edit roleMaster</p>
+        }@else {
+        <p>add roleMaster</p>
+        }
+
+        <div class="employee-form">
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>first name</mat-label>
+                        <input type="text" matInput name="firstName" placeholder="Enter Your FirstName"
+                            formControlName="firstName">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>last name</mat-label>
+                        <input type="text" matInput name="lastName" placeholder="Enter Your LastName"
+                            formControlName="lastName">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            @if(isEdit){
+            <div class="button-btn" mat-dialog-actions>
+                <button mat-flat-button class="edit-btn">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }@else {
+            <div class="button-btn">
+                <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }
+
+        </div>
+    </form>
+</div>

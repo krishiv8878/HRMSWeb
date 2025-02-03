@@ -1,23 +1,24 @@
+import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
-import { ProjectsService } from '../../services/project/projects.service';
+import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
+import { RolemastersComponent } from '../../modal/rolemasters/rolemasters.component';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
-import { ProjectComponent } from '../../modal/project/project.component';
-import { ToastrService } from 'ngx-toastr';
 
 @Component({
-  selector: 'app-projectmaster',
+  selector: 'app-rolemaster',
   standalone: true,
-  imports: [AgGridAngular, AgGridModule, MatButtonModule],
-  templateUrl: './projectmaster.component.html',
-  styleUrl: './projectmaster.component.scss'
+  imports: [AgGridAngular, AgGridModule, CommonModule, MatButtonModule],
+  templateUrl: './rolemaster.component.html',
+  styleUrl: './rolemaster.component.scss'
 })
-export class ProjectmasterComponent {
-  services = inject(ProjectsService)
+export class RolemasterComponent {
+  services = inject(RoleservicesService)
   dialog = inject(MatDialog)
   router = inject(Router)
   toaster = inject(ToastrService)
@@ -36,6 +37,7 @@ export class ProjectmasterComponent {
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];
 
+
   ngOnInit() {
     this.getData();
   }
@@ -44,7 +46,7 @@ export class ProjectmasterComponent {
     this.services.getAllData().subscribe((response: any) => {
       this.rowData = response.data;
       console.log(response)
-    }) 
+    })
   }
   rowData: any;
   pagination = true;
@@ -56,7 +58,7 @@ export class ProjectmasterComponent {
   };
 
   Edit(data: any) {
-    const dialogRef = this.dialog.open(ProjectComponent, {
+    const dialogRef = this.dialog.open(RolemastersComponent, {
       data,
     })
     dialogRef.afterClosed().subscribe({
@@ -65,6 +67,7 @@ export class ProjectmasterComponent {
       }
     })
   }
+  
   Delete(DesignationId: any) {
     // console.log("delete employee dataaa", DesignationId)
     if (DesignationId != null) {
@@ -82,9 +85,8 @@ export class ProjectmasterComponent {
     }
   }
 
-
   openAddForm() {
-    const dialogRef = this.dialog.open(ProjectComponent);
+    const dialogRef = this.dialog.open(RolemastersComponent);
     dialogRef.afterClosed().subscribe({
       next: (val) => {
         if (val) {

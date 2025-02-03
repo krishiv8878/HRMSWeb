@@ -55,7 +55,7 @@ export class CandidateeComponent {
     }
   }
   submitdata() {
-    if (this.isEdit) {
+    if (this.isEdit) { 
       this.services.updateData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')

@@ -13,6 +13,7 @@ import { ProjectmasterComponent } from './component/projectmaster/projectmaster.
 import { LeavetypeComponent } from './component/leavetype/leavetype.component';
 import { IndexComponent } from './component/index/index.component';
 import { ContactComponent } from './component/pages/contact/contact.component';
+import { RolemasterComponent } from './component/rolemaster/rolemaster.component';
 
 
 export const routes: Routes = [
@@ -60,6 +61,9 @@ export const routes: Routes = [
             },
             {
                 path:'contact', component:ContactComponent
+            },
+            {
+                path:'rolemaster', component:RolemasterComponent
             }
         ]
     }
