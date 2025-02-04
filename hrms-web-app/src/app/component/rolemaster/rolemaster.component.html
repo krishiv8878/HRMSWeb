@@ -1,0 +1,15 @@
+<div class="table-menu">
+    <div class="table-title">
+        <h2>RoleMaster</h2>
+    </div>
+    <div class="table-btn">
+        <button mat-flat-button (click)="openAddForm()">add role</button>
+    </div>
+</div>
+
+<div class="data">
+    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
+        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
+        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+
+</div>

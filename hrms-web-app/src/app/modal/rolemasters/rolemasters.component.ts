@@ -2,7 +2,6 @@ import { Component, Inject, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormField, MatInputModule } from '@angular/material/input';
-import { CandidateService } from '../../services/candidate/candidate.service';
 import { ActivatedRoute } from '@angular/router';
 import { MatRadioModule } from '@angular/material/radio';
 import { CommonModule } from '@angular/common';
@@ -11,52 +10,47 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import {MatSelectModule} from '@angular/material/select';
-
+import { MatSelectModule } from '@angular/material/select';
+import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
 
 @Component({
-  selector: 'app-candidate',
+  selector: 'app-rolemasters',
   standalone: true,
   imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
-  templateUrl: './candidate.component.html',
-  styleUrl: './candidate.component.scss'
+  templateUrl: './rolemasters.component.html',
+  styleUrl: './rolemasters.component.scss'
 })
-export class CandidateeComponent {
+export class RolemastersComponent {
+  constructor(private _dialogref: MatDialogRef<RolemastersComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any) { }
+
   fomBuilder = inject(FormBuilder)
-  services = inject(CandidateService)
+  services = inject(RoleservicesService)
   route = inject(ActivatedRoute)
   isEdit = false;
   toaster = inject(ToastrService)
 
-  numbers: number[] = Array.from({ length: 90 }, (_, i) => i + 1)
-  numbermenu: number | null = null;
-  
-  constructor(private _dialogref: MatDialogRef<CandidateeComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any) { }
-
-  CandidateForm = this.fomBuilder.group({
+  roledateForm = this.fomBuilder.group({
     id: 0,
-    firstName: ['', [Validators.required]],
-    lastName: ['', [Validators.required]],
-    emailAddress: ['', [Validators.required]],
-    mobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
-    totalExperience: ['', [Validators.required]],
-    relevantExperience: ['', [Validators.required]],
-    expectedSalary: ['', [Validators.required]],
-    currentSalary: ['', [Validators.required]],
-    noticePeriod: ['', [Validators.required]],
+    roleName: ['', [Validators.required]],
     isActive: ['']
   })
 
   ngOnInit() {
-    this.CandidateForm.patchValue(this.data);
+    this.roledateForm.patchValue(this.data);
+    console.log('update data', this.data)
     if (this.data) {
       this.isEdit = true;
+      // this.services.getSkill(this.data).subscribe((result) => {
+      //   console.log("form ", result)
+      // })
     }
   }
+
+
   submitdata() {
-    if (this.isEdit) { 
-      this.services.updateData(this.CandidateForm.value).subscribe({
+    if (this.isEdit) {
+      this.services.updateData(this.roledateForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
@@ -66,7 +60,7 @@ export class CandidateeComponent {
         }
       })
     } else {
-      this.services.createData(this.CandidateForm.value).subscribe({
+      this.services.createData(this.roledateForm.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
           this.toaster.success('successfully add data', 'success')
@@ -77,5 +71,4 @@ export class CandidateeComponent {
       })
     }
   }
-  // selected='option1'
 }
