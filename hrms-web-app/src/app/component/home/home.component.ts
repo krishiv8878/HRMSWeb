@@ -38,6 +38,7 @@ export class HomeComponent {
     { field: "mobileNumber", floatingFilter: true, filter: true },
     { field: "permanentAddress", floatingFilter: true, filter: true },
     { field: "dateOfJoining", floatingFilter: true, filter: true },
+    { field: "role", floatingFilter: true, filter: true },
     { field: "gender", floatingFilter: true, filter: true },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
@@ -45,21 +46,24 @@ export class HomeComponent {
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
 
-  rowData: [] = [];
+  rowData: any[] = [];
 
   constructor() { this.columnDefs }
   // employeeId!: any;
   // Id!: any;
   ngOnInit() {
     this.getAllData();
-
   }
 
   getAllData() {
+
     this.service.getAllData().subscribe((response: any) => {
       this.rowData = response.data;
+      // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
+      console.log('rowww data', this.rowData)     
     })
   }
+
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];

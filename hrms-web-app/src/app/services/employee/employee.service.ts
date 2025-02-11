@@ -3,7 +3,6 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
-
 @Injectable({
   providedIn: 'root'
 
@@ -14,9 +13,14 @@ export class EmployeeService {
   apiUrl = environment.host
   constructor() { }
 
-  getAllData() {
-    return this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
-  } 
+  // getAllData(): Observable<{ employeedata: any[], employeeRoles: any[] }> {
+  //   const employeedata = this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
+  //   const employeeRoles = this.http.get<any[]>(this.apiUrl + `/EmployeeRoleMapping/GetEmployeeRoles`);
+  //   return forkJoin({ employeedata, employeeRoles })
+  // }
+  getAllData(){
+    return  this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
+  }
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/Employee/AddEmployee`, data)
   }
@@ -24,6 +28,6 @@ export class EmployeeService {
     return this.http.put<any[]>(this.apiUrl + `/Employee/UpdateEmployee/`, data);
   }
   DeleteData(employeeId: any) {
-    return this.http.delete(this.apiUrl + `/Employee/DeleteEmployee?employeeId=`+ employeeId);
+    return this.http.delete(this.apiUrl + `/Employee/DeleteEmployee?employeeId=` + employeeId);
   }
 }

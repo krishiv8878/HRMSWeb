@@ -34,7 +34,7 @@
                     </mat-form-field>
                 </div>
             </div>
-            
+
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
@@ -80,6 +80,16 @@
                     </mat-radio-group>
                     <mat-checkbox formControlName="isActive">Active</mat-checkbox>
                 </div>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Role</mat-label>
+                    <mat-select formControlName="role" multiple>
+                        @for (topping of toppingList; track topping) {
+                        <mat-option [value]="topping">{{topping}}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+
             </div>
 
 

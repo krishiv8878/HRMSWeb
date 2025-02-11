@@ -12,10 +12,11 @@ import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { ToastrService } from 'ngx-toastr';
+import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-employee',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
   providers: [provideNativeDateAdapter()],
   templateUrl: './employee.component.html',
   styleUrl: './employee.component.scss'
@@ -44,8 +45,11 @@ export class EmployeeComponent {
     gender: '',
     currentAddress: ['', [Validators.required]],
     dateOfJoining: [''],
+    role: ['', [Validators.required]],
     isActive: ['']
   })
+
+  toppingList: string[] = ['react', 'angular', '.net core', 'nodejs', 'nextjs', 'java'];
 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
@@ -57,11 +61,11 @@ export class EmployeeComponent {
       // })
     }
   }
-
+ 
 
   submitdata() {
     if (this.isEdit) {
-      this.services.updateData(this.Employeeform.value).subscribe({
+      this.services.updateData(this.Employeeform.value).subscribe({                                                                                                                                             
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
@@ -70,7 +74,7 @@ export class EmployeeComponent {
           console.log("err msg", err)
         }
       })
-    } else {
+    } else {     
       this.services.createData(this.Employeeform.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
