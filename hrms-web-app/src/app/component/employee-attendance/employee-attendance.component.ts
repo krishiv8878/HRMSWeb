@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ColDef } from 'ag-grid-community';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
+<<<<<<< HEAD
 import { ActionComponent } from '../action/action.component';
 import { MatDialog } from '@angular/material/dialog';
 import { EmployeeAttendComponent } from '../../modal/employee-attend/employee-attend.component';
@@ -18,10 +19,17 @@ import { FormsModule } from '@angular/forms';
   selector: 'app-employee-attendance',
   standalone: true,
   imports: [AgGridAngular, AgGridModule, MatButtonModule, CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatGridListModule, FormsModule],
+=======
+@Component({
+  selector: 'app-employee-attendance',
+  standalone: true,
+  imports: [AgGridAngular, AgGridModule, MatButtonModule, CommonModule],
+>>>>>>> 4a122dd (create employeeattendance)
   templateUrl: './employee-attendance.component.html',
   styleUrl: './employee-attendance.component.scss'
 })
 export class EmployeeAttendanceComponent {
+<<<<<<< HEAD
 
   // Injecting required services
 
@@ -30,6 +38,10 @@ export class EmployeeAttendanceComponent {
   dialog = inject(MatDialog)
 
   // Column definitions for AG Grid table
+=======
+  services = inject(EmployeeeService)
+  router = inject(Router)
+>>>>>>> 4a122dd (create employeeattendance)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true },
@@ -37,6 +49,7 @@ export class EmployeeAttendanceComponent {
     { field: "clockIn", floatingFilter: true, filter: true },
     { field: "clockOut", floatingFilter: true, filter: true },
     { field: "totalHours", floatingFilter: true, filter: true },
+<<<<<<< HEAD
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this) } }
   ]
 
@@ -59,11 +72,20 @@ export class EmployeeAttendanceComponent {
 
   // Fetch all employee attendance data from API
 
+=======
+  ]
+
+  ngOnInit() {
+    this.getAllData();
+  }
+
+>>>>>>> 4a122dd (create employeeattendance)
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
       this.rowData = response.data
     })
   }
+<<<<<<< HEAD
 
   // Opens the edit modal for updating employee attendance data
 
@@ -79,18 +101,24 @@ export class EmployeeAttendanceComponent {
   }
   // Table row data and pagination configurations
 
+=======
+>>>>>>> 4a122dd (create employeeattendance)
   rowData: any;
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];
   data: any;
+<<<<<<< HEAD
 
   // Default column properties
 
+=======
+>>>>>>> 4a122dd (create employeeattendance)
   defaultColDef: ColDef = {
     resizable: true
   };
 
+<<<<<<< HEAD
 
   // Variables for displaying week days, working hours, and progress
 
@@ -212,6 +240,39 @@ export class EmployeeAttendanceComponent {
     if (meridian === "AM" && hour === 12) hour = 0;
     return [hour, minutes];
   }
+=======
+  employeeId= 0;
+  startTime: Date | null = null;
+  runningTime: string = '00:00:00';
+  totalHours: number | null = null;
+  interval: any;
+
+  startClock() {
+    this.services.createData(this.employeeId, 'start').subscribe((response) => {
+      this.startTime = new Date(response.timestamp);
+      this.totalHours = null;
+      this.updaterunigtime()
+
+      this.interval = setInterval(() => {
+        this.updaterunigtime();
+      }, 1000)
+    })
+  }
+  stopClock() { }
+
+  private updaterunigtime() {
+    if (this.startTime) {
+      const now = new Date;
+      const diff = Math.floor((now.getTime() - this.startTime.getTime()) / 1000);
+      const hours = Math.floor(diff / 3600)
+      const minuites = Math.floor((diff % 3600) / 60);
+      const seconds = diff % 60;
+      this.runningTime =
+        `${String(hours).padStart(2, '0')}:${String(minuites).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+  }
+
+>>>>>>> 4a122dd (create employeeattendance)
   openAddForm() { }
 }
 
