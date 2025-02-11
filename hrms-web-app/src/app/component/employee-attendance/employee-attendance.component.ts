@@ -15,6 +15,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { FormsModule } from '@angular/forms';
 import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
 
+
 @Component({
   selector: 'app-employee-attendance',
   standalone: true,
@@ -60,7 +61,6 @@ export class EmployeeAttendanceComponent {
 
   // Fetch all employee attendance data from API
 
-
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
       this.rowData = response.data
@@ -82,7 +82,6 @@ export class EmployeeAttendanceComponent {
   }
   // Table row data and pagination configurations
 
-
   rowData: any;
   pagination = true;
   paginationPageSize = 10;
@@ -91,9 +90,11 @@ export class EmployeeAttendanceComponent {
 
 
   // Default column properties
+
   defaultColDef: ColDef = {
     resizable: true
   };
+
 
 
   // Variables for displaying week days, working hours, and progress

@@ -53,7 +53,6 @@ export class EmployeeComponent {
   })
 
   roles: any[] = []; // Role master list 
-  
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
     console.log('update data', this.data)
