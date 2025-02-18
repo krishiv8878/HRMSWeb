@@ -12,10 +12,12 @@ import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { ToastrService } from 'ngx-toastr';
+import { MatSelectModule } from '@angular/material/select';
+import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
 @Component({
   selector: 'app-employee',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
   providers: [provideNativeDateAdapter()],
   templateUrl: './employee.component.html',
   styleUrl: './employee.component.scss'
@@ -32,6 +34,7 @@ export class EmployeeComponent {
   route = inject(ActivatedRoute)
   router = inject(Router)
   toaster = inject(ToastrService)
+  roleservises = inject(RoleservicesService)
   isEdit = false;
 
   Employeeform = this.formBuilder.group({
@@ -44,9 +47,11 @@ export class EmployeeComponent {
     gender: '',
     currentAddress: ['', [Validators.required]],
     dateOfJoining: [''],
+    roleIds: [[], [Validators.required]],
     isActive: ['']
   })
 
+  roles: any[] = []; // Role master list 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
     console.log('update data', this.data)
@@ -56,12 +61,16 @@ export class EmployeeComponent {
       //   console.log("form ", result)
       // })
     }
+    this.roleservises.getAllData().subscribe((roles:any)=>{
+      this.roles = roles.data;
+      console.log('Role Masters:', this.roles);
+    })
   }
-
+ 
 
   submitdata() {
     if (this.isEdit) {
-      this.services.updateData(this.Employeeform.value).subscribe({
+      this.services.updateData(this.Employeeform.value).subscribe({                                                                                                                                             
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
@@ -70,7 +79,7 @@ export class EmployeeComponent {
           console.log("err msg", err)
         }
       })
-    } else {
+    } else {     
       this.services.createData(this.Employeeform.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")

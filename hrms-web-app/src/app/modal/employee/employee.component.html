@@ -1,12 +1,19 @@
+<!-- Employee Form Container -->
 <div class="form">
+    <!-- Form for adding or editing an employee -->
     <form action="" [formGroup]="Employeeform" (ngSubmit)="submitdata()">
+        <!-- Conditional heading: If editing, show 'Edit Employee'; otherwise, show 'Add Employee' -->
         @if (isEdit) {
         <p>edit employee </p>
         }@else {
         <p>add employee </p>
         }
+
+        <!-- Employee form fields -->
         <div class="employee-form">
+            <!-- Row for First Name & Last Name -->
             <div class="row">
+                <!-- First Name Field -->
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
@@ -15,6 +22,7 @@
                     </mat-form-field>
                 </div>
 
+                <!-- Last Name Field -->
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
@@ -22,9 +30,9 @@
                             formControlName="lastName">
                     </mat-form-field>
                 </div>
-
             </div>
 
+            <!-- Row for Email Address -->
             <div class="row">
                 <div class="col">
                     <mat-form-field appearance="outline">
@@ -34,9 +42,11 @@
                     </mat-form-field>
                 </div>
             </div>
-            
+
+            <!-- Row for Joining Date & Phone Number -->
             <div class="row">
                 <div class="col-xl-6">
+                    <!-- Joining Date Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>joining date</mat-label>
                         <input matInput [matDatepicker]="picker" formControlName="dateOfJoining">
@@ -45,6 +55,8 @@
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
                 </div>
+
+                <!-- Phone Number Field -->
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>phoneNo</mat-label>
@@ -54,15 +66,19 @@
                 </div>
             </div>
 
+            <!-- Row for Permanent & Current Address -->
             <div class="row">
                 <div class="col-xl-6">
+                    <!-- Permanent Address Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>permanent Address</mat-label>
                         <input type="text" matInput name="permanent Address" placeholder="Enter Your Permanet Address"
                             formControlName="permanentAddress">
                     </mat-form-field>
                 </div>
+
                 <div class="col-xl-6">
+                    <!-- Current Address Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>current Address</mat-label>
                         <input type="text" matInput name="current Address" placeholder="Enter Your Current Address"
@@ -71,24 +87,39 @@
                 </div>
             </div>
 
+            <!-- Row for Gender Selection & Active Status -->
             <div class="row">
                 <div class="col">
+                    <!-- Gender Selection -->
                     <mat-radio-group formControlName="gender">
                         <mat-label><b>Gender</b></mat-label>
                         <mat-radio-button value="male">Male</mat-radio-button>
                         <mat-radio-button value="female">Female</mat-radio-button>
                     </mat-radio-group>
+
+                    <!-- Active Status Checkbox -->
                     <mat-checkbox formControlName="isActive">Active</mat-checkbox>
                 </div>
+
+                <!-- Role Selection Dropdown -->
+                <mat-form-field appearance="outline">
+                    <mat-label>roleIds</mat-label>
+                    <mat-select formControlName="roleIds" multiple>
+                        <mat-option *ngFor="let role of roles" [value]="role.id"> {{ role.roleName }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
             </div>
 
-
+            <!-- Buttons: Save, Update, or Cancel -->
             @if(isEdit){
+            <!-- Edit Mode: Update and Cancel Buttons -->
             <div class="button-btn" mat-dialog-actions>
                 <button mat-flat-button class="edit-btn">update</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
             </div>
             }@else {
+            <!-- Add Mode: Add and Cancel Buttons -->
             <div class="button-btn">
                 <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>

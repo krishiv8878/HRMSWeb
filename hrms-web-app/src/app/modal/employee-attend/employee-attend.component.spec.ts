@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { EmpolyeemapingComponent } from './empolyeemaping.component';
+import { EmployeeAttendComponent } from './employee-attend.component';
 
-describe('EmpolyeemapingComponent', () => {
-  let component: EmpolyeemapingComponent;
-  let fixture: ComponentFixture<EmpolyeemapingComponent>;
+describe('EmployeeAttendComponent', () => {
+  let component: EmployeeAttendComponent;
+  let fixture: ComponentFixture<EmployeeAttendComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EmpolyeemapingComponent]
+      imports: [EmployeeAttendComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(EmpolyeemapingComponent);
+    fixture = TestBed.createComponent(EmployeeAttendComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

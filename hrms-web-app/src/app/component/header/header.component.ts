@@ -5,12 +5,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 // import { RouterLink } from '@angular/router';
 import {MatMenuModule} from '@angular/material/menu';
-
+import {RouterLink} from '@angular/router'
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [MatToolbarModule,MatIconModule,MatSlideToggleModule,MatMenuModule],
+  imports: [MatToolbarModule,MatIconModule,MatSlideToggleModule,MatMenuModule,RouterLink],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss'
 })

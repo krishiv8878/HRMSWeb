@@ -14,11 +14,12 @@ import { LeavetypeComponent } from './component/leavetype/leavetype.component';
 import { IndexComponent } from './component/index/index.component';
 import { ContactComponent } from './component/pages/contact/contact.component';
 import { RolemasterComponent } from './component/rolemaster/rolemaster.component';
+import { EmployeeAttendanceComponent } from './component/employee-attendance/employee-attendance.component';
 
 
 export const routes: Routes = [
     {
-        path: '', redirectTo: '/login', pathMatch: 'full'
+        path: '', redirectTo: 'login', pathMatch: 'full'
     },
     {
         path: 'login', component: LoginComponent,
@@ -64,6 +65,9 @@ export const routes: Routes = [
             },
             {
                 path:'rolemaster', component:RolemasterComponent
+            },
+            {
+                path:'attendance', component:EmployeeAttendanceComponent
             }
         ]
     }

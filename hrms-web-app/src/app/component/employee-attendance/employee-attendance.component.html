@@ -1,0 +1,76 @@
+<!-- Employee Attendance Page Header -->
+<div class="table-menu">
+    <div class="table-title">
+        <h2>Empolyee Attendance</h2>
+    </div>
+    <div class="table-btn">
+        <button mat-flat-button (click)="openAddForm()">add Attendance</button>
+    </div>
+</div>
+
+<!-- Attendance Overview Cards -->
+<div class="attendance-cards">
+
+    <div class="container">
+        <div class="row">
+
+            <!-- Card: Timings Overview -->
+            <div class="col-xl-4">
+                <div class="card-one">
+                    <p style="font-size: 1.6rem; text-transform: capitalize; font-weight: 600;">timings</p>
+                    <mat-card class="card">
+                        <mat-card-content>
+                            <!-- Displaying week days with highlight on the current day -->
+                            <div class="timings">
+                                <mat-chip *ngFor="let day of days; let i = index"
+                                    [class.selected]="i === currentDayIndex" class="chips">
+                                    {{ day }}
+                                </mat-chip>
+                            </div>
+
+                            <!-- Progress bar for working hours -->
+                            <div class="progres-timie" style="padding-top: 4rem;">
+                                <p>Today ({{startTimee}}- {{endTime}})</p>
+                                <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+                                <p>Duration: {{totalHourse}} hrs </p>
+                            </div>
+
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </div>
+
+            <!-- Card: Clock-In and Clock-Out -->
+            <div class="col-xl-4">
+                <div class="card-two">
+                    <p style="font-size: 1.6rem; text-transform: capitalize; font-weight: 600;">Action</p>
+                    <mat-card class="card1">
+                        <div class="clock-container">
+                            <div class="remote-clock">
+                                <!-- Current Time Display -->
+                                <!-- <p class="timing-current">{{ runningTime }}</p> -->
+                                <input type="text" [(ngModel)]="currentTime" class="timing-input" disabled>
+                                <p style="margin-top: 0.4rem;">{{ startTime | date: 'EEE MMM d y'}}</p>
+                            </div>
+
+                            <!-- Clock In and Clock Out buttons -->
+                            <div class="remote-button">
+                                <button *ngIf="!startTime" (click)="openClockInDialog()">Remote Clock-In</button>
+                                <button *ngIf="startTime" (click)="stopClock()">Remote Clock-Out</button>
+                                <p style="text-transform: capitalize; margin-top: 0.4rem;">{{ totalHours }} since last
+                                    login</p>
+                            </div>
+                        </div>
+                    </mat-card>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Attendance Table -->
+<div class="data">
+    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
+        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
+        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+</div>
