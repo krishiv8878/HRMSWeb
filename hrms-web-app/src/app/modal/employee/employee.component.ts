@@ -13,6 +13,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { ToastrService } from 'ngx-toastr';
 import { MatSelectModule } from '@angular/material/select';
+import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
 @Component({
   selector: 'app-employee',
   standalone: true,
@@ -33,6 +34,7 @@ export class EmployeeComponent {
   route = inject(ActivatedRoute)
   router = inject(Router)
   toaster = inject(ToastrService)
+  roleservises = inject(RoleservicesService)
   isEdit = false;
 
   Employeeform = this.formBuilder.group({
@@ -45,12 +47,11 @@ export class EmployeeComponent {
     gender: '',
     currentAddress: ['', [Validators.required]],
     dateOfJoining: [''],
-    role: ['', [Validators.required]],
+    roleIds: [[], [Validators.required]],
     isActive: ['']
   })
 
-  toppingList: string[] = ['react', 'angular', '.net core', 'nodejs', 'nextjs', 'java'];
-
+  roles: any[] = []; // Role master list 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
     console.log('update data', this.data)
@@ -60,6 +61,10 @@ export class EmployeeComponent {
       //   console.log("form ", result)
       // })
     }
+    this.roleservises.getAllData().subscribe((roles:any)=>{
+      this.roles = roles.data;
+      console.log('Role Masters:', this.roles);
+    })
   }
  
 
