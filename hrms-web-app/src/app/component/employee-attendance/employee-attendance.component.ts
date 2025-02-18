@@ -16,14 +16,16 @@ import { FormsModule } from '@angular/forms';
 import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
 
 
+
 @Component({
   selector: 'app-employee-attendance',
   standalone: true,
   imports: [AgGridAngular, AgGridModule, MatButtonModule, CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatGridListModule, FormsModule],
-  templateUrl: './employee-attendance.component.html',
+   templateUrl: './employee-attendance.component.html',
   styleUrl: './employee-attendance.component.scss'
 })
 export class EmployeeAttendanceComponent {
+
 
   // Injecting required services
 
@@ -82,6 +84,7 @@ export class EmployeeAttendanceComponent {
   }
   // Table row data and pagination configurations
 
+
   rowData: any;
   pagination = true;
   paginationPageSize = 10;
@@ -90,11 +93,9 @@ export class EmployeeAttendanceComponent {
 
 
   // Default column properties
-
   defaultColDef: ColDef = {
     resizable: true
   };
-
 
 
   // Variables for displaying week days, working hours, and progress
@@ -217,7 +218,8 @@ export class EmployeeAttendanceComponent {
     if (meridian === "AM" && hour === 12) hour = 0;
     return [hour, minutes];
   }
-  // openAddForm() { }
+
+    openAddForm() { }
 }
 
 

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
   styleUrl: './employee-attend.component.scss'
 })
 export class EmployeeAttendComponent {
+
   constructor(private dialogRef: MatDialogRef<EmployeeAttendComponent>) { }
 
   onConfirm() {
@@ -19,4 +21,6 @@ export class EmployeeAttendComponent {
   onCancel() {
     this.dialogRef.close('cancel');
   }
+
+
 }

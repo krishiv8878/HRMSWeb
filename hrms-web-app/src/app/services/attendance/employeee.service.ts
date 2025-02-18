@@ -14,6 +14,7 @@ export class EmployeeeService {
   getAllData() {
     return this.http.get<any[]>(this.apiUrl + `/EmployeeAttendance/GetAll`)
   }
+
   createData(employeeId: number, clockIn: string | null, clockOut: string | null, totalHours: string | number | null, attendance: string): Observable<any> {
     const requestData = {
       employeeId: employeeId,
@@ -23,7 +24,6 @@ export class EmployeeeService {
       attendance: attendance
     };
     console.log("Sending API Request:", requestData);
-
     return this.http.post(this.apiUrl + `/EmployeeAttendance/AddEmployeeAttendanceRequest`, requestData)
   }
 }
