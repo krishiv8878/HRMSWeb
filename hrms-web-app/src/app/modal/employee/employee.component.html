@@ -44,9 +44,13 @@
             </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             <!-- Row for Joining Date & Phone Number -->
 =======
 >>>>>>> 4a122dd (create employeeattendance)
+=======
+            <!-- Row for Joining Date & Phone Number -->
+>>>>>>> a83d52e (edit employeemaping)
             <div class="row">
                 <div class="col-xl-6">
                     <!-- Joining Date Field -->
@@ -105,6 +109,7 @@
                 </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <!-- Role Selection Dropdown -->
                 <mat-form-field appearance="outline">
                     <mat-label>roleIds</mat-label>
@@ -118,6 +123,13 @@
                         <mat-option [value]="topping">{{topping}}</mat-option>
                         }
 >>>>>>> 4a122dd (create employeeattendance)
+=======
+                <!-- Role Selection Dropdown -->
+                <mat-form-field appearance="outline">
+                    <mat-label>roleIds</mat-label>
+                    <mat-select formControlName="roleIds" multiple>
+                        <mat-option *ngFor="let role of roles" [value]="role.id"> {{ role.roleName }}</mat-option>
+>>>>>>> a83d52e (edit employeemaping)
                     </mat-select>
                 </mat-form-field>
 
