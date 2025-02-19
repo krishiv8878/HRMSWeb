@@ -14,6 +14,7 @@ import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material
 import { ToastrService } from 'ngx-toastr';
 import { MatSelectModule } from '@angular/material/select';
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
+
 @Component({
   selector: 'app-employee',
   standalone: true,
@@ -52,6 +53,7 @@ export class EmployeeComponent {
   })
 
   roles: any[] = []; // Role master list 
+  
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
     console.log('update data', this.data)

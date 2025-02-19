@@ -13,6 +13,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { FormsModule } from '@angular/forms';
+import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
 
 @Component({
   selector: 'app-employee-attendance',
@@ -54,10 +55,11 @@ export class EmployeeAttendanceComponent {
 
   runigtime() {
     const now = new Date();
-    this.currentTime = now.toLocaleTimeString('en-US', { hour12: true });
+    this.currentTime = now.toLocaleTimeString('en-US', { hour12: true });              
   }
 
   // Fetch all employee attendance data from API
+
 
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
@@ -65,10 +67,11 @@ export class EmployeeAttendanceComponent {
     })
   }
 
+
   // Opens the edit modal for updating employee attendance data
 
   Edit(data: any) {
-    const dialogRef = this.dialog.open(EmployeeAttendComponent, {
+    const dialogRef = this.dialog.open(AttendaseditComponent, {
       data,
     })
     dialogRef.afterClosed().subscribe({
@@ -79,14 +82,15 @@ export class EmployeeAttendanceComponent {
   }
   // Table row data and pagination configurations
 
+
   rowData: any;
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];
   data: any;
 
-  // Default column properties
 
+  // Default column properties
   defaultColDef: ColDef = {
     resizable: true
   };
@@ -212,7 +216,7 @@ export class EmployeeAttendanceComponent {
     if (meridian === "AM" && hour === 12) hour = 0;
     return [hour, minutes];
   }
-  openAddForm() { }
+  // openAddForm() { }
 }
 
 
