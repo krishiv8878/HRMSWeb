@@ -13,14 +13,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { ToastrService } from 'ngx-toastr';
 import { MatSelectModule } from '@angular/material/select';
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
-=======
->>>>>>> 4a122dd (create employeeattendance)
-=======
-import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
->>>>>>> a83d52e (edit employeemaping)
+
 @Component({
   selector: 'app-employee',
   standalone: true,
@@ -54,28 +48,12 @@ export class EmployeeComponent {
     gender: '',
     currentAddress: ['', [Validators.required]],
     dateOfJoining: [''],
-<<<<<<< HEAD
-<<<<<<< HEAD
     roleIds: [[], [Validators.required]],
     isActive: ['']
   })
 
   roles: any[] = []; // Role master list 
-=======
-    role: ['', [Validators.required]],
-    isActive: ['']
-  })
-
-  toppingList: string[] = ['react', 'angular', '.net core', 'nodejs', 'nextjs', 'java'];
-
->>>>>>> 4a122dd (create employeeattendance)
-=======
-    roleIds: [[], [Validators.required]],
-    isActive: ['']
-  })
-
-  roles: any[] = []; // Role master list 
->>>>>>> a83d52e (edit employeemaping)
+  
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
     console.log('update data', this.data)
