@@ -15,8 +15,6 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { FormsModule } from '@angular/forms';
 import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
 
-
-
 @Component({
   selector: 'app-employee-attendance',
   standalone: true,
@@ -219,7 +217,7 @@ export class EmployeeAttendanceComponent {
     return [hour, minutes];
   }
 
-    openAddForm() { }
+   openAddForm() { }
 }
 
 

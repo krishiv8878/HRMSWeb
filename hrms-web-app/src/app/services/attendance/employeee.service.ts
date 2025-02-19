@@ -26,4 +26,7 @@ export class EmployeeeService {
     console.log("Sending API Request:", requestData);
     return this.http.post(this.apiUrl + `/EmployeeAttendance/AddEmployeeAttendanceRequest`, requestData)
   }
+  updateData(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/EmployeeAttendance/UpdateEmployeeAttendanceRequest`, data)
+  }
 }
