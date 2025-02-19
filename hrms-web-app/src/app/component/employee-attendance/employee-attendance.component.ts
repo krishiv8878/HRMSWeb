@@ -5,10 +5,6 @@ import { Router } from '@angular/router';
 import { ColDef } from 'ag-grid-community';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> a83d52e (edit employeemaping)
 import { ActionComponent } from '../action/action.component';
 import { MatDialog } from '@angular/material/dialog';
 import { EmployeeAttendComponent } from '../../modal/employee-attend/employee-attend.component';
@@ -17,20 +13,16 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { FormsModule } from '@angular/forms';
+import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
 
 @Component({
   selector: 'app-employee-attendance',
   standalone: true,
   imports: [AgGridAngular, AgGridModule, MatButtonModule, CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatGridListModule, FormsModule],
->>>>>>> a83d52e (edit employeemaping)
   templateUrl: './employee-attendance.component.html',
   styleUrl: './employee-attendance.component.scss'
 })
 export class EmployeeAttendanceComponent {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> a83d52e (edit employeemaping)
 
   // Injecting required services
 
@@ -39,13 +31,6 @@ export class EmployeeAttendanceComponent {
   dialog = inject(MatDialog)
 
   // Column definitions for AG Grid table
-<<<<<<< HEAD
-=======
-  services = inject(EmployeeeService)
-  router = inject(Router)
->>>>>>> 4a122dd (create employeeattendance)
-=======
->>>>>>> a83d52e (edit employeemaping)
 
   public columnDefs: ColDef[] = [
     { field: "id", floatingFilter: true, filter: true },
@@ -53,8 +38,6 @@ export class EmployeeAttendanceComponent {
     { field: "clockIn", floatingFilter: true, filter: true },
     { field: "clockOut", floatingFilter: true, filter: true },
     { field: "totalHours", floatingFilter: true, filter: true },
-<<<<<<< HEAD
-<<<<<<< HEAD
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this) } }
   ]
 
@@ -77,44 +60,13 @@ export class EmployeeAttendanceComponent {
 
   // Fetch all employee attendance data from API
 
-=======
-=======
-    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this) } }
->>>>>>> a83d52e (edit employeemaping)
-  ]
 
-  // Called when the component is initialized
-
-  ngOnInit() {
-    this.getAllData();
-    this.runigtime();
-    setInterval(() => {
-      this.runigtime();
-    }, 1000);
-  }
-
-<<<<<<< HEAD
->>>>>>> 4a122dd (create employeeattendance)
-=======
-  // Updates the current time every second
-
-  runigtime() {
-    const now = new Date();
-    this.currentTime = now.toLocaleTimeString('en-US', { hour12: true });
-  }
-
-  // Fetch all employee attendance data from API
-
->>>>>>> a83d52e (edit employeemaping)
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
       this.rowData = response.data
     })
   }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> a83d52e (edit employeemaping)
+
 
   // Opens the edit modal for updating employee attendance data
 
@@ -130,36 +82,19 @@ export class EmployeeAttendanceComponent {
   }
   // Table row data and pagination configurations
 
-<<<<<<< HEAD
-=======
->>>>>>> 4a122dd (create employeeattendance)
-=======
->>>>>>> a83d52e (edit employeemaping)
+
   rowData: any;
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];
   data: any;
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 
   // Default column properties
-
-=======
->>>>>>> 4a122dd (create employeeattendance)
-=======
-
-  // Default column properties
-
->>>>>>> a83d52e (edit employeemaping)
   defaultColDef: ColDef = {
     resizable: true
   };
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> a83d52e (edit employeemaping)
 
   // Variables for displaying week days, working hours, and progress
 
@@ -170,7 +105,6 @@ export class EmployeeAttendanceComponent {
   totalHourse: number = 8;
   progress: number = 0;
   employeeId = 1;
-<<<<<<< HEAD
   startTime: Date | null = null;
   // runningTime: string = '00:00:00';
   totalHours: string = '';
