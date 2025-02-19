@@ -44,4 +44,7 @@ export class EmployeeeService {
 >>>>>>> a83d52e (edit employeemaping)
     return this.http.post(this.apiUrl + `/EmployeeAttendance/AddEmployeeAttendanceRequest`, requestData)
   }
+  updateData(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/EmployeeAttendance/UpdateEmployeeAttendanceRequest`, data)
+  }
 }

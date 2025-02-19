@@ -1,0 +1,51 @@
+<div class="form">
+    <form action="" [formGroup]="attendanse" (ngSubmit)="submitdata()">
+       
+        <p>edit EmployeeAttendance</p>
+       
+        <div class="employee-form">
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>clockIn</mat-label>
+                        <input matInput [matDatepicker]="picker" formControlName="clockIn">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>clockOut</mat-label>
+                        <input matInput [matDatepicker]="picker1" formControlName="clockOut">
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                        <mat-datepicker #picker1></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>totalHours</mat-label>
+                        <input type="text" matInput name="totalHours" placeholder=" Your totalHours"
+                            formControlName="totalHours">
+                    </mat-form-field>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+                </div>
+            </div>
+
+            <div class="button-btn" mat-dialog-actions>
+                <button mat-flat-button class="edit-btn">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+          
+        </div>
+    </form>
+</div>
