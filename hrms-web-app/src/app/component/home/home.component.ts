@@ -38,15 +38,7 @@ export class HomeComponent {
     { field: "mobileNumber", floatingFilter: true, filter: true },
     { field: "permanentAddress", floatingFilter: true, filter: true },
     { field: "dateOfJoining", floatingFilter: true, filter: true },
-<<<<<<< HEAD
-<<<<<<< HEAD
     { field: "roleIds", floatingFilter: true, filter: true },
-=======
-    { field: "role", floatingFilter: true, filter: true },
->>>>>>> 4a122dd (create employeeattendance)
-=======
-    { field: "roleIds", floatingFilter: true, filter: true },
->>>>>>> a83d52e (edit employeemaping)
     { field: "gender", floatingFilter: true, filter: true },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
