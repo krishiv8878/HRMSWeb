@@ -218,8 +218,7 @@ export class EmployeeAttendanceComponent {
     if (meridian === "AM" && hour === 12) hour = 0;
     return [hour, minutes];
   }
-
-   openAddForm() { }
+  // openAddForm() { }
 }
 
 

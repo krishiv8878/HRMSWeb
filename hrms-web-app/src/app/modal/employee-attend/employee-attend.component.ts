@@ -20,5 +20,4 @@ export class EmployeeAttendComponent {
   onCancel() {
     this.dialogRef.close('cancel');
   }
-
 }
