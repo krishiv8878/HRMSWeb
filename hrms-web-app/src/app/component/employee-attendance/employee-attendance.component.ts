@@ -19,6 +19,7 @@ import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.com
   selector: 'app-employee-attendance',
   standalone: true,
   imports: [AgGridAngular, AgGridModule, MatButtonModule, CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatGridListModule, FormsModule],
+
   templateUrl: './employee-attendance.component.html',
   styleUrl: './employee-attendance.component.scss'
 })
@@ -58,6 +59,7 @@ export class EmployeeAttendanceComponent {
     this.currentTime = now.toLocaleTimeString('en-US', { hour12: true });              
   }
 
+ 
   // Fetch all employee attendance data from API
 
 
