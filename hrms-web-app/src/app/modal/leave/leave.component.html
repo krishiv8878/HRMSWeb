@@ -1,39 +1,43 @@
 <div class="form">
     <form action="" [formGroup]="leavetype" (ngSubmit)="submitdata()">
         @if (isEdit) {
-        <p>edit leave </p>
+        <p>edit leaveType </p>
         }@else {
-        <p>add leave</p>
+        <p>add leaveType</p>
         }
         <div class="employee-form">
             <div class="row">
-                <div class="col-xl-6">
+                <div class="col">
                     <mat-form-field appearance="outline">
-                        <mat-label>leave</mat-label>
-                        <input type="text" matInput name="Leave" placeholder="Enter Your Leave"
-                            formControlName="leaveName">
+                        <mat-label>leave type</mat-label>
+                        <input type="text" matInput name="Leave" placeholder="Enter Your LeaveType"
+                            formControlName="type">
+                            <mat-error *ngIf="getControl('type')?.hasError('required')">LeaveType is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
 
-                <div class="col-xl-6">
+                <!-- <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>leaveType</mat-label>                        
-                        <mat-select formControlName="leaveType">
+                        <mat-select formControlName="type">
                             <mat-option value="Casualleave">Casual leave </mat-option>
                             <mat-option value="Sickleave">Sick leave</mat-option>
                             <mat-option value="Annualleave">Annual leave</mat-option>
                             <mat-option value="Paternityleaves">Paternity leaves</mat-option>
                         </mat-select>
                     </mat-form-field>
-                </div>
+                </div> -->
             </div>           
 
             <div class="row">
-                <div class="col-xl-12">
+                <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>description</mat-label>
                         <input type="text" matInput name="description" placeholder="Enter Your Description"
                             formControlName="description">
+                            <mat-error *ngIf="getControl('description')?.hasError('required')">description is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>

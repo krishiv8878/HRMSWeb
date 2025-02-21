@@ -25,7 +25,7 @@ export class RegisterComponent {
     id: 0,
     FirstName: ['', [Validators.required]],
     LastName: ['', [Validators.required]],
-    email: ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.pattern(/^[^@]+@[^@]+\.[^@]+$/)]],
     MobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
     Address: ['', [Validators.required]],
     password: ['', [Validators.required, Validators.minLength(6)]]
@@ -41,5 +41,9 @@ export class RegisterComponent {
       })
 
     }
+  }
+
+  getControl(controleName:string){
+    return this.registretion.get(controleName);
   }
 }

@@ -19,6 +19,8 @@
                         <mat-label>first name</mat-label>
                         <input type="text" matInput name="firstName" placeholder="Enter Your FirstName"
                             formControlName="firstName">
+                        <mat-error *ngIf="getControl('firstName')?.hasError('required')">First Name is
+                            required</mat-error>
                     </mat-form-field>
                 </div>
 
@@ -28,6 +30,8 @@
                         <mat-label>last name</mat-label>
                         <input type="text" matInput name="lastName" placeholder="Enter Your LastName"
                             formControlName="lastName">
+                            <mat-error *ngIf="getControl('lastName')?.hasError('required')">last Name is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -39,6 +43,8 @@
                         <mat-label>email</mat-label>
                         <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
                             formControlName="emailAddress">
+                            <mat-error *ngIf="getControl('emailAddress')?.hasError('required')">email is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -51,7 +57,9 @@
                     <mat-form-field appearance="outline">
                         <mat-label>joining date</mat-label>
                         <input matInput [matDatepicker]="picker" formControlName="dateOfJoining">
-                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-error *ngIf="getControl('dateOfJoining')?.hasError('required')">date is
+                            required</mat-error>
+                        <!-- <mat-hint>MM/DD/YYYY</mat-hint> -->
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
@@ -62,7 +70,8 @@
                     <mat-form-field appearance="outline">
                         <mat-label>phoneNo</mat-label>
                         <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
-                            formControlName="mobileNumber">
+                            formControlName="mobileNumber" maxlength="10">
+                            <mat-error *ngIf="getControl('mobileNumber')?.hasError('required')">Must be 10 digits</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -75,6 +84,8 @@
                         <mat-label>permanent Address</mat-label>
                         <input type="text" matInput name="permanent Address" placeholder="Enter Your Permanet Address"
                             formControlName="permanentAddress">
+                            <mat-error *ngIf="getControl('permanentAddress')?.hasError('required')">permanentAddress is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
 
@@ -84,6 +95,8 @@
                         <mat-label>current Address</mat-label>
                         <input type="text" matInput name="current Address" placeholder="Enter Your Current Address"
                             formControlName="currentAddress">
+                            <mat-error *ngIf="getControl('currentAddress')?.hasError('required')">currentAddress is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -109,6 +122,8 @@
                     <mat-select formControlName="roleIds" multiple>
                         <mat-option *ngFor="let role of roles" [value]="role.id"> {{ role.roleName }}</mat-option>
                     </mat-select>
+                    <mat-error *ngIf="getControl('roleIds')?.hasError('required')">roleIds is
+                        required</mat-error>
                 </mat-form-field>
 
             </div>

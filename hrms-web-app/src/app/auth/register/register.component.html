@@ -5,31 +5,38 @@
             <mat-form-field appearance="outline">
                 <mat-label>First Name</mat-label>
                 <input type="text" matInput placeholder="Enter Your FirstName" formControlName="FirstName">
+                <mat-error *ngIf="getControl('FirstName')?.hasError('required')">First Name is required</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Last Name</mat-label>
                 <input type="text" matInput placeholder="Enter Your LastName" formControlName="LastName">
+                <mat-error *ngIf="getControl('FirstName')?.hasError('required')">Last Name is required</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Email</mat-label>
                 <input type="email" matInput placeholder="Enter Your Email" formControlName="email">
+                <mat-error *ngIf="getControl('email')?.hasError('required')">Email is required</mat-error>
+                <mat-error *ngIf="getControl('email')?.hasError('pattern')">Invalid email format</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Phone</mat-label>
-                <input type="text" matInput placeholder="Enter Your phoneNo" formControlName="MobileNumber">
+                <input type="text" matInput placeholder="Enter Your phoneNo" formControlName="MobileNumber" maxlength="10">
+                <mat-error *ngIf="getControl('MobileNumber')?.hasError('pattern')">Must be 10 digits</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Address</mat-label>
                 <input type="text" matInput placeholder="Enter Your Address" formControlName="Address">
+                <mat-error *ngIf="getControl('Address')?.hasError('required')">Address is required</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Password</mat-label>
-                <input type="password" matInput placeholder="Enter Your Password" formControlName="password">
+                <input type="password" matInput placeholder="Enter Your Password" formControlName="password" maxlength="8">>
+                <mat-error *ngIf="getControl('password')?.hasError('minlength')">Minimum 6 characters required</mat-error>
             </mat-form-field>
 
             <div class="register-btn">

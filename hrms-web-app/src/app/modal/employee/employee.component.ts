@@ -47,7 +47,7 @@ export class EmployeeComponent {
     permanentAddress: ['', [Validators.required]],
     gender: '',
     currentAddress: ['', [Validators.required]],
-    dateOfJoining: [''],
+    dateOfJoining: ['',[Validators.required]],
     roleIds: [[], [Validators.required]],
     isActive: ['']
   })
@@ -93,5 +93,7 @@ export class EmployeeComponent {
       })
     }
   }
-
+  getControl(controleName:string){
+    return this.Employeeform.get(controleName);
+  }
 }

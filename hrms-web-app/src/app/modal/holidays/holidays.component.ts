@@ -76,4 +76,7 @@ export class HolidaysComponent {
       })
     }
   }
+  getControl(controleName:string){
+    return this.Holidayform.get(controleName);
+  }
 }

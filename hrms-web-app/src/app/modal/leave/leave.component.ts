@@ -31,7 +31,7 @@ export class LeaveComponent {
   leavetype = this.formbuilder.group({
     id: 0,
     leaveName: ['', [Validators.required]],
-    leaveType: ['', [Validators.required]],
+    type: ['', [Validators.required]],
     description: ['', [Validators.required]],
     isActive: ['']
   })
@@ -65,5 +65,8 @@ export class LeaveComponent {
         }
       })
     }
+  }
+  getControl(controleName:string){
+    return this.leavetype.get(controleName);
   }
 }

@@ -78,4 +78,7 @@ export class CandidateeComponent {
     }
   }
   // selected='option1'
+  getControl(controleName:string){
+    return this.CandidateForm.get(controleName);
+  }
 }

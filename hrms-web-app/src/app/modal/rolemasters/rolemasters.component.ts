@@ -71,4 +71,7 @@ export class RolemastersComponent {
       })
     }
   }
+  getControl(controleName:string){
+    return this.roledateForm.get(controleName);
+  }
 }

@@ -13,6 +13,8 @@
                         <mat-label>first name</mat-label>
                         <input type="text" matInput name="firstName" placeholder="Enter Your FirstName"
                             formControlName="firstName">
+                            <mat-error *ngIf="getControl('firstName')?.hasError('required')">firstName is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
@@ -20,6 +22,8 @@
                         <mat-label>last name</mat-label>
                         <input type="text" matInput name="lastName" placeholder="Enter Your LastName"
                             formControlName="lastName">
+                            <mat-error *ngIf="getControl('lastName')?.hasError('required')">lastName is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -30,13 +34,16 @@
                         <mat-label>email</mat-label>
                         <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
                             formControlName="emailAddress">
+                            <mat-error *ngIf="getControl('emailAddress')?.hasError('required')">email is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>phone no</mat-label>
                         <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
-                            formControlName="mobileNumber">
+                            formControlName="mobileNumber" maxlength="10">
+                            <mat-error *ngIf="getControl('mobileNumber')?.hasError('required')">Must be 10 digits</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -47,6 +54,8 @@
                         <mat-label>totalExperience</mat-label>
                         <input type="text" matInput name="totalExperience" placeholder="Enter Your TotalExperience"
                             formControlName="totalExperience">
+                            <mat-error *ngIf="getControl('totalExperience')?.hasError('required')">totalExperience is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
 
@@ -55,6 +64,8 @@
                         <mat-label>relevantExperience</mat-label>
                         <input type="text" matInput name="RelevantExperience"
                             placeholder="Enter Your RelevantExperience" formControlName="relevantExperience">
+                            <mat-error *ngIf="getControl('relevantExperience')?.hasError('required')">relevantExperience is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -65,6 +76,8 @@
                         <mat-label>currentSalary</mat-label>
                         <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
                             formControlName="currentSalary">
+                            <mat-error *ngIf="getControl('currentSalary')?.hasError('required')">currentSalary is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
 
@@ -84,6 +97,8 @@
                         <mat-label>expected Salary</mat-label>
                         <input type="number" matInput name="expectedSalary" placeholder="Enter Your Expected Salary"
                             formControlName="expectedSalary">
+                            <mat-error *ngIf="getControl('expectedSalary')?.hasError('required')">expectedSalary is
+                                required</mat-error>
                     </mat-form-field>
                     <mat-checkbox formControlName="isActive">Active</mat-checkbox>
                 </div>

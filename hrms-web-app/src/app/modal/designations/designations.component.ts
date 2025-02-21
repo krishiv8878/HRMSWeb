@@ -64,4 +64,7 @@ export class DesignationsComponent {
       })
     }
   }
+  getControl(controleName:string){
+    return this.designation.get(controleName);
+  }
 }
