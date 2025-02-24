@@ -1,0 +1,89 @@
+<!-- Employee Form Container -->
+<div class="form">
+    <!-- Form for adding or editing an employee -->
+    <form action="" [formGroup]="paymentinfo" (ngSubmit)="submitdata()">
+        <!-- Conditional heading: If editing, show 'Edit Employee'; otherwise, show 'Add Employee' -->
+        @if (isEdit) {
+        <p>edit paymentInfo </p>
+        }@else {
+        <p>add paymentInfo </p>
+        }
+
+        <!-- Employee form fields -->
+        <div class="employee-form">
+            <!-- Row for First Name & Last Name -->
+            <div class="row">
+                <!-- First Name Field -->
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>bankName</mat-label>
+                        <input type="text" matInput name="bankName" placeholder="Enter Your bankName"
+                            formControlName="bankName">
+                        <mat-error *ngIf="getControl('bankName')?.hasError('required')">bankName is
+                            required</mat-error>
+                    </mat-form-field>
+                </div>
+
+                <!-- Last Name Field -->
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>ifscCode</mat-label>
+                        <input type="text" matInput name="ifscCode" placeholder="Enter Your ifscCode"
+                            formControlName="ifscCode">
+                        <mat-error *ngIf="getControl('ifscCode')?.hasError('required')">ifscCode is
+                            required</mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Row for Email Address -->
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>accountNumber</mat-label>
+                        <input type="number" matInput name="accountNumber" placeholder="123-456-789-251"
+                            formControlName="accountNumber">
+                        <mat-error *ngIf="getControl('accountNumber')?.hasError('required')">accountNumber is
+                            required</mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Row for Permanent & Current Address -->
+            <div class="row">
+                <div class="col">
+                    <!-- Permanent Address Field -->
+                    <mat-form-field appearance="outline">
+                        <mat-label>nameOnAccount</mat-label>
+                        <input type="text" matInput name="nameOnAccount" placeholder="Enter Your Permanet Address"
+                            formControlName="nameOnAccount">
+                        <mat-error *ngIf="getControl('nameOnAccount')?.hasError('required')">nameOnAccount is
+                            required</mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+                </div>
+            </div>
+
+            <!-- Buttons: Save, Update, or Cancel -->
+            @if(isEdit){
+            <!-- Edit Mode: Update and Cancel Buttons -->
+            <div class="button-btn" mat-dialog-actions>
+                <button mat-flat-button class="edit-btn">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }@else {
+            <!-- Add Mode: Add and Cancel Buttons -->
+            <div class="button-btn">
+                <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            </div>
+            }
+
+
+        </div>
+    </form>
+</div>
