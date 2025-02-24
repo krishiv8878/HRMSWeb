@@ -16,6 +16,7 @@ import { ContactComponent } from './component/pages/contact/contact.component';
 import { RolemasterComponent } from './component/rolemaster/rolemaster.component';
 import { EmployeeAttendanceComponent } from './component/employee-attendance/employee-attendance.component';
 import { PaymentinfoComponent } from './component/paymentinfo/paymentinfo.component';
+import { ShiftemployeeComponent } from './component/shiftemployee/shiftemployee.component';
 
 
 export const routes: Routes = [
@@ -72,6 +73,9 @@ export const routes: Routes = [
             },
             {
                 path:'paymentinfo', component:PaymentinfoComponent
+            },
+            {
+                path:'shift', component:ShiftemployeeComponent
             }
         ]
     }

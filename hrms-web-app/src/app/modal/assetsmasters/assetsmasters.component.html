@@ -12,6 +12,8 @@
                         <mat-label>assets Name</mat-label>
                         <input type="text" matInput name="assetsMasterName" placeholder="Enter Your AssetsName"
                             formControlName="assetsMasterName">
+                            <mat-error *ngIf="getControl('assetsMasterName')?.hasError('required')">Assets Name Is
+                                Required</mat-error>
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
@@ -19,6 +21,8 @@
                         <mat-label>serialNumber</mat-label>
                         <input type="text" matInput name="serialNumber" placeholder="Enter Your SerialNumber"
                             formControlName="serialNumber">
+                            <mat-error *ngIf="getControl('serialNumber')?.hasError('required')">Serial Number Is
+                                Required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -29,6 +33,8 @@
                         <mat-label>description</mat-label>
                         <input type="text" matInput name="description" placeholder="Enter Your Description"
                             formControlName="description">
+                            <mat-error *ngIf="getControl('description')?.hasError('required')">Description Is
+                                Required</mat-error>
                     </mat-form-field>
                 </div>
 
@@ -37,6 +43,8 @@
                     <mat-form-field appearance="outline">
                         <mat-label>dateOfPurchase</mat-label>
                         <input matInput [matDatepicker]="picker3" formControlName="dateOfPurchase">
+                        <mat-error *ngIf="getControl('dateOfPurchase')?.hasError('required')">DateOfPurchase Is
+                            Required</mat-error>
                         <mat-hint>MM/DD/YYYY</mat-hint>
                         <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
                         <mat-datepicker #picker3></mat-datepicker>
@@ -45,24 +53,28 @@
 
             </div>
 
-            <div class="row">
+            <!-- <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>updatedBy</mat-label>
                         <input type="text" matInput name="updatedBy" placeholder="Enter Your Permanet Address"
                             formControlName="updatedBy">
+                            <mat-error *ngIf="getControl('updatedBy')?.hasError('required')">UpdatedBy Is
+                                Required</mat-error>
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>createdDate</mat-label>
                         <input matInput [matDatepicker]="picker" formControlName="createdDate">
+                        <mat-error *ngIf="getControl('createdDate')?.hasError('required')">CreatedDate Is
+                            Required</mat-error>
                         <mat-hint>MM/DD/YYYY</mat-hint>
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
                 </div>
-            </div>           
+            </div>            -->
 
             <div class="row">
                 <mat-checkbox formControlName="isActive">Active</mat-checkbox>
