@@ -12,6 +12,8 @@
                         <mat-label>clientName</mat-label>
                         <input type="text" matInput name="clientName" placeholder="Enter Your ClientName"
                             formControlName="clientName">
+                            <mat-error *ngIf="getControl('clientName')?.hasError('required')">clientName is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
@@ -19,6 +21,8 @@
                         <mat-label>projectName</mat-label>
                         <input type="text" matInput name="ProjectName" placeholder="Enter Your ProjectName"
                             formControlName="projectName">
+                            <mat-error *ngIf="getControl('projectName')?.hasError('required')">projectName is
+                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -29,6 +33,8 @@
                         <mat-label>clientRegion</mat-label>
                         <input type="text" matInput name="clientRegion" formControlName="clientRegion"
                             placeholder="Enter Your ClientRegion">
+                            <mat-error *ngIf="getControl('clientRegion')?.hasError('required')">ClientRegion Is
+                                Required</mat-error>
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
@@ -36,6 +42,8 @@
                         <mat-label>description</mat-label>
                         <input type="text" matInput name="description" placeholder="Enter Your Description"
                             formControlName="description">
+                            <mat-error *ngIf="getControl('description')?.hasError('required')">Description Is
+                                Required</mat-error>
                     </mat-form-field>
                 </div>
             </div>

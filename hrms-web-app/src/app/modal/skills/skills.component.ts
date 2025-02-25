@@ -75,5 +75,7 @@ export class SkillsComponent {
       })
     }
   }
-
+  getControl(controleName:string){
+    return this.Skillform.get(controleName);
+  }
 }

@@ -12,6 +12,8 @@
                         <mat-label>Holiday Name</mat-label>
                         <input type="text" matInput name="holidayName" placeholder="Enter Your HolidayName"
                             formControlName="holidayName">
+                            <mat-error *ngIf="getControl('holidayName')?.hasError('required')">HolidayName Is
+                                Required</mat-error>
                     </mat-form-field>
                 </div>
 
@@ -20,6 +22,8 @@
                         <mat-label>Description</mat-label>                      
                         <input type="text" matInput name="holidayName" placeholder="Enter Your Description"
                         formControlName="description">
+                        <mat-error *ngIf="getControl('description')?.hasError('required')">Description Is
+                            Required</mat-error>
                     </mat-form-field>
                 </div>
             </div>

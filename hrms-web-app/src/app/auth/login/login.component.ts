@@ -7,11 +7,12 @@ import { AuthService } from '../../services/authentication/auth.service';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 // import { HttpClient } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule,CommonModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
@@ -24,8 +25,8 @@ export class LoginComponent {
   constructor() { }
 
   login = this.formBuilder.group({
-    email: ['', [Validators.required]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
+    email: ['', [Validators.required, Validators.pattern(/^[^@]+@[^@]+\.[^@]+$/)]],
+    password: ['', [Validators.required, Validators.minLength(8), this.passwordValidator]]
   })
 
   logindata() {
@@ -41,6 +42,20 @@ export class LoginComponent {
     } else {
       this.toster.error('invalide email and password', 'error')
     }
+  }
+
+  getControl(controleName:string){
+    return this.login.get(controleName);
+  }
+  // Custom validator for strong password
+  passwordValidator(control: any) {
+    const value = control.value || '';
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasLowerCase = /[a-z]/.test(value);
+    const hasDigit = /\d/.test(value);
+    const hasSpecialChar = /[@$!%*?&]/.test(value);
+    const isValid = hasUpperCase && hasLowerCase && hasDigit && hasSpecialChar;
+    return isValid ? null : { strongPassword: true };
   }
 }
 

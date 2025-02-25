@@ -1,0 +1,28 @@
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class PaymentinfoService {
+  apiUrl = environment.host;
+  http = inject(HttpClient)
+  constructor() { }
+
+  getAllData() {
+    return this.http.get<any[]>(this.apiUrl + `/EmployeePaymentInfo/GetAllPaymentInfo`)
+  }
+
+  createData(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data)
+  }
+
+  updateData(data: any, paymentId: any) {
+    return this.http.put(this.apiUrl + `/EmployeePaymentInfo/UpdatePaymentInfo/` + paymentId, data)
+  }
+
+  deleteData(paymentId: any) {
+    return this.http.delete<any[]>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo/` + paymentId)
+  }
+}

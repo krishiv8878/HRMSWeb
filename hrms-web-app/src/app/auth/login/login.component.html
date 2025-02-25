@@ -6,11 +6,14 @@
             <mat-form-field appearance="outline">
                 <mat-label>Email</mat-label>
                 <input type="email" matInput placeholder="Enter Your Email" formControlName="email">
+                <mat-error *ngIf="getControl('email')?.hasError('required')">Email is Required</mat-error>
+                <mat-error *ngIf="getControl('email')?.hasError('pattern')">Invalid Email Format</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Password</mat-label>
-                <input type="password" matInput placeholder="Enter Your password" formControlName="password">
+                <input type="password" matInput placeholder="Enter Your password" formControlName="password" maxlength="8">
+                <mat-error *ngIf="getControl('password')?.hasError('minlength')"> Password Must Have At Least 8 Characters.</mat-error>
             </mat-form-field>
 
             <div class="login-btn">

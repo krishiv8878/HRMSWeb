@@ -1,51 +1,52 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject, inject } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { MatFormField, MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
-import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { MatSelectModule } from '@angular/material/select';
+import { EmployeeshiftService } from '../../services/shift/employeeshift.service';
+import { ActivatedRoute } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import {MatSelectModule} from '@angular/material/select';
+
 @Component({
-  selector: 'app-leave',
+  selector: 'app-shift',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
-  providers: [provideNativeDateAdapter()],
-  templateUrl: './leave.component.html',
-  styleUrl: './leave.component.scss'
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
+  templateUrl: './shift.component.html',
+  styleUrl: './shift.component.scss'
 })
-export class LeaveComponent {
-  constructor(private _dialogref: MatDialogRef<LeaveComponent>,
+export class ShiftComponent {
+  constructor(private _dialogref: MatDialogRef<ShiftComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
 
-  services = inject(LeavetypeService)
   formbuilder = inject(FormBuilder)
-  isEdit = false;
+  services = inject(EmployeeshiftService)
+  route = inject(ActivatedRoute)
   toaster = inject(ToastrService)
+  isEdit = false;
 
-  leavetype = this.formbuilder.group({
+  shiftForm = this.formbuilder.group({
     id: 0,
-    leaveName: ['', [Validators.required]],
-    type: ['', [Validators.required]],
-    description: ['', [Validators.required]],
+    shiftName: ['', [Validators.required]],
+    startTime: ['', [Validators.required]],
+    endTime: ['', [Validators.required]],
     isActive: ['']
   })
 
   ngOnInit() {
-    this.leavetype.patchValue(this.data);
+    this.shiftForm.patchValue(this.data)
     if (this.data) {
       this.isEdit = true
     }
   }
-
   submitdata() {
     if (this.isEdit) {
-      this.services.updateData(this.leavetype.value).subscribe({
+      this.services.updateData(this.shiftForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
@@ -55,7 +56,7 @@ export class LeaveComponent {
         }
       })
     } else {
-      this.services.createData(this.leavetype.value).subscribe({
+      this.services.createData(this.shiftForm.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
           this.toaster.success('successfully add data', 'success')
@@ -67,6 +68,6 @@ export class LeaveComponent {
     }
   }
   getControl(controleName:string){
-    return this.leavetype.get(controleName);
+    return this.shiftForm.get(controleName);
   }
 }

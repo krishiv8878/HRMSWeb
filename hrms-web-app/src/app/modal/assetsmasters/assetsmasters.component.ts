@@ -67,4 +67,7 @@ export class AssetsmastersComponent {
       })
     }
   }
+  getControl(controleName:string){
+    return this.Assets.get(controleName);
+  }
 }

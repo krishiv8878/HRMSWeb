@@ -22,8 +22,8 @@ export class LeavetypeComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true},
-    { field: "leaveName", floatingFilter: true, filter: true},
-    { field: "leaveType", floatingFilter: true, filter: true},
+    // { field: "leaveName", floatingFilter: true, filter: true},
+    { field: "type", floatingFilter: true, filter: true},
     { field: "description", floatingFilter: true, filter: true},
     { field: "createdDate", floatingFilter: true, filter: true},
     { field: "createdBy", floatingFilter: true, filter: true},

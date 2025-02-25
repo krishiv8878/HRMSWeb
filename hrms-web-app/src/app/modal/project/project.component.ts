@@ -67,4 +67,7 @@ export class ProjectComponent {
       })
     }
   }
+  getControl(controleName:string){
+    return this.project.get(controleName);
+  }
 }

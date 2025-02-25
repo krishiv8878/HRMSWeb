@@ -1,42 +1,41 @@
 <div class="form">
-    <form action="" [formGroup]="leavetype" (ngSubmit)="submitdata()">
+    <form action="" [formGroup]="shiftForm" (ngSubmit)="submitdata()">
         @if (isEdit) {
-        <p>edit leaveType </p>
+        <p>edit shift</p>
         }@else {
-        <p>add leaveType</p>
+        <p>add shift</p>
         }
+
         <div class="employee-form">
             <div class="row">
-                <div class="col">
+                <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>leave type</mat-label>
-                        <input type="text" matInput name="Leave" placeholder="Enter Your LeaveType"
-                            formControlName="type">
-                            <mat-error *ngIf="getControl('type')?.hasError('required')">LeaveType Is
+                        <mat-label>shift Name</mat-label>
+                        <input type="text" matInput name="shiftName" placeholder="Enter shiftName"
+                            formControlName="shiftName">
+                        <mat-error *ngIf="getControl('shiftName')?.hasError('required')">ShiftName Is
                                 Required</mat-error>
                     </mat-form-field>
                 </div>
 
-                <!-- <div class="col-xl-6">
+                <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>leaveType</mat-label>                        
-                        <mat-select formControlName="type">
-                            <mat-option value="Casualleave">Casual leave </mat-option>
-                            <mat-option value="Sickleave">Sick leave</mat-option>
-                            <mat-option value="Annualleave">Annual leave</mat-option>
-                            <mat-option value="Paternityleaves">Paternity leaves</mat-option>
-                        </mat-select>
+                        <mat-label>start Time</mat-label>
+                        <input type="text" matInput name="startTime" placeholder="Enter startTime"
+                            formControlName="startTime">
+                        <mat-error *ngIf="getControl('startTime')?.hasError('required')">StartTime Is
+                                Required</mat-error>
                     </mat-form-field>
-                </div> -->
-            </div>           
+                </div>
+            </div>
 
             <div class="row">
                 <div class="col">
                     <mat-form-field appearance="outline">
-                        <mat-label>description</mat-label>
-                        <input type="text" matInput name="description" placeholder="Enter Your Description"
-                            formControlName="description">
-                            <mat-error *ngIf="getControl('description')?.hasError('required')">Description Is
+                        <mat-label>end Time</mat-label>
+                        <input type="text" matInput name="endTime" placeholder="Enter endTime"
+                            formControlName="endTime">
+                        <mat-error *ngIf="getControl('endTime')?.hasError('required')">EndTime Is
                                 Required</mat-error>
                     </mat-form-field>
                 </div>
@@ -47,7 +46,6 @@
                     <mat-checkbox formControlName="isActive">Active</mat-checkbox>
                 </div>
             </div>
-
 
             @if(isEdit){
             <div class="button-btn" mat-dialog-actions>
@@ -60,7 +58,6 @@
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
             </div>
             }
-
 
         </div>
     </form>
