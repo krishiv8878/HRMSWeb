@@ -26,9 +26,9 @@ export class RegisterComponent {
     FirstName: ['', [Validators.required]],
     LastName: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.pattern(/^[^@]+@[^@]+\.[^@]+$/)]],
-    MobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
+    mobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
     Address: ['', [Validators.required]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
+    password: ['', [Validators.required, Validators.minLength(8)]]
   })
   ngOnInit() { }
 
