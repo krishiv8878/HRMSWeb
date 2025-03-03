@@ -30,9 +30,9 @@ export class LeaveComponent {
 
   leavetype = this.formbuilder.group({
     id: 0,
-    leaveName: ['', [Validators.required]],
-    type: ['', [Validators.required]],
-    description: ['', [Validators.required]],
+    leaveName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    type: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     isActive: ['']
   })
 
@@ -44,6 +44,22 @@ export class LeaveComponent {
   }
 
   submitdata() {
+    if (this.leavetype.invalid) {
+      this.leavetype.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        leaveName: "Leave Name is Required",
+        type: "Leave Type is Required",
+        description: "Description is Required",        
+      };
+
+      for (const field in errorMessages) {
+        const control = this.leavetype.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.leavetype.value).subscribe({
         next: (val: any) => {

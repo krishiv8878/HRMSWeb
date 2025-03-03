@@ -36,7 +36,7 @@ export class SkillsComponent {
 
   Skillform = this.formBuilder.group({
     id: 0,
-    skillName: ['', [Validators.required]],   
+    skillName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],   
     isActive: ['']
   })
 
@@ -53,6 +53,20 @@ export class SkillsComponent {
 
 
   submitdata() {
+    if (this.Skillform.invalid) {
+      this.Skillform.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        skillName: "Skill Name is required",        
+      };
+
+      for (const field in errorMessages) {
+        const control = this.Skillform.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateSkill(this.Skillform.value).subscribe({
         next: (val: any) => {

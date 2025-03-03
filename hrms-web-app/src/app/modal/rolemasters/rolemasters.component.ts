@@ -32,7 +32,7 @@ export class RolemastersComponent {
 
   roledateForm = this.fomBuilder.group({
     id: 0,
-    roleName: ['', [Validators.required]],
+    roleName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     isActive: ['']
   })
 
@@ -49,6 +49,20 @@ export class RolemastersComponent {
 
 
   submitdata() {
+    if (this.roledateForm.invalid) {
+      this.roledateForm.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        roleName: "Role Name is Required",       
+      };
+
+      for (const field in errorMessages) {
+        const control = this.roledateForm.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.roledateForm.value).subscribe({
         next: (val: any) => {

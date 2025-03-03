@@ -30,7 +30,7 @@ export class DesignationsComponent {
 
   designation = this.formbuilder.group({
     id: 0,
-    designationName: ['', [Validators.required]],
+    designationName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     isActive: ['']
   })
 
@@ -42,6 +42,20 @@ export class DesignationsComponent {
   }
 
   submitdata() {
+    if (this.designation.invalid) {
+      this.designation.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        designationName: "Designation Name is Required",
+      };
+
+      for (const field in errorMessages) {
+        const control = this.designation.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.designation.value).subscribe({
         next: (val: any) => {
@@ -64,7 +78,7 @@ export class DesignationsComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.designation.get(controleName);
   }
 }

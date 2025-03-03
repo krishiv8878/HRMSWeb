@@ -32,10 +32,10 @@ export class AssetsmastersComponent {
 
   Assets = this.fomBuilder.group({
     id: 0,
-    assetsMasterName: ['', [Validators.required]],
-    description: ['', [Validators.required]],
-    serialNumber: ['', [Validators.required]],
-    dateOfPurchase: ['', [Validators.required, Validators.maxLength(10)]],
+    assetsMasterName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    description: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    serialNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+    dateOfPurchase: ['', [Validators.required]],
     isActive: ['']
   })
   ngOnInit() {
@@ -45,6 +45,23 @@ export class AssetsmastersComponent {
     }
   }
   submitdata() {
+    if (this.Assets.invalid) {
+      this.Assets.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        assetsMasterName: "Name is Required",
+        description: "Description is Required",
+        serialNumber: "Serial Number is Required",
+        // dateOfPurchase: "Date is Required",        
+      };
+
+      for (const field in errorMessages) {
+        const control = this.Assets.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.Assets.value).subscribe({
         next: (val: any) => {
@@ -67,7 +84,7 @@ export class AssetsmastersComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.Assets.get(controleName);
   }
 }

@@ -30,10 +30,10 @@ export class ProjectComponent {
 
   project = this.formbuilder.group({
     id: 0,
-    projectName: ['', [Validators.required]],
-    description: ['', [Validators.required]],
-    clientName: ['', [Validators.required]],
-    clientRegion: ['', [Validators.required]],
+    projectName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    clientName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    clientRegion: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     isActive: ['']
   })
 
@@ -45,6 +45,23 @@ export class ProjectComponent {
   }
 
   submitdata() {
+    if (this.project.invalid) {
+      this.project.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        projectName: "Project Name is Required",
+        description: "Description is Required",
+        clientName: "Client Name is Required",
+        clientRegion: "ClientRegion Name is Required",       
+      };
+
+      for (const field in errorMessages) {
+        const control = this.project.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.project.value).subscribe({
         next: (val: any) => {
