@@ -42,7 +42,7 @@ export class DesignationComponent {
 
   getData() {
     this.services.getData().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((desgine:any)=>desgine.isActive);
       console.log(response)
     })
   }

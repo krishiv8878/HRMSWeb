@@ -39,7 +39,7 @@ export class LeavetypeComponent {
 
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((leave:any)=>leave.isActive);
       console.log(response)
     })
   }

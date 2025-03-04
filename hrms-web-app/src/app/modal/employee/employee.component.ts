@@ -43,12 +43,12 @@ export class EmployeeComponent {
     firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     lastName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     emailAddress: ['', [Validators.required,Validators.email]],
-    mobileNumber: ['', [Validators.required,Validators.pattern('^[0-9]+$'), Validators.maxLength(10)]],
+    mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
     permanentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     gender: '',
     currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     dateOfJoining: ['',[Validators.required]],
-    roleIds: [[], [Validators.required, Validators.pattern('^[0-9]+$')]],
+    roleIds: [[], [Validators.required]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 

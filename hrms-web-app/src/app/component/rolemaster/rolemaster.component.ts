@@ -20,7 +20,7 @@ import { ActionComponent } from '../action/action.component';
 export class RolemasterComponent {
   services = inject(RoleservicesService)
   dialog = inject(MatDialog)
-  router = inject(Router)                                                                 
+  router = inject(Router)
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
@@ -33,14 +33,14 @@ export class RolemasterComponent {
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];
- 
+
   ngOnInit() {
     this.getData();
   }
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((role: any) => role.isActive);
       console.log(response)
     })
   }

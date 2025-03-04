@@ -48,7 +48,7 @@ export class SkillComponent {
   }
   getSkill() {
     this.services.getSkill().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((skill:any)=>skill.isActive);
     })
   }
   rowData: [] = [];

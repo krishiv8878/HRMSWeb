@@ -42,7 +42,7 @@ export class ProjectmasterComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((project:any)=>project.isActive);
       console.log(response)
     }) 
   }

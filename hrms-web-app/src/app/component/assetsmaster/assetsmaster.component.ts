@@ -43,7 +43,7 @@ export class AssetsmasterComponent {
   }
   getData() {
     this.services.getData().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((assert:any)=>assert.isActive)
     })
   }
   pagination = true;
