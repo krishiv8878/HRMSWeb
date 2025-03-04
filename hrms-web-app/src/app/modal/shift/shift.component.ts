@@ -35,7 +35,7 @@ export class ShiftComponent {
     shiftName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     startTime: ['', [Validators.required, Validators.pattern('^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$')]],
     endTime: ['', [Validators.required, Validators.pattern('^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$')]],
-    isActive: ['']
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -50,7 +50,8 @@ export class ShiftComponent {
       const errorMessages: { [key: string]: string } = {
         shiftName: "Shift Name is required",
         startTime: "Start Time is required",
-        endTime: "End Time is required"
+        endTime: "End Time is required",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {

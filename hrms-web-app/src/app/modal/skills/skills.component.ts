@@ -36,8 +36,8 @@ export class SkillsComponent {
 
   Skillform = this.formBuilder.group({
     id: 0,
-    skillName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],   
-    isActive: ['']
+    skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -56,7 +56,8 @@ export class SkillsComponent {
     if (this.Skillform.invalid) {
       this.Skillform.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        skillName: "Skill Name is required",        
+        skillName: "Skill Name is required",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -89,7 +90,7 @@ export class SkillsComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.Skillform.get(controleName);
   }
 }

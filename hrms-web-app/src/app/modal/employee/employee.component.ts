@@ -49,7 +49,7 @@ export class EmployeeComponent {
     currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     dateOfJoining: ['',[Validators.required]],
     roleIds: [[], [Validators.required, Validators.pattern('^[0-9]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   roles: any[] = []; // Role master list 
@@ -81,7 +81,8 @@ export class EmployeeComponent {
         permanentAddress: "Permanent Address is Required",
         currentAddress: "Current Address is Required",
         // dateOfJoining: "Date is Required",
-        roleIds: "RoleID is Required",       
+        roleIds: "RoleID is Required",   
+        isActive:" Please select a Active Button"    
       };
 
       for (const field in errorMessages) {

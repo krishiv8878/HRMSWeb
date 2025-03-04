@@ -38,7 +38,7 @@ export class HolidaysComponent {
     id: 0,
     holidayName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -59,6 +59,7 @@ export class HolidaysComponent {
       const errorMessages: { [key: string]: string } = {
         holidayName: "Holiday Name is Required",
         description: "Description is Required",  
+         isActive:" Please select a Active Button"
       };
 
       for (const field in errorMessages) {

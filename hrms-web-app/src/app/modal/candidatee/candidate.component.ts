@@ -45,7 +45,7 @@ export class CandidateeComponent {
     expectedSalary: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
     currentSalary: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
     noticePeriod: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -67,6 +67,7 @@ export class CandidateeComponent {
         expectedSalary: "Expected Salary is Required",
         currentSalary: "Current Salary is Required",
         noticePeriod: "Notice Period is Required",
+        isActive:" Please select a Active Button"
       };
 
       for (const field in errorMessages) {

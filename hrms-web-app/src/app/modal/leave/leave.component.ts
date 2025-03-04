@@ -33,7 +33,7 @@ export class LeaveComponent {
     leaveName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     type: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -49,7 +49,8 @@ export class LeaveComponent {
       const errorMessages: { [key: string]: string } = {
         leaveName: "Leave Name is Required",
         type: "Leave Type is Required",
-        description: "Description is Required",        
+        description: "Description is Required",  
+        isActive:" Please select a Active Button"      
       };
 
       for (const field in errorMessages) {

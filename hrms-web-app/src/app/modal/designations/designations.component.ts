@@ -31,7 +31,7 @@ export class DesignationsComponent {
   designation = this.formbuilder.group({
     id: 0,
     designationName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -46,6 +46,7 @@ export class DesignationsComponent {
       this.designation.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
         designationName: "Designation Name is Required",
+         isActive:" Please select a Active Button"
       };
 
       for (const field in errorMessages) {

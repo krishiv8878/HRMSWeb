@@ -36,7 +36,7 @@ export class AssetsmastersComponent {
     description: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     serialNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
     dateOfPurchase: ['', [Validators.required]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
   ngOnInit() {
     this.Assets.patchValue(this.data);
@@ -51,7 +51,8 @@ export class AssetsmastersComponent {
         assetsMasterName: "Name is Required",
         description: "Description is Required",
         serialNumber: "Serial Number is Required",
-        // dateOfPurchase: "Date is Required",        
+        // dateOfPurchase: "Date is Required",    
+        isActive:" Please select a Active Button"    
       };
 
       for (const field in errorMessages) {

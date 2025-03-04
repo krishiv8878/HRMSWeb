@@ -33,7 +33,7 @@ export class PaymeenInfoComponent {
     ifscCode: ['', [Validators.required,Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$')]],
     accountNumber: ['', [Validators.required,Validators.pattern(('^[0-9]+$'))]],
     nameOnAccount: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
   
   id!: any;
@@ -54,6 +54,7 @@ export class PaymeenInfoComponent {
         ifscCode: "Please Enter A Valid IFSC Code",
         accountNumber: "Enter Account Number",
         nameOnAccount: "Enter Account Name",  
+         isActive:" Please select a Active Button"
       };
 
       for (const field in errorMessages) {

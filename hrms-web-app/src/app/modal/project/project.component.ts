@@ -34,7 +34,7 @@ export class ProjectComponent {
     description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     clientName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     clientRegion: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -51,7 +51,8 @@ export class ProjectComponent {
         projectName: "Project Name is Required",
         description: "Description is Required",
         clientName: "Client Name is Required",
-        clientRegion: "ClientRegion Name is Required",       
+        clientRegion: "ClientRegion Name is Required",   
+        isActive:" Please select a Active Button"    
       };
 
       for (const field in errorMessages) {

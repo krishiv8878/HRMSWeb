@@ -33,7 +33,7 @@ export class RolemastersComponent {
   roledateForm = this.fomBuilder.group({
     id: 0,
     roleName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -52,7 +52,8 @@ export class RolemastersComponent {
     if (this.roledateForm.invalid) {
       this.roledateForm.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        roleName: "Role Name is Required",       
+        roleName: "Role Name is Required", 
+        isActive:" Please select a Active Button"      
       };
 
       for (const field in errorMessages) {
