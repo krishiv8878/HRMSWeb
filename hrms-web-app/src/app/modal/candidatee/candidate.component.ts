@@ -11,7 +11,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import {MatSelectModule} from '@angular/material/select';
+import { MatSelectModule } from '@angular/material/select';
 
 
 @Component({
@@ -30,22 +30,22 @@ export class CandidateeComponent {
 
   numbers: number[] = Array.from({ length: 90 }, (_, i) => i + 1)
   numbermenu: number | null = null;
-  
+
   constructor(private _dialogref: MatDialogRef<CandidateeComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
 
   CandidateForm = this.fomBuilder.group({
     id: 0,
-    firstName: ['', [Validators.required]],
-    lastName: ['', [Validators.required]],
-    emailAddress: ['', [Validators.required]],
-    mobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
-    totalExperience: ['', [Validators.required]],
-    relevantExperience: ['', [Validators.required]],
-    expectedSalary: ['', [Validators.required]],
-    currentSalary: ['', [Validators.required]],
-    noticePeriod: ['', [Validators.required]],
-    isActive: ['']
+    firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    emailAddress: ['', [Validators.required, Validators.email]],
+    mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
+    totalExperience: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+    relevantExperience: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+    expectedSalary: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+    currentSalary: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+    noticePeriod: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -55,7 +55,30 @@ export class CandidateeComponent {
     }
   }
   submitdata() {
-    if (this.isEdit) { 
+    if (this.CandidateForm.invalid) {
+      this.CandidateForm.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        firstName: "First Name is Required",
+        lastName: "Last Name is Required",
+        emailAddress: "Enter Valid Email",
+        mobileNumber: "Mobile Number Must Be 10 Digits",
+        totalExperience: "Total Experience is Required",
+        relevantExperience: "Relevant Experience is Required",
+        expectedSalary: "Expected Salary is Required",
+        currentSalary: "Current Salary is Required",
+        noticePeriod: "Notice Period is Required",
+        isActive:" Please select a Active Button"
+      };
+
+      for (const field in errorMessages) {
+        const control = this.CandidateForm.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
+    if (this.isEdit) {
       this.services.updateData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
@@ -77,8 +100,8 @@ export class CandidateeComponent {
       })
     }
   }
-  // selected='option1'
-  getControl(controleName:string){
-    return this.CandidateForm.get(controleName);
-  }
+
+  // getControl(controleName: string) {
+  //   return this.CandidateForm.get(controleName);
+  // }  
 }

@@ -36,9 +36,9 @@ export class HolidaysComponent {
 
   Holidayform = this.formBuilder.group({
     id: 0,
-    holidayName: ['', [Validators.required]],
-    description: ['', [Validators.required]],
-    isActive: ['']
+    holidayName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -54,6 +54,22 @@ export class HolidaysComponent {
 
 
   submitdata() {
+    if (this.Holidayform.invalid) {
+      this.Holidayform.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        holidayName: "Holiday Name is Required",
+        description: "Description is Required",  
+         isActive:" Please select a Active Button"
+      };
+
+      for (const field in errorMessages) {
+        const control = this.Holidayform.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateHoliday(this.Holidayform.value).subscribe({
         next: (val: any) => {

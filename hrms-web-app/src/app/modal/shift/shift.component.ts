@@ -32,10 +32,10 @@ export class ShiftComponent {
 
   shiftForm = this.formbuilder.group({
     id: 0,
-    shiftName: ['', [Validators.required]],
-    startTime: ['', [Validators.required]],
-    endTime: ['', [Validators.required]],
-    isActive: ['']
+    shiftName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    startTime: ['', [Validators.required, Validators.pattern('^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$')]],
+    endTime: ['', [Validators.required, Validators.pattern('^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$')]],
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -45,6 +45,23 @@ export class ShiftComponent {
     }
   }
   submitdata() {
+    if (this.shiftForm.invalid) {
+      this.shiftForm.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        shiftName: "Shift Name is required",
+        startTime: "Start Time is required",
+        endTime: "End Time is required",
+        isActive: " Please select a Active Button"
+      };
+
+      for (const field in errorMessages) {
+        const control = this.shiftForm.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.shiftForm.value).subscribe({
         next: (val: any) => {
@@ -67,7 +84,7 @@ export class ShiftComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.shiftForm.get(controleName);
   }
 }

@@ -27,7 +27,7 @@ export class AttendaseditComponent {
     clockIn:['',[Validators.required]],
     clockOut:['',[Validators.required]],
     totalHours:['',[Validators.required]],
-    isActive:['']
+    isActive:['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   constructor(private _dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data:any){}

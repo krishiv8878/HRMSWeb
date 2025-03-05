@@ -40,16 +40,16 @@ export class EmployeeComponent {
 
   Employeeform = this.formBuilder.group({
     id: 0,
-    firstName: ['', [Validators.required]],
-    lastName: ['', [Validators.required]],
-    emailAddress: ['', [Validators.required]],
-    mobileNumber: ['', [Validators.required, Validators.maxLength(10)]],
-    permanentAddress: ['', [Validators.required]],
+    firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    lastName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    emailAddress: ['', [Validators.required,Validators.email]],
+    mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
+    permanentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     gender: '',
-    currentAddress: ['', [Validators.required]],
+    currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     dateOfJoining: ['',[Validators.required]],
     roleIds: [[], [Validators.required]],
-    isActive: ['']
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   roles: any[] = []; // Role master list 
@@ -71,6 +71,28 @@ export class EmployeeComponent {
  
 
   submitdata() {
+    if (this.Employeeform.invalid) {
+      this.Employeeform.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        firstName: "First Name is Required",
+        lastName: "Last Name is Required",
+        emailAddress: "Enter Valid Email",
+        mobileNumber: "Mobile Number Must Be 10 Digits",
+        permanentAddress: "Permanent Address is Required",
+        currentAddress: "Current Address is Required",
+        // dateOfJoining: "Date is Required",
+        roleIds: "RoleID is Required",   
+        isActive:" Please select a Active Button"    
+      };
+
+      for (const field in errorMessages) {
+        const control = this.Employeeform.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.Employeeform.value).subscribe({                                                                                                                                             
         next: (val: any) => {

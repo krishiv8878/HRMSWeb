@@ -29,11 +29,11 @@ export class PaymeenInfoComponent {
 
   paymentinfo = this.formBuilder.group({
     id: 0,
-    bankName: ['', [Validators.required]],
-    ifscCode: ['', [Validators.required]],
-    accountNumber: ['', [Validators.required]],
-    nameOnAccount: ['', [Validators.required]],
-    isActive: ['']
+    bankName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    ifscCode: ['', [Validators.required,Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$')]],
+    accountNumber: ['', [Validators.required,Validators.pattern(('^[0-9]+$'))]],
+    nameOnAccount: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
   
   id!: any;
@@ -47,6 +47,24 @@ export class PaymeenInfoComponent {
     }
   }
   submitdata() {
+    if (this.paymentinfo.invalid) {
+      this.paymentinfo.markAllAsTouched(); // Show errors in UI  
+      const errorMessages: { [key: string]: string } = {
+        bankName: "Bank Name is Required",
+        ifscCode: "Please Enter A Valid IFSC Code",
+        accountNumber: "Enter Account Number",
+        nameOnAccount: "Enter Account Name",  
+         isActive:" Please select a Active Button"
+      };
+
+      for (const field in errorMessages) {
+        const control = this.paymentinfo.get(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return;
+        }
+      }
+    }
     if (this.isEdit) {
       this.services.updateData(this.paymentinfo.value, this.id).subscribe({
         next: (val: any) => {
