@@ -1,51 +1,67 @@
-<div class="form">
-    <form action="" [formGroup]="attendanse" (ngSubmit)="submitdata()">
-       
-        <p>edit EmployeeAttendance</p>
-       
-        <div class="employee-form">
-            <div class="row">
-                <div class="col">
-                    <mat-form-field appearance="outline">
-                        <mat-label>clockIn</mat-label>
-                        <input matInput [matDatepicker]="picker" formControlName="clockIn">
-                        <!-- <mat-hint>MM/DD/YYYY</mat-hint> -->
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
+<div class="aatend-form">
+    <div class="row">
+        <div class="col" (click)="closeDialog()" style="color: gray;">
+            <mat-icon style="font-size: xx;">close</mat-icon>
+        </div>
+        <div class="col-xl-10">
+            <h4>Request Attendance Regularization</h4>
+        </div>
+        <mat-divider></mat-divider>
+    </div>
+
+    <form action="" [formGroup]="attendaseform" (ngSubmit)="submitdata()">
+        <div mat-dialog-content style="padding-top: 3rem;">
+            <mat-label>Selected Date</mat-label>
+            <mat-form-field class="full-width">
+                <input matInput [matDatepicker]="picker" formControlName="selectedDate">
+                <mat-datepicker #picker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-radio-group class="full-width">
+                <mat-radio-button value="add">Add/update time entries to adjust attendance logs.</mat-radio-button>
+            </mat-radio-group>
+
+            <p style="padding-top: 3rem; color: gray;">Click and select time stamp box that you would like to adjust and
+                make changes to the time</p>
+
+            <div class="logs-section">
+                <div class="log-item">
+                    <p>Attendance Adjustment</p>
+                    <button mat-raised-button (click)="addLog()">+ Add Log</button>
                 </div>
 
-                <div class="col">
+
+                <div *ngFor="let log of logs; let i = index" class="log-entry">
                     <mat-form-field appearance="outline">
-                        <mat-label>clockOut</mat-label>
-                        <input matInput [matDatepicker]="picker1" formControlName="clockOut">
-                        <!-- <mat-hint>MM/DD/YYYY</mat-hint> -->
-                        <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-                        <mat-datepicker #picker1></mat-datepicker>
+                        <mat-label>In Time</mat-label>
+                        <input matInput type="time" formControlName="inTime">
                     </mat-form-field>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col">
+
+                    <mat-icon>arrow_forward</mat-icon>
+
                     <mat-form-field appearance="outline">
-                        <mat-label>totalHours</mat-label>
-                        <input type="text" matInput name="totalHours" placeholder=" Your totalHours"
-                            formControlName="totalHours">
+                        <mat-label>Out Time</mat-label>
+                        <input matInput type="time" formControlName="outTime">
                     </mat-form-field>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+
+                    <button mat-icon-button color="warn" (click)="removeLog(i)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
                 </div>
             </div>
 
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+            <div class="note-menu" style="padding-top: 3rem;">
+                <mat-label> Note</mat-label>
+                <mat-form-field appearance="outline" class="full-width" style="padding-top: 1rem; height: 100px;">
+                    <mat-label>Enter Note</mat-label>
+                    <textarea matInput formControlName="note" style="height: 5rem;"></textarea>
+                </mat-form-field>
             </div>
-          
+        </div>
+
+        <div mat-dialog-actions align="end" style="padding-top: 5rem; display: flex; gap: 2rem;">
+            <button mat-raised-button (click)="closeDialog()">Cancel</button>
+            <button mat-flat-button>Request</button>
         </div>
     </form>
 </div>

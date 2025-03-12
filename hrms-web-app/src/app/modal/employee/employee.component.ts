@@ -49,11 +49,13 @@ export class EmployeeComponent {
     currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     dateOfJoining: ['',[Validators.required]],
     roleIds: [[], [Validators.required]],
+    managerId:[[], [Validators.required]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   roles: any[] = []; // Role master list 
-  
+  managers:any[]=[]; // Manager master list 
+
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
     console.log('update data', this.data)
@@ -66,6 +68,10 @@ export class EmployeeComponent {
     this.roleservises.getAllData().subscribe((roles:any)=>{
       this.roles = roles.data;
       console.log('Role Masters:', this.roles);
+    })
+    this.services.getData().subscribe((managers:any)=>{
+      this.managers = managers.data;
+      console.log('managers Masters:',  this.managers );
     })
   }
  
@@ -81,7 +87,8 @@ export class EmployeeComponent {
         permanentAddress: "Permanent Address is Required",
         currentAddress: "Current Address is Required",
         // dateOfJoining: "Date is Required",
-        roleIds: "RoleID is Required",   
+        roleIds: "RoleID is Required", 
+        managerId: "ManagerId is Required",   
         isActive:" Please select a Active Button"    
       };
 

@@ -37,7 +37,7 @@ export class HolidaysComponent {
   Holidayform = this.formBuilder.group({
     id: 0,
     holidayName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    description: [''],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 

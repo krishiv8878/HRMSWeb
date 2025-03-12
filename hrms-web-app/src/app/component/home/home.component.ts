@@ -39,6 +39,7 @@ export class HomeComponent {
     { field: "permanentAddress", floatingFilter: true, filter: true },
     { field: "dateOfJoining", floatingFilter: true, filter: true },
     { field: "roleIds", floatingFilter: true, filter: true },
+    { field: "managerId", floatingFilter: true, filter: true },
     { field: "gender", floatingFilter: true, filter: true },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
@@ -56,8 +57,7 @@ export class HomeComponent {
   }
 
   getAllData() {
-
-    this.service.getAllData().subscribe((response: any) => {
+    this.service.getData().subscribe((response: any) => {
       this.rowData = response.data.filter((employee:any)=>employee.isActive)
       // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
       console.log('rowww data', this.rowData)     

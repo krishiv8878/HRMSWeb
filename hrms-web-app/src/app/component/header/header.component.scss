@@ -1,42 +1,30 @@
 mat-toolbar {
-    background: linear-gradient(90deg, #1E72C2, #015BB1);
-    color: white;
-    position: sticky;
-    z-index: 2;
-    top: 0;
-    width: 100%;
-    // padding: 0 2rem;
+  background: linear-gradient(90deg, #1E72C2, #015BB1);
+  color: white;
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  width: 100%;
+  // padding: 0 2rem;
 }
 
 .header-item {
-    background: transparent;
-    border: 0;
-    outline: none;
-    color: white;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: white;
 }
 
-// .header-menu button {
-//     display: flex;
-//     justify-content: center;
-//     align-items: center;
-//     border: 0;
-//     outline: none;
-//     background-color: white;
-//     color: #4fa6d5;
-//     text-transform: capitalize;
-//     padding: 10px 20px;
-//     font-weight: 600;
-//     font-size: 20px;
-//     border-radius: 20px;
-// }
-
-// .header-menu button:hover {
-//     background: #3b799b;
-//     transition: 2s ease;
-//     color: white;
-//     border: 5px solid #4fa6d5;
-// }
-
 .example-spacer {
-    flex: 1 1 auto;
+  flex: 1 1 auto;
+}
+
+::ng-deep .custom-menu {
+  background-color: white !important;
+}
+
+::ng-deep .custom-menu .mat-menu-item {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f6f2f2 !important;
 }

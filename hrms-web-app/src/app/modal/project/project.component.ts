@@ -31,7 +31,7 @@ export class ProjectComponent {
   project = this.formbuilder.group({
     id: 0,
     projectName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    description: [''],
     clientName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     clientRegion: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]

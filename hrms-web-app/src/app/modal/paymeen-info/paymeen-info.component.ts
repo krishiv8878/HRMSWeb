@@ -30,7 +30,7 @@ export class PaymeenInfoComponent {
   paymentinfo = this.formBuilder.group({
     id: 0,
     bankName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    ifscCode: ['', [Validators.required,Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$')]],
+    ifscCode: ['', [Validators.required,Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$'),Validators.maxLength(11)]],
     accountNumber: ['', [Validators.required,Validators.pattern(('^[0-9]+$'))]],
     nameOnAccount: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]

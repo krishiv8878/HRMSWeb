@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { ColDef } from 'ag-grid-community';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
-import { ActionComponent } from '../action/action.component';
+// import { ActionComponent } from '../action/action.component';
 import { MatDialog } from '@angular/material/dialog';
 import { EmployeeAttendComponent } from '../../modal/employee-attend/employee-attend.component';
 import { MatCardModule } from '@angular/material/card';
@@ -14,6 +14,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { FormsModule } from '@angular/forms';
 import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
+
 
 @Component({
   selector: 'app-employee-attendance',
@@ -34,13 +35,29 @@ export class EmployeeAttendanceComponent {
   // Column definitions for AG Grid table
 
   public columnDefs: ColDef[] = [
-    { field: "id", floatingFilter: true, filter: true },
-    { field: "employeeId", floatingFilter: true, filter: true },
-    { field: "clockIn", floatingFilter: true, filter: true },
-    { field: "clockOut", floatingFilter: true, filter: true },
+    // { field: "id", floatingFilter: true, filter: true },
+    // { field: "firstName", floatingFilter: true, filter: true },
+    // { field: "lastName", floatingFilter: true, filter: true },
+    { field: "Date", floatingFilter: true, filter: true },
+    { field: "clockIn", floatingFilter: true, filter: true, },
+    { field: "clockOut", floatingFilter: true, filter: true, },
     { field: "totalHours", floatingFilter: true, filter: true },
-    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this) } }
+    {
+      field: "groess", filter: true, cellRenderer: () => {
+        return `<p class="gross-btn">...</p>`;
+      },
+      onCellClicked: (params) => this.openGrossModal(params)
+    }
+    // { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this) } }
   ]
+  openGrossModal(params: any) {
+    this.dialog.open(AttendaseditComponent, {
+      width: '600px',
+      height: '100vh',
+      position: { right: '0px' },
+      data: params.data // Employee data pass karna
+    });
+  }
 
   // Called when the component is initialized
 
@@ -56,36 +73,55 @@ export class EmployeeAttendanceComponent {
 
   runigtime() {
     const now = new Date();
-    this.currentTime = now.toLocaleTimeString('en-US', { hour12: true });              
+    this.currentTime = now.toLocaleTimeString('en-US', { hour12: true });
   }
 
- 
+
   // Fetch all employee attendance data from API
 
-
+  // getAllData() {
+  //   this.services.getAllData().subscribe((response: any) => {
+  //     this.rowData = response.data;
+  //   })
+  // }
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data
-    })
+      console.log("API Response:", response);
+      this.rowData = response.data.map((item: any) => {
+        return {
+          Date: this.extractDate(item.clockIn),
+          clockIn: item.clockIn ? new Date(item.clockIn).toLocaleTimeString('en-US', { hour12: false }) : "",
+          clockOut: item.clockOut ? new Date(item.clockOut).toLocaleTimeString('en-US', { hour12: false }) : "",
+          totalHours: item.totalHours || ""
+        };
+      });
+    });
+  }
+
+  extractDate(dateString: string): string {
+    if (!dateString) return "";
+    const parsedDate = new Date(dateString);
+    return isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleDateString('en-GB');
   }
 
 
   // Opens the edit modal for updating employee attendance data
 
-  Edit(data: any) {
-    const dialogRef = this.dialog.open(AttendaseditComponent, {
-      data,
-    })
-    dialogRef.afterClosed().subscribe({
-      next: (val) => {
-        this.getAllData();
-      }
-    })
-  }
+  // Edit(data: any) {
+  //   const dialogRef = this.dialog.open(AttendaseditComponent, {
+  //     data,
+  //   })
+  //   dialogRef.afterClosed().subscribe({
+  //     next: (val) => {
+  //       this.getAllData();
+  //     }
+  //   })
+  // }
+
+
   // Table row data and pagination configurations
 
-
-  rowData: any;
+  rowData: any[] = [];
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];
@@ -132,7 +168,6 @@ export class EmployeeAttendanceComponent {
   startClock() {
     if (this.startTime) return;
     this.startTime = new Date();
-
     this.interval = setInterval(() => {
       this.updateProgress();
       this.updaterunigtime();
