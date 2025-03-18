@@ -11,12 +11,22 @@ import { ICellRendererParams } from 'ag-grid-community';
   styleUrl: './togglebutton.component.scss'
 })
 export class TogglebuttonComponent implements ICellRendererAngularComp {
-  public value!: string;
-  agInit(params: ICellRendererParams) {
+  params!: ICellRendererParams;
 
+  agInit(params: ICellRendererParams): void {
+    this.params = params;
   }
-  refresh(params: ICellRendererParams) {
-    return true
+  
+  toggleStatus(): void {
+    if (this.params && this.params.node && this.params.colDef?.field) {
+      const newValue = !this.params.value;
+      this.params.node.setDataValue(this.params.colDef.field, newValue);
+    }
+  }
+  
+
+  refresh(): boolean {
+    return false;
   }
  
 }

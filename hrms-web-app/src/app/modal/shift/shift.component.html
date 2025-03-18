@@ -21,7 +21,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>start Time</mat-label>
-                        <input type="text" matInput name="startTime" placeholder="Enter StartTime"
+                        <input type="text" matInput name="startTime" placeholder="00:01"
                             formControlName="startTime">
                         <mat-error *ngIf="getControl('startTime')?.hasError('required')">StartTime Is
                                 Required</mat-error>
@@ -33,7 +33,7 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>end Time</mat-label>
-                        <input type="text" matInput name="endTime" placeholder="Enter EndTime"
+                        <input type="text" matInput name="endTime" placeholder="00:01"
                             formControlName="endTime">
                         <mat-error *ngIf="getControl('endTime')?.hasError('required')">EndTime Is
                                 Required</mat-error>

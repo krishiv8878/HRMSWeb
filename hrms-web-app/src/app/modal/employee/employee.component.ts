@@ -44,12 +44,12 @@ export class EmployeeComponent {
     lastName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     emailAddress: ['', [Validators.required,Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
-    permanentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    permanentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
     gender: '',
-    currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
     dateOfJoining: ['',[Validators.required]],
     roleIds: [[], [Validators.required]],
-    managerId:[[], [Validators.required]],
+    managerId:[''],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
@@ -69,7 +69,7 @@ export class EmployeeComponent {
       this.roles = roles.data;
       console.log('Role Masters:', this.roles);
     })
-    this.services.getData().subscribe((managers:any)=>{
+    this.services.getManager().subscribe((managers:any)=>{
       this.managers = managers.data;
       console.log('managers Masters:',  this.managers );
     })
@@ -88,7 +88,7 @@ export class EmployeeComponent {
         currentAddress: "Current Address is Required",
         // dateOfJoining: "Date is Required",
         roleIds: "RoleID is Required", 
-        managerId: "ManagerId is Required",   
+        // managerId: "ManagerId is Required",   
         isActive:" Please select a Active Button"    
       };
 

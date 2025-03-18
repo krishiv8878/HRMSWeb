@@ -46,7 +46,7 @@ export class PaymentinfoComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((payment:any)=>payment.isActive);
+      this.rowData = response.data.filter((payment: any) => payment.isActive);
     })
   }
 
@@ -84,6 +84,8 @@ export class PaymentinfoComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
+    flex: 1,
+    minWidth: 150,
   };
   openAddForm() {
     const dialogRef = this.dialog.open(PaymeenInfoComponent)

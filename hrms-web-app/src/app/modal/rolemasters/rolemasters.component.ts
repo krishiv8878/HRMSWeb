@@ -32,7 +32,7 @@ export class RolemastersComponent {
 
   roledateForm = this.fomBuilder.group({
     id: 0,
-    roleName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    roleName: ['', [Validators.required,Validators.pattern('^[a-zA-Z .,-]+$')]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 

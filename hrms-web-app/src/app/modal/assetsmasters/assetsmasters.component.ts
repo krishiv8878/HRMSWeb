@@ -51,7 +51,7 @@ export class AssetsmastersComponent {
         assetsMasterName: "Name is Required",
         description: "Description is Required",
         serialNumber: "Serial Number is Required",
-        // dateOfPurchase: "Date is Required",    
+        dateOfPurchase: "Date is Required",    
         isActive:" Please select a Active Button"    
       };
 
