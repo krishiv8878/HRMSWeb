@@ -48,8 +48,8 @@ export class EmployeeAttendanceComponent {
       },
       onCellClicked: (params) => this.openGrossModal(params)
     }
-    // { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this) } }
   ]
+
   openGrossModal(params: any) {
     this.dialog.open(AttendaseditComponent, {
       width: '600px',
