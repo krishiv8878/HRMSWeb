@@ -33,7 +33,7 @@ export class AssetsmastersComponent {
   Assets = this.fomBuilder.group({
     id: 0,
     assetsMasterName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    description: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    description: [''],
     serialNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
     dateOfPurchase: ['', [Validators.required]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
@@ -51,7 +51,7 @@ export class AssetsmastersComponent {
         assetsMasterName: "Name is Required",
         description: "Description is Required",
         serialNumber: "Serial Number is Required",
-        // dateOfPurchase: "Date is Required",    
+        dateOfPurchase: "Date is Required",    
         isActive:" Please select a Active Button"    
       };
 

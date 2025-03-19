@@ -9,41 +9,53 @@ import { ToastrService } from 'ngx-toastr';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-
+import { MatIconModule } from '@angular/material/icon';
+import { MatRadioModule } from '@angular/material/radio';
+import { CommonModule } from '@angular/common';
+import { MatDividerModule } from '@angular/material/divider';
 @Component({
   selector: 'app-attendasedit',
   standalone: true,
-  imports: [MatFormField,MatInputModule,MatButtonModule,ReactiveFormsModule,MatCheckboxModule,MatDatepickerModule, MatNativeDateModule],
+  imports: [MatInputModule, MatButtonModule, MatDividerModule, ReactiveFormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatIconModule, MatRadioModule, CommonModule],
   templateUrl: './attendasedit.component.html',
   styleUrl: './attendasedit.component.scss'
 })
 export class AttendaseditComponent {
   services = inject(EmployeeeService)
-  formbuilder =inject(FormBuilder)
-  toaster=inject(ToastrService)
+  formbuilder = inject(FormBuilder)
+  toaster = inject(ToastrService)
+  logs: { inTime: string; outTime: string }[] = [];
 
-  attendanse = this.formbuilder.group({
-    id: 0,
-    clockIn:['',[Validators.required]],
-    clockOut:['',[Validators.required]],
-    totalHours:['',[Validators.required]],
-    isActive:['',[Validators.required, Validators.pattern('true|false')]]
+  attendaseform = this.formbuilder.group({
+    selectedDate: [{ value: new Date(), disabled: true }],
+    note: ['', Validators.required],
+    inTime: ['', Validators.required],
+    outTime: ['', Validators.required]
   })
 
-  constructor(private _dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data:any){}
+  constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) { }
 
-  ngOnInit(){
-    this.attendanse.patchValue(this.data)
+  addLog() {
+    if (this.data) {    
+      this.logs.push({
+        inTime: this.data.clockIn,        
+        outTime: this.data.clockOut,
+      })
+    }
+    // this.logs.push({ inTime: '', outTime: '' });
   }
-  submitdata(){
-    this.services.updateData(this.attendanse.value).subscribe({
-      next: (val: any) => {
-        // console.log("successfully add")
-        this.toaster.success('successfully add data', 'success')
-        this._dialogref.close(true);
-      }, error: (err) => {
-        console.log(err)
-      }
-    })
+  removeLog(index: number) {
+    this.logs.splice(index);
+  }
+
+
+  submitdata() {
+    if (this.attendaseform.valid) {
+      console.log('Form Data:', this.attendaseform.value);
+      this.dialogref.close(this.attendaseform.value);
+    }
+  }
+  closeDialog() {
+    this.dialogref.close();
   }
 }

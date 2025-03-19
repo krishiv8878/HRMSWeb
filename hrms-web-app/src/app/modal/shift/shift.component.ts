@@ -49,8 +49,8 @@ export class ShiftComponent {
       this.shiftForm.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
         shiftName: "Shift Name is required",
-        startTime: "Start Time is required",
-        endTime: "End Time is required",
+        startTime: "Time Formate Invalide",
+        endTime: "Time Formate Invalide",
         isActive: " Please select a Active Button"
       };
 

@@ -13,13 +13,11 @@ export class EmployeeService {
   apiUrl = environment.host
   constructor() { }
 
-  // getAllData(): Observable<{ employeedata: any[], employeeRoles: any[] }> {
-  //   const employeedata = this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
-  //   const employeeRoles = this.http.get<any[]>(this.apiUrl + `/EmployeeRoleMapping/GetEmployeeRoles`);
-  //   return forkJoin({ employeedata, employeeRoles })
-  // }
-  getAllData(){
+  getData(){
     return  this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
+  }
+  getManager(){
+    return  this.http.get<any[]>(this.apiUrl + "/Employee/GetManagers");
   }
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/Employee/AddEmployee`, data)

@@ -37,8 +37,13 @@ export class HomeComponent {
     { field: "emailAddress", floatingFilter: true, filter: true },
     { field: "mobileNumber", floatingFilter: true, filter: true },
     { field: "permanentAddress", floatingFilter: true, filter: true },
-    { field: "dateOfJoining", floatingFilter: true, filter: true },
-    { field: "roleIds", floatingFilter: true, filter: true },
+    {
+      field: "dateOfJoining", floatingFilter: true, filter: true, valueFormatter: params => {
+        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+      }
+    },
+    { field: "roleIds", headerName: 'Roles', floatingFilter: true, filter: true },
+    { field: "managerId", headerName: 'Managers', floatingFilter: true, filter: true },
     { field: "gender", floatingFilter: true, filter: true },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
@@ -56,11 +61,10 @@ export class HomeComponent {
   }
 
   getAllData() {
-
-    this.service.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((employee:any)=>employee.isActive)
+    this.service.getData().subscribe((response: any) => {
+      this.rowData = response.data.filter((employee: any) => employee.isActive)
       // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
-      console.log('rowww data', this.rowData)     
+      console.log('rowww data', this.rowData)
     })
   }
 
@@ -70,6 +74,8 @@ export class HomeComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
+    flex: 1,
+    minWidth: 120,
   };
 
   Edit(data: any) {

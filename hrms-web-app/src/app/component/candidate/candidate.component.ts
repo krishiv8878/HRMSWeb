@@ -51,6 +51,8 @@ export class CandidateComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
+    flex: 1,
+    minWidth: 120,
   };
 
   Edit(data: any) {

@@ -30,8 +30,8 @@ export class RegisterComponent {
     LastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     email: ['', [Validators.required, Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
-    Address: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    password: ['', [Validators.required, Validators.minLength(8), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
+    Address: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    password: ['', [Validators.required, Validators.minLength(4),Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
   ngOnInit() { }
 
@@ -61,7 +61,6 @@ export class RegisterComponent {
         this.registretion.reset()
         this.router.navigateByUrl('login')
       })
-
     }
   }
 

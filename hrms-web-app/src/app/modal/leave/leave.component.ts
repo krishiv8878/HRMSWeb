@@ -32,7 +32,7 @@ export class LeaveComponent {
     id: 0,
     leaveName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     type: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    description: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    description: [''],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
@@ -47,7 +47,7 @@ export class LeaveComponent {
     if (this.leavetype.invalid) {
       this.leavetype.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        leaveName: "Leave Name is Required",
+        // leaveName: "Leave Name is Required",
         type: "Leave Type is Required",
         description: "Description is Required",  
         isActive:" Please select a Active Button"      

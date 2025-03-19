@@ -1,5 +1,5 @@
 mat-nav-list {
-    margin-top: 4rem;
+    margin-top: 2rem;
 
 }
 
@@ -41,26 +41,15 @@ mat-divider {
     color: white;
 }
 
-.log-icon {
-    position: absolute;
-    bottom: 1rem;
-    left: 25%;
-    /* right: 0; */
-    align-items: center;
-    /* text-align: start; */
-    width: 200px;
-    height: 7rem;
-    display: flex;
-    justify-content: space-evenly;
-    /* color: white !important; */
-    background: #ffffff;
-    height: 55px;
-    width: 55px;
-    border-radius: 50px;
 
-    img {
-        height: 2rem;
-        width: 2rem;
-        color: white;
+.logo {
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+
+    img{
+        height: 5rem;
+        width: 5rem;
     }
 }

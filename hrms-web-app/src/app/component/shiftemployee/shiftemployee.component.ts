@@ -32,13 +32,15 @@ export class ShiftemployeeComponent {
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
 
-  rowData: any;
+  rowData: [] = [];
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];
 
   defaultColDef: ColDef = {
-    resizable: true
+    resizable: true,
+    flex: 1,
+    minWidth: 120,
   };
   ngOnInit() {
     this.getallData();

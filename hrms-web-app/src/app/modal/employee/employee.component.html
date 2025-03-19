@@ -105,12 +105,22 @@
 
                 <!-- Role Selection Dropdown -->
                 <mat-form-field appearance="outline">
-                    <mat-label>roleIds</mat-label>
+                    <mat-label>role</mat-label>
                     <mat-select formControlName="roleIds" multiple>
                         <mat-option *ngFor="let role of roles" [value]="role.id"> {{ role.roleName }}</mat-option>
                     </mat-select>
                 </mat-form-field>
+            </div>
 
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Manager</mat-label>
+                        <mat-select formControlName="managerId" multiple>
+                            <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{ manager.managerName }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
             </div>
 
             <!-- Buttons: Save, Update, or Cancel -->
