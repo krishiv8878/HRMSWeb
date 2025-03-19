@@ -49,12 +49,12 @@ export class EmployeeComponent {
     currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
     dateOfJoining: ['',[Validators.required]],
     roleIds: [[], [Validators.required]],
-    managerId:[''],
+    managerId:[0],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   roles: any[] = []; // Role master list 
-  managers:any[]=[]; // Manager master list 
+  managers:any; // Manager master list 
 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
@@ -70,7 +70,7 @@ export class EmployeeComponent {
       console.log('Role Masters:', this.roles);
     })
     this.services.getManager().subscribe((managers:any)=>{
-      this.managers = managers.data;
+      this.managers = managers;
       console.log('managers Masters:',  this.managers );
     })
   }
