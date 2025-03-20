@@ -38,26 +38,27 @@ export class EmployeeAttendanceComponent {
     // { field: "id", floatingFilter: true, filter: true },
     // { field: "firstName", floatingFilter: true, filter: true },
     // { field: "lastName", floatingFilter: true, filter: true },
-    { field: "Date", floatingFilter: true, filter: true },
-    { field: "clockIn", floatingFilter: true, filter: true, },
-    { field: "clockOut", floatingFilter: true, filter: true, },
-    { field: "totalHours", floatingFilter: true, filter: true },
-    {
-      field: "groess", filter: true, cellRenderer: () => {
-        return `<p class="gross-btn">...</p>`;
-      },
-      onCellClicked: (params) => this.openGrossModal(params)
-    }
+    { field: "Date", cellStyle: params => params.data.isWeekend ? { backgroundColor: '#ffcccc', fontWeight: 'bold' } : null  },
+    { field: "clockIn",  },
+    { field: "clockOut",  },
+    { field: "totalHours", },
+    { field: "gross"},
+    // {
+    //   field: "groess", filter: true, cellRenderer: () => {
+    //     return `<p class="gross-btn">...</p>`;
+    //   },
+    //   onCellClicked: (params) => this.openGrossModal(params)
+    // }
   ]
 
-  openGrossModal(params: any) {
-    this.dialog.open(AttendaseditComponent, {
-      width: '600px',
-      height: '100vh',
-      position: { right: '0px' },
-      data: params.data // Employee data pass karna
-    });
-  }
+  // openGrossModal(params: any) {
+  //   this.dialog.open(AttendaseditComponent, {
+  //     width: '600px',
+  //     height: '100vh',
+  //     position: { right: '0px' },
+  //     data: params.data // Employee data pass karna
+  //   });
+  // }
 
   // Called when the component is initialized
 
@@ -87,23 +88,50 @@ export class EmployeeAttendanceComponent {
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
       console.log("API Response:", response);
-      this.rowData = response.data.map((item: any) => {
-        return {
-          Date: this.extractDate(item.clockIn),
-          clockIn: item.clockIn ? new Date(item.clockIn).toLocaleTimeString('en-US', { hour12: false }) : "",
-          clockOut: item.clockOut ? new Date(item.clockOut).toLocaleTimeString('en-US', { hour12: false }) : "",
-          totalHours: item.totalHours || ""
-        };
-      });
+       this.rowData = this.getLast30Days();  // Call function to get last 30 days data
+      // this.rowData = response.data.map((item: any) => {
+      //   return {
+      //     Date: this.extractDate(item.clockIn),
+      //     clockIn: item.clockIn ? new Date(item.clockIn).toLocaleTimeString('en-US', { hour12: false }) : "",
+      //     clockOut: item.clockOut ? new Date(item.clockOut).toLocaleTimeString('en-US', { hour12: false }) : "",
+      //     totalHours: item.totalHours || ""
+      //   };
+      // });
     });
   }
 
-  extractDate(dateString: string): string {
-    if (!dateString) return "";
-    const parsedDate = new Date(dateString);
-    return isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleDateString('en-GB');
-  }
+    // extractDate(dateString: string): string {
+  //   if (!dateString) return "";
+  //   const parsedDate = new Date(dateString);
+  //   return isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleDateString('en-GB');
+  // }
 
+  getLast30Days(): any[] {
+    const dates = [];
+    const today = new Date();
+  
+    for (let i = 0; i < 30; i++) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+  
+      const options:Intl.DateTimeFormatOptions  = { day: '2-digit', month: 'long' };
+      const formattedDate = date.toLocaleDateString('en-GB', options);
+  
+      // Weekend check karna
+      const day = date.getDay();
+      const isWeekend = (day === 0 || day === 6); // Sunday (0) & Saturday (6)
+  
+      dates.push({
+        Date: formattedDate,
+        isWeekend: isWeekend ? 'Weekend' : '',
+        clockIn: '',
+        clockOut: '',
+        totalHours: ''
+      });
+    }
+    return dates;
+  }
+  
 
   // Opens the edit modal for updating employee attendance data
 
