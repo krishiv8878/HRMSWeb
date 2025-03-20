@@ -17,7 +17,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
-                        <input type="text" matInput name="firstName" placeholder="Enter Your FirstName"
+                        <input type="text" matInput name="firstName"(keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" placeholder="Enter Your FirstName"
                             formControlName="firstName">
                     </mat-form-field>
                 </div>
@@ -26,7 +26,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
-                        <input type="text" matInput name="lastName" placeholder="Enter Your LastName"
+                        <input type="text" matInput name="lastName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" placeholder="Enter Your LastName"
                             formControlName="lastName">
                     </mat-form-field>
                 </div>
@@ -37,8 +37,19 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>email</mat-label>
-                        <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
+                        <input type="text" matInput name="emailAddress" (keydown.space)="$event.preventDefault()" placeholder="Enter Your Email"
                             formControlName="emailAddress">
+                            <mat-error *ngIf="getControl('emailAddress')?.hasError('required')">
+                                Email is required
+                              </mat-error>
+                            
+                              <mat-error *ngIf="getControl('emailAddress')?.hasError('email')">
+                                Enter a valid email address
+                              </mat-error>
+                            
+                              <mat-error *ngIf="getControl('emailAddress')?.hasError('pattern')">
+                                Email format is incorrect
+                              </mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -63,6 +74,12 @@
                         <mat-label>phoneNo</mat-label>
                         <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
                             formControlName="mobileNumber" maxlength="10">
+                            <mat-error *ngIf="getControl('mobileNumber')?.hasError('required')">
+                                Mobile Number is required
+                              </mat-error>                           
+                              <mat-error *ngIf="getControl('mobileNumber')?.hasError('pattern')">
+                                Mobile Number must be 10 digits and cannot start with 0
+                              </mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -73,7 +90,7 @@
                     <!-- Permanent Address Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>permanent Address</mat-label>
-                        <input type="text" matInput name="permanent Address" placeholder="Enter Your Permanet Address"
+                        <input type="text" matInput name="permanent Address" placeholder="Enter Your Permanet Address" (keydown.space)="$event.preventDefault()"
                             formControlName="permanentAddress">
                     </mat-form-field>
                 </div>
@@ -82,7 +99,7 @@
                     <!-- Current Address Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>current Address</mat-label>
-                        <input type="text" matInput name="current Address" placeholder="Enter Your Current Address"
+                        <input type="text" matInput name="current Address" placeholder="Enter Your Current Address" (keydown.space)="$event.preventDefault()"
                             formControlName="currentAddress">
                     </mat-form-field>
                 </div>
@@ -116,7 +133,7 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>Manager</mat-label>
-                        <mat-select formControlName="managerId" multiple>
+                        <mat-select formControlName="managerId">
                             <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{ manager.managerName }}</mat-option>
                         </mat-select>
                     </mat-form-field>
