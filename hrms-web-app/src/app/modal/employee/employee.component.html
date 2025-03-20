@@ -116,7 +116,7 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>Manager</mat-label>
-                        <mat-select formControlName="managerId" multiple>
+                        <mat-select formControlName="managerId">
                             <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{ manager.managerName }}</mat-option>
                         </mat-select>
                     </mat-form-field>
@@ -127,14 +127,14 @@
             @if(isEdit){
             <!-- Edit Mode: Update and Cancel Buttons -->
             <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <!-- Add Mode: Add and Cancel Buttons -->
             <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false">cancel</button>
+                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
             </div>
             }
 

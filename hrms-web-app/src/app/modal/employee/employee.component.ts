@@ -40,21 +40,22 @@ export class EmployeeComponent {
 
   Employeeform = this.formBuilder.group({
     id: 0,
-    firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    lastName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    emailAddress: ['', [Validators.required,Validators.email]],
+    firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    emailAddress: ['', [Validators.required, Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
-    permanentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
     gender: '',
-    currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
-    dateOfJoining: ['',[Validators.required]],
+    currentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    dateOfJoining: ['', [Validators.required]],
     roleIds: [[], [Validators.required]],
-    managerId:[0],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    managerId: [0],
+    ManagerName:[''],
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
 
   roles: any[] = []; // Role master list 
-  managers:any; // Manager master list 
+  managers: any; // Manager master list 
 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
@@ -65,33 +66,44 @@ export class EmployeeComponent {
       //   console.log("form ", result)
       // })
     }
-    this.roleservises.getAllData().subscribe((roles:any)=>{
+    this.roleservises.getAllData().subscribe((roles: any) => {
       this.roles = roles.data;
       console.log('Role Masters:', this.roles);
     })
-    this.services.getManager().subscribe((managers:any)=>{
+    this.services.getManager().subscribe((managers: any) => {
       this.managers = managers;
-      console.log('managers Masters:',  this.managers );
+      console.log('managers Masters:', this.managers);
     })
   }
- 
+
 
   submitdata() {
     if (this.Employeeform.invalid) {
       this.Employeeform.markAllAsTouched(); // Show errors in UI  
+      const formcontrole = this.Employeeform.contains;
       const errorMessages: { [key: string]: string } = {
+
         firstName: "First Name is Required",
         lastName: "Last Name is Required",
         emailAddress: "Enter Valid Email",
         mobileNumber: "Mobile Number Must Be 10 Digits",
         permanentAddress: "Permanent Address is Required",
         currentAddress: "Current Address is Required",
-        // dateOfJoining: "Date is Required",
-        roleIds: "RoleID is Required", 
+        dateOfJoining: "Date is Required",
+        roleIds: "RoleID is Required",
         // managerId: "ManagerId is Required",   
-        isActive:" Please select a Active Button"    
+        isActive: " Please select a Active Button"
       };
 
+      // Mobile number ke errors check karna
+      const mobileErrors = this.Employeeform.controls['mobileNumber'].errors;
+      if (mobileErrors) {
+        if (mobileErrors['required']) {
+          errorMessages['mobileNumber'] = "Mobile Number is empty";
+        } else if (mobileErrors['minlength']) {
+          errorMessages['mobileNumber'] = "Mobile Number must be  10 digits";
+        }
+      }
       for (const field in errorMessages) {
         const control = this.Employeeform.get(field);
         if (control?.invalid) {
@@ -101,7 +113,7 @@ export class EmployeeComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.Employeeform.value).subscribe({                                                                                                                                             
+      this.services.updateData(this.Employeeform.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
@@ -110,7 +122,7 @@ export class EmployeeComponent {
           console.log("err msg", err)
         }
       })
-    } else {     
+    } else {
       this.services.createData(this.Employeeform.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
@@ -122,7 +134,7 @@ export class EmployeeComponent {
       })
     }
   }
-  getControl(controleName:string){
-    return this.Employeeform.get(controleName);
-  }
+  // getControl(controleName:string){
+  //   return this.Employeeform.get(controleName);
+  // }
 }

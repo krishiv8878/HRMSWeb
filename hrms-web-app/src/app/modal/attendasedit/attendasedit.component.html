@@ -27,7 +27,7 @@
             <div class="logs-section">
                 <div class="log-item">
                     <p>Attendance Adjustment</p>
-                    <button mat-raised-button (click)="addLog()">+ Add Log</button>
+                    <button mat-raised-button (click)="addLog()"  style="border-radius: 0;">+ Add Log</button>
                 </div>
 
 
@@ -44,7 +44,7 @@
                         <input matInput type="time" formControlName="outTime">
                     </mat-form-field>
 
-                    <button mat-icon-button color="warn" (click)="removeLog(i)">
+                    <button mat-icon-button color="warn" (click)="removeLog(i)"  style="border-radius: 0;">
                         <mat-icon>delete</mat-icon>
                     </button>
                 </div>
@@ -60,8 +60,8 @@
         </div>
 
         <div mat-dialog-actions align="end" style="padding-top: 5rem; display: flex; gap: 2rem;">
-            <button mat-raised-button (click)="closeDialog()">Cancel</button>
-            <button mat-flat-button>Request</button>
+            <button mat-raised-button (click)="closeDialog()"  style="border-radius: 0;">Cancel</button>
+            <button mat-flat-button  style="border-radius: 0;">Request</button>
         </div>
     </form>
 </div>
