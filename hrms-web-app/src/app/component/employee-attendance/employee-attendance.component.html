@@ -55,8 +55,8 @@
 
                             <!-- Clock In and Clock Out buttons -->
                             <div class="remote-button">
-                                <button *ngIf="!startTime" (click)="openClockInDialog()"  style="border-radius: 0;">Remote Clock-In</button>
-                                <button *ngIf="startTime" (click)="stopClock()"  style="border-radius: 0;">Remote Clock-Out</button>
+                                <button *ngIf="!isClockedIn" (click)="openClockInDialog()"  style="border-radius: 0;">Remote Clock-In</button>
+                                <button *ngIf="isClockedIn" (click)="stopClock()"  style="border-radius: 0;">Remote Clock-Out</button>
                                 <p style="text-transform: capitalize; margin-top: 0.4rem;">{{ totalHours }} since last
                                     login</p>
                             </div>

@@ -8,16 +8,18 @@
 
         <div class="employee-form">
             <div class="row">
-                <div class="col-xl-6">
+                <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>shift Name</mat-label>
-                        <input type="text" matInput name="shiftName" placeholder="Enter ShiftName"
+                        <input type="text" matInput name="shiftName" placeholder="Enter Your Shift"
                             formControlName="shiftName">
                         <mat-error *ngIf="getControl('shiftName')?.hasError('required')">ShiftName Is
                                 Required</mat-error>
                     </mat-form-field>
                 </div>
+                    </div>
 
+            <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>start Time</mat-label>
@@ -27,10 +29,7 @@
                                 Required</mat-error>
                     </mat-form-field>
                 </div>
-            </div>
-
-            <div class="row">
-                <div class="col">
+                <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>end Time</mat-label>
                         <input type="text" matInput name="endTime" placeholder="00:01"

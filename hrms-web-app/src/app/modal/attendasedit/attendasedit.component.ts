@@ -33,12 +33,31 @@ export class AttendaseditComponent {
     outTime: ['', Validators.required]
   })
 
-  constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) { }
+  constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
+    console.log("Received Date:", this.data?.Date);
+
+    if (this.data?.Date) {
+      let receivedDate = new Date(this.data.Date);
+      console.log("Parsed Date Before Fix:", receivedDate);
+
+      if (!isNaN(receivedDate.getTime())) {
+        receivedDate.setFullYear(new Date().getFullYear());
+
+        console.log("Updated Date with Current Year:", receivedDate); 
+
+        this.attendaseform.patchValue({
+          selectedDate: receivedDate,
+          inTime: this.data.clockIn,
+          outTime: this.data.clockOut,
+        });
+      }
+    }
+  }
 
   addLog() {
-    if (this.data) {    
+    if (this.data) {
       this.logs.push({
-        inTime: this.data.clockIn,        
+        inTime: this.data.clockIn,
         outTime: this.data.clockOut,
       })
     }
