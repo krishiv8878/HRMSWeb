@@ -10,14 +10,14 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label> Name</mat-label>
-                        <input type="text" matInput name="assetsMasterName" placeholder="Enter Your Name"
+                        <input type="text" matInput name="assetsMasterName" placeholder="Enter Your Name"  (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             formControlName="assetsMasterName">
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>serialNumber</mat-label>
-                        <input type="text" matInput name="serialNumber" placeholder="Enter Your SerialNumber"
+                        <input type="text" matInput name="serialNumber" placeholder="Enter Your SerialNumber"  (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)"
                             formControlName="serialNumber">
                     </mat-form-field>
                 </div>
@@ -27,7 +27,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>description</mat-label>
-                        <input type="text" matInput name="description" placeholder="Enter Your Description"
+                        <input type="text" matInput name="description" placeholder="Enter Your Description"  (keydown.space)="$event.preventDefault()"
                             formControlName="description">
                     </mat-form-field>
                 </div>

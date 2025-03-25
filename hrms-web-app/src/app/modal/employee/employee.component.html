@@ -17,7 +17,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
-                        <input type="text" matInput name="firstName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" placeholder="Enter Your FirstName"
+                        <input type="text" matInput name="firstName"  placeholder="Enter Your FirstName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" 
                             formControlName="firstName">
                     </mat-form-field>
                 </div>
@@ -26,7 +26,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
-                        <input type="text" matInput name="lastName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" placeholder="Enter Your LastName"
+                        <input type="text" matInput name="lastName"  placeholder="Enter Your LastName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" 
                             formControlName="lastName">
                     </mat-form-field>
                 </div>
@@ -37,7 +37,7 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>email</mat-label>
-                        <input type="text" matInput name="emailAddress" (keydown.space)="$event.preventDefault()" placeholder="Enter Your Email"
+                        <input type="text" matInput name="emailAddress"  placeholder="Enter Your Email" (keydown.space)="$event.preventDefault()"
                             formControlName="emailAddress">
                            
                     </mat-form-field>
@@ -62,8 +62,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>phoneNo</mat-label>
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
-                            formControlName="mobileNumber" maxlength="10" (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)">
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo" (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)"
+                            formControlName="mobileNumber" maxlength="10" >
                            
                     </mat-form-field>
                 </div>

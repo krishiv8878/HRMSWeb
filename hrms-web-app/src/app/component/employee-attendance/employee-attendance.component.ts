@@ -71,9 +71,8 @@ export class EmployeeAttendanceComponent {
     { field: "Date", },
     { field: "clockIn", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     { field: "clockOut", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
-    // { field: "totalHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
-    { field: "totalHours", valueFormatter: (params) => params.value ? params.value : "" },
-    { field: "effectiveHours", headerName: 'gross', valueFormatter: (params) => params.value ? params.value : "" },
+    { field: "totalHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
+    { field: "effectiveHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : ""  },
     // { field: "gross", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     {
       field: "", cellRenderer: () => { return `<p class="gross-btn">...</p>`; },

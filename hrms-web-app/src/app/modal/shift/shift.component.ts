@@ -44,6 +44,45 @@ export class ShiftComponent {
       this.isEdit = true
     }
   }
+  allowOnlyLetters(event: KeyboardEvent) {
+    const charCode = event.key.charCodeAt(0);
+    if (!/[a-zA-Z ]/.test(event.key)) {
+      event.preventDefault(); // Stop the key from being entered
+    }
+  }
+  preventInvalidInput(event: KeyboardEvent) {
+    const char = event.key;
+    const input = (event.target as HTMLInputElement).value;
+
+    if (!/[\d:]/.test(char)) {
+      event.preventDefault();
+      return;
+    }
+  
+    if (char === ":" && (input.match(/:/g)?.length ?? 0) >= 1) {
+      event.preventDefault();
+      return;
+    }
+  
+
+    if (input.length === 0 && !/[0-9]/.test(char)) {
+      event.preventDefault();
+      return;
+    }
+  
+    if (input.length >= 5) {
+      event.preventDefault();
+    }
+  }
+  
+  preventPaste(event: ClipboardEvent) {
+    const clipboardData = event.clipboardData?.getData("text") || "";    
+
+    if (!/^\d{2}:\d{2}$/.test(clipboardData)) {
+      event.preventDefault();
+      this.toaster.error("Invalid time format. Use HH:MM", "Validation Error");
+    }
+  }
   submitdata() {
     if (this.shiftForm.invalid) {
       this.shiftForm.markAllAsTouched(); // Show errors in UI  

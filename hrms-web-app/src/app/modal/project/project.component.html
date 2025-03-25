@@ -11,18 +11,16 @@
                     <mat-form-field appearance="outline">
                         <mat-label>clientName</mat-label>
                         <input type="text" matInput name="clientName" placeholder="Enter Your ClientName"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             formControlName="clientName">
-                            <mat-error *ngIf="getControl('clientName')?.hasError('required')">clientName is
-                                required</mat-error>
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>projectName</mat-label>
                         <input type="text" matInput name="ProjectName" placeholder="Enter Your ProjectName"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             formControlName="projectName">
-                            <mat-error *ngIf="getControl('projectName')?.hasError('required')">projectName is
-                                required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -32,18 +30,17 @@
                     <mat-form-field appearance="outline">
                         <mat-label>clientRegion</mat-label>
                         <input type="text" matInput name="clientRegion" formControlName="clientRegion"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             placeholder="Enter Your ClientRegion">
-                            <mat-error *ngIf="getControl('clientRegion')?.hasError('required')">ClientRegion Is
-                                Required</mat-error>
+
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>description</mat-label>
-                        <input type="text" matInput name="description" placeholder="Enter Your Description"
+                        <input type="text" matInput name="description" placeholder="Enter Your Description" (keydown.space)="$event.preventDefault()"
                             formControlName="description">
-                            <mat-error *ngIf="getControl('description')?.hasError('required')">Description Is
-                                Required</mat-error>
+
                     </mat-form-field>
                 </div>
             </div>
@@ -57,13 +54,15 @@
 
             @if(isEdit){
             <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }
 
