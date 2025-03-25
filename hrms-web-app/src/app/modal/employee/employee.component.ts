@@ -38,27 +38,21 @@ export class EmployeeComponent {
   roleservises = inject(RoleservicesService)
   isEdit = false;
 
-  noWhitespaceValidator(control: any) {
-    if (control.value && control.value.trim() === '') {
-      return { 'whitespace': true };
-    }
-    return null;
-  }
-  
-  
+
+
   Employeeform = this.formBuilder.group({
     id: 0,
     //firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$'),this.noWhitespaceValidator],],
-    lastName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$'),this.noWhitespaceValidator],],
-    emailAddress: ['', [Validators.required,Validators.email, Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}$'),this.noWhitespaceValidator]],
+    firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
+    lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
+    emailAddress: ['', [Validators.required, Validators.email, Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}$')]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
-    permanentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$'),this.noWhitespaceValidator]],
-    gender: ['',[Validators.required]],
-    currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$'),this.noWhitespaceValidator]],
-    dateOfJoining: ['',[Validators.required]],
+    permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    gender: ['', [Validators.required]],
+    currentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    dateOfJoining: ['', [Validators.required]],
     roleIds: [[], [Validators.required]],
-    rolenames:[[]],
+    rolenames: [[]],
     managerId: [0],
     ManagerName: [''],
     isActive: ['', [Validators.required, Validators.pattern('true|false')]]
@@ -139,7 +133,7 @@ export class EmployeeComponent {
           : this.getControl('mobileNumber')?.hasError('pattern')
             ? "Mobile Number must be 10 digits"
             : "Invalid Mobile Number",
-            
+
         gender: "Please select the Gender",
         permanentAddress: "Permanent Address is Required",
         currentAddress: "Current Address is Required",
@@ -167,10 +161,10 @@ export class EmployeeComponent {
         }
       }
     }
-    }
-   
-     // Proceed with API call if form is valid
-  if (this.isEdit) {
+  
+
+  // Proceed with API call if form is valid
+  if(this.isEdit) {
     this.services.updateData(this.Employeeform.value).subscribe({
       next: () => {
         this.toaster.success('Successfully updated data', 'Success');
@@ -181,18 +175,21 @@ export class EmployeeComponent {
       }
     });
   } else {
-    this.services.createData(this.Employeeform.value).subscribe({
-      next: () => {
-        this.toaster.success('Successfully added data', 'Success');
-        this._dialogref.close(true);
-      },
-      error: (err) => {
-        console.log("Error:", err);
-      }
-    });
-  }
-  }
-  getControl(controleName:string){
+  this.services.createData(this.Employeeform.value).subscribe({
+    next: () => {
+      this.toaster.success('Successfully added data', 'Success');
+      this._dialogref.close(true);
+    },
+    error: (err) => {
+      console.log("Error:", err);
+    }
+  });
+}
+}
+  getControl(controleName: string){
     return this.Employeeform.get(controleName);
   }
+
 }
+
+
