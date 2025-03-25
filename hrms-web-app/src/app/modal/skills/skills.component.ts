@@ -60,11 +60,12 @@ export class SkillsComponent {
         isActive: " Please select a Active Button"
       };
 
+      // Show error messages in a popup
       for (const field in errorMessages) {
-        const control = this.Skillform.get(field);
+        const control = this.getControl(field);
         if (control?.invalid) {
           this.toaster.error(errorMessages[field], "Validation Error");
-          return;
+          return; // Show one error at a time and stop further execution
         }
       }
     }

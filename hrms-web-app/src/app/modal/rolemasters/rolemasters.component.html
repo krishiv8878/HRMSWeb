@@ -11,10 +11,8 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>role name</mat-label>
-                        <input type="text" matInput name="roleName" placeholder="Enter RoletName"
+                        <input type="text" matInput name="roleName" placeholder="Enter RoletName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             formControlName="roleName">
-                            <mat-error *ngIf="getControl('roleName')?.hasError('required')">RoleName Is
-                                Required</mat-error>
                     </mat-form-field>
                 </div>
             </div>

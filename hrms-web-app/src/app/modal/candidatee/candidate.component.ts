@@ -54,14 +54,62 @@ export class CandidateeComponent {
       this.isEdit = true;
     }
   }
+  noWhitespaceValidator(control: any) {
+    if (control.value && control.value.trim() === '') {
+      return { 'whitespace': true };
+    }
+    return null;
+  }
+  allowOnlyLetters(event: KeyboardEvent) {
+    const charCode = event.key.charCodeAt(0);
+    if (!/[a-zA-Z ]/.test(event.key)) {
+      event.preventDefault(); // Stop the key from being entered
+    }
+  }
+
+  preventInvalidNumbers(event: KeyboardEvent) {
+    const charCode = event.which ? event.which : event.keyCode;
+    const input = event.target as HTMLInputElement;
+
+    // Allow only numbers (0-9), prevent spaces and non-numeric characters
+    if (charCode < 48 || charCode > 57) {
+      event.preventDefault();
+    }
+
+    // Prevent starting with 0
+    if (input.value.length === 0 && charCode === 48) {
+      event.preventDefault();
+    }
+  }
+
+  preventPaste(event: ClipboardEvent) {
+    const clipboardData = event.clipboardData?.getData('text');
+    if (clipboardData && !/^[1-9][0-9]{9}$/.test(clipboardData)) {
+      event.preventDefault();
+      this.toaster.error("Invalid mobile number format", "Validation Error");
+    }
+  }
+
   submitdata() {
     if (this.CandidateForm.invalid) {
       this.CandidateForm.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
         firstName: "First Name is Required",
         lastName: "Last Name is Required",
-        emailAddress: "Enter Valid Email",
-        mobileNumber: "Mobile Number Must Be 10 Digits",
+        // emailAddress: "Enter Valid Email",
+        // mobileNumber: "Mobile Number Must Be 10 Digits",
+        emailAddress: this.getControl('emailAddress')?.hasError('required')
+        ? "Email Address is required"
+        : this.getControl('emailAddress')?.hasError('email')
+          ? "Enter a valid email address (e.g., user@example.com)"
+          : "",
+
+      mobileNumber: this.getControl('mobileNumber')?.hasError('required')
+        ? "Mobile Number is required"
+        : this.getControl('mobileNumber')?.hasError('pattern')
+          ? "Mobile Number must be 10 digits"
+          : "Invalid Mobile Number",
+          
         totalExperience: "Total Experience is Required",
         relevantExperience: "Relevant Experience is Required",
         expectedSalary: "Expected Salary is Required",
@@ -101,7 +149,7 @@ export class CandidateeComponent {
     }
   }
 
-  // getControl(controleName: string) {
-  //   return this.CandidateForm.get(controleName);
-  // }  
+  getControl(controleName: string) {
+    return this.CandidateForm.get(controleName);
+  }  
 }

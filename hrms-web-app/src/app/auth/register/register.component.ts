@@ -63,9 +63,4 @@ export class RegisterComponent {
       })
     }
   }
-
-  getControl(controleName: string) {
-    return this.registretion.get(controleName);
-  }
-
 }

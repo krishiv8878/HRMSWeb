@@ -12,6 +12,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
                         <input type="text" matInput name="firstName" placeholder="Enter Your FirstName"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             formControlName="firstName">
                     </mat-form-field>
                 </div>
@@ -19,42 +20,39 @@
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
                         <input type="text" matInput name="lastName" placeholder="Enter Your LastName"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             formControlName="lastName">
                     </mat-form-field>
                 </div>
             </div>
 
             <div class="row">
-                <div class="col-xl-6">
+                <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>email</mat-label>
                         <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
-                            formControlName="emailAddress">
+                            (keydown.space)="$event.preventDefault()" formControlName="emailAddress">
                     </mat-form-field>
                 </div>
+
+            </div>
+
+            <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>phone no</mat-label>
                         <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
-                            formControlName="mobileNumber" maxlength="10">                           
+                            (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)"
+                            formControlName="mobileNumber" maxlength="10">
                     </mat-form-field>
                 </div>
-            </div>
 
-            <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>totalExperience</mat-label>
                         <input type="text" matInput name="totalExperience" placeholder="Enter Your TotalExperience"
+                            (keydown.space)="$event.preventDefault()" (keypress)="preventInvalidNumbers($event)"
                             formControlName="totalExperience">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>relevantExperience</mat-label>
-                        <input type="text" matInput name="RelevantExperience"
-                            placeholder="Enter Your RelevantExperience" formControlName="relevantExperience">
                     </mat-form-field>
                 </div>
             </div>
@@ -62,12 +60,24 @@
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>currentSalary</mat-label>
-                        <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
-                            formControlName="currentSalary">
+                        <mat-label>relevantExperience</mat-label>
+                        <input type="text" matInput name="RelevantExperience" (keydown.space)="$event.preventDefault()"
+                            (keypress)="preventInvalidNumbers($event)" placeholder="Enter Your RelevantExperience"
+                            formControlName="relevantExperience">
                     </mat-form-field>
                 </div>
 
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>currentSalary</mat-label>
+                        <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
+                            (keydown.space)="$event.preventDefault()" (keypress)="preventInvalidNumbers($event)"
+                            formControlName="currentSalary">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class=" row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>noticePeriod</mat-label>
@@ -76,28 +86,33 @@
                         </mat-select>
                     </mat-form-field>
                 </div>
-            </div>
 
-            <div class=" row">
-                <div class="col">
+                <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>expected Salary</mat-label>
                         <input type="number" matInput name="expectedSalary" placeholder="Enter Your Expected Salary"
-                            formControlName="expectedSalary">
+                            (keydown.space)="$event.preventDefault()" formControlName="expectedSalary">
                     </mat-form-field>
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+                    </div>
                 </div>
             </div>
 
             @if(isEdit){
             <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }
 

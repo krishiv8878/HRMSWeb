@@ -9,8 +9,8 @@
             <div class="row">
                 <div class="col">
                     <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>designationName Name</mat-label>
-                        <input type="text" matInput name="DesignationName" placeholder="Enter Your DesignationName"
+                        <mat-label>designation Name</mat-label>
+                        <input type="text" matInput name="DesignationName" placeholder="Enter Your Designation Name" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" 
                             formControlName="designationName">
                     </mat-form-field>
                 </div>
