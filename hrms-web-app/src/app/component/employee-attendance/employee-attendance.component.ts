@@ -15,7 +15,6 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { FormsModule } from '@angular/forms';
 import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
 
-
 @Component({
   selector: 'app-employee-attendance',
   standalone: true,
@@ -32,33 +31,72 @@ export class EmployeeAttendanceComponent {
   router = inject(Router)
   dialog = inject(MatDialog)
 
+  // Table row data and pagination configurations
+
+  rowData: any[] = [];
+  pagination = true;
+  paginationPageSize = 10;
+  paginationPageSizeSelector = [5, 10, 20];
+  data: any;
+
+  // Default column properties
+  defaultColDef: ColDef = {
+    resizable: true,
+    flex: 1,
+    minWidth: 120,
+  };
+
+  // Variables for displaying week days, working hours, and progress
+
+  days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  currentDayIndex: number = new Date().getDay();
+  startTimee: string = "10:00 AM";
+  endTime: string = "7:00 PM";
+  totalHourse: number = 8;
+  progress: number = 0;
+  employeeId = 1;
+  startTime: Date | null = null;
+  // runningTime: string = '00:00:00';
+  totalHours: string = '';
+  interval: any;
+  currentTime: string = '';
+  isClockedIn: boolean = false;
+
   // Column definitions for AG Grid table
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
     // { field: "firstName", floatingFilter: true, filter: true },
     // { field: "lastName", floatingFilter: true, filter: true },
-    { field: "Date", cellStyle: params => params.data.isWeekend ? { backgroundColor: '#ffcccc', fontWeight: 'bold' } : null  },
-    { field: "clockIn",  },
-    { field: "clockOut",  },
-    { field: "totalHours", },
-    { field: "gross"},
-    // {
-    //   field: "groess", filter: true, cellRenderer: () => {
-    //     return `<p class="gross-btn">...</p>`;
-    //   },
-    //   onCellClicked: (params) => this.openGrossModal(params)
-    // }
+    { field: "Date", },
+    { field: "clockIn", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
+    { field: "clockOut", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
+    { field: "totalHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
+    { field: "effectiveHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : ""  },
+    // { field: "gross", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
+    {
+      field: "", cellRenderer: () => { return `<p class="gross-btn">...</p>`; },
+      onCellClicked: (params) => this.openGrossModal(params)
+    }
   ]
 
-  // openGrossModal(params: any) {
-  //   this.dialog.open(AttendaseditComponent, {
-  //     width: '600px',
-  //     height: '100vh',
-  //     position: { right: '0px' },
-  //     data: params.data // Employee data pass karna
-  //   });
-  // }
+  formatClockIn(timeStr: string): string {
+    const [hh, mm] = timeStr.split(":").map(Number);
+    return `${hh.toString().padStart(2, '0')}h ${mm.toString().padStart(2, '0')}m`;  //set time formate show in 01h 22m using in clockIn and clockOut,Total Hours
+  }
+
+  sessions: { clockIn: Date; clockOut: Date | null }[] = [];
+
+  openGrossModal(params: any) {
+    if (params.data && params.data.Date) {
+      this.dialog.open(AttendaseditComponent, {
+        width: '600px',
+        height: '100vh',
+        position: { right: '0px' },
+        data: params.data // Employee data pass karna
+      });
+    }
+  }
 
   // Called when the component is initialized
 
@@ -77,61 +115,60 @@ export class EmployeeAttendanceComponent {
     this.currentTime = now.toLocaleTimeString('en-US', { hour12: true });
   }
 
-
   // Fetch all employee attendance data from API
 
-  // getAllData() {
-  //   this.services.getAllData().subscribe((response: any) => {
-  //     this.rowData = response.data;
-  //   })
-  // }
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
       console.log("API Response:", response);
-       this.rowData = this.getLast30Days();  // Call function to get last 30 days data
-      // this.rowData = response.data.map((item: any) => {
-      //   return {
-      //     Date: this.extractDate(item.clockIn),
-      //     clockIn: item.clockIn ? new Date(item.clockIn).toLocaleTimeString('en-US', { hour12: false }) : "",
-      //     clockOut: item.clockOut ? new Date(item.clockOut).toLocaleTimeString('en-US', { hour12: false }) : "",
-      //     totalHours: item.totalHours || ""
-      //   };
-      // });
+
+      // Get last 30 days with current date on top
+      const today = new Date();
+      const last30Days = Array.from({ length: 30 }, (_, i) => {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        return date;
+      });
+
+      this.rowData = last30Days.map((date) => {
+        return {
+          Date: this.formatDate(date),
+          clockIn: "",
+          clockOut: "",
+          totalHours: "",
+          effectiveHours: ""
+        };
+      });
+
+      // Map API response data into rowData based on the date
+      response.data.forEach((item: any) => {
+        const formattedDate = this.formatDate(new Date(item.clockIn));
+        const index = this.rowData.findIndex(row => row.Date === formattedDate);
+        if (index !== -1) {
+          this.rowData[index].clockIn = item.clockIn
+            ? new Date(item.clockIn).toLocaleTimeString('en-US', { hour12: false })
+            : "";
+          this.rowData[index].clockOut = item.clockOut
+            ? new Date(item.clockOut).toLocaleTimeString('en-US', { hour12: false })
+            : "";
+          this.rowData[index].totalHours = item.totalHours || "";
+          this.rowData[index].effectiveHours = item.effectiveHours || "";
+        }
+      });
     });
   }
 
-    // extractDate(dateString: string): string {
-  //   if (!dateString) return "";
-  //   const parsedDate = new Date(dateString);
-  //   return isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleDateString('en-GB');
-  // }
+  formatDate(date: Date): string {
+    const options: Intl.DateTimeFormatOptions = { weekday: 'short', day: '2-digit', month: 'short' };
+    const formattedDate = date.toLocaleDateString('en-GB', options);
 
-  getLast30Days(): any[] {
-    const dates = [];
-    const today = new Date();
-  
-    for (let i = 0; i < 30; i++) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-  
-      const options:Intl.DateTimeFormatOptions  = { day: '2-digit', month: 'long' };
-      const formattedDate = date.toLocaleDateString('en-GB', options);
-  
-      // Weekend check karna
-      const day = date.getDay();
-      const isWeekend = (day === 0 || day === 6); // Sunday (0) & Saturday (6)
-  
-      dates.push({
-        Date: formattedDate,
-        isWeekend: isWeekend ? 'Weekend' : '',
-        clockIn: '',
-        clockOut: '',
-        totalHours: ''
-      });
+    // Check if it's Saturday or Sunday
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return `${formattedDate} (Week Off)`;
     }
-    return dates;
+
+    return formattedDate;
   }
-  
 
   // Opens the edit modal for updating employee attendance data
 
@@ -146,39 +183,6 @@ export class EmployeeAttendanceComponent {
   //   })
   // }
 
-
-  // Table row data and pagination configurations
-
-  rowData: any[] = [];
-  pagination = true;
-  paginationPageSize = 10;
-  paginationPageSizeSelector = [5, 10, 20];
-  data: any;
-
-
-  // Default column properties
-  defaultColDef: ColDef = {
-    resizable: true,
-    flex: 1,
-    minWidth: 120,
-  };
-
-
-  // Variables for displaying week days, working hours, and progress
-
-  days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  currentDayIndex: number = new Date().getDay();
-  startTimee: string = "10:00 AM";
-  endTime: string = "7:00 PM";
-  totalHourse: number = 8;
-  progress: number = 0;
-  employeeId = 1;
-  startTime: Date | null = null;
-  // runningTime: string = '00:00:00';
-  totalHours: string = '';
-  interval: any;
-  currentTime: string = '';
-
   // Opens a modal to confirm employee clock-in
 
   openClockInDialog() {
@@ -192,12 +196,22 @@ export class EmployeeAttendanceComponent {
       }
     })
   }
+  firstClockIn: Date | null = null;
+  // lastClockOut: Date | null = null;
 
   // Starts the clock-in timer and tracks working hours
 
   startClock() {
-    if (this.startTime) return;
-    this.startTime = new Date();
+    if (!this.firstClockIn) {
+      this.firstClockIn = new Date(); // Store first clock-in only once
+      console.log("First Clock In Time Stored:", this.firstClockIn);
+    }
+    this.startTime = new Date(); //  Ensure startTime is initialized
+    this.isClockedIn = true; //  Mark as clocked in
+
+    const now = new Date();
+    this.sessions.push({ clockIn: now, clockOut: null });    // Start a new session
+
     this.interval = setInterval(() => {
       this.updateProgress();
       this.updaterunigtime();
@@ -207,32 +221,40 @@ export class EmployeeAttendanceComponent {
   // Stops the clock-out timer, calculates total working hours, and saves the data
 
   stopClock() {
-    if (this.startTime) {
-      const endTime = new Date();
-      const diffMs = endTime.getTime() - this.startTime.getTime();
-      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-      // this.totalHours = `${hours}h:${minutes}m`;
-      const totalHoursFormatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-      clearInterval(this.interval);
-      // this.runningTime = '00:00:00';
-
-      // API call to save attendance record
-
-      this.services.createData(
-        this.employeeId,
-        this.startTime.toISOString(),
-        endTime.toISOString(),
-        totalHoursFormatted,
-        "Present"
-      ).subscribe(response => {
-        console.log("Clock Stopped & Data Saved:", response);
-        this.getAllData();
-      });
-      this.startTime = null;
+    if (!this.firstClockIn) {
+      console.log("You need to clock in first!");
+      return; // Prevent clock-out if not clocked in
     }
+
+    const lastClockOut = new Date(); //  Store last clock-out time
+    console.log("Last Clock Out Time Stored:", lastClockOut);
+
+    clearInterval(this.interval);
+    this.isClockedIn = false; //  Mark as clocked out
+
+    // Total Hours Calculation
+    const diffMs = lastClockOut.getTime() - this.firstClockIn.getTime();
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const totalHoursFormatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    const effectiveHours = totalHoursFormatted; // Assuming effectiveHours is the same for now
+
+    console.log("Total Hours:", totalHoursFormatted);
+    // Convert to local time
+    const localStartTime = new Date(this.firstClockIn.getTime() - (this.firstClockIn.getTimezoneOffset() * 60000));
+    const localEndTime = new Date(lastClockOut.getTime() - (lastClockOut.getTimezoneOffset() * 60000));
+    // API call to save attendance
+    this.services.createData(
+      this.employeeId,
+      localStartTime.toISOString(),
+      localEndTime.toISOString(),
+      totalHoursFormatted,
+      effectiveHours,
+      "Present"
+    ).subscribe(response => {
+      console.log("Attendance Saved:", response);
+      this.getAllData(); // Refresh the data
+    });
   }
 
   // Updates the running time display during clock-in
@@ -285,5 +307,3 @@ export class EmployeeAttendanceComponent {
   }
   // openAddForm() { }
 }
-
-

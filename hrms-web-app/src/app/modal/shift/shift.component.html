@@ -8,35 +8,29 @@
 
         <div class="employee-form">
             <div class="row">
-                <div class="col-xl-6">
+                <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>shift Name</mat-label>
-                        <input type="text" matInput name="shiftName" placeholder="Enter ShiftName"
+                        <input type="text" matInput name="shiftName" placeholder="Enter Your Shift"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
                             formControlName="shiftName">
-                        <mat-error *ngIf="getControl('shiftName')?.hasError('required')">ShiftName Is
-                                Required</mat-error>
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>start Time</mat-label>
-                        <input type="text" matInput name="startTime" placeholder="00:01"
-                            formControlName="startTime">
-                        <mat-error *ngIf="getControl('startTime')?.hasError('required')">StartTime Is
-                                Required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
 
             <div class="row">
-                <div class="col">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>start Time</mat-label>
+                        <input type="text" matInput name="startTime" placeholder="00:01" formControlName="startTime"
+                            (keypress)="preventInvalidInput($event)" (paste)="preventPaste($event)">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>end Time</mat-label>
-                        <input type="text" matInput name="endTime" placeholder="00:01"
-                            formControlName="endTime">
-                        <mat-error *ngIf="getControl('endTime')?.hasError('required')">EndTime Is
-                                Required</mat-error>
+                        <input type="text" matInput name="endTime" placeholder="00:01" formControlName="endTime"
+                            (keypress)="preventInvalidInput($event)" (paste)="preventPaste($event)">
                     </mat-form-field>
                 </div>
             </div>
@@ -49,13 +43,15 @@
 
             @if(isEdit){
             <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }
 

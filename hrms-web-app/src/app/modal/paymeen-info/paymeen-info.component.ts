@@ -29,13 +29,13 @@ export class PaymeenInfoComponent {
 
   paymentinfo = this.formBuilder.group({
     id: 0,
-    bankName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    ifscCode: ['', [Validators.required,Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$'),Validators.maxLength(11)]],
-    accountNumber: ['', [Validators.required,Validators.pattern(('^[0-9]+$'))]],
-    nameOnAccount: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    bankName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    ifscCode: ['', [Validators.required, Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$'), Validators.maxLength(11)]],
+    accountNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(12)]],
+    nameOnAccount: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
-  
+
   id!: any;
 
   ngOnInit() {
@@ -46,6 +46,34 @@ export class PaymeenInfoComponent {
       this.paymentinfo.patchValue(this.data);
     }
   }
+  allowOnlyLetters(event: KeyboardEvent) {
+    const charCode = event.key.charCodeAt(0);
+    if (!/[a-zA-Z ]/.test(event.key)) {
+      event.preventDefault(); // Stop the key from being entered
+    }
+  }
+  preventInvalidNumbers(event: KeyboardEvent) {
+    const charCode = event.which ? event.which : event.keyCode;
+    const input = event.target as HTMLInputElement;
+
+    // Allow only numbers (0-9), prevent spaces and non-numeric characters
+    if (charCode < 48 || charCode > 57) {
+      event.preventDefault();
+    }
+
+    // Prevent starting with 0
+    if (input.value.length === 0 && charCode === 48) {
+      event.preventDefault();
+    }
+  }
+
+  preventPaste(event: ClipboardEvent) {
+    const clipboardData = event.clipboardData?.getData('text');
+    if (clipboardData && !/^[1-9][0-9]{9}$/.test(clipboardData)) {
+      event.preventDefault();
+      this.toaster.error("Invalid mobile number format", "Validation Error");
+    }
+  }
   submitdata() {
     if (this.paymentinfo.invalid) {
       this.paymentinfo.markAllAsTouched(); // Show errors in UI  
@@ -53,8 +81,8 @@ export class PaymeenInfoComponent {
         bankName: "Bank Name is Required",
         ifscCode: "Please Enter A Valid IFSC Code",
         accountNumber: "Enter Account Number",
-        nameOnAccount: "Enter Account Name",  
-         isActive:" Please select a Active Button"
+        nameOnAccount: "Enter Account Name",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -65,6 +93,7 @@ export class PaymeenInfoComponent {
         }
       }
     }
+    
     if (this.isEdit) {
       this.services.updateData(this.paymentinfo.value, this.id).subscribe({
         next: (val: any) => {
@@ -86,9 +115,5 @@ export class PaymeenInfoComponent {
         }
       })
     }
-  }
-
-  getControl(controleName: string) {
-    return this.paymentinfo.get(controleName);
   }
 }

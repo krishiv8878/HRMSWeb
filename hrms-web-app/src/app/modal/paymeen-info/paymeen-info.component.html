@@ -17,10 +17,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>bankName</mat-label>
-                        <input type="text" matInput name="bankName" placeholder="Enter Your BankName"
+                        <input type="text" matInput name="bankName" placeholder="Enter Your BankName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" 
                             formControlName="bankName">
-                        <mat-error *ngIf="getControl('bankName')?.hasError('required')">BankName Is
-                            Required</mat-error>
                     </mat-form-field>
                 </div>
 
@@ -28,10 +26,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>ifscCode</mat-label>
-                        <input type="text" matInput name="ifscCode" placeholder="Enter Your IfscCode"
+                        <input type="text" matInput name="ifscCode" placeholder="Enter Your IfscCode" (keydown.space)="$event.preventDefault()"
                             formControlName="ifscCode" maxlength="11">
-                        <mat-error *ngIf="getControl('ifscCode')?.hasError('required')">IfscCode Is
-                            Required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -41,10 +37,8 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>accountNumber</mat-label>
-                        <input type="number" matInput name="accountNumber" placeholder="123-456-789-251"
-                            formControlName="accountNumber">
-                        <mat-error *ngIf="getControl('accountNumber')?.hasError('required')">AccountNumber Is
-                            Required</mat-error>
+                        <input type="text" matInput name="accountNumber" placeholder="123-456-789-251"  (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)"
+                            formControlName="accountNumber" maxLength="12">
                     </mat-form-field>
                 </div>
             </div>
@@ -55,10 +49,8 @@
                     <!-- Permanent Address Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>nameOnAccount</mat-label>
-                        <input type="text" matInput name="nameOnAccount" placeholder="Enter Your Account Name"
+                        <input type="text" matInput name="nameOnAccount" placeholder="Enter Your Account Name" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()" 
                             formControlName="nameOnAccount">
-                        <mat-error *ngIf="getControl('nameOnAccount')?.hasError('required')">AccountName Is
-                            Required</mat-error>
                     </mat-form-field>
                 </div>
             </div>
@@ -72,14 +64,16 @@
             @if(isEdit){
             <!-- Edit Mode: Update and Cancel Buttons -->
             <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <!-- Add Mode: Add and Cancel Buttons -->
             <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }
 

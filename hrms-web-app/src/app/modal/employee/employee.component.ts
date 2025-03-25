@@ -38,30 +38,31 @@ export class EmployeeComponent {
   roleservises = inject(RoleservicesService)
   isEdit = false;
 
+
+
+  Employeeform = this.formBuilder.group({
+    id: 0,
+    //firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
+    lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
+    emailAddress: ['', [Validators.required, Validators.email, Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}$')]],
+    mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
+    permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    gender: ['', [Validators.required]],
+    currentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    dateOfJoining: ['', [Validators.required]],
+    roleIds: [[], [Validators.required]],
+    rolenames: [[]],
+    managerId: [0],
+    ManagerName: [''],
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
+  })
   noWhitespaceValidator(control: any) {
     if (control.value && control.value.trim() === '') {
       return { 'whitespace': true };
     }
     return null;
   }
-  
-  
-  Employeeform = this.formBuilder.group({
-    id: 0,
-    //firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$'),this.noWhitespaceValidator],],
-    lastName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$'),this.noWhitespaceValidator],],
-    emailAddress: ['', [Validators.required,Validators.email, Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}$'),this.noWhitespaceValidator]],
-    mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
-    permanentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$'),this.noWhitespaceValidator]],
-    gender: ['',[Validators.required]],
-    currentAddress: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 .,-]+$'),this.noWhitespaceValidator]],
-    dateOfJoining: ['',[Validators.required]],
-    roleIds: [[], [Validators.required]],
-    managerId:[0],
-    ManagerName :[''],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
-  })
 
   roles: any[] = []; // Role master list 
   managers: any; // Manager master list 
@@ -84,29 +85,28 @@ export class EmployeeComponent {
       console.log('managers Masters:', this.managers);
     })
   }
- 
   allowOnlyLetters(event: KeyboardEvent) {
     const charCode = event.key.charCodeAt(0);
     if (!/[a-zA-Z ]/.test(event.key)) {
       event.preventDefault(); // Stop the key from being entered
     }
   }
- 
+
   preventInvalidNumbers(event: KeyboardEvent) {
     const charCode = event.which ? event.which : event.keyCode;
     const input = event.target as HTMLInputElement;
-  
+
     // Allow only numbers (0-9), prevent spaces and non-numeric characters
     if (charCode < 48 || charCode > 57) {
       event.preventDefault();
     }
-  
+
     // Prevent starting with 0
     if (input.value.length === 0 && charCode === 48) {
       event.preventDefault();
     }
   }
-  
+
   preventPaste(event: ClipboardEvent) {
     const clipboardData = event.clipboardData?.getData('text');
     if (clipboardData && !/^[1-9][0-9]{9}$/.test(clipboardData)) {
@@ -114,33 +114,26 @@ export class EmployeeComponent {
       this.toaster.error("Invalid mobile number format", "Validation Error");
     }
   }
-  
-  
+
   submitdata() {
     if (this.Employeeform.invalid) {
-      this.Employeeform.markAllAsTouched(); // Show errors
-  
+      this.Employeeform.markAllAsTouched(); // Show errors in UI  
+
       const errorMessages: { [key: string]: string } = {
-        firstName: this.getControl('firstName')?.hasError('whitespace')
-          ? "First Name cannot be empty or only spaces"
-          : "Only letters are allowed in First Name",
-  
-        lastName: this.getControl('lastName')?.hasError('whitespace')
-          ? "Last Name cannot be empty or only spaces"
-          : "Only letters are allowed in Last Name",
-  
+        firstName: "First Name is Required",
+        lastName: "Last Name is Required",
         emailAddress: this.getControl('emailAddress')?.hasError('required')
           ? "Email Address is required"
           : this.getControl('emailAddress')?.hasError('email')
             ? "Enter a valid email address (e.g., user@example.com)"
-            : "Email format is incorrect",
-  
+            : "",
+
         mobileNumber: this.getControl('mobileNumber')?.hasError('required')
           ? "Mobile Number is required"
           : this.getControl('mobileNumber')?.hasError('pattern')
-            ? "Mobile Number must be 10 digits and cannot start with 0"
+            ? "Mobile Number must be 10 digits"
             : "Invalid Mobile Number",
-  
+
         gender: "Please select the Gender",
         permanentAddress: "Permanent Address is Required",
         currentAddress: "Current Address is Required",
@@ -148,20 +141,30 @@ export class EmployeeComponent {
         roleIds: "RoleID is Required",
         isActive: "Please select Active Status"
       };
-  
-    
-         // Show error messages in a popup
-    for (const field in errorMessages) {
-      const control = this.getControl(field);
-      if (control?.invalid) {
-        this.toaster.error(errorMessages[field], "Validation Error");
-        return; // Show one error at a time and stop further execution
+
+      // Mobile number ke errors check karna
+      const mobileErrors = this.Employeeform.controls['mobileNumber'].errors;
+      if (mobileErrors) {
+        if (mobileErrors['required']) {
+          errorMessages['mobileNumber'] = "Mobile Number is empty";
+        } else if (mobileErrors['minlength']) {
+          errorMessages['mobileNumber'] = "Mobile Number must be  10 digits";
+        }
+      }
+
+      // Show error messages in a popup
+      for (const field in errorMessages) {
+        const control = this.getControl(field);
+        if (control?.invalid) {
+          this.toaster.error(errorMessages[field], "Validation Error");
+          return; // Show one error at a time and stop further execution
+        }
       }
     }
-    }
-   
-     // Proceed with API call if form is valid
-  if (this.isEdit) {
+  
+
+  // Proceed with API call if form is valid
+  if(this.isEdit) {
     this.services.updateData(this.Employeeform.value).subscribe({
       next: () => {
         this.toaster.success('Successfully updated data', 'Success');
@@ -172,18 +175,21 @@ export class EmployeeComponent {
       }
     });
   } else {
-    this.services.createData(this.Employeeform.value).subscribe({
-      next: () => {
-        this.toaster.success('Successfully added data', 'Success');
-        this._dialogref.close(true);
-      },
-      error: (err) => {
-        console.log("Error:", err);
-      }
-    });
-  }
-  }
-  getControl(controleName:string){
+  this.services.createData(this.Employeeform.value).subscribe({
+    next: () => {
+      this.toaster.success('Successfully added data', 'Success');
+      this._dialogref.close(true);
+    },
+    error: (err) => {
+      console.log("Error:", err);
+    }
+  });
+}
+}
+  getControl(controleName: string){
     return this.Employeeform.get(controleName);
   }
+
 }
+
+

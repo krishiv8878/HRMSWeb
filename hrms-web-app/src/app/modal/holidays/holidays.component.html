@@ -10,20 +10,16 @@
                 <div class="col-xl-12">
                     <mat-form-field appearance="outline">
                         <mat-label>Holiday Name</mat-label>
-                        <input type="text" matInput name="holidayName" placeholder="Enter Your HolidayName"
-                            formControlName="holidayName">
-                            <mat-error *ngIf="getControl('holidayName')?.hasError('required')">HolidayName Is
-                                Required</mat-error>
+                        <input type="text" matInput name="holidayName" placeholder="Enter Your HolidayName" (keydown.space)="$event.preventDefault()" 
+                            formControlName="holidayName">                           
                     </mat-form-field>
                 </div>
 
                 <div class="col-xl-12">
                     <mat-form-field appearance="outline">
                         <mat-label>Description</mat-label>                      
-                        <input type="text" matInput name="holidayName" placeholder="Enter Your Description"
-                        formControlName="description">
-                        <mat-error *ngIf="getControl('description')?.hasError('required')">Description Is
-                            Required</mat-error>
+                        <input type="text" matInput name="holidayName" placeholder="Enter Your Description" (keydown.space)="$event.preventDefault()" 
+                        formControlName="description">                       
                     </mat-form-field>
                 </div>
             </div>

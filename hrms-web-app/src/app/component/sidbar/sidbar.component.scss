@@ -41,15 +41,17 @@ mat-divider {
     color: white;
 }
 
-
 .logo {
+    height: 4rem;
+    width: 100%;
+    background-color: white;
     display: flex;
     justify-content: center;
-    padding-top: 1rem;
-    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+    padding: 5px;
 
-    img{
-        height: 5rem;
-        width: 5rem;
+    img {
+        height: 3.5rem;
+        width: 3.5rem;
+        align-items: center;
     }
 }

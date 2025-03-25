@@ -31,26 +31,26 @@ export class HomeComponent {
   dialog = inject(MatDialog)
 
   public columnDefs: ColDef[] = [
-    // { field: "id", floatingFilter: true, filter: true },
-    { field: "firstName", floatingFilter: true, filter: true },
-    { field: "lastName", floatingFilter: true, filter: true },
-    { field: "emailAddress", floatingFilter: true, filter: true },
-    { field: "mobileNumber", floatingFilter: true, filter: true },
-    { field: "permanentAddress", floatingFilter: true, filter: true },
+    // { field: "id" },
+    { field: "firstName" },
+    { field: "lastName" },
+    { field: "emailAddress" },
+    { field: "mobileNumber" },
+    { field: "permanentAddress" },
     {
-      field: "dateOfJoining", floatingFilter: true, filter: true, valueFormatter: params => {
+      field: "dateOfJoining", valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
-    { field: "roleIds", headerName: 'Roles', floatingFilter: true, filter: true },
-    { field: "managerId", headerName: 'Managers', floatingFilter: true, filter: true },
-    { field: "gender", floatingFilter: true, filter: true },
+    {field: "rolenames",headerName:'Roles' },
+    { field: "managerName", headerName: 'Managers' },
+    { field: "gender" },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
 
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
-
+  
   rowData: any[] = [];
 
   constructor() { this.columnDefs }

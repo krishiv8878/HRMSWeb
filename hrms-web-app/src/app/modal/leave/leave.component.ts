@@ -42,7 +42,12 @@ export class LeaveComponent {
       this.isEdit = true
     }
   }
-
+  allowOnlyLetters(event: KeyboardEvent) {
+    const charCode = event.key.charCodeAt(0);
+    if (!/[a-zA-Z ]/.test(event.key)) {
+      event.preventDefault(); // Stop the key from being entered
+    }
+  }
   submitdata() {
     if (this.leavetype.invalid) {
       this.leavetype.markAllAsTouched(); // Show errors in UI  

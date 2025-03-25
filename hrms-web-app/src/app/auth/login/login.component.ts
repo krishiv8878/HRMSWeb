@@ -26,7 +26,7 @@ export class LoginComponent {
 
   login = this.formBuilder.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required,  Validators.minLength(4),Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
+    password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
 
   logindata() {
@@ -51,27 +51,16 @@ export class LoginComponent {
       console.log(this.login.value)
       this.services.createLogin(this.login.value).subscribe(() => {
         // alert('successfully login')
-        this.login.reset();
-        this.router.navigateByUrl('index')
         this.toster.success('successfully login', 'success')
+
+        setTimeout(() => {
+          this.router.navigateByUrl('index')
+          this.login.reset();
+        }, 800);
       })
     } else {
       this.toster.error('invalide email and password', 'error')
     }
   }
-
-  getControl(controleName: string) {
-    return this.login.get(controleName);
-  }
-  // Custom validator for strong password
-  // passwordValidator(control: any) {
-  //   const value = control.value || '';
-  //   const hasUpperCase = /[A-Z]/.test(value);
-  //   const hasLowerCase = /[a-z]/.test(value);
-  //   const hasDigit = /\d/.test(value);
-  //   const hasSpecialChar = /[@$!%*?&]/.test(value);
-  //   const isValid = hasUpperCase && hasLowerCase && hasDigit && hasSpecialChar;
-  //   return isValid ? null : { strongPassword: true };
-  // }
 }
 

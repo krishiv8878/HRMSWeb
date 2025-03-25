@@ -35,7 +35,8 @@
 //     padding: 3rem 1rem;
 // }
 
-.card, .card1 {
+.card,
+.card1 {
     width: 25rem;
     height: 12rem;
 }
@@ -73,3 +74,7 @@ input {
 // .remote-button {
 //     margin-top: 1rem;
 // }
+::ng-deep .card,
+.card1 {
+    background-color: white !important;
+}

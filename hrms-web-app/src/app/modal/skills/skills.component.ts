@@ -36,7 +36,7 @@ export class SkillsComponent {
 
   Skillform = this.formBuilder.group({
     id: 0,
-    skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z .,\\-]+$')]],
+    skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-]+$')]],
     isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
 
@@ -60,11 +60,12 @@ export class SkillsComponent {
         isActive: " Please select a Active Button"
       };
 
+      // Show error messages in a popup
       for (const field in errorMessages) {
-        const control = this.Skillform.get(field);
+        const control = this.getControl(field);
         if (control?.invalid) {
           this.toaster.error(errorMessages[field], "Validation Error");
-          return;
+          return; // Show one error at a time and stop further execution
         }
       }
     }
