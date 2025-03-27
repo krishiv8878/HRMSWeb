@@ -43,12 +43,11 @@ export class ProjectComponent {
       this.isEdit = true
     }
   }
+  
   allowOnlyLetters(event: KeyboardEvent) {
-    const charCode = event.key.charCodeAt(0);
-    if (!/[a-zA-Z ]/.test(event.key)) {
-      event.preventDefault(); // Stop the key from being entered
-    }
+    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
   }
+  
   submitdata() {
     if (this.project.invalid) {
       this.project.markAllAsTouched(); // Show errors in UI  

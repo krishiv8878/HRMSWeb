@@ -1,0 +1,57 @@
+* {
+    overflow: hidden;
+}
+
+.table-title {
+    letter-spacing: 1px;
+    // font-size: 25px;
+    font-weight: 500;
+}
+
+.table-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    padding: 0px 15px;
+}
+
+.table-btn {
+    text-transform: capitalize;
+    font-weight: 500;
+
+    button {
+        letter-spacing: 1px;
+        font-size: 16px;
+    }
+}
+
+.document {
+    display: flex;
+}
+
+.left-panel {
+    width: 30%;
+    border-right: 1px solid #ddd;
+    padding: 10px;
+}
+
+.right-panel {
+    width: 70%;
+    padding: 10px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    padding: 8px;
+    cursor: pointer;
+}
+
+li.active {
+    background-color: #007bff;
+    color: white;
+}
