@@ -27,31 +27,25 @@
 }
 
 .document {
-    display: flex;
+    padding: 5rem 3rem;
 }
 
-.left-panel {
-    width: 30%;
-    border-right: 1px solid #ddd;
-    padding: 10px;
+mat-card {
+    border-radius: 0;
+   background: white;
 }
 
-.right-panel {
-    width: 70%;
-    padding: 10px;
-}
-
-ul {
-    list-style: none;
-    padding: 0;
-}
-
-li {
-    padding: 8px;
+mat-list-item {
+    padding: 1rem 1rem;
     cursor: pointer;
+
+    &:hover {
+        background-color: #a8d6ed3d;
+    }
 }
 
-li.active {
-    background-color: #007bff;
-    color: white;
+iframe {
+    width: 100%;
+    height: 80vh;
+
 }

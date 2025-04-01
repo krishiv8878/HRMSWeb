@@ -28,12 +28,12 @@ export class PaymentinfoComponent {
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
-    // { field: "id", floatingFilter: true, filter: true },
-    { field: "employeeId", floatingFilter: true, filter: true },
-    { field: "bankName", floatingFilter: true, filter: true },
-    { field: "ifscCode", floatingFilter: true, filter: true },
-    { field: "accountNumber", floatingFilter: true, filter: true },
-    { field: "nameOnAccount", floatingFilter: true, filter: true },
+    // { field: "id",  },
+    { field: "employeeId",  },
+    { field: "bankName",  },
+    { field: "ifscCode",  },
+    { field: "accountNumber",  },
+    { field: "nameOnAccount",  },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
 

@@ -9,11 +9,12 @@ import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DocumentService } from '../../services/documnets/document.service';
-
+import {MatCardModule} from '@angular/material/card';
+import {MatListModule} from '@angular/material/list';
 @Component({
   selector: 'app-document',
   standalone: true,
-  imports: [CommonModule, AgGridModule, MatIconModule, HttpClientModule, MatDialogModule, MatButtonModule],
+  imports: [CommonModule,MatCardModule, AgGridModule,MatListModule, MatIconModule, HttpClientModule, MatDialogModule, MatButtonModule],
   templateUrl: './document.component.html',
   styleUrl: './document.component.scss'
 })
@@ -21,7 +22,7 @@ export class DocumentComponent {
   constructor() { }
   route = inject(ActivatedRoute)
   services = inject(DocumentService)
-  sanitizer = inject(DomSanitizer); // Injecting DomSanitizer
+  sanitizer = inject(DomSanitizer); 
   public columnDefs: ColDef[] = [
     // { field: 'id' },
     // { field: 'employeeId' },

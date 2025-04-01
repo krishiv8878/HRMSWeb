@@ -24,10 +24,10 @@ export class ShiftemployeeComponent {
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
-    // { field: "id", floatingFilter: true, filter: true },
-    { field: "shiftName", floatingFilter: true, filter: true },
-    { field: "startTime", floatingFilter: true, filter: true },
-    { field: "endTime", floatingFilter: true, filter: true },
+    // { field: "id",},
+    { field: "shiftName",},
+    { field: "startTime",},
+    { field: "endTime",},
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
