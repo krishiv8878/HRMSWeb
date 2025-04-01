@@ -57,14 +57,6 @@ export class EmployeeComponent {
     ManagerName: [''],
     isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
-  noWhitespaceValidator(control: any) {
-    if (control.value && control.value.trim() === '') {
-      return { 'whitespace': true };
-    }
-    return null;
-  }
-  
-
 
   roles: any[] = []; // Role master list 
   managers: any; // Manager master list 
@@ -100,7 +92,7 @@ export class EmployeeComponent {
     const input = event.target as HTMLInputElement;
     if (!/^[1-9][0-9]*$/.test(input.value + event.key)) event.preventDefault();
   }
-  
+
   preventPaste(event: ClipboardEvent) {
     const clipboardData = event.clipboardData?.getData('text') || '';
     if (!/^[1-9][0-9]{9}$/.test(clipboardData)) {
