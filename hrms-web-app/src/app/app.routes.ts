@@ -17,6 +17,7 @@ import { RolemasterComponent } from './component/rolemaster/rolemaster.component
 import { EmployeeAttendanceComponent } from './component/employee-attendance/employee-attendance.component';
 import { PaymentinfoComponent } from './component/paymentinfo/paymentinfo.component';
 import { ShiftemployeeComponent } from './component/shiftemployee/shiftemployee.component';
+import { DocumentComponent } from './component/document/document.component';
 
 
 export const routes: Routes = [
@@ -76,6 +77,9 @@ export const routes: Routes = [
             },
             {
                 path:'shift', component:ShiftemployeeComponent
+            },
+            {
+                path:'document', component:DocumentComponent
             }
         ]
     }

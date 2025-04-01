@@ -35,12 +35,11 @@ export class RolemastersComponent {
     roleName: ['', [Validators.required,Validators.pattern('^[a-zA-Z .,-]+$')]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
+
   allowOnlyLetters(event: KeyboardEvent) {
-    const charCode = event.key.charCodeAt(0);
-    if (!/[a-zA-Z ]/.test(event.key)) {
-      event.preventDefault(); // Stop the key from being entered
-    }
+    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
   }
+   
   ngOnInit() {
     this.roledateForm.patchValue(this.data);
     console.log('update data', this.data)

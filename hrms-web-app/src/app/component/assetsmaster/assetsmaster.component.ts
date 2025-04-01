@@ -24,18 +24,18 @@ export class AssetsmasterComponent {
   toaster = inject(ToastrService)
 
   public columnDefs: ColDef[] = [
+    // { field: "id",},
     // { field: "id", floatingFilter: true, filter: true,},
-    // { field: "id", floatingFilter: true, filter: true,},
-    { field: "assetsMasterName", headerName: "Name", floatingFilter: true, filter: true, },
-    { field: "serialNumber", floatingFilter: true, filter: true, },
-    { field: "description", floatingFilter: true, filter: true, },
+    { field: "assetsMasterName", headerName: "Name", },
+    { field: "serialNumber", },
+    { field: "description", },
     {
-      field: "dateOfPurchase", floatingFilter: true, filter: true, valueFormatter: params => {
+      field: "dateOfPurchase", valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
-    // { field: "createdDate", floatingFilter: true, filter: true,},
-    // { field: "createdBy", floatingFilter: true, filter: true,},    
+    // { field: "createdDate",},
+    // { field: "createdBy",},    
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]

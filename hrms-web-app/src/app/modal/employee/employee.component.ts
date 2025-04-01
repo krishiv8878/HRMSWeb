@@ -57,12 +57,6 @@ export class EmployeeComponent {
     ManagerName: [''],
     isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
-  noWhitespaceValidator(control: any) {
-    if (control.value && control.value.trim() === '') {
-      return { 'whitespace': true };
-    }
-    return null;
-  }
 
   roles: any[] = []; // Role master list 
   managers: any; // Manager master list 
@@ -85,35 +79,28 @@ export class EmployeeComponent {
       console.log('managers Masters:', this.managers);
     })
   }
-  allowOnlyLetters(event: KeyboardEvent) {
-    const charCode = event.key.charCodeAt(0);
-    if (!/[a-zA-Z ]/.test(event.key)) {
-      event.preventDefault(); // Stop the key from being entered
-    }
+
+  noWhitespaceValidator(control: any) {
+    return control.value?.trim() === '' ? { 'whitespace': true } : null;
   }
-
+  
+  allowOnlyLetters(event: KeyboardEvent) {
+    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
+  }
+  
   preventInvalidNumbers(event: KeyboardEvent) {
-    const charCode = event.which ? event.which : event.keyCode;
     const input = event.target as HTMLInputElement;
-
-    // Allow only numbers (0-9), prevent spaces and non-numeric characters
-    if (charCode < 48 || charCode > 57) {
-      event.preventDefault();
-    }
-
-    // Prevent starting with 0
-    if (input.value.length === 0 && charCode === 48) {
-      event.preventDefault();
-    }
+    if (!/^[1-9][0-9]*$/.test(input.value + event.key)) event.preventDefault();
   }
 
   preventPaste(event: ClipboardEvent) {
-    const clipboardData = event.clipboardData?.getData('text');
-    if (clipboardData && !/^[1-9][0-9]{9}$/.test(clipboardData)) {
+    const clipboardData = event.clipboardData?.getData('text') || '';
+    if (!/^[1-9][0-9]{9}$/.test(clipboardData)) {
       event.preventDefault();
       this.toaster.error("Invalid mobile number format", "Validation Error");
     }
   }
+  
 
   submitdata() {
     if (this.Employeeform.invalid) {
@@ -132,7 +119,7 @@ export class EmployeeComponent {
           ? "Mobile Number is required"
           : this.getControl('mobileNumber')?.hasError('pattern')
             ? "Mobile Number must be 10 digits"
-            : "Invalid Mobile Number",
+            : "",
 
         gender: "Please select the Gender",
         permanentAddress: "Permanent Address is Required",
@@ -141,16 +128,6 @@ export class EmployeeComponent {
         roleIds: "RoleID is Required",
         isActive: "Please select Active Status"
       };
-
-      // Mobile number ke errors check karna
-      const mobileErrors = this.Employeeform.controls['mobileNumber'].errors;
-      if (mobileErrors) {
-        if (mobileErrors['required']) {
-          errorMessages['mobileNumber'] = "Mobile Number is empty";
-        } else if (mobileErrors['minlength']) {
-          errorMessages['mobileNumber'] = "Mobile Number must be  10 digits";
-        }
-      }
 
       // Show error messages in a popup
       for (const field in errorMessages) {
@@ -161,32 +138,32 @@ export class EmployeeComponent {
         }
       }
     }
-  
 
-  // Proceed with API call if form is valid
-  if(this.isEdit) {
-    this.services.updateData(this.Employeeform.value).subscribe({
-      next: () => {
-        this.toaster.success('Successfully updated data', 'Success');
-        this._dialogref.close(true);
-      },
-      error: (err) => {
-        console.log("Error:", err);
-      }
-    });
-  } else {
-  this.services.createData(this.Employeeform.value).subscribe({
-    next: () => {
-      this.toaster.success('Successfully added data', 'Success');
-      this._dialogref.close(true);
-    },
-    error: (err) => {
-      console.log("Error:", err);
+
+    // Proceed with API call if form is valid
+    if (this.isEdit) {
+      this.services.updateData(this.Employeeform.value).subscribe({
+        next: () => {
+          this.toaster.success('Successfully updated data', 'Success');
+          this._dialogref.close(true);
+        },
+        error: (err) => {
+          console.log("Error:", err);
+        }
+      });
+    } else {
+      this.services.createData(this.Employeeform.value).subscribe({
+        next: () => {
+          this.toaster.success('Successfully added data', 'Success');
+          this._dialogref.close(true);
+        },
+        error: (err) => {
+          console.log("Error:", err);
+        }
+      });
     }
-  });
-}
-}
-  getControl(controleName: string){
+  }
+  getControl(controleName: string) {
     return this.Employeeform.get(controleName);
   }
 
