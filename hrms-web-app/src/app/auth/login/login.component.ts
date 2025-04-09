@@ -50,13 +50,14 @@ export class LoginComponent {
     if (this.login.valid) {
       console.log(this.login.value)
       this.services.createLogin(this.login.value).subscribe(() => {
-        // alert('successfully login')
+        
         this.toster.success('successfully login', 'success')
 
         setTimeout(() => {
+          this.toster.clear();
           this.router.navigateByUrl('index')
           this.login.reset();
-        }, 800);
+        }, 400);
       })
     } else {
       this.toster.error('invalide email and password', 'error')

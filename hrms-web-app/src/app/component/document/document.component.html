@@ -15,15 +15,6 @@
     <div class="document">
         <div class="row">
             <div class="col-xl-3">
-                <!-- <div class="left-panel">
-                    <h5>Employee Documents Folders</h5>
-                    <ul>
-                        <li *ngFor="let doc of documents" (click)="viewDocument(doc.id)"
-                            [class.active]="selectedDocument === doc.filePath">
-                            {{doc.documentName }}
-                        </li>
-                    </ul>
-                </div> -->
                 <mat-card class="document-card">
                     <h5 style="text-transform: uppercase; font-size: 1rem; padding: 1rem;">Employee Document Folders
                     </h5>
@@ -40,7 +31,7 @@
                 <div class="right-panel">
                     <!-- <h3>Preview</h3> -->
                     <div *ngIf="selectedDocument">
-                        <iframe [src]="selectedDocument" ></iframe>
+                        <iframe [src]="selectedDocument"></iframe>
                     </div>
                 </div>
             </div>

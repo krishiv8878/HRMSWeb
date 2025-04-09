@@ -50,26 +50,20 @@ export class DocumentComponent {
   AllData() {
     this.services.getAll().subscribe((response: any) => {
       this.documents = response.data
-      console.log("data", response.data)
-    })
+      console.log("data", response.data) 
+    })                              
   }
 
   viewDocument(id: number) {
     console.log("Selected Document ID:", id); // Debugging ke liye
   
-    this.services.viewDocument(id).subscribe((blob: Blob) => {
-      const url = window.URL.createObjectURL(blob);
+    this.services.viewDocument(id).subscribe((response: any) => {
+      const url = window.URL.createObjectURL(response);
       this.selectedDocument = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     }, error => {
       console.error("Error loading document:", error);
     });
   }
-  
-
-  // // Sanitize URL to safely load in iframe
-  // sanitizeUrl(url: string): SafeResourceUrl {
-  //   return this.sanitizer.bypassSecurityTrustResourceUrl(url);
-  // }
 
   openAddForm() { }
 }
