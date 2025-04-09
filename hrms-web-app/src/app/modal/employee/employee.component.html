@@ -101,9 +101,6 @@
                         <mat-radio-button value="male">Male</mat-radio-button>
                         <mat-radio-button value="female">Female</mat-radio-button>
                     </mat-radio-group>
-
-                    <!-- Active Status Checkbox -->
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
                 </div>
 
                 <!-- Role Selection Dropdown -->
@@ -130,6 +127,10 @@
                     </mat-form-field>
                 </div>
             </div>
+
+
+            <!-- Active Status Checkbox -->
+            <mat-checkbox formControlName="isActive">Active</mat-checkbox>
 
             <!-- Buttons: Save, Update, or Cancel -->
             @if(isEdit){
