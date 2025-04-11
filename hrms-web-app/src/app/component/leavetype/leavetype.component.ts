@@ -24,7 +24,7 @@ export class LeavetypeComponent {
     // { field: "id",},
     // { field: "leaveName",},
     { field: "type",},
-    { field: "description",},
+    { field: "description",tooltipField:"description"},
     // { field: "createdDate",},
     // { field: "createdBy",},
     // { field: "updatedDate",},

@@ -26,7 +26,7 @@ export class CandidateComponent {
     // { field: "id", floatingFilter: true, filter: true },
     { field: "firstName", },
     { field: "lastName", },
-    { field: "emailAddress", },
+    { field: "emailAddress",tooltipField:"emailAddress"  },
     { field: "mobileNumber", },
     { field: "totalExperience", },
     { field: "currentSalary", },

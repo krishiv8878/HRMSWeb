@@ -30,7 +30,7 @@ export class HolidayComponent {
   public columnDefs: ColDef[] = [
     // { field: "id", },
     { field: "holidayName", },
-    { field: "description", },
+    { field: "description", tooltipField:"description"},
     // { field: "createdDate", },
     // { field: "createdBy", },
     // { field: "updatedDate", },

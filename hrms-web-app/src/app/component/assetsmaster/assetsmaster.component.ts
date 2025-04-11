@@ -28,7 +28,7 @@ export class AssetsmasterComponent {
     // { field: "id", floatingFilter: true, filter: true,},
     { field: "assetsMasterName", headerName: "Name", },
     { field: "serialNumber", },
-    { field: "description", },
+    { field: "description", tooltipField:"description" },
     {
       field: "dateOfPurchase", valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';

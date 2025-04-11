@@ -24,6 +24,7 @@ export class DocumentComponent {
   services = inject(DocumentService)
   sanitizer = inject(DomSanitizer); 
   public columnDefs: ColDef[] = [
+
     // { field: 'id' },
     // { field: 'employeeId' },
     { field: 'filePath', headerName: "Employee Document" },

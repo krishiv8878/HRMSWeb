@@ -26,10 +26,6 @@ export class RolemasterComponent {
   public columnDefs: ColDef[] = [
     // { field: "id",},
     { field: "roleName",},
-    // { field: "createdBy",},
-    // { field: "createdDate",},
-    // { field: "updatedBy",},
-    // { field: "updatedDate",},
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];

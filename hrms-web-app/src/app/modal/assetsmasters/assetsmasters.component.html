@@ -26,16 +26,7 @@
             </div>
 
             <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>description</mat-label>
-                        <input type="text" matInput name="description" placeholder="Enter Your Description"
-                            (keydown.space)="$event.preventDefault()" formControlName="description">
-                    </mat-form-field>
-                </div>
-
-
-                <div class="col-xl-6">
+                <div class="col-xl-12">
                     <mat-form-field appearance="outline">
                         <mat-label>dateOfPurchase</mat-label>
                         <input matInput [matDatepicker]="picker3" formControlName="dateOfPurchase">
@@ -45,6 +36,14 @@
                     </mat-form-field>
                 </div>
 
+                <div class="col-xl-12">
+                    <mat-form-field appearance="outline">
+                        <mat-label>description</mat-label>
+                        <!-- <input type="text" matInput name="description" placeholder="Enter Your Description"
+                            formControlName="description"> -->
+                            <textarea matInput placeholder="Leave Reason" rows="2" formControlName="description"></textarea>
+                    </mat-form-field>
+                </div>
             </div>
 
             <div class="row">
