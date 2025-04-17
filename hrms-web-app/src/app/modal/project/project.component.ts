@@ -87,7 +87,7 @@ export class ProjectComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.project.value).subscribe({
+      this.services.updateData(this.project.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
