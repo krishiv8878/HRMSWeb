@@ -21,23 +21,3 @@
         letter-spacing: 1px;
     }
 }
-
-::ng-deep .ag-theme-quartz {
-    height: 85vh;
-    width: 100%;
-}
-
-@media (max-width: 768px) {
-    ::ng-deep .ag-theme-quartz {
-        font-size: 12px;
-    }
-
-    ::ng-deep .ag-header-cell-label {
-        justify-content: center;
-        text-align: center;
-    }
-
-    ::ng-deep .ag-cell {
-        padding: 4px;
-    }
-}
