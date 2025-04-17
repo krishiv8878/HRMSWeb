@@ -4,7 +4,7 @@
     <router-outlet />  
   </mat-drawer-content>
 
-  <mat-drawer mode="side" [opened]="sidebaropen">
+  <mat-drawer [mode]="drawerMode" [opened]="sidebaropen" (closedStart)="sidebaropen = false">
     <app-sidbar />
   </mat-drawer>
 

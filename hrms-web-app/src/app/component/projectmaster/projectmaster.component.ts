@@ -24,14 +24,10 @@ export class ProjectmasterComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
-    { field: "clientName",},
+    { field: "clientName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "clientRegion",},
-    { field: "projectName",},
-    { field: "description",},
-    // { field: "createdDate",},
-    // { field: "createdBy",},
-    // { field: "updatedDate",},
-    // { field: "updatedBy",},
+    { field: "projectName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "description",tooltipField:"description"},
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];

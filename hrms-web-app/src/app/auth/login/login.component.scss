@@ -6,9 +6,9 @@ form {
     position: absolute;
     left: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 1px 1px 10px #303393;
+    box-shadow: 0.1rem 0.1rem 1rem #80808a59;
     // width: 25%;
-    padding: 2.5rem;
+    padding: 1.5rem;
     border-radius: 10px;
 }
 
@@ -49,38 +49,31 @@ p {
     font-size: 15px;
 }
 
-@media only screen and (max-width: 600px) {
-    form {
-        width: 55%;
-        box-shadow: 0 0 0;
-    }
+// @media only screen and (max-width: 600px) {
+//     form {
+//         // width: 55%;
+//         box-shadow: 0 0 0;
+//     }
 
-    .login-form {
-        width: 15.2rem;
-    }
-}
+//     .login-form {
+//         width: 15.2rem;
+//     }
+// }
 
-@media only screen and (max-width: 928px) {
-    form {
-        width: 55%;
-        box-shadow: 3px 3px 25px #303393;
-    }
-}
+// @media only screen and (max-width: 928px) {
+//     form {
+//         // width: 55%;
+//         box-shadow: 3px 3px 25px #303393;
+//     }
+// }
 
-@media only screen and (max-width: 1013px) {
-    form {
-        width: 55%;
-        box-shadow: 3px 3px 25px #303393;
-    }
+// @media only screen and (max-width: 1013px) {
+//     form {
+//         // width: 55%;
+//         box-shadow: 3px 3px 25px #303393;
+//     }
 
-    .login-form {
-        width: 22.2rem;
-    }
-}
-
-@media only screen and (max-width: 1469px) {
-
-    .login-form {
-        width: 15.2rem;
-    }
-}
+//     .login-form {
+//         // width: 22.2rem;
+//     }
+// }

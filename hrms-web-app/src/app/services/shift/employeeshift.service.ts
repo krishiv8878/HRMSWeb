@@ -17,8 +17,8 @@ export class EmployeeshiftService {
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/Shift/CreateShiftType/`, data);
   }
-  updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/Shift/UpdateShift/`, data)
+  updateData(data: any, shiftId:any) {
+    return this.http.put<any[]>(this.apiUrl + `/Shift/UpdateShift/`+shiftId, data)
   }
   deleteData(shiftId: any) {
     return this.http.delete(this.apiUrl + `/Shift/DeleteShift/`+ shiftId)

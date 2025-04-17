@@ -27,7 +27,7 @@ export class DesignationComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id",  },
-    { field: "designationName",  },
+    { field: "designationName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''   },
     // { field: "createdDate",  },
     // { field: "createdBy",  },
     // { field: "updatedDate",  },

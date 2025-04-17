@@ -12,6 +12,7 @@ import { EmployeeComponent } from '../../modal/employee/employee.component';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+// import { TogglebuttonComponent } from '../togglebutton/togglebutton.component';
 
 
 @Component({
@@ -32,25 +33,24 @@ export class HomeComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id" },
-    { field: "firstName" },
-    { field: "lastName" },
-    { field: "emailAddress" },
+    { field: "firstName" ,valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "lastName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''  },
+    { field: "emailAddress", tooltipField: "emailAddress" },
     { field: "mobileNumber" },
-    { field: "permanentAddress" },
+    { field: "permanentAddress", tooltipField: "permanentAddress" },
     {
       field: "dateOfJoining", valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
-    {field: "rolenames",headerName:'Roles' },
-    { field: "managerName", headerName: 'Managers' },
-    { field: "gender" },
+    { field: "rolenames", headerName: 'Roles', tooltipField: "rolenames" },
+    { field: "managerName", headerName: 'Managers', tooltipField: "managerName" },
+    { field: "gender", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
-
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
-  
+
   rowData: any[] = [];
 
   constructor() { this.columnDefs }

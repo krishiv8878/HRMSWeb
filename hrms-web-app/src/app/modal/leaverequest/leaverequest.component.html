@@ -1,0 +1,54 @@
+<div class="form">
+    <form action="" [formGroup]="leaveRequestForm" (ngSubmit)="onSubmit()">
+
+        <p>leave Request</p>
+
+        <div class="employee-form">
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>From</mat-label>
+                        <input matInput [matDatepicker]="picker" formControlName="startDate">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle> 
+                        <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>To</mat-label>
+                        <input matInput [matDatepicker]="picker1" formControlName="endDate">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                        <mat-datepicker #picker1></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Leave Type</mat-label>
+                        <mat-select formControlName="type" placeholder="Select Leave Type">
+                            <mat-option *ngFor="let leave of leavetype" [value]="leave.id">{{leave.type}}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Leave Reason</mat-label>
+                        <textarea matInput placeholder="Leave Reason" rows="4" formControlName="LeaveReason"></textarea>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="button-btn">
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">submit</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
+            </div>
+
+        </div>
+    </form>
+</div>

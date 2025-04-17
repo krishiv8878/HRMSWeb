@@ -1,6 +1,4 @@
 <!-- <p class="boxx"><mat-slide-toggle formControlName="isActive" ></mat-slide-toggle></p> -->
-<mat-slide-toggle
-  [checked]="params.value"
-  (change)="toggleStatus()"
-  color="primary" formControlName="isActive">
+<mat-slide-toggle class="custom-toggle" [checked]="params.value" (change)="toggleStatus()" 
+  formControlName="isActive">
 </mat-slide-toggle>

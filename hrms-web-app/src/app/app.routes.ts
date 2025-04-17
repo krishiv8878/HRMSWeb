@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './component/home/home.component';
+import { HomeComponent } from './component/employee/home.component';
 import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { AboutComponent } from './component/pages/about/about.component';
@@ -18,6 +18,7 @@ import { EmployeeAttendanceComponent } from './component/employee-attendance/emp
 import { PaymentinfoComponent } from './component/paymentinfo/paymentinfo.component';
 import { ShiftemployeeComponent } from './component/shiftemployee/shiftemployee.component';
 import { DocumentComponent } from './component/document/document.component';
+import { LeaveRequestComponent } from './component/leave-request/leave-request.component';
 
 
 export const routes: Routes = [
@@ -28,7 +29,7 @@ export const routes: Routes = [
         path: 'login', component: LoginComponent,
     },
     {
-        path:'register', component:RegisterComponent,
+        path: 'register', component: RegisterComponent,
     },
     {
         path: 'index', component: IndexComponent, children: [
@@ -64,22 +65,25 @@ export const routes: Routes = [
                 path: 'leavetype', component: LeavetypeComponent
             },
             {
-                path:'contact', component:ContactComponent
+                path: 'contact', component: ContactComponent
             },
             {
-                path:'rolemaster', component:RolemasterComponent
+                path: 'rolemaster', component: RolemasterComponent
             },
             {
-                path:'attendance', component:EmployeeAttendanceComponent
+                path: 'attendance', component: EmployeeAttendanceComponent
             },
             {
-                path:'paymentinfo', component:PaymentinfoComponent
+                path: 'paymentinfo', component: PaymentinfoComponent
             },
             {
-                path:'shift', component:ShiftemployeeComponent
+                path: 'shift', component: ShiftemployeeComponent
             },
             {
-                path:'document', component:DocumentComponent
+                path: 'document', component: DocumentComponent
+            },
+            {
+                path: 'leaveRequest', component: LeaveRequestComponent
             }
         ]
     }

@@ -17,16 +17,16 @@
             <!-- Card: Timings Overview -->
             <div class="col-xl-4">
                 <div class="card-one" style="padding: 1rem 0 3rem 0;">
-                    <p style="font-size: 1.6rem; text-transform: capitalize; font-weight: 600;">timings</p>
+                    <p class="section-title">timings</p>
                     <mat-card class="card" style="border-radius: 0;">
                         <mat-card-content>
                             <!-- Displaying week days with highlight on the current day -->
-                            <div class="timings">
+                            <div class="weekdays">
                                 <mat-chip *ngFor="let day of days; let i = index"
-                                    [class.selected]="i === currentDayIndex" class="chips">
+                                    [class.selected]="i === currentDayIndex" class="day-chip">
                                     {{ day }}
                                 </mat-chip>
-                            </div>
+                            </div> 
 
                             <!-- Progress bar for working hours -->
                             <div class="progres-timie" style="padding-top: 4rem;">

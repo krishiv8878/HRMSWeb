@@ -26,9 +26,9 @@ export class AssetsmasterComponent {
   public columnDefs: ColDef[] = [
     // { field: "id",},
     // { field: "id", floatingFilter: true, filter: true,},
-    { field: "assetsMasterName", headerName: "Name", },
+    { field: "assetsMasterName", headerName: "Name", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "serialNumber", },
-    { field: "description", },
+    { field: "description", tooltipField:"description" },
     {
       field: "dateOfPurchase", valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';

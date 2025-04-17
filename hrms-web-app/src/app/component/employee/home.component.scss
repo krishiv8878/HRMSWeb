@@ -1,6 +1,10 @@
+* {
+    overflow: hidden;
+}
+
 .table-title {
     letter-spacing: 1px;
-    // font-size: 25px;
+    // font-size: clamp(1.5rem, 2vw, 2rem);
     font-weight: 500;
 }
 
@@ -17,7 +21,7 @@
     font-weight: 500;
 
     button {
-        font-size: 16px;
         letter-spacing: 1px;
+        font-size: 16px;
     }
 }

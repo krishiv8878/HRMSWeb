@@ -39,15 +39,13 @@ export class RolemastersComponent {
   allowOnlyLetters(event: KeyboardEvent) {
     if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
   }
-   
+   id!:any;
   ngOnInit() {
-    this.roledateForm.patchValue(this.data);
-    console.log('update data', this.data)
     if (this.data) {
       this.isEdit = true;
-      // this.services.getSkill(this.data).subscribe((result) => {
-      //   console.log("form ", result)
-      // })
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.roledateForm.patchValue(this.data);
     }
   }
 
@@ -69,7 +67,7 @@ export class RolemastersComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.roledateForm.value).subscribe({
+      this.services.updateData(this.roledateForm.value,this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')

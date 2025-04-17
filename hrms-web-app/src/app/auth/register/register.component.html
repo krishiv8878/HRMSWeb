@@ -4,23 +4,23 @@
         <div class="register-form">
             <mat-form-field appearance="outline">
                 <mat-label>First Name</mat-label>
-                <input type="text" matInput placeholder="Enter Your FirstName" formControlName="FirstName">
+                <input type="text" matInput placeholder="Enter Your FirstName" formControlName="FirstName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()">
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Last Name</mat-label>
-                <input type="text" matInput placeholder="Enter Your LastName" formControlName="LastName">
+                <input type="text" matInput placeholder="Enter Your LastName" formControlName="LastName" (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()">
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Email</mat-label>
-                <input type="email" matInput placeholder="Enter Your Email" formControlName="email">
+                <input type="email" matInput placeholder="Enter Your Email" formControlName="email"   (keydown.space)="$event.preventDefault()">
             </mat-form-field>
 
             <mat-form-field appearance="outline">
                 <mat-label>Phone</mat-label>
                 <input type="text" matInput placeholder="Enter Your phoneNo" formControlName="mobileNumber"
-                    maxLength="10">
+                    maxLength="10" (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)">
             </mat-form-field>
 
             <mat-form-field appearance="outline">

@@ -13,5 +13,17 @@ mat-drawer {
     border-radius: 0;
 }
 
+::ng-deep .ag-theme-quartz .ag-paging-panel {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 8px;
+    text-align: center;
+}
 
-
+@media screen and (max-width: 600px) {
+    ::ng-deep .ag-theme-quartz .ag-paging-panel {
+        font-size: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

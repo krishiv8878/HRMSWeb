@@ -10,3 +10,8 @@ mat-drawer {
     border-radius: 0;
 }
 
+@media (max-width: 768px) {
+    mat-drawer {
+        width: 200px;
+    }
+}
