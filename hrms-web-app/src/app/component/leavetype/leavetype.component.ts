@@ -23,7 +23,7 @@ export class LeavetypeComponent {
   public columnDefs: ColDef[] = [
     // { field: "id",},
     // { field: "leaveName",},
-    { field: "type",},
+    { field: "type",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "description",tooltipField:"description"},
     // { field: "createdDate",},
     // { field: "createdBy",},

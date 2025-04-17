@@ -42,14 +42,15 @@ export class EmployeeComponent {
 
   Employeeform = this.formBuilder.group({
     id: 0,
+    employeeId:0,
     //firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
     lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
     emailAddress: ['', [Validators.required, Validators.email, Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}$')]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
-    permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
     gender: ['', [Validators.required]],
-    currentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
+    currentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
     dateOfJoining: ['', [Validators.required]],
     roleIds: [[], [Validators.required]],
     rolenames: [[]],

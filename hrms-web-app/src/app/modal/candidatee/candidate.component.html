@@ -49,8 +49,8 @@
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>totalExperience</mat-label>
-                        <input type="text" matInput name="totalExperience" placeholder="Enter Your TotalExperience"
+                        <mat-label>totalExperience (year)</mat-label>
+                        <input type="text" matInput name="totalExperience" placeholder=" Total Experience"
                             (keydown.space)="$event.preventDefault()" (keypress)="preventInvalidNumbers($event)"
                             formControlName="totalExperience">
                     </mat-form-field>
@@ -62,7 +62,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>relevantExperience</mat-label>
                         <input type="text" matInput name="RelevantExperience" (keydown.space)="$event.preventDefault()"
-                            (keypress)="preventInvalidNumbers($event)" placeholder="Enter Your RelevantExperience"
+                            (keypress)="preventInvalidNumbers($event)" placeholder="Relevant Experience"
                             formControlName="relevantExperience">
                     </mat-form-field>
                 </div>
@@ -70,7 +70,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>currentSalary</mat-label>
-                        <input type="text" matInput name="currentSalary" placeholder="Enter Your CurrentSalary"
+                        <input type="text" matInput name="currentSalary" placeholder="Current Salary"
                             (keydown.space)="$event.preventDefault()" (keypress)="preventInvalidNumbers($event)"
                             formControlName="currentSalary">
                     </mat-form-field>
@@ -90,7 +90,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>expected Salary</mat-label>
-                        <input type="number" matInput name="expectedSalary" placeholder="Enter Your Expected Salary"
+                        <input type="number" matInput name="expectedSalary" placeholder="Expected Salary"
                             (keydown.space)="$event.preventDefault()" formControlName="expectedSalary">
                     </mat-form-field>
                 </div>

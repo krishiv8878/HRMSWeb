@@ -33,21 +33,24 @@ export class ProjectComponent {
     projectName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     description: [''],
     clientName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    clientRegion: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    clientRegion: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 ]+$')]],
     isActive: ['',[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
-    this.project.patchValue(this.data);
     if (this.data) {
-      this.isEdit = true
+      this.isEdit = true;
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.project.patchValue(this.data);
     }
   }
   
   allowOnlyLetters(event: KeyboardEvent) {
     if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
   }
-  
+  id!:any;
+
   submitdata() {
     if (this.project.invalid) {
       this.project.markAllAsTouched(); // Show errors in UI  
@@ -68,7 +71,7 @@ export class ProjectComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.project.value).subscribe({
+      this.services.updateData(this.project.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')

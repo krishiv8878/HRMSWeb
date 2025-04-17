@@ -5,9 +5,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { HeaderComponent } from '../header/header.component';
 import { SidbarComponent } from '../sidbar/sidbar.component';
 import { RouterOutlet } from '@angular/router';
-
-
-
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 @Component({
   selector: 'app-index',
   standalone: true,
@@ -17,6 +15,20 @@ import { RouterOutlet } from '@angular/router';
 })
 export class IndexComponent {
   sidebaropen = true;
+  drawerMode: 'side' | 'over' = 'side';
+
+  constructor(private breakpointObserver: BreakpointObserver) {
+    this.breakpointObserver.observe([Breakpoints.Handset])
+      .subscribe(result => {
+        if (result.matches) {
+          this.drawerMode = 'over';
+          this.sidebaropen = false; // close on mobile by default
+        } else {
+          this.drawerMode = 'side';
+          this.sidebaropen = true; // open on desktop
+        }
+      });
+  }
   sidebarToggler(){
     this.sidebaropen = !this.sidebaropen;
   }

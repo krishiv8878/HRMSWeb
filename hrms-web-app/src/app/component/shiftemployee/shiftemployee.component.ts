@@ -25,7 +25,7 @@ export class ShiftemployeeComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id",},
-    { field: "shiftName",},
+    { field: "shiftName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "startTime",},
     { field: "endTime",},
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },

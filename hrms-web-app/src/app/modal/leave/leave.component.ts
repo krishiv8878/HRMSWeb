@@ -10,7 +10,7 @@ import { MatFormField, MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { ToastrService } from 'ngx-toastr';
-import {MatSelectModule} from '@angular/material/select';
+import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-leave',
   standalone: true,
@@ -30,31 +30,33 @@ export class LeaveComponent {
 
   leavetype = this.formbuilder.group({
     id: 0,
-    leaveName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    type: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
+    leaveName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    type: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     description: [''],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
-
+  id!: any;
   ngOnInit() {
-    this.leavetype.patchValue(this.data);
     if (this.data) {
-      this.isEdit = true
+      this.isEdit = true;
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.leavetype.patchValue(this.data);
     }
   }
 
   allowOnlyLetters(event: KeyboardEvent) {
     if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
   }
-  
+
   submitdata() {
     if (this.leavetype.invalid) {
       this.leavetype.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
         // leaveName: "Leave Name is Required",
         type: "Leave Type is Required",
-        description: "Description is Required",  
-        isActive:" Please select a Active Button"      
+        description: "Description is Required",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -66,7 +68,7 @@ export class LeaveComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.leavetype.value).subscribe({
+      this.services.updateData(this.leavetype.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
@@ -87,7 +89,7 @@ export class LeaveComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.leavetype.get(controleName);
   }
 }

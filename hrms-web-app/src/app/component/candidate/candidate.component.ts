@@ -24,8 +24,8 @@ export class CandidateComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
-    { field: "firstName", },
-    { field: "lastName", },
+    { field: "firstName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''  },
+    { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "emailAddress",tooltipField:"emailAddress"  },
     { field: "mobileNumber", },
     { field: "totalExperience", },

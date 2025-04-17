@@ -25,42 +25,61 @@ export class LoginComponent {
   constructor() { }
 
   login = this.formBuilder.group({
+    id: 0,
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
-
+  data!: any;
   logindata() {
+
     if (this.login.invalid) {
-      this.login.markAllAsTouched(); // Show errors in UI  
-      const errorMessages: { [key: string]: string } = {
-        email: "Enter Valid Email",
-        password: "Enter Valid Password",
+      this.login.markAllAsTouched();
 
-      };
+      const { email, password } = this.login.controls;
 
-      for (const field in errorMessages) {
-        const control = this.login.get(field);
-        if (control?.invalid) {
-          this.toster.error(errorMessages[field], "Validation Error");
-          return;
+      // Email validation
+      if (email.errors) {
+        if (email.errors['required']) {
+          this.toster.error("Email is required", "Validation Error");
+        } else if (email.errors['email']) {
+          this.toster.error("Enter a valid email address", "Validation Error");
         }
       }
+
+      // Password validation
+      if (password.errors) {
+        if (password.errors['required']) {
+          this.toster.error("Password is required", "Validation Error");
+        } else {
+          this.toster.error("Enter a valid password", "Validation Error");
+        }
+      }
+      return;
     }
+
     //return this.http.get<any>
     if (this.login.valid) {
       console.log(this.login.value)
-      this.services.createLogin(this.login.value).subscribe(() => {
-        
-        this.toster.success('successfully login', 'success')
+      this.services.createLogin(this.login.value).subscribe({
+        next: (res) => {
+          console.log("ress", res)
 
-        setTimeout(() => {
-          this.toster.clear();
-          this.router.navigateByUrl('index')
-          this.login.reset();
-        }, 400);
+          //  Store ID from res.data
+          // localStorage.setItem('userId', res.data);
+          //  Store email from form value
+          // localStorage.setItem('userEmail', this.login.value.email || '');
+
+          this.toster.success('successfully login', 'success')
+          
+          setTimeout(() => {
+            this.toster.clear();
+            this.router.navigateByUrl('index')
+            this.login.reset();
+          }, 300);
+        }, error: (res) => {
+          this.toster.error("Invalid credentials", 'error')
+        }
       })
-    } else {
-      this.toster.error('invalide email and password', 'error')
     }
   }
 }

@@ -7,12 +7,13 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/authentication/auth.service';
 import { ToastrService } from 'ngx-toastr';
+import { MatIconModule } from '@angular/material/icon';
 // import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, CommonModule, ReactiveFormsModule],
+  imports: [MatInputModule, MatFormField, MatButtonModule, CommonModule, ReactiveFormsModule, MatIconModule],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -23,6 +24,8 @@ export class RegisterComponent {
   router = inject(Router)
   // http = inject(HttpClient)
   toaster = inject(ToastrService)
+  // In your component.ts file
+  hide = true;
 
   registretion = this.formBuilder.group({
     id: 0,
@@ -30,10 +33,31 @@ export class RegisterComponent {
     LastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     email: ['', [Validators.required, Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
-    Address: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-]+$')]],
-    password: ['', [Validators.required, Validators.minLength(4),Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
+    Address: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
+    password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
   ngOnInit() { }
+
+  noWhitespaceValidator(control: any) {
+    return control.value?.trim() === '' ? { 'whitespace': true } : null;
+  }
+
+  allowOnlyLetters(event: KeyboardEvent) {
+    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
+  }
+
+  preventInvalidNumbers(event: KeyboardEvent) {
+    const input = event.target as HTMLInputElement;
+    if (!/^[1-9][0-9]*$/.test(input.value + event.key)) event.preventDefault();
+  }
+
+  preventPaste(event: ClipboardEvent) {
+    const clipboardData = event.clipboardData?.getData('text') || '';
+    if (!/^[1-9][0-9]{9}$/.test(clipboardData)) {
+      event.preventDefault();
+      this.toaster.error("Invalid mobile number format", "Validation Error");
+    }
+  }
 
   submit() {
     if (this.registretion.invalid) {

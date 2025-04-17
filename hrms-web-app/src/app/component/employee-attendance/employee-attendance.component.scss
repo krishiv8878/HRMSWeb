@@ -22,32 +22,35 @@
     }
 }
 
+.section-title {
+    font-size: 1.6rem;
+    text-transform: capitalize;
+    font-weight: 600;
+}
+
+.weekdays {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
 .clock-container {
     display: flex;
     justify-content: space-around;
-    padding: 1rem 0 0 0;
+    padding: 1rem;
 }
-
-// .attendance-cards {
-//     display: flex;
-//     justify-content: end;
-//     gap: 5rem;
-//     padding: 3rem 1rem;
-// }
 
 .card,
 .card1 {
-    width: 25rem;
+    width: auto;
     height: 12rem;
 }
-
 
 .selected {
     background: #007bff !important;
     color: white !important;
 }
-
-
 
 .remote-button {
     button {
@@ -68,12 +71,9 @@ input {
     font-size: 1.4rem;
     box-shadow: 2px 2px 11px 1px skyblue;
     background-color: white;
+    text-align: center;
 }
 
-
-// .remote-button {
-//     margin-top: 1rem;
-// }
 ::ng-deep .card,
 .card1 {
     background-color: white !important;

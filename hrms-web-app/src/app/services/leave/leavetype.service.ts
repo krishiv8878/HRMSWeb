@@ -12,14 +12,14 @@ export class LeavetypeService {
 
   getAllData() {
     return this.http.get<any[]>(this.apiUrl + "/LeaveType/GetLeaveType");
-  } 
+  }
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/LeaveType/AddLeaveType`, data)
   }
-  updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/LeaveType/UpdateLeaveType/`, data);
+  updateData(data: any, LeaveTypeId: any) {
+    return this.http.put<any[]>(this.apiUrl + `/LeaveType/UpdateLeaveType/` + LeaveTypeId, data);
   }
   DeleteData(LeaveTypeId: any) {
-    return this.http.delete(this.apiUrl + `/LeaveType/DeleteLeaveType?LeaveTypeId=`+ LeaveTypeId);
+    return this.http.delete(this.apiUrl + `/LeaveType/DeleteLeaveType?LeaveTypeId=` + LeaveTypeId);
   }
 }

@@ -37,11 +37,13 @@ export class ShiftComponent {
     endTime: ['', [Validators.required, Validators.pattern('^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$')]],
     isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
-
+id!:any;
   ngOnInit() {
-    this.shiftForm.patchValue(this.data)
     if (this.data) {
-      this.isEdit = true
+      this.isEdit = true;
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.shiftForm.patchValue(this.data);
     }
   }
   allowOnlyLetters(event: KeyboardEvent) {
@@ -83,7 +85,7 @@ export class ShiftComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.shiftForm.value).subscribe({
+      this.services.updateData(this.shiftForm.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')

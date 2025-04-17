@@ -11,11 +11,15 @@ export class EmailService {
   http = inject(HttpClient);
   apiUrl = environment.host;
 
+  getData() {
+    return this.http.get(this.apiUrl + `/LeaveRequest/GetAllLeaveRequest/`)
+  }
 
   Leavetype(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/LeaveType/AddLeaveType`, data)
   }
+  
   Leaverequest(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/AddLeaveRequest`, data)
+    return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/AddLeaveRequest`, data, {withCredentials:true})
   }
 }

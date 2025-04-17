@@ -33,8 +33,8 @@ export class HomeComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id" },
-    { field: "firstName" },
-    { field: "lastName" },
+    { field: "firstName" ,valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "lastName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''  },
     { field: "emailAddress", tooltipField: "emailAddress" },
     { field: "mobileNumber" },
     { field: "permanentAddress", tooltipField: "permanentAddress" },
@@ -45,7 +45,7 @@ export class HomeComponent {
     },
     { field: "rolenames", headerName: 'Roles', tooltipField: "rolenames" },
     { field: "managerName", headerName: 'Managers', tooltipField: "managerName" },
-    { field: "gender" },
+    { field: "gender", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
