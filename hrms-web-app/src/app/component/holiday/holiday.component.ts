@@ -49,7 +49,7 @@ export class HolidayComponent {
 
   getHoliday() {
     this.services.getHoliday().subscribe((response: any) => {
-      this.rowData = response.data.filter((holiday:any)=>holiday.isActive);
+      this.rowData = response.data;
     })
   }
 

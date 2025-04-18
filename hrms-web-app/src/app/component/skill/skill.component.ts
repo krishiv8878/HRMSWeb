@@ -44,7 +44,7 @@ export class SkillComponent {
   }
   getSkill() {
     this.services.getSkill().subscribe((response: any) => {
-      this.rowData = response.data.filter((skill:any)=>skill.isActive);
+      this.rowData = response.data;
     })
   }
   rowData: [] = [];
@@ -67,7 +67,6 @@ export class SkillComponent {
         this.getSkill();
       }
     })
-
   }
 
   Delete(skillId: any) {

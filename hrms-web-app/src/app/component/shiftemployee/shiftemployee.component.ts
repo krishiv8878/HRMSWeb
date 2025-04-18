@@ -47,7 +47,7 @@ export class ShiftemployeeComponent {
   }
   getallData() {
     this.services.getData().subscribe((responce: any) => {
-      this.rowData = responce.data.filter((shift:any)=>shift.isActive);
+      this.rowData = responce.data;
     })
   }
   Edit(data: any) {

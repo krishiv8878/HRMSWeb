@@ -10,17 +10,18 @@
                 <div class="col-xl-12">
                     <mat-form-field appearance="outline">
                         <mat-label>Holiday Name</mat-label>
-                        <input type="text" matInput name="holidayName" placeholder="Enter Your HolidayName" (keydown.space)="$event.preventDefault()" 
-                            formControlName="holidayName">                           
+                        <input type="text" matInput name="holidayName" placeholder="Enter HolidayName"
+                            formControlName="holidayName">
                     </mat-form-field>
                 </div>
 
                 <div class="col-xl-12">
                     <mat-form-field appearance="outline">
-                        <mat-label>Description</mat-label>                      
-                        <!-- <input type="text" matInput name="holidayName" placeholder="Enter Your Description" 
+                        <mat-label>Description</mat-label>
+                        <!-- <input type="text" matInput name="holidayName" placeholder="Enter Description" 
                         formControlName="description">     -->
-                        <textarea matInput name="description" placeholder="Enter Your Description" formControlName="description" rows="2"></textarea>                   
+                        <textarea matInput name="description" placeholder="Enter  Description"
+                            formControlName="description" rows="2"></textarea>
                     </mat-form-field>
                 </div>
             </div>
@@ -35,13 +36,15 @@
 
             @if(isEdit){
             <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">Update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">Cancel</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">Update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">Cancel</button>
             </div>
             }@else {
             <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">Add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">Cancel</button>
+                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">Add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">Cancel</button>
             </div>
             }
 

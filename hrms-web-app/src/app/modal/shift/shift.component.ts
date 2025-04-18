@@ -35,7 +35,7 @@ export class ShiftComponent {
     shiftName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     startTime: ['', [Validators.required, Validators.pattern('^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$')]],
     endTime: ['', [Validators.required, Validators.pattern('^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$')]],
-    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
+      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 id!:any;
   ngOnInit() {
@@ -46,25 +46,23 @@ id!:any;
       this.shiftForm.patchValue(this.data);
     }
   }
+ 
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
-  }
-  preventInvalidInput(event: KeyboardEvent) {
-    const input = (event.target as HTMLInputElement).value;
-    const char = event.key;
-  
-    if (!/[\d:]/.test(char) || (char === ":" && (input.match(/:/g)?.length ?? 0) >= 1) || 
-        (input.length === 0 && !/\d/.test(char)) || input.length >= 5) {
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
       event.preventDefault();
     }
   }
   
-  preventPaste(event: ClipboardEvent) {
-    if (!/^\d{2}:\d{2}$/.test(event.clipboardData?.getData("text") || "")) {
+  allowTimeFormat(event: KeyboardEvent) {
+    const key = event.key;
+    // Allow only digits and colon
+    if (!/^[0-9:]$/.test(key)) {
       event.preventDefault();
-      this.toaster.error("Invalid time format. Use HH:MM", "Validation Error");
     }
   }
+  
   
   submitdata() {
     if (this.shiftForm.invalid) {

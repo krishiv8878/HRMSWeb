@@ -36,7 +36,7 @@ export class RolemasterComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((role: any) => role.isActive);
+      this.rowData = response.data;
       console.log(response)
     })
   }

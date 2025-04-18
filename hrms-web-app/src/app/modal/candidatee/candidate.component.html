@@ -11,17 +11,15 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
-                        <input type="text" matInput name="firstName" placeholder="Enter Your FirstName"
-                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
-                            formControlName="firstName">
+                        <input type="text" matInput name="firstName" placeholder="Enter FirstName"
+                            (keypress)="allowOnlyLetters($event)" formControlName="firstName">
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
-                        <input type="text" matInput name="lastName" placeholder="Enter Your LastName"
-                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
-                            formControlName="lastName">
+                        <input type="text" matInput name="lastName" placeholder="Enter LastName"
+                            (keypress)="allowOnlyLetters($event)" formControlName="lastName">
                     </mat-form-field>
                 </div>
             </div>
@@ -30,8 +28,8 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>email</mat-label>
-                        <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
-                            (keydown.space)="$event.preventDefault()" formControlName="emailAddress">
+                        <input type="text" matInput name="emailAddress" placeholder="Enter Email"
+                            formControlName="emailAddress">
                     </mat-form-field>
                 </div>
 
@@ -41,9 +39,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>phone no</mat-label>
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
-                            (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)"
-                            formControlName="mobileNumber" maxlength="10">
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter PhoneNo"
+                            (keypress)="allowOnlyNumbers($event)" formControlName="mobileNumber" maxlength="10">
                     </mat-form-field>
                 </div>
 
@@ -51,8 +48,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>totalExperience (year)</mat-label>
                         <input type="text" matInput name="totalExperience" placeholder=" Total Experience"
-                            (keydown.space)="$event.preventDefault()" (keypress)="preventInvalidNumbers($event)"
-                            formControlName="totalExperience">
+                            (keypress)="allowOnlyNumbers($event)" formControlName="totalExperience">
                     </mat-form-field>
                 </div>
             </div>
@@ -60,19 +56,17 @@
             <div class="row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>relevantExperience</mat-label>
-                        <input type="text" matInput name="RelevantExperience" (keydown.space)="$event.preventDefault()"
-                            (keypress)="preventInvalidNumbers($event)" placeholder="Relevant Experience"
-                            formControlName="relevantExperience">
+                        <mat-label>relevantExperience (year)</mat-label>
+                        <input type="text" matInput name="RelevantExperience" (keypress)="allowOnlyNumbers($event)"
+                            placeholder="Relevant Experience" formControlName="relevantExperience">
                     </mat-form-field>
                 </div>
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>currentSalary</mat-label>
+                        <mat-label>currentSalary (Annualy)</mat-label>
                         <input type="text" matInput name="currentSalary" placeholder="Current Salary"
-                            (keydown.space)="$event.preventDefault()" (keypress)="preventInvalidNumbers($event)"
-                            formControlName="currentSalary">
+                            (keypress)="allowOnlyNumbers($event)" formControlName="currentSalary">
                     </mat-form-field>
                 </div>
             </div>
@@ -80,7 +74,7 @@
             <div class=" row">
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>noticePeriod</mat-label>
+                        <mat-label>noticePeriod (year)</mat-label>
                         <mat-select formControlName="noticePeriod" [(value)]="numbermenu">
                             <mat-option *ngFor="let number of numbers" [value]="number"> {{number}}</mat-option>
                         </mat-select>
@@ -89,9 +83,9 @@
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
-                        <mat-label>expected Salary</mat-label>
-                        <input type="number" matInput name="expectedSalary" placeholder="Expected Salary"
-                            (keydown.space)="$event.preventDefault()" formControlName="expectedSalary">
+                        <mat-label>expected Salary (Annualy)</mat-label>
+                        <input type="text" matInput name="expectedSalary" placeholder="Expected Salary"
+                            (keypress)="allowOnlyNumbers($event)" formControlName="expectedSalary">
                     </mat-form-field>
                 </div>
 

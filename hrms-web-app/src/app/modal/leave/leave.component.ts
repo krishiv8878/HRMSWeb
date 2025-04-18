@@ -32,8 +32,8 @@ export class LeaveComponent {
     id: 0,
     leaveName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     type: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    description: [''],
-    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
+    description: ['',[Validators.required,]],
+      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
   id!: any;
   ngOnInit() {
@@ -46,8 +46,13 @@ export class LeaveComponent {
   }
 
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
+      event.preventDefault();
+    }
   }
+
 
   submitdata() {
     if (this.leavetype.invalid) {

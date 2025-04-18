@@ -33,10 +33,10 @@ export class AssetsmastersComponent {
   Assets = this.fomBuilder.group({
     id: 0,
     assetsMasterName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    description: [''],
+    description: ['',[Validators.required ]],
     serialNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
     dateOfPurchase: ['', [Validators.required]],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    isActive: [true,[Validators.required, Validators.pattern('true|false')]]
   })
   ngOnInit() {
     this.Assets.patchValue(this.data);
@@ -46,19 +46,18 @@ export class AssetsmastersComponent {
   }
  
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
-  }
-  
-  preventInvalidNumbers(event: KeyboardEvent) {
-    const input = event.target as HTMLInputElement;
-    if (!/^[1-9][0-9]*$/.test(input.value + event.key)) event.preventDefault();
-  }
-  
-  preventPaste(event: ClipboardEvent) {
-    const clipboardData = event.clipboardData?.getData('text') || '';
-    if (!/^[1-9][0-9]{9}$/.test(clipboardData)) {
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
       event.preventDefault();
-      this.toaster.error("Invalid mobile number format", "Validation Error");
+    }
+  }
+
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    // Allow numbers and space only
+    if (!/^[0-9 ]$/.test(key)) {
+      event.preventDefault();
     }
   }
   

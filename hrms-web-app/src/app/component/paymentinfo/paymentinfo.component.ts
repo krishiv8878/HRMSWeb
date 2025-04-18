@@ -46,7 +46,7 @@ export class PaymentinfoComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((payment: any) => payment.isActive);
+      this.rowData = response.data;
     })
   }
 

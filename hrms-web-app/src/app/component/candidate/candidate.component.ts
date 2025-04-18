@@ -42,7 +42,7 @@ export class CandidateComponent {
 
   getData() {
     this.services.getData().subscribe((responce: any) => {
-      this.rowData = responce.data.filter((candidate:any)=>candidate.isActive);
+      this.rowData = responce.data;
     })
   }
   pagination = true;

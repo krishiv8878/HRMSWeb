@@ -12,7 +12,7 @@ export class EmailService {
   apiUrl = environment.host;
 
   getData() {
-    return this.http.get(this.apiUrl + `/LeaveRequest/GetAllLeaveRequest/`)
+    return this.http.get<any[]>(this.apiUrl + `/LeaveRequest/GetAllLeaveRequest`)
   }
 
   Leavetype(data: any) {

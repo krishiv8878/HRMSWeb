@@ -33,7 +33,7 @@ export class PaymeenInfoComponent {
     ifscCode: ['', [Validators.required, Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$'), Validators.maxLength(11)]],
     accountNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(12)]],
     nameOnAccount: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
+      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   id!: any;
@@ -48,19 +48,18 @@ export class PaymeenInfoComponent {
   }
  
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
-  }
-  
-  preventInvalidNumbers(event: KeyboardEvent) {
-    const input = event.target as HTMLInputElement;
-    if (!/^[1-9][0-9]*$/.test(input.value + event.key)) event.preventDefault();
-  }
-  
-  preventPaste(event: ClipboardEvent) {
-    const clipboardData = event.clipboardData?.getData('text') || '';
-    if (!/^[1-9][0-9]{9}$/.test(clipboardData)) {
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
       event.preventDefault();
-      this.toaster.error("Invalid mobile number format", "Validation Error");
+    }
+  }
+
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    // Allow numbers and space only
+    if (!/^[0-9 ]$/.test(key)) {
+      event.preventDefault();
     }
   }
   

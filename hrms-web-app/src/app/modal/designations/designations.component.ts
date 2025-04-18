@@ -31,7 +31,7 @@ export class DesignationsComponent {
   designation = this.formbuilder.group({
     id: 0,
     designationName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    isActive: [true,[Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -42,8 +42,14 @@ export class DesignationsComponent {
   }
    
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
+      event.preventDefault();
+    }
   }
+
+ 
   
   submitdata() {
     if (this.designation.invalid) {
