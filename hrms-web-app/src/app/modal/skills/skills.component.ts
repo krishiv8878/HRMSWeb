@@ -6,16 +6,17 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
-import { MatFormField, MatInputModule } from '@angular/material/input';
+import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SkillservicesService } from '../../services/skill/skillservices.service';
 import { ToastrService } from 'ngx-toastr';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 @Component({
   selector: 'app-skills',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  imports: [MatInputModule, MatFormFieldModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
   providers: [provideNativeDateAdapter()],
   templateUrl: './skills.component.html',
   styleUrl: './skills.component.scss'
@@ -37,7 +38,7 @@ export class SkillsComponent {
   Skillform = this.formBuilder.group({
     id: 0,
     skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\-,#,+]+$')]],
-      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
+    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {

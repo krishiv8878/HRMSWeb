@@ -1,0 +1,22 @@
+.icon {
+  display: flex;
+  justify-content: center;
+  padding-top: 2rem;
+
+  mat-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ff000040;
+    color: red;
+    height: 4rem;
+    width: 4rem;
+    font-size: 2rem;
+    border-radius: 50%;
+  }
+}
+
+mat-dialog-actions {
+  display: flex;
+  justify-content: space-evenly;
+}

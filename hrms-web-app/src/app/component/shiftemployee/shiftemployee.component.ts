@@ -71,7 +71,7 @@ export class ShiftemployeeComponent {
       this.services.deleteData(shiftId).subscribe({
         next: (res) => {
           this.getallData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

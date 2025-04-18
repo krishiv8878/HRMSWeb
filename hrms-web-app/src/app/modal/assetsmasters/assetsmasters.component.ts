@@ -1,7 +1,7 @@
 import { Component, Inject, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormField, MatInputModule } from '@angular/material/input';
+import {  MatInputModule } from '@angular/material/input';
 import { ActivatedRoute } from '@angular/router';
 import { MatRadioModule } from '@angular/material/radio';
 import { CommonModule } from '@angular/common';
@@ -11,11 +11,12 @@ import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material
 import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.service';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { ToastrService } from 'ngx-toastr';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 @Component({
   selector: 'app-assetsmasters',
   standalone: true,
-  imports: [MatButtonModule, MatFormField, MatDialogClose, MatInputModule, CommonModule, ReactiveFormsModule, MatRadioModule, MatCheckboxModule, MatDatepickerModule],
+  imports: [MatButtonModule, MatFormFieldModule, MatDialogClose, MatInputModule, CommonModule, ReactiveFormsModule, MatRadioModule, MatCheckboxModule, MatDatepickerModule],
   providers: [provideNativeDateAdapter()],
   templateUrl: './assetsmasters.component.html',
   styleUrl: './assetsmasters.component.scss'

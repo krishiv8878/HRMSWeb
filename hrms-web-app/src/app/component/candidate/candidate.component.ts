@@ -76,7 +76,7 @@ export class CandidateComponent {
       this.services.DeleteData(candidateId).subscribe({
         next: (res) => {
           this.getData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

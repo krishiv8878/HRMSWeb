@@ -80,7 +80,7 @@ export class SkillComponent {
       this.services.DeleteSkill(skillId).subscribe({
         next: (res) => {
           this.getSkill();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

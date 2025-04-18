@@ -87,7 +87,7 @@ export class HolidayComponent {
       this.services.DeleteHoliday(holidayId).subscribe({
         next: (res) => {
           this.getHoliday();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }
