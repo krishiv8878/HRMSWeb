@@ -16,8 +16,8 @@ export class RoleservicesService {
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/RoleMaster/AddRole`, data)
   }
-  updateData(data: any, RoleId:any) {
-    return this.http.put<any[]>(this.apiUrl + `/RoleMaster/UpdateRole/`+RoleId, data);
+  updateData(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/RoleMaster/UpdateRole/`, data);
   }
   DeleteData(RoleMasterId: any) {
     return this.http.delete(this.apiUrl + `/RoleMaster/DeleteRole?RoleId=` + RoleMasterId);
