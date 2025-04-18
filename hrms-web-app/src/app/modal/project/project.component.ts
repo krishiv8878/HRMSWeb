@@ -46,9 +46,6 @@ export class ProjectComponent {
     // this.project.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
-      this.id = this.data.id;
-      console.log('Payment ID:', this.id);
-      this.project.patchValue(this.data);
     }
   }
   
@@ -90,7 +87,7 @@ export class ProjectComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.project.value, this.id).subscribe({
+      this.services.updateData(this.project.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')

@@ -67,7 +67,7 @@ export class HomeComponent {
   getAllData() {
     this.service.getData().subscribe((response: any) => {
       this.rowData = response.data;
-      this.rowData = response.data;
+    
       // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
       console.log('rowww data', this.rowData)
     })

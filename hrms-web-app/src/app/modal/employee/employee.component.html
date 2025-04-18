@@ -91,8 +91,6 @@
             </div>
 
             <!-- Row for Gender Selection  -->
-            <!-- Row for Gender Selection  -->
-            <!-- Row for Gender Selection  -->
             <div class="row">
                 <div class="col">
                     <!-- Gender Selection -->
@@ -120,10 +118,6 @@
                     <mat-form-field appearance="outline">
                         <mat-label>Manager</mat-label>
                         <mat-select formControlName="managerId">
-                            <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{
-                                manager.managerName}}</mat-option>
-                            <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{
-                                manager.managerName}}</mat-option>
                             <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{
                                 manager.managerName}}</mat-option>
                         </mat-select>

@@ -69,7 +69,7 @@ export class RolemastersComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.roledateForm.value,this.id).subscribe({
+      this.services.updateData(this.roledateForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
