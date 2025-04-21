@@ -50,7 +50,7 @@ export class RolemastersComponent {
       this.isEdit = true;
     }
   }
-
+  id!: any;
 
   submitdata() {
     if (this.roledateForm.invalid) {

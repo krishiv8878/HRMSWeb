@@ -18,8 +18,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
                         <input type="text" matInput name="firstName" placeholder="Enter FirstName"
-                            (keypress)="allowOnlyLetters($event)" 
-                            formControlName="firstName">
+                            (keypress)="allowOnlyLetters($event)" formControlName="firstName">
                     </mat-form-field>
                 </div>
 
@@ -28,8 +27,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
                         <input type="text" matInput name="lastName" placeholder="Enter LastName"
-                            (keypress)="allowOnlyLetters($event)" 
-                            formControlName="lastName">
+                            (keypress)="allowOnlyLetters($event)" formControlName="lastName">
                     </mat-form-field>
                 </div>
             </div>
@@ -40,7 +38,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>email</mat-label>
                         <input type="text" matInput name="emailAddress" placeholder="Enter Email"
-                             formControlName="emailAddress">
+                            formControlName="emailAddress">
 
                     </mat-form-field>
                 </div>
@@ -65,8 +63,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>phoneNo</mat-label>
                         <input type="text" matInput name="mobileNumber" placeholder="Enter PhoneNo"
-                            (keypress)="allowOnlyNumbers($event)"
-                            formControlName="mobileNumber" maxlength="10">
+                            (keypress)="allowOnlyNumbers($event)" formControlName="mobileNumber" maxlength="10">
 
                     </mat-form-field>
                 </div>
@@ -79,7 +76,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>permanent Address</mat-label>
                         <input type="text" matInput name="permanent Address" placeholder="Permanet Address"
-                             formControlName="permanentAddress">
+                            formControlName="permanentAddress">
                     </mat-form-field>
                 </div>
 
@@ -88,7 +85,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>current Address</mat-label>
                         <input type="text" matInput name="current Address" placeholder="Current Address"
-                             formControlName="currentAddress">
+                            formControlName="currentAddress">
                     </mat-form-field>
                 </div>
             </div>
@@ -138,16 +135,10 @@
                 <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
                     style="border-radius: 0;">cancel</button>
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <!-- Add Mode: Add and Cancel Buttons -->
             <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
                 <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
                     style="border-radius: 0;">cancel</button>

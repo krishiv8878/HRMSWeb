@@ -66,7 +66,7 @@ export class CandidateeComponent {
   allowOnlyNumbers(event: KeyboardEvent) {
     const key = event.key;
     // Allow numbers and space only
-    if (!/^[0-9 ]$/.test(key)) {
+    if (!/^[0-9 .,]$/.test(key)) {
       event.preventDefault();
     }
   }

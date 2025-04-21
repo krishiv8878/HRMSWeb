@@ -12,6 +12,7 @@ import { EmployeeComponent } from '../../modal/employee/employee.component';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 // import { TogglebuttonComponent } from '../togglebutton/togglebutton.component';
 
 
@@ -40,7 +41,7 @@ export class HomeComponent {
     { field: "permanentAddress", tooltipField: "permanentAddress",headerName:"Per.Address" },
     { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },
     {
-      field: "dateOfJoining", valueFormatter: params => {
+      field: "dateOfJoining",headerName:'Joinig Date', valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
@@ -91,21 +92,25 @@ export class HomeComponent {
 
   }
 
-  Delete(employeeId: any) {
-    // console.log("delete employee dataaa", employeeId)
-    if (employeeId != null) {
-      this.service.DeleteData(employeeId).subscribe(() => {
-        employeeId.isDeleted = true;
-        employeeId.isActive = false;
-
-      })
-      this.service.DeleteData(employeeId).subscribe({
-        next: (res) => {
-          this.getAllData();
-          this.toaster.error('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+ Delete(employeeId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: employeeId }
+    });
+  
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.service.DeleteData(employeeId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getAllData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
 
   openAddForm() {
