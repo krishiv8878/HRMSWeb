@@ -46,6 +46,9 @@ export class ProjectComponent {
     // this.project.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.project.patchValue(this.data);
     }
   }
   
