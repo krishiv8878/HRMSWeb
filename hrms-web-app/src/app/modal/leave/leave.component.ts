@@ -11,7 +11,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSelectModule } from '@angular/material/select';
+
 @Component({
   selector: 'app-leave',
   standalone: true,
@@ -36,7 +36,7 @@ export class LeaveComponent {
     description: ['',[Validators.required,]],
       isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
-  id!: any;
+
   id!: any;
   ngOnInit() {
     if (this.data) {
@@ -60,6 +60,7 @@ export class LeaveComponent {
   }
 
 
+
   submitdata() {
     if (this.leavetype.invalid) {
       this.leavetype.markAllAsTouched(); // Show errors in UI  
@@ -67,9 +68,8 @@ export class LeaveComponent {
         // leaveName: "Leave Name is Required",
         type: "Leave Type is Required",
         description: "Description is Required",
-        isActive: " Please select a Active Button"
-        description: "Description is Required",
-        isActive: " Please select a Active Button"
+        isActive: " Please select a Active Button",       
+      
       };
 
       for (const field in errorMessages) {
@@ -82,7 +82,7 @@ export class LeaveComponent {
     }
     if (this.isEdit) {
       this.services.updateData(this.leavetype.value, this.id).subscribe({
-      this.services.updateData(this.leavetype.value, this.id).subscribe({
+     
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('successfully update data', 'success')
@@ -103,7 +103,7 @@ export class LeaveComponent {
       })
     }
   }
-  getControl(controleName: string) {
+ 
   getControl(controleName: string) {
     return this.leavetype.get(controleName);
   }

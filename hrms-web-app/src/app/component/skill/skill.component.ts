@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { HttpClientModule } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-skill',
@@ -30,11 +31,11 @@ export class SkillComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true, flex: 1 },
-    { field: "skillName",},  
+    { field: "skillName", },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     //  { field: "isActive",  cellRenderer:TogglebuttonComponent },
-    { field: "action",  cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } },
-   
+    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } },
+
   ]
 
   constructor() { this.columnDefs }
@@ -69,21 +70,26 @@ export class SkillComponent {
     })
   }
 
-  Delete(skillId: any) {
-    // console.log("delete employee dataaa", employeeId)
-    if (skillId != null) {
-      this.services.DeleteSkill(skillId).subscribe(() => {
-        skillId.isDeleted = true;
-        skillId.isActive = false;
 
-      })
-      this.services.DeleteSkill(skillId).subscribe({
-        next: (res) => {
-          this.getSkill();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+  Delete(DesignationId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: DesignationId }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteSkill(DesignationId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getSkill();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
 
 

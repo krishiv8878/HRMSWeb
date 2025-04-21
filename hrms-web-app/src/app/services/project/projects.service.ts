@@ -20,6 +20,6 @@ export class ProjectsService {
     return this.http.put<any[]>(this.apiUrl + `/ProjectMaster/UpdateProjectMaster/`+ projectId, data);
   }
   DeleteData(ProjectMasterId: any) {
-    return this.http.delete(this.apiUrl + `/ProjectMaster/DeleteProjectMaster?ProjectMasterId=` + ProjectMasterId);
+    return this.http.delete(this.apiUrl + `/ProjectMaster/DeleteProjectMaster/` + ProjectMasterId);
   }
 }

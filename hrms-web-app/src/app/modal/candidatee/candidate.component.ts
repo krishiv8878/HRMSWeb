@@ -55,6 +55,7 @@ export class CandidateeComponent {
     }
   }
 
+
   allowOnlyLetters(event: KeyboardEvent) {
     const key = event.key;
     // Allow letters and space only
@@ -66,10 +67,11 @@ export class CandidateeComponent {
   allowOnlyNumbers(event: KeyboardEvent) {
     const key = event.key;
     // Allow numbers and space only
-    if (!/^[0-9 ]$/.test(key)) {
+    if (!/^[0-9 .,]$/.test(key)) {
       event.preventDefault();
     }
   }
+
 
 
   submitdata() {
@@ -98,6 +100,7 @@ export class CandidateeComponent {
         currentSalary: "Current Salary is Required",
         noticePeriod: "Notice Period is Required",
         isActive: " Please select a Active Button"
+
       };
 
       for (const field in errorMessages) {
@@ -135,3 +138,4 @@ export class CandidateeComponent {
     return this.CandidateForm.get(controleName);
   }
 }
+

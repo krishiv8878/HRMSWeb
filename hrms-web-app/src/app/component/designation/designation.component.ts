@@ -8,6 +8,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DesignationsComponent } from '../../modal/designations/designations.component';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 
 @Component({
@@ -67,21 +68,26 @@ export class DesignationComponent {
       }
     })
   }
-  Delete(DesignationId: any) {
-    // console.log("delete employee dataaa", DesignationId)
-    if (DesignationId != null) {
-      this.services.DeleteData(DesignationId).subscribe(() => {
-        DesignationId.isDeleted = true;
-        DesignationId.isActive = false;
-
-      })
-      this.services.DeleteData(DesignationId).subscribe({
-        next: (res) => {
-          this.getData();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+  
+ Delete(DesignationId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: DesignationId }
+    });
+  
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteData(DesignationId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
 
 

@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { HttpClientModule } from '@angular/common/http';
 import { HolidaysComponent } from '../../modal/holidays/holidays.component';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-holiday',
@@ -30,7 +31,7 @@ export class HolidayComponent {
   public columnDefs: ColDef[] = [
     // { field: "id", },
     { field: "holidayName", },
-    { field: "description", tooltipField:"description"},
+    { field: "description", tooltipField: "description" },
     // { field: "createdDate", },
     // { field: "createdBy", },
     // { field: "updatedDate", },
@@ -77,21 +78,26 @@ export class HolidayComponent {
   }
 
   Delete(holidayId: any) {
-    // console.log("delete employee dataaa", employeeId)
-    if (holidayId != null) {
-      this.services.DeleteHoliday(holidayId).subscribe(() => {
-        holidayId.isDeleted = true;
-        holidayId.isActive = false;
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: holidayId }
+    });
 
-      })
-      this.services.DeleteHoliday(holidayId).subscribe({
-        next: (res) => {
-          this.getHoliday();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteHoliday(holidayId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getHoliday();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
+
 
   openHolidayForm() {
     const dialogRef = this.dialog.open(HolidaysComponent);

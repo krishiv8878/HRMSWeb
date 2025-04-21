@@ -9,6 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { CandidateeComponent } from '../../modal/candidatee/candidate.component';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 @Component({
   selector: 'app-candidate',
   standalone: true,
@@ -24,11 +25,12 @@ export class CandidateComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
-    { field: "firstName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''  },
+    { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "emailAddress",tooltipField:"emailAddress"  },
+    { field: "emailAddress", tooltipField: "emailAddress" },
     { field: "mobileNumber", },
-    { field: "totalExperience", },
+    { field: "totalExperience", headerName: 'Totla Exp' },
+    { field: "relevantExperience", headerName: 'Relevant Exp' },
     { field: "currentSalary", },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
@@ -42,6 +44,7 @@ export class CandidateComponent {
 
   getData() {
     this.services.getData().subscribe((responce: any) => {
+      this.rowData = responce.data;
       this.rowData = responce.data;
     })
   }
@@ -65,22 +68,28 @@ export class CandidateComponent {
       }
     })
   }
-  Delete(candidateId: any) {
-    // console.log("delete employee dataaa", candidateId)
-    if (candidateId != null) {
-      this.services.DeleteData(candidateId).subscribe(() => {
-        candidateId.isDeleted = true;
-        candidateId.isActive = false;
 
-      })
-      this.services.DeleteData(candidateId).subscribe({
-        next: (res) => {
-          this.getData();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+  Delete(candidateId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: candidateId }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteData(candidateId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
+  
   openAddForm() {
     const dialogRef = this.dialog.open(CandidateeComponent);
     dialogRef.afterClosed().subscribe({

@@ -11,6 +11,7 @@ import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { PaymeenInfoComponent } from '../../modal/paymeen-info/paymeen-info.component';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-paymentinfo',
@@ -61,22 +62,27 @@ export class PaymentinfoComponent {
       }
     })
   }
-  Delete(paymentId: any) {
-    console.log("delete employee dataaa", paymentId)
-    if (paymentId != null) {
-      this.services.deleteData(paymentId).subscribe(() => {
-        paymentId.isDeleted = true;
-        paymentId.isActive = false;
-      })
-      this.services.deleteData(paymentId).subscribe({
-        next: (res) => {
-          this.getData();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
-  }
 
+  Delete(paymentId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: paymentId }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.deleteData(paymentId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
+  }
 
   pagination = true;
   paginationPageSize = 10;

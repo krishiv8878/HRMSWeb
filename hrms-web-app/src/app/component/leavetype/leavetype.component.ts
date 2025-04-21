@@ -7,6 +7,7 @@ import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { LeaveComponent } from '../../modal/leave/leave.component';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-leavetype',
@@ -64,23 +65,27 @@ export class LeavetypeComponent {
       }
     })
   }
+
   Delete(DesignationId: any) {
-    // console.log("delete employee dataaa", DesignationId)
-    if (DesignationId != null) {
-      this.services.DeleteData(DesignationId).subscribe(() => {
-        DesignationId.isDeleted = true;
-        DesignationId.isActive = false;
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: DesignationId }
+    });
 
-      })
-      this.services.DeleteData(DesignationId).subscribe({
-        next: (res) => {
-          this.getAllData();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteData(DesignationId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getAllData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
-
 
   openAddForm() {
     const dialogRef = this.dialog.open(LeaveComponent);

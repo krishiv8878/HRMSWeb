@@ -17,7 +17,6 @@ import { getNames } from 'country-list';
   selector: 'app-project',
   standalone: true,
   imports: [MatInputModule, MatFormField, MatSelectModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
-  providers: [provideNativeDateAdapter()],
   templateUrl: './project.component.html',
   styleUrl: './project.component.scss'
 })
@@ -44,7 +43,7 @@ export class ProjectComponent {
 
   ngOnInit() {
     this.countries = getNames();
-    this.project.patchValue(this.data);
+    // this.project.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
     }
