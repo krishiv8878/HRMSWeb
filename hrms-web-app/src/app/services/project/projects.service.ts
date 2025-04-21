@@ -16,8 +16,8 @@ export class ProjectsService {
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/ProjectMaster/AddProjectMaster`, data)
   }
-  updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/ProjectMaster/UpdateProjectMaster/`, data);
+  updateData(data: any, projectId:any) {
+    return this.http.put<any[]>(this.apiUrl + `/ProjectMaster/UpdateProjectMaster/`+ projectId, data);
   }
   DeleteData(ProjectMasterId: any) {
     return this.http.delete(this.apiUrl + `/ProjectMaster/DeleteProjectMaster?ProjectMasterId=` + ProjectMasterId);

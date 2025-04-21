@@ -11,6 +11,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-leave',
   standalone: true,
@@ -36,8 +37,13 @@ export class LeaveComponent {
       isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
   id!: any;
+  id!: any;
   ngOnInit() {
     if (this.data) {
+      this.isEdit = true;
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.leavetype.patchValue(this.data);
       this.isEdit = true;
       this.id = this.data.id;
       console.log('Payment ID:', this.id);
@@ -62,6 +68,8 @@ export class LeaveComponent {
         type: "Leave Type is Required",
         description: "Description is Required",
         isActive: " Please select a Active Button"
+        description: "Description is Required",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -73,6 +81,7 @@ export class LeaveComponent {
       }
     }
     if (this.isEdit) {
+      this.services.updateData(this.leavetype.value, this.id).subscribe({
       this.services.updateData(this.leavetype.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
@@ -94,6 +103,7 @@ export class LeaveComponent {
       })
     }
   }
+  getControl(controleName: string) {
   getControl(controleName: string) {
     return this.leavetype.get(controleName);
   }

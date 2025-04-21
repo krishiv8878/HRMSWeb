@@ -28,6 +28,7 @@ export class AssetsmasterComponent {
     // { field: "id",},
     // { field: "id", floatingFilter: true, filter: true,},
     { field: "assetsMasterName", headerName: "Name", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "assetsMasterName", headerName: "Name", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "serialNumber", },
     { field: "description", tooltipField: "description" },
     {
