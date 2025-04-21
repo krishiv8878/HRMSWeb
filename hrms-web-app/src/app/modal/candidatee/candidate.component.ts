@@ -40,12 +40,12 @@ export class CandidateeComponent {
     lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     emailAddress: ['', [Validators.required, Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
-    totalExperience: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
-    relevantExperience: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
-    expectedSalary: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
-    currentSalary: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
-    noticePeriod: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    totalExperience: ['', [Validators.required, Validators.pattern('^[0-9.,]+$')]],
+    relevantExperience: ['', [Validators.required, Validators.pattern('^[0-9.,]+$')]],
+    expectedSalary: ['', [Validators.required, Validators.pattern('^[0-9.,]+$')]],
+    currentSalary: ['', [Validators.required, Validators.pattern('^[0-9.,]+$')]],
+    noticePeriod: ['', [Validators.required, Validators.pattern('^[0-9.,]+$')]],
+    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -54,24 +54,23 @@ export class CandidateeComponent {
       this.isEdit = true;
     }
   }
-  
+
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
-  }
-  
-  preventInvalidNumbers(event: KeyboardEvent) {
-    const input = event.target as HTMLInputElement;
-    if (!/^[1-9][0-9]*$/.test(input.value + event.key)) event.preventDefault();
-  }
-  
-  preventPaste(event: ClipboardEvent) {
-    const clipboardData = event.clipboardData?.getData('text') || '';
-    if (!/^[1-9][0-9]{9}$/.test(clipboardData)) {
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
       event.preventDefault();
-      this.toaster.error("Invalid mobile number format", "Validation Error");
     }
   }
-  
+
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    // Allow numbers and space only
+    if (!/^[0-9 ]$/.test(key)) {
+      event.preventDefault();
+    }
+  }
+
 
   submitdata() {
     if (this.CandidateForm.invalid) {
@@ -82,23 +81,23 @@ export class CandidateeComponent {
         // emailAddress: "Enter Valid Email",
         // mobileNumber: "Mobile Number Must Be 10 Digits",
         emailAddress: this.getControl('emailAddress')?.hasError('required')
-        ? "Email Address is required"
-        : this.getControl('emailAddress')?.hasError('email')
-          ? "Enter a valid email address (e.g., user@example.com)"
-          : "",
+          ? "Email Address is required"
+          : this.getControl('emailAddress')?.hasError('email')
+            ? "Enter a valid email address (e.g., user@example.com)"
+            : "",
 
-      mobileNumber: this.getControl('mobileNumber')?.hasError('required')
-        ? "Mobile Number is required"
-        : this.getControl('mobileNumber')?.hasError('pattern')
-          ? "Mobile Number must be 10 digits"
-          : "Invalid Mobile Number",
-          
+        mobileNumber: this.getControl('mobileNumber')?.hasError('required')
+          ? "Mobile Number is required"
+          : this.getControl('mobileNumber')?.hasError('pattern')
+            ? "Mobile Number must be 10 digits"
+            : "Invalid Mobile Number",
+
         totalExperience: "Total Experience is Required",
         relevantExperience: "Relevant Experience is Required",
         expectedSalary: "Expected Salary is Required",
         currentSalary: "Current Salary is Required",
         noticePeriod: "Notice Period is Required",
-        isActive:" Please select a Active Button"
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -134,5 +133,5 @@ export class CandidateeComponent {
 
   getControl(controleName: string) {
     return this.CandidateForm.get(controleName);
-  }  
+  }
 }

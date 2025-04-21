@@ -38,7 +38,7 @@ export class ProjectmasterComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((project:any)=>project.isActive);
+      this.rowData = response.data;
       console.log(response)
     }) 
   }
@@ -74,7 +74,7 @@ export class ProjectmasterComponent {
       this.services.DeleteData(DesignationId).subscribe({
         next: (res) => {
           this.getData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

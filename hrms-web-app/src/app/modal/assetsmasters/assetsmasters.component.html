@@ -10,22 +10,21 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label> Name</mat-label>
-                        <input type="text" matInput name="assetsMasterName" placeholder="Enter Your Name"
-                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
-                            formControlName="assetsMasterName">
+                        <input type="text" matInput name="assetsMasterName" placeholder="Enter Assets Name"
+                            (keypress)="allowOnlyLetters($event)" formControlName="assetsMasterName">
                     </mat-form-field>
                 </div>
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>serialNumber</mat-label>
-                        <input type="text" matInput name="serialNumber" placeholder="Enter Your SerialNumber"
-                            (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)"
+                        <input type="text" matInput name="serialNumber" placeholder="Enter SerialNumber"
                             formControlName="serialNumber">
                     </mat-form-field>
                 </div>
             </div>
 
             <div class="row">
+                <div class="col-xl-12">
                 <div class="col-xl-12">
                     <mat-form-field appearance="outline">
                         <mat-label>dateOfPurchase</mat-label>
@@ -35,15 +34,16 @@
                         <mat-datepicker #picker3></mat-datepicker>
                     </mat-form-field>
                 </div>
- 
+
                 <div class="col-xl-12">
                     <mat-form-field appearance="outline">
                         <mat-label>description</mat-label>
-                        <!-- <input type="text" matInput name="description" placeholder="Enter Your Description"
+                        <!-- <input type="text" matInput name="description" placeholder="Enter Description"
                             formControlName="description"> -->
-                            <textarea matInput placeholder="Leave Reason" rows="2" formControlName="description"></textarea>
+                        <textarea matInput placeholder="Enter Assets Description" rows="2" formControlName="description"></textarea>
                     </mat-form-field>
                 </div>
+            </div>
             </div>
 
             <div class="row">
@@ -55,9 +55,15 @@
                 <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
                     style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <div class="button-btn">
+                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
                 <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
                     style="border-radius: 0;">cancel</button>

@@ -36,9 +36,9 @@ export class HolidaysComponent {
 
   Holidayform = this.formBuilder.group({
     id: 0,
-    holidayName: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 ]*$')]],
-    description: [''],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    holidayName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 ]*$')]],
+    description: ['',[Validators.required,]],
+      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
@@ -58,8 +58,8 @@ export class HolidaysComponent {
       this.Holidayform.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
         holidayName: "Holiday Name is Required",
-        description: "Description is Required",  
-         isActive:" Please select a Active Button"
+        description: "Description is Required",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -92,7 +92,7 @@ export class HolidaysComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.Holidayform.get(controleName);
   }
 }

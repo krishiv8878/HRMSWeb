@@ -39,7 +39,7 @@ export class LeavetypeComponent {
 
   getAllData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((leave:any)=>leave.isActive);
+      this.rowData = response.data;
       console.log(response)
     })
   }
@@ -75,7 +75,7 @@ export class LeavetypeComponent {
       this.services.DeleteData(DesignationId).subscribe({
         next: (res) => {
           this.getAllData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

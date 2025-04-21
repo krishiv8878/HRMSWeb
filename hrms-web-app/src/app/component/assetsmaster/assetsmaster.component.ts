@@ -9,11 +9,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { AssetsmastersComponent } from '../../modal/assetsmasters/assetsmasters.component';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-assetsmaster',
   standalone: true,
-  imports: [AgGridAngular, AgGridModule, CommonModule, MatButtonModule],
+  imports: [AgGridAngular, AgGridModule, CommonModule,MatButtonModule],
   templateUrl: './assetsmaster.component.html',
   styleUrl: './assetsmaster.component.scss'
 })
@@ -27,8 +28,9 @@ export class AssetsmasterComponent {
     // { field: "id",},
     // { field: "id", floatingFilter: true, filter: true,},
     { field: "assetsMasterName", headerName: "Name", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "assetsMasterName", headerName: "Name", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "serialNumber", },
-    { field: "description", tooltipField:"description" },
+    { field: "description", tooltipField: "description" },
     {
       field: "dateOfPurchase", valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
@@ -47,7 +49,7 @@ export class AssetsmasterComponent {
   }
   getData() {
     this.services.getData().subscribe((response: any) => {
-      this.rowData = response.data.filter((assert: any) => assert.isActive)
+      this.rowData = response.data;
     })
   }
   pagination = true;
@@ -72,21 +74,48 @@ export class AssetsmasterComponent {
     })
   }
 
-  Delete(AssetsMasterId: any) {
-    if (AssetsMasterId != null) {
-      this.services.DeleteData(AssetsMasterId).subscribe(() => {
-        AssetsMasterId.isDeleted = true;
-        AssetsMasterId.isActive = false;
+  // Delete(AssetsMasterId: any) {
+  //   const dialogRef = this.dialog.open(DeleteModalComponent, {
+  //     width: '350px',
+  //     data: { id: AssetsMasterId }
+  //   })
+  //   if (AssetsMasterId != null) {
+  //   dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+  //     this.services.DeleteData(AssetsMasterId).subscribe(() => {
+  //       AssetsMasterId.isDeleted = true;
+  //       AssetsMasterId.isActive = false;
 
-      })
-      this.services.DeleteData(AssetsMasterId).subscribe({
-        next: (res) => {
-          this.getData();
-          this.toaster.success('successfully delete data', 'delete')
-        }
-      })
-    }
+  //     })
+  //     this.services.DeleteData(AssetsMasterId).subscribe({
+  //       next: (res) => {
+  //         this.getData();
+  //         this.toaster.success('Records Are Successfully Deleted', 'Delete')
+  //       }
+  //     })
+  //   })
+  //   }
+  // }
+  Delete(AssetsMasterId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: AssetsMasterId }
+    });
+  
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteData(AssetsMasterId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
+  
 
   openAddForm() {
     const dialogRef = this.dialog.open(AssetsmastersComponent);

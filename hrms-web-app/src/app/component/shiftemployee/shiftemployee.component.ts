@@ -47,7 +47,7 @@ export class ShiftemployeeComponent {
   }
   getallData() {
     this.services.getData().subscribe((responce: any) => {
-      this.rowData = responce.data.filter((shift:any)=>shift.isActive);
+      this.rowData = responce.data;
     })
   }
   Edit(data: any) {
@@ -71,7 +71,7 @@ export class ShiftemployeeComponent {
       this.services.deleteData(shiftId).subscribe({
         next: (res) => {
           this.getallData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

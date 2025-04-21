@@ -37,7 +37,8 @@ export class HomeComponent {
     { field: "lastName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''  },
     { field: "emailAddress", tooltipField: "emailAddress" },
     { field: "mobileNumber" },
-    { field: "permanentAddress", tooltipField: "permanentAddress" },
+    { field: "permanentAddress", tooltipField: "permanentAddress",headerName:"Per.Address" },
+    { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },
     {
       field: "dateOfJoining", valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
@@ -62,7 +63,7 @@ export class HomeComponent {
 
   getAllData() {
     this.service.getData().subscribe((response: any) => {
-      this.rowData = response.data.filter((employee: any) => employee.isActive)
+      this.rowData = response.data;
       // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
       console.log('rowww data', this.rowData)
     })
@@ -101,7 +102,7 @@ export class HomeComponent {
       this.service.DeleteData(employeeId).subscribe({
         next: (res) => {
           this.getAllData();
-          this.toaster.error('successfully delete data', 'delete')
+          this.toaster.error('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

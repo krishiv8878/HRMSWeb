@@ -42,7 +42,7 @@ export class CandidateComponent {
 
   getData() {
     this.services.getData().subscribe((responce: any) => {
-      this.rowData = responce.data.filter((candidate:any)=>candidate.isActive);
+      this.rowData = responce.data;
     })
   }
   pagination = true;
@@ -76,7 +76,7 @@ export class CandidateComponent {
       this.services.DeleteData(candidateId).subscribe({
         next: (res) => {
           this.getData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

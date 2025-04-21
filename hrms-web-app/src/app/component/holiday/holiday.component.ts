@@ -49,7 +49,7 @@ export class HolidayComponent {
 
   getHoliday() {
     this.services.getHoliday().subscribe((response: any) => {
-      this.rowData = response.data.filter((holiday:any)=>holiday.isActive);
+      this.rowData = response.data;
     })
   }
 
@@ -87,7 +87,7 @@ export class HolidayComponent {
       this.services.DeleteHoliday(holidayId).subscribe({
         next: (res) => {
           this.getHoliday();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

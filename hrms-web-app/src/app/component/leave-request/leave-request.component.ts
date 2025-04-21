@@ -18,27 +18,31 @@ import { LeavetypeService } from '../../services/leave/leavetype.service';
   styleUrl: './leave-request.component.scss'
 })
 export class LeaveRequestComponent {
-  constructor() { }
+  constructor() { this.columnDefs}
   services = inject(EmailService)
   leaveservices = inject(LeavetypeService)
   dialog = inject(MatDialog)
   rowData: any[] = [];
 
   public columnDefs: ColDef[] = [
-    { field: "emailAddress" },
+    // { field: "emailAddress" },
     // { field: "type" },
-    { field: "startDate" },
-    { field: "endDate" },
+    { field: "startDate",valueFormatter: params => {
+      return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+    } },
+    { field: "endDate",valueFormatter: params => {
+      return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+    } },
     { field: "leaveReason" },
     { field: "isApproved" },
   ]
 
   ngOnInit() {
-    this.getAllData()
-    this.leaveservices.getAllData().subscribe((response: any) => {
-      this.rowData = response.data;
-      console.log('rowww data', this.rowData)
-    })
+    this.getAllData();
+    // this.leaveservices.getAllData().subscribe((response: any) => {
+    //   this.rowData = response.data;
+    //   console.log('rowww data', this.rowData)
+    // })
   }
 
   getAllData() {
@@ -47,6 +51,7 @@ export class LeaveRequestComponent {
       console.log('rowww data', this.rowData)
     })
   }
+
   pagination = true;
   paginationPageSize = 10;
   paginationPageSizeSelector = [5, 10, 20];

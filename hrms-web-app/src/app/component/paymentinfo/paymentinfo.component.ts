@@ -46,7 +46,7 @@ export class PaymentinfoComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((payment: any) => payment.isActive);
+      this.rowData = response.data;
     })
   }
 
@@ -71,7 +71,7 @@ export class PaymentinfoComponent {
       this.services.deleteData(paymentId).subscribe({
         next: (res) => {
           this.getData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

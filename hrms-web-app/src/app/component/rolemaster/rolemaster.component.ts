@@ -36,7 +36,7 @@ export class RolemasterComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data.filter((role: any) => role.isActive);
+      this.rowData = response.data;
       console.log(response)
     })
   }
@@ -73,7 +73,7 @@ export class RolemasterComponent {
       this.services.DeleteData(RoleMasterId).subscribe({
         next: (res) => {
           this.getData();
-          this.toaster.success('successfully delete data', 'delete')
+          this.toaster.success('Records Are Successfully Deleted', 'Delete')
         }
       })
     }

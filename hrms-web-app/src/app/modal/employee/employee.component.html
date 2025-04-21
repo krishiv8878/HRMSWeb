@@ -17,8 +17,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
-                        <input type="text" matInput name="firstName" placeholder="Enter Your FirstName"
-                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
+                        <input type="text" matInput name="firstName" placeholder="Enter FirstName"
+                            (keypress)="allowOnlyLetters($event)" 
                             formControlName="firstName">
                     </mat-form-field>
                 </div>
@@ -27,8 +27,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
-                        <input type="text" matInput name="lastName" placeholder="Enter Your LastName"
-                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()"
+                        <input type="text" matInput name="lastName" placeholder="Enter LastName"
+                            (keypress)="allowOnlyLetters($event)" 
                             formControlName="lastName">
                     </mat-form-field>
                 </div>
@@ -39,8 +39,8 @@
                 <div class="col">
                     <mat-form-field appearance="outline">
                         <mat-label>email</mat-label>
-                        <input type="text" matInput name="emailAddress" placeholder="Enter Your Email"
-                            (keydown.space)="$event.preventDefault()" formControlName="emailAddress">
+                        <input type="text" matInput name="emailAddress" placeholder="Enter Email"
+                             formControlName="emailAddress">
 
                     </mat-form-field>
                 </div>
@@ -64,8 +64,8 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>phoneNo</mat-label>
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter Your PhoneNo"
-                            (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)"
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter PhoneNo"
+                            (keypress)="allowOnlyNumbers($event)"
                             formControlName="mobileNumber" maxlength="10">
 
                     </mat-form-field>
@@ -79,7 +79,7 @@
                     <mat-form-field appearance="outline">
                         <mat-label>permanent Address</mat-label>
                         <input type="text" matInput name="permanent Address" placeholder="Permanet Address"
-                            (keydown.space)="$event.preventDefault()" formControlName="permanentAddress">
+                             formControlName="permanentAddress">
                     </mat-form-field>
                 </div>
 
@@ -88,11 +88,12 @@
                     <mat-form-field appearance="outline">
                         <mat-label>current Address</mat-label>
                         <input type="text" matInput name="current Address" placeholder="Current Address"
-                            (keydown.space)="$event.preventDefault()" formControlName="currentAddress">
+                             formControlName="currentAddress">
                     </mat-form-field>
                 </div>
             </div>
 
+            <!-- Row for Gender Selection  -->
             <!-- Row for Gender Selection  -->
             <div class="row">
                 <div class="col">
@@ -123,6 +124,8 @@
                         <mat-select formControlName="managerId">
                             <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{
                                 manager.managerName}}</mat-option>
+                            <mat-option *ngFor="let manager of managers" [value]="manager.id"> {{
+                                manager.managerName}}</mat-option>
                         </mat-select>
                     </mat-form-field>
                 </div>
@@ -135,10 +138,16 @@
                 <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
                     style="border-radius: 0;">cancel</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
             </div>
             }@else {
             <!-- Add Mode: Add and Cancel Buttons -->
             <div class="button-btn">
+                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
+                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
+                    style="border-radius: 0;">cancel</button>
                 <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
                 <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
                     style="border-radius: 0;">cancel</button>

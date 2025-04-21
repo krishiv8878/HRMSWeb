@@ -11,6 +11,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-leave',
   standalone: true,
@@ -32,12 +33,17 @@ export class LeaveComponent {
     id: 0,
     leaveName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     type: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    description: [''],
-    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
+    description: ['',[Validators.required,]],
+      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
+  id!: any;
   id!: any;
   ngOnInit() {
     if (this.data) {
+      this.isEdit = true;
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.leavetype.patchValue(this.data);
       this.isEdit = true;
       this.id = this.data.id;
       console.log('Payment ID:', this.id);
@@ -46,8 +52,13 @@ export class LeaveComponent {
   }
 
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
+      event.preventDefault();
+    }
   }
+
 
   submitdata() {
     if (this.leavetype.invalid) {
@@ -55,6 +66,8 @@ export class LeaveComponent {
       const errorMessages: { [key: string]: string } = {
         // leaveName: "Leave Name is Required",
         type: "Leave Type is Required",
+        description: "Description is Required",
+        isActive: " Please select a Active Button"
         description: "Description is Required",
         isActive: " Please select a Active Button"
       };
@@ -68,6 +81,7 @@ export class LeaveComponent {
       }
     }
     if (this.isEdit) {
+      this.services.updateData(this.leavetype.value, this.id).subscribe({
       this.services.updateData(this.leavetype.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
@@ -89,6 +103,7 @@ export class LeaveComponent {
       })
     }
   }
+  getControl(controleName: string) {
   getControl(controleName: string) {
     return this.leavetype.get(controleName);
   }

@@ -10,11 +10,13 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { MatSelectModule } from '@angular/material/select';
+import { getNames } from 'country-list';
 
 @Component({
   selector: 'app-project',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  imports: [MatInputModule, MatFormField, MatSelectModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
   providers: [provideNativeDateAdapter()],
   templateUrl: './project.component.html',
   styleUrl: './project.component.scss'
@@ -28,28 +30,43 @@ export class ProjectComponent {
   isEdit = false;
   toaster = inject(ToastrService)
 
+  countries: string[] = [];
+
+
   project = this.formbuilder.group({
     id: 0,
-    projectName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    description: [''],
-    clientName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    clientRegion: ['', [Validators.required,Validators.pattern('^[a-zA-Z0-9 ]+$')]],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    projectName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    description: ['', [Validators.required,]],
+    clientName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    clientRegion: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 ]+$')]],
+    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
+    this.countries = getNames();
+    this.project.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
-      this.id = this.data.id;
-      console.log('Payment ID:', this.id);
-      this.project.patchValue(this.data);
     }
   }
   
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
+      event.preventDefault();
+    }
   }
-  id!:any;
+
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    // Allow numbers and space only
+    if (!/^[0-9 ]$/.test(key)) {
+      event.preventDefault();
+    }
+  }
+  
+  id!: any;
 
   submitdata() {
     if (this.project.invalid) {
@@ -58,8 +75,8 @@ export class ProjectComponent {
         projectName: "Project Name is Required",
         description: "Description is Required",
         clientName: "Client Name is Required",
-        clientRegion: "ClientRegion Name is Required",   
-        isActive:" Please select a Active Button"    
+        clientRegion: "ClientRegion Name is Required",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -92,7 +109,7 @@ export class ProjectComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.project.get(controleName);
   }
 }

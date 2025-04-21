@@ -32,20 +32,22 @@ export class RolemastersComponent {
 
   roledateForm = this.fomBuilder.group({
     id: 0,
-    roleName: ['', [Validators.required,Validators.pattern('^[a-zA-Z .,-]+$')]],
-    isActive: ['',[Validators.required, Validators.pattern('true|false')]]
+    roleName: ['', [Validators.required, Validators.pattern('^[a-zA-Z .,-]+$')]],
+    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   allowOnlyLetters(event: KeyboardEvent) {
-    if (!/^[a-zA-Z ]$/.test(event.key)) event.preventDefault();
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z ]$/.test(key)) {
+      event.preventDefault();
+    }
   }
-   id!:any;
+
   ngOnInit() {
+    this.roledateForm.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
-      this.id = this.data.id;
-      console.log('Payment ID:', this.id);
-      this.roledateForm.patchValue(this.data);
     }
   }
 
@@ -54,8 +56,8 @@ export class RolemastersComponent {
     if (this.roledateForm.invalid) {
       this.roledateForm.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        roleName: "Role Name is Required", 
-        isActive:" Please select a Active Button"      
+        roleName: "Role Name is Required",
+        isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -88,7 +90,7 @@ export class RolemastersComponent {
       })
     }
   }
-  getControl(controleName:string){
+  getControl(controleName: string) {
     return this.roledateForm.get(controleName);
   }
 }
