@@ -17,6 +17,7 @@ import { getNames } from 'country-list';
   selector: 'app-project',
   standalone: true,
   imports: [MatInputModule, MatFormField, MatSelectModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  imports: [MatInputModule, MatFormField, MatSelectModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
   providers: [provideNativeDateAdapter()],
   templateUrl: './project.component.html',
   styleUrl: './project.component.scss'
@@ -47,9 +48,6 @@ export class ProjectComponent {
     // this.project.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
-      this.id = this.data.id;
-      console.log('Payment ID:', this.id);
-      this.project.patchValue(this.data);
     }
   }
   

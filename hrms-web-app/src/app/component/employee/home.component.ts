@@ -40,6 +40,8 @@ export class HomeComponent {
     { field: "mobileNumber" },
     { field: "permanentAddress", tooltipField: "permanentAddress",headerName:"Per.Address" },
     { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },
+    { field: "permanentAddress", tooltipField: "permanentAddress",headerName:"Per.Address" },
+    { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },
     {
       field: "dateOfJoining",headerName:'Joinig Date', valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
@@ -64,6 +66,7 @@ export class HomeComponent {
 
   getAllData() {
     this.service.getData().subscribe((response: any) => {
+      this.rowData = response.data;
       this.rowData = response.data;
       // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
       console.log('rowww data', this.rowData)

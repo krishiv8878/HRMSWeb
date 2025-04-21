@@ -55,6 +55,7 @@ export class CandidateeComponent {
     }
   }
 
+
   allowOnlyLetters(event: KeyboardEvent) {
     const key = event.key;
     // Allow letters and space only
@@ -72,6 +73,7 @@ export class CandidateeComponent {
   }
 
 
+
   submitdata() {
     if (this.CandidateForm.invalid) {
       this.CandidateForm.markAllAsTouched(); // Show errors in UI  
@@ -85,6 +87,16 @@ export class CandidateeComponent {
           : this.getControl('emailAddress')?.hasError('email')
             ? "Enter a valid email address (e.g., user@example.com)"
             : "",
+          ? "Email Address is required"
+          : this.getControl('emailAddress')?.hasError('email')
+            ? "Enter a valid email address (e.g., user@example.com)"
+            : "",
+
+        mobileNumber: this.getControl('mobileNumber')?.hasError('required')
+          ? "Mobile Number is required"
+          : this.getControl('mobileNumber')?.hasError('pattern')
+            ? "Mobile Number must be 10 digits"
+            : "Invalid Mobile Number",
 
         mobileNumber: this.getControl('mobileNumber')?.hasError('required')
           ? "Mobile Number is required"
@@ -97,6 +109,7 @@ export class CandidateeComponent {
         expectedSalary: "Expected Salary is Required",
         currentSalary: "Current Salary is Required",
         noticePeriod: "Notice Period is Required",
+        isActive: " Please select a Active Button"
         isActive: " Please select a Active Button"
       };
 
@@ -133,5 +146,6 @@ export class CandidateeComponent {
 
   getControl(controleName: string) {
     return this.CandidateForm.get(controleName);
+  }
   }
 }

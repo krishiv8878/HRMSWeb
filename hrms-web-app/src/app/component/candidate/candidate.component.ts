@@ -45,6 +45,7 @@ export class CandidateComponent {
   getData() {
     this.services.getData().subscribe((responce: any) => {
       this.rowData = responce.data;
+      this.rowData = responce.data;
     })
   }
   pagination = true;

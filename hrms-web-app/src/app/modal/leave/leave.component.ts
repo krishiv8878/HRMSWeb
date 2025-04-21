@@ -44,6 +44,10 @@ export class LeaveComponent {
       this.id = this.data.id;
       console.log('Payment ID:', this.id);
       this.leavetype.patchValue(this.data);
+      this.isEdit = true;
+      this.id = this.data.id;
+      console.log('Payment ID:', this.id);
+      this.leavetype.patchValue(this.data);
     }
   }
 
@@ -54,6 +58,7 @@ export class LeaveComponent {
       event.preventDefault();
     }
   }
+
 
 
   submitdata() {
