@@ -87,16 +87,6 @@ export class CandidateeComponent {
           : this.getControl('emailAddress')?.hasError('email')
             ? "Enter a valid email address (e.g., user@example.com)"
             : "",
-          ? "Email Address is required"
-          : this.getControl('emailAddress')?.hasError('email')
-            ? "Enter a valid email address (e.g., user@example.com)"
-            : "",
-
-        mobileNumber: this.getControl('mobileNumber')?.hasError('required')
-          ? "Mobile Number is required"
-          : this.getControl('mobileNumber')?.hasError('pattern')
-            ? "Mobile Number must be 10 digits"
-            : "Invalid Mobile Number",
 
         mobileNumber: this.getControl('mobileNumber')?.hasError('required')
           ? "Mobile Number is required"
@@ -110,7 +100,7 @@ export class CandidateeComponent {
         currentSalary: "Current Salary is Required",
         noticePeriod: "Notice Period is Required",
         isActive: " Please select a Active Button"
-        isActive: " Please select a Active Button"
+
       };
 
       for (const field in errorMessages) {
@@ -147,5 +137,5 @@ export class CandidateeComponent {
   getControl(controleName: string) {
     return this.CandidateForm.get(controleName);
   }
-  }
 }
+

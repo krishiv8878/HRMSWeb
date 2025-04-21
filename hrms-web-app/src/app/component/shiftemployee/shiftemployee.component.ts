@@ -9,6 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { ShiftComponent } from '../../modal/shift/shift.component';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-shiftemployee',
@@ -25,9 +26,9 @@ export class ShiftemployeeComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id",},
-    { field: "shiftName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "startTime",},
-    { field: "endTime",},
+    { field: "shiftName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "startTime", },
+    { field: "endTime", },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
@@ -60,22 +61,28 @@ export class ShiftemployeeComponent {
       }
     })
   }
-  Delete(shiftId: any) {
-    console.log("delete employee dataaa", shiftId)
-    if (shiftId != null) {
-      this.services.deleteData(shiftId).subscribe(() => {
-        shiftId.isDeleted = true;
-        shiftId.isActive = false;
 
-      })
-      this.services.deleteData(shiftId).subscribe({
-        next: (res) => {
-          this.getallData();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+  Delete(DesignationId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: DesignationId }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.deleteData(DesignationId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getallData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
+
   openAddForm() {
     const dialogref = this.dialog.open(ShiftComponent)
     dialogref.afterClosed().subscribe({

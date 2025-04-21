@@ -17,8 +17,6 @@ import { getNames } from 'country-list';
   selector: 'app-project',
   standalone: true,
   imports: [MatInputModule, MatFormField, MatSelectModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
-  imports: [MatInputModule, MatFormField, MatSelectModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
-  providers: [provideNativeDateAdapter()],
   templateUrl: './project.component.html',
   styleUrl: './project.component.scss'
 })

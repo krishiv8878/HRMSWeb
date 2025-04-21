@@ -9,6 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 import { RolemastersComponent } from '../../modal/rolemasters/rolemasters.component';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-rolemaster',
@@ -25,7 +26,7 @@ export class RolemasterComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id",},
-    { field: "roleName",},
+    { field: "roleName", },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];
@@ -62,21 +63,26 @@ export class RolemasterComponent {
     })
   }
 
-  Delete(RoleMasterId: any) {
-    // console.log("delete employee dataaa", RoleMasterId)
-    if (RoleMasterId != null) {
-      this.services.DeleteData(RoleMasterId).subscribe(() => {
-        RoleMasterId.isDeleted = true;
-        RoleMasterId.isActive = false;
 
-      })
-      this.services.DeleteData(RoleMasterId).subscribe({
-        next: (res) => {
-          this.getData();
-          this.toaster.success('Records Are Successfully Deleted', 'Delete')
-        }
-      })
-    }
+  Delete(DesignationId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: DesignationId }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteData(DesignationId).subscribe({
+          next: () => {
+            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.getData();
+          },
+          error: () => {
+            this.toaster.error('Failed to delete the record', 'Error');
+          }
+        });
+      }
+    });
   }
 
   openAddForm() {
