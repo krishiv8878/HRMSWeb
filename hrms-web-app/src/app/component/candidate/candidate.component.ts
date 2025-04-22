@@ -10,6 +10,7 @@ import { CandidateeComponent } from '../../modal/candidatee/candidate.component'
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+
 @Component({
   selector: 'app-candidate',
   standalone: true,
@@ -25,12 +26,13 @@ export class CandidateComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
-    { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },   
     { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "emailAddress", tooltipField: "emailAddress" },
-    { field: "mobileNumber", },
+        { field: "mobileNumber", },
+       { field: "relevantExperience", headerName: 'Relevant Exp' },
     { field: "totalExperience", headerName: 'Totla Exp' },
-    { field: "relevantExperience", headerName: 'Relevant Exp' },
+
     { field: "currentSalary", },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
@@ -45,7 +47,7 @@ export class CandidateComponent {
   getData() {
     this.services.getData().subscribe((responce: any) => {
       this.rowData = responce.data;
-      this.rowData = responce.data;
+     
     })
   }
   pagination = true;
@@ -69,6 +71,7 @@ export class CandidateComponent {
     })
   }
 
+
   Delete(candidateId: any) {
     const dialogRef = this.dialog.open(DeleteModalComponent, {
       width: '350px',
@@ -87,8 +90,10 @@ export class CandidateComponent {
           }
         });
       }
-    });
+    });  
+    
   }
+  
   
   openAddForm() {
     const dialogRef = this.dialog.open(CandidateeComponent);

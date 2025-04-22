@@ -72,7 +72,7 @@ export class EmployeeAttendanceComponent {
     { field: "clockIn", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     { field: "clockOut", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     { field: "totalHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
-    { field: "effectiveHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : ""  },
+    { field: "effectiveHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     // { field: "gross", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     {
       field: "", cellRenderer: () => { return `<p class="gross-btn">...</p>`; },
@@ -103,10 +103,35 @@ export class EmployeeAttendanceComponent {
   ngOnInit() {
     this.getAllData();
     this.runigtime();
+    
     setInterval(() => {
       this.runigtime();
     }, 1000);
   }
+  // ngOnInit() {
+  //   this.getAllData();
+  //   this.runigtime();
+  
+  //   const savedClockIn = localStorage.getItem('firstClockIn');
+  //   const isClockedInStorage = localStorage.getItem('isClockedIn');
+  
+  //   if (savedClockIn && isClockedInStorage === 'true') {
+  //     this.firstClockIn = new Date(savedClockIn);
+  //     this.startTime = new Date(savedClockIn);
+  //     this.isClockedIn = true;
+  
+  //     // Restart interval
+  //     this.interval = setInterval(() => {
+  //       this.updateProgress();
+  //       this.updaterunigtime();
+  //     }, 1000);
+  //   }
+  
+  //   setInterval(() => {
+  //     this.runigtime();
+  //   }, 1000);
+  // }
+  
 
   // Updates the current time every second
 
@@ -205,10 +230,11 @@ export class EmployeeAttendanceComponent {
     if (!this.firstClockIn) {
       this.firstClockIn = new Date(); // Store first clock-in only once
       console.log("First Clock In Time Stored:", this.firstClockIn);
+      localStorage.setItem('firstClockIn', this.firstClockIn.toISOString());
     }
     this.startTime = new Date(); //  Ensure startTime is initialized
     this.isClockedIn = true; //  Mark as clocked in
-
+    localStorage.setItem('isClockedIn', 'true');
     const now = new Date();
     this.sessions.push({ clockIn: now, clockOut: null });    // Start a new session
 
@@ -226,11 +252,19 @@ export class EmployeeAttendanceComponent {
       return; // Prevent clock-out if not clocked in
     }
 
-    const lastClockOut = new Date(); //  Store last clock-out time
-    console.log("Last Clock Out Time Stored:", lastClockOut);
+    // const lastClockOut = new Date(); //  Store last clock-out time
+    // console.log("Last Clock Out Time Stored:", lastClockOut);
 
+    // clearInterval(this.interval);
+    // this.isClockedIn = false; //  Mark as clocked out
+    const lastClockOut = new Date();
     clearInterval(this.interval);
-    this.isClockedIn = false; //  Mark as clocked out
+    this.isClockedIn = false;
+
+
+    // Local storage clear
+    localStorage.removeItem('isClockedIn');
+    localStorage.removeItem('firstClockIn');
 
     // Total Hours Calculation
     const diffMs = lastClockOut.getTime() - this.firstClockIn.getTime();
