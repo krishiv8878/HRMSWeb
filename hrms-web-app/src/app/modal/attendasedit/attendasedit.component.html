@@ -34,14 +34,14 @@
                 <div *ngFor="let log of logs; let i = index" class="log-entry">
                     <mat-form-field appearance="outline">
                         <mat-label>In Time</mat-label>
-                        <input matInput type="time" formControlName="inTime">
+                        <input matInput type="time" formControlName="clockIn">
                     </mat-form-field>
 
                     <mat-icon>arrow_forward</mat-icon>
 
                     <mat-form-field appearance="outline">
                         <mat-label>Out Time</mat-label>
-                        <input matInput type="time" formControlName="outTime">
+                        <input matInput type="time" formControlName="clockOut">
                     </mat-form-field>
 
                     <button mat-icon-button color="warn" (click)="removeLog(i)"  style="border-radius: 0;">
@@ -54,7 +54,7 @@
                 <mat-label> Note</mat-label>
                 <mat-form-field appearance="outline" class="full-width" style="padding-top: 1rem; height: 100px;">
                     <mat-label>Enter Note</mat-label>
-                    <textarea matInput formControlName="note" style="height: 5rem;"></textarea>
+                    <textarea matInput formControlName="regularizationReason" style="height: 5rem;"></textarea>
                 </mat-form-field>
             </div>
         </div>

@@ -24,13 +24,13 @@ export class AttendaseditComponent {
   services = inject(EmployeeeService)
   formbuilder = inject(FormBuilder)
   toaster = inject(ToastrService)
-  logs: { inTime: string; outTime: string }[] = [];
+  logs: { clockIn: string; clockOut: string }[] = [];
 
   attendaseform = this.formbuilder.group({
     selectedDate: [{ value: new Date(), disabled: true }],
-    note: ['', Validators.required],
-    inTime: ['', Validators.required],
-    outTime: ['', Validators.required]
+    regularizationReason: ['', Validators.required],
+    clockIn: ['', Validators.required],
+    clockOut: ['', Validators.required]
   })
 
   constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
@@ -43,12 +43,12 @@ export class AttendaseditComponent {
       if (!isNaN(receivedDate.getTime())) {
         receivedDate.setFullYear(new Date().getFullYear());
 
-        console.log("Updated Date with Current Year:", receivedDate); 
+        console.log("Updated Date with Current Year:", receivedDate);
 
         this.attendaseform.patchValue({
           selectedDate: receivedDate,
-          inTime: this.data.clockIn,
-          outTime: this.data.clockOut,
+          clockIn: this.data.clockIn,
+          clockOut: this.data.clockOut,
         });
       }
     }
@@ -57,8 +57,8 @@ export class AttendaseditComponent {
   addLog() {
     if (this.data) {
       this.logs.push({
-        inTime: this.data.clockIn,
-        outTime: this.data.clockOut,
+        clockIn: this.data.clockIn,
+        clockOut: this.data.clockOut,
       })
     }
     // this.logs.push({ inTime: '', outTime: '' });
@@ -71,7 +71,11 @@ export class AttendaseditComponent {
   submitdata() {
     if (this.attendaseform.valid) {
       console.log('Form Data:', this.attendaseform.value);
-      this.dialogref.close(this.attendaseform.value);
+      this.services.creatRegular(this.attendaseform.value).subscribe(() => {
+        console.log("successfully add")
+        this.dialogref.close(true);
+      })
+
     }
   }
   closeDialog() {
