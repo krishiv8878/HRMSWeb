@@ -72,7 +72,7 @@ export class ShiftemployeeComponent {
       if (confirmed) {
         this.services.deleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Shift Record Successfully Deleted ', 'Delete');
             this.getallData();
           },
           error: () => {

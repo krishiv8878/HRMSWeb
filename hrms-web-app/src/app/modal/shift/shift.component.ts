@@ -68,10 +68,10 @@ id!:any;
     if (this.shiftForm.invalid) {
       this.shiftForm.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        shiftName: "Shift Name is required",
+        shiftName: "Shift Name Is Required",
         startTime: "Time Formate Invalide",
         endTime: "Time Formate Invalide",
-        isActive: " Please select a Active Button"
+       //isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -86,7 +86,7 @@ id!:any;
       this.services.updateData(this.shiftForm.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -96,7 +96,7 @@ id!:any;
       this.services.createData(this.shiftForm.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success(' Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

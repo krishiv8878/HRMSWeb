@@ -73,7 +73,7 @@ export class PaymentinfoComponent {
       if (confirmed) {
         this.services.deleteData(paymentId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Record successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {

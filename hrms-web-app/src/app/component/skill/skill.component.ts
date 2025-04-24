@@ -81,7 +81,7 @@ export class SkillComponent {
       if (confirmed) {
         this.services.DeleteSkill(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Skill Record Successfully Deleted ', 'Delete');
             this.getSkill();
           },
           error: () => {

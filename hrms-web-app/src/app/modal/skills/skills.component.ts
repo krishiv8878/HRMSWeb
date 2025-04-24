@@ -57,8 +57,8 @@ export class SkillsComponent {
     if (this.Skillform.invalid) {
       this.Skillform.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        skillName: "Skill Name is required",
-        isActive: " Please select a Active Button"
+        skillName: "Skill Name Is Required",
+       //isActive: " Please select a Active Button"
       };
 
       // Show error messages in a popup
@@ -74,7 +74,7 @@ export class SkillsComponent {
       this.services.updateSkill(this.Skillform.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -84,7 +84,7 @@ export class SkillsComponent {
       this.services.createSkill(this.Skillform.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success(' Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

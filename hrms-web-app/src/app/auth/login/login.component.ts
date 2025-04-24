@@ -40,7 +40,7 @@ export class LoginComponent {
       // Email validation
       if (email.errors) {
         if (email.errors['required']) {
-          this.toster.error("Email is required", "Validation Error");
+          this.toster.error("Email Is Required", "Validation Error");
         } else if (email.errors['email']) {
           this.toster.error("Enter a valid email address", "Validation Error");
         }
@@ -49,7 +49,7 @@ export class LoginComponent {
       // Password validation
       if (password.errors) {
         if (password.errors['required']) {
-          this.toster.error("Password is required", "Validation Error");
+          this.toster.error("Password Is Required", "Validation Error");
         } else {
           this.toster.error("Enter a valid password", "Validation Error");
         }

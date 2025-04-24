@@ -87,7 +87,7 @@ export class HolidayComponent {
       if (confirmed) {
         this.services.DeleteHoliday(holidayId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Holiday Record Successfully Deleted ', 'Delete');
             this.getHoliday();
           },
           error: () => {

@@ -29,8 +29,8 @@ export class AttendaseditComponent {
   attendaseform = this.formbuilder.group({
     selectedDate: [{ value: new Date(), disabled: true }],
     regularizationReason: ['', Validators.required],
-    clockIn: ['', Validators.required],
-    clockOut: ['', Validators.required]
+    clockIn: [''],
+    clockOut: ['']
   })
 
   constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
@@ -68,16 +68,56 @@ export class AttendaseditComponent {
   }
 
 
-  submitdata() {
-    if (this.attendaseform.valid) {
-      console.log('Form Data:', this.attendaseform.value);
-      this.services.creatRegular(this.attendaseform.value).subscribe(() => {
-        console.log("successfully add")
-        this.dialogref.close(true);
-      })
+  // submitdata() {
+  //   if (this.attendaseform.valid) {
+  //     console.log('Form Data:', this.attendaseform.value);
+  //     this.services.creatRegular(this.attendaseform.value).subscribe(() => {
+  //       console.log("successfully add")
+  //       this.dialogref.close(true);
+  //     })
 
-    }
+  //   }
+  // }
+ 
+  combine(date: Date, time: string): string {
+    const [h, m] = time.split(':').map(Number);
+    return new Date(date.setHours(h, m, 0, 0)).toISOString();
   }
+
+  submitdata(): void {
+    if (!this.attendaseform.valid) {
+      this.toaster.warning('Please fill all required fields');
+      return;
+    }
+
+    const { selectedDate, clockIn, clockOut, regularizationReason } = this.attendaseform.getRawValue();
+
+    if (!selectedDate || !clockIn || !clockOut || !regularizationReason) {
+      this.toaster.warning('All fields are required');
+      return;
+    }
+
+    const payload = {
+      regularizationReason,
+      selectedDate: selectedDate.toISOString(),
+      attendance: {
+        clockIn: this.combine(selectedDate, clockIn),
+        clockOut: this.combine(selectedDate, clockOut),
+      }
+    };
+
+    this.services.creatRegular(payload).subscribe({
+      next: () => {
+        this.toaster.success('Regularization request submitted');
+        this.dialogref.close(true);
+      },
+      error: (err) => {
+        console.error('API error:', err);
+        this.toaster.error('Submission failed');
+      }
+    });
+  }
+
   closeDialog() {
     this.dialogref.close();
   }

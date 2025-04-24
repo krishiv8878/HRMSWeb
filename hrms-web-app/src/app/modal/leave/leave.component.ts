@@ -61,10 +61,10 @@ export class LeaveComponent {
     if (this.leavetype.invalid) {
       this.leavetype.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        // leaveName: "Leave Name is Required",
-        type: "Leave Type is Required",
-        description: "Description is Required",
-        isActive: " Please select a Active Button",       
+        // leaveName: "Leave Name Is Required",
+        type: "Leave Type Is Required",
+        description: "Description Is Required",
+       //isActive: " Please select a Active Button",       
       
       };
 
@@ -81,7 +81,7 @@ export class LeaveComponent {
      
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Leave Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -91,7 +91,7 @@ export class LeaveComponent {
       this.services.createData(this.leavetype.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success('Leave Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

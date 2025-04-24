@@ -1,3 +1,4 @@
+
 import { Component, inject } from '@angular/core';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { EmployeeeService } from '../../services/attendance/employeee.service';
@@ -69,8 +70,8 @@ export class EmployeeAttendanceComponent {
     // { field: "firstName", floatingFilter: true, filter: true },
     // { field: "lastName", floatingFilter: true, filter: true },
     { field: "Date", },
-    { field: "clockIn", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
-    { field: "clockOut", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
+    { field: "clockIn", valueFormatter: (params) => params.value ? this.formatAMPM(params.value) : "" },
+    { field: "clockOut", valueFormatter: (params) => params.value ? this.formatAMPM(params.value) : "" },
     { field: "totalHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     { field: "effectiveHours", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
     // { field: "gross", valueFormatter: (params) => params.value ? this.formatClockIn(params.value) : "" },
@@ -80,9 +81,31 @@ export class EmployeeAttendanceComponent {
     }
   ]
 
+  // formatClockIn(timeStr: string): string {
+  //   const [hh, mm] = timeStr.split(":").map(Number);
+  //   return `${hh.toString().padStart(2, '0')}h ${mm.toString().padStart(2, '0')}m`;  //set time formate show in 01h 22m using in clockIn and clockOut,Total Hours
+  // }
   formatClockIn(timeStr: string): string {
-    const [hh, mm] = timeStr.split(":").map(Number);
-    return `${hh.toString().padStart(2, '0')}h ${mm.toString().padStart(2, '0')}m`;  //set time formate show in 01h 22m using in clockIn and clockOut,Total Hours
+    if (!timeStr) return "00h 00m";
+
+    // Handle both "hh:mm:ss" and ISO strings
+    const parts = timeStr.includes("T")
+      ? new Date(timeStr).toTimeString().split(":")
+      : timeStr.split(":");
+
+    const hh = parseInt(parts[0]) || 0;
+    const mm = parseInt(parts[1]) || 0;
+
+    return `${hh.toString().padStart(2, '0')}: ${mm.toString().padStart(2, '0')}`;
+  }
+
+  formatAMPM(timeStr: string): string {
+    const [hoursStr, minutesStr] = timeStr.split(":");
+    let hours = parseInt(hoursStr);
+    const minutes = parseInt(minutesStr);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12; // Convert 0 -> 12 for AM
+    return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   }
 
   sessions: { clockIn: Date; clockOut: Date | null }[] = [];
@@ -103,35 +126,10 @@ export class EmployeeAttendanceComponent {
   ngOnInit() {
     this.getAllData();
     this.runigtime();
-    
     setInterval(() => {
       this.runigtime();
     }, 1000);
   }
-  // ngOnInit() {
-  //   this.getAllData();
-  //   this.runigtime();
-  
-  //   const savedClockIn = localStorage.getItem('firstClockIn');
-  //   const isClockedInStorage = localStorage.getItem('isClockedIn');
-  
-  //   if (savedClockIn && isClockedInStorage === 'true') {
-  //     this.firstClockIn = new Date(savedClockIn);
-  //     this.startTime = new Date(savedClockIn);
-  //     this.isClockedIn = true;
-  
-  //     // Restart interval
-  //     this.interval = setInterval(() => {
-  //       this.updateProgress();
-  //       this.updaterunigtime();
-  //     }, 1000);
-  //   }
-  
-  //   setInterval(() => {
-  //     this.runigtime();
-  //   }, 1000);
-  // }
-  
 
   // Updates the current time every second
 
@@ -230,13 +228,21 @@ export class EmployeeAttendanceComponent {
     if (!this.firstClockIn) {
       this.firstClockIn = new Date(); // Store first clock-in only once
       console.log("First Clock In Time Stored:", this.firstClockIn);
-      localStorage.setItem('firstClockIn', this.firstClockIn.toISOString());
     }
     this.startTime = new Date(); //  Ensure startTime is initialized
     this.isClockedIn = true; //  Mark as clocked in
-    localStorage.setItem('isClockedIn', 'true');
+
     const now = new Date();
     this.sessions.push({ clockIn: now, clockOut: null });    // Start a new session
+
+    // Update UI immediately
+    const todayFormatted = this.formatDate(new Date());
+    const clockInTime = now.toLocaleTimeString('en-US', { hour12: false });
+
+    const todayRow = this.rowData.find(row => row.Date === todayFormatted);
+    if (todayRow) {
+      todayRow.clockIn = clockInTime;
+    }
 
     this.interval = setInterval(() => {
       this.updateProgress();
@@ -252,40 +258,48 @@ export class EmployeeAttendanceComponent {
       return; // Prevent clock-out if not clocked in
     }
 
-    // const lastClockOut = new Date(); //  Store last clock-out time
-    // console.log("Last Clock Out Time Stored:", lastClockOut);
+    const lastClockOut = new Date(); //  Store last clock-out time
+    console.log("Last Clock Out Time Stored:", lastClockOut);
 
-    // clearInterval(this.interval);
-    // this.isClockedIn = false; //  Mark as clocked out
-    const lastClockOut = new Date();
     clearInterval(this.interval);
-    this.isClockedIn = false;
-
-
-    // Local storage clear
-    localStorage.removeItem('isClockedIn');
-    localStorage.removeItem('firstClockIn');
+    this.isClockedIn = false; //  Mark as clocked out
 
     // Total Hours Calculation
     const diffMs = lastClockOut.getTime() - this.firstClockIn.getTime();
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    const totalHoursFormatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
-    const effectiveHours = totalHoursFormatted; // Assuming effectiveHours is the same for now
+    // const totalHoursFormatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    // Convert "hh:mm:ss" to today's full DateTime
+    const todayDate = new Date().toISOString().split("T")[0]; // "2025-04-22"
+    const totalHoursFormatted = new Date(`${todayDate}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+
+    // const effectiveHours = totalHoursFormatted; // Assuming effectiveHours is the same for now
+    const effectiveHours = totalHoursFormatted; // You can adjust logic if needed
+
 
     console.log("Total Hours:", totalHoursFormatted);
     // Convert to local time
     const localStartTime = new Date(this.firstClockIn.getTime() - (this.firstClockIn.getTimezoneOffset() * 60000));
     const localEndTime = new Date(lastClockOut.getTime() - (lastClockOut.getTimezoneOffset() * 60000));
+
     // API call to save attendance
     this.services.createData(
       this.employeeId,
       localStartTime.toISOString(),
       localEndTime.toISOString(),
-      totalHoursFormatted,
-      effectiveHours,
+      totalHoursFormatted.toISOString(),
+      effectiveHours.toISOString(),
       "Present"
     ).subscribe(response => {
+      const todayFormatted = this.formatDate(new Date());
+
+      const todayRow = this.rowData.find(row => row.Date === todayFormatted);
+      if (todayRow) {
+        todayRow.clockOut = localEndTime.toLocaleTimeString('en-US', { hour12: false });
+        todayRow.totalHours = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        todayRow.effectiveHours = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+
       console.log("Attendance Saved:", response);
       this.getAllData(); // Refresh the data
     });

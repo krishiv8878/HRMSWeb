@@ -82,7 +82,7 @@ export class CandidateComponent {
       if (confirmed) {
         this.services.DeleteData(candidateId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Candidate Record Successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {

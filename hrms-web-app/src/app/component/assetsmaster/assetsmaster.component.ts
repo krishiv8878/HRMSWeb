@@ -104,7 +104,7 @@ export class AssetsmasterComponent {
       if (confirmed) {
         this.services.DeleteData(AssetsMasterId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Assert Record Successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {

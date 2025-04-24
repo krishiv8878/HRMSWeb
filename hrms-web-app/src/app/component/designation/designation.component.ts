@@ -79,7 +79,7 @@ export class DesignationComponent {
       if (confirmed) {
         this.services.DeleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Designation Record Successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {

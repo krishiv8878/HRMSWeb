@@ -63,12 +63,12 @@ export class RegisterComponent {
     if (this.registretion.invalid) {
       this.registretion.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        FirstName: "First Name is Required",
-        LastName: "Last Name is Required",
+        FirstName: "First Name Is Required",
+        LastName: "Last Name Is Required",
         email: "Enter Valid Email",
         mobileNumber: "Mobile Number Must Be 10 Digits",
-        Address: " Address is Required",
-        password: "Password is Required",
+        Address: " Address Is Required",
+        password: "Password Is Required",
       };
 
       for (const field in errorMessages) {

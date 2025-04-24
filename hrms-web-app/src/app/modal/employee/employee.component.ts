@@ -103,26 +103,26 @@ export class EmployeeComponent {
       this.Employeeform.markAllAsTouched(); // Show errors in UI  
 
       const errorMessages: { [key: string]: string } = {
-        firstName: "First Name is Required",
-        lastName: "Last Name is Required",
+        firstName: "First Name Is Required",
+        lastName: "Last Name Is Required",
         emailAddress: this.getControl('emailAddress')?.hasError('required')
-          ? "Email Address is required"
+          ? "Email Address Is Required"
           : this.getControl('emailAddress')?.hasError('email')
             ? "Enter a valid email address (e.g., user@example.com)"
             : "",
 
         mobileNumber: this.getControl('mobileNumber')?.hasError('required')
-          ? "Mobile Number is required"
+          ? "Mobile Number Is Required"
           : this.getControl('mobileNumber')?.hasError('pattern')
             ? "Mobile Number must be 10 digits"
             : "",
 
         gender: "Please select the Gender",
-        permanentAddress: "Permanent Address is Required",
-        currentAddress: "Current Address is Required",
-        dateOfJoining: "Joining Date is Required",
-        roleIds: "RoleID is Required",
-        isActive: "Please select Active Status"
+        permanentAddress: "Permanent Address Is Required",
+        currentAddress: "Current Address Is Required",
+        dateOfJoining: "Joining Date Is Required",
+        roleIds: "RoleID Is Required",
+        // isActive: "Please select Active Status"
       };
 
       // Show error messages in a popup
@@ -140,7 +140,7 @@ export class EmployeeComponent {
     if (this.isEdit) {
       this.services.updateData(this.Employeeform.value).subscribe({
         next: () => {
-          this.toaster.success('Successfully updated data', 'Success');
+          this.toaster.success('Employee Recode Successfully Updated', 'Success');
           this._dialogref.close(true);
         },
         error: (err) => {
@@ -150,7 +150,7 @@ export class EmployeeComponent {
     } else {
       this.services.createData(this.Employeeform.value).subscribe({
         next: () => {
-          this.toaster.success('Successfully added data', 'Success');
+          this.toaster.success('Employee Recode Successfully Added', 'Success');
           this._dialogref.close(true);
         },
         error: (err) => {

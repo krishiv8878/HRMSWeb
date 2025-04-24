@@ -75,7 +75,7 @@ export class ProjectmasterComponent {
       if (confirmed) {
         this.services.DeleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Project Record Successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {

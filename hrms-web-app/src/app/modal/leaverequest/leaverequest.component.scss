@@ -34,3 +34,22 @@ button {
     font-size: 15px;
     font-weight: 500;
 }
+
+.leave-mode {
+    display: flex;
+    justify-content: space-between;
+    margin: 2rem 0;
+}
+
+mat-radio-group {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+
+    mat-radio-button {
+        // border: 3px solid blue;
+        border-radius: 50px;
+        padding: 0 10px 0 0;
+        background: #e4e4ef;
+    }
+}

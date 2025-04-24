@@ -105,7 +105,7 @@ export class HomeComponent {
       if (confirmed) {
         this.service.DeleteData(employeeId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Employee Record Successfully Deleted ', 'Delete');
             this.getAllData();
           },
           error: () => {

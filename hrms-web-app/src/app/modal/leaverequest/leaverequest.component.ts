@@ -11,11 +11,12 @@ import { EmailService } from '../../services/leaveRequest/email.service';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatDialogClose, MatDialogRef } from '@angular/material/dialog';
+import { MatRadioButton } from '@angular/material/radio';
 
 @Component({
   selector: 'app-leaverequest',
   standalone: true,
-  imports: [MatDatepickerModule, CommonModule, MatFormField, ReactiveFormsModule, MatInputModule, MatSelectModule, MatButtonModule, MatDialogClose],
+  imports: [MatDatepickerModule, CommonModule, MatFormField, ReactiveFormsModule, MatInputModule, MatSelectModule, MatButtonModule, MatDialogClose, MatRadioButton],
   providers: [provideNativeDateAdapter()],
   templateUrl: './leaverequest.component.html',
   styleUrl: './leaverequest.component.scss'
@@ -31,6 +32,7 @@ export class LeaverequestComponent {
   email: any;
   employeeId: any;
 
+  
   leaveRequestForm = this.formbuilder.group({
     // id: 0,
     type: ['', [Validators.required]],
@@ -64,7 +66,7 @@ export class LeaverequestComponent {
     console.log('Form Value:', this.leaveRequestForm.value);
     this.services.Leaverequest(this.leaveRequestForm.value).subscribe({
       next: (val:any) => {
-        this.toaster.success('Successfully added data', 'Success');
+        this.toaster.success('leaveRequest Successfully Added', 'Success');
         this._dialogref.close(true)
       },
       error: (error) => {

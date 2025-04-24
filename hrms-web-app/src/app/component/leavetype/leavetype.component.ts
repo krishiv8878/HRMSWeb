@@ -76,7 +76,7 @@ export class LeavetypeComponent {
       if (confirmed) {
         this.services.DeleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Leave Record Successfully Deleted ', 'Delete');
             this.getAllData();
           },
           error: () => {

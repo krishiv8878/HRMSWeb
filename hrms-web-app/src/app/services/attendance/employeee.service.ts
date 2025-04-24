@@ -33,6 +33,6 @@ export class EmployeeeService {
   }
 
   creatRegular(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/EmployeeAttendance/AddRegularizationRequest`, data)
+    return this.http.post<any[]>(this.apiUrl + `/EmployeeAttendance/AddRegularizationRequest`, data,{withCredentials:true})
   }
 }

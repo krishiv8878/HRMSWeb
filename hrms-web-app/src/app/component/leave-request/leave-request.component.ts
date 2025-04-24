@@ -27,14 +27,14 @@ export class LeaveRequestComponent {
   public columnDefs: ColDef[] = [
     // { field: "emailAddress" },
     // { field: "type" },
-    { field: "startDate",valueFormatter: params => {
+    { field: "startDate",headerName:'From',valueFormatter: params => {
       return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
     } },
-    { field: "endDate",valueFormatter: params => {
+    { field: "endDate",headerName:'To',valueFormatter: params => {
       return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
     } },
-    { field: "leaveReason" },
-    { field: "isApproved" },
+    { field: "leaveReason",headerName:'Reason', },
+    { field: "isApproved", headerName:'Status' },
   ]
 
   ngOnInit() {

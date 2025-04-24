@@ -71,11 +71,11 @@ export class ProjectComponent {
     if (this.project.invalid) {
       this.project.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        projectName: "Project Name is Required",
-        description: "Description is Required",
-        clientName: "Client Name is Required",
-        clientRegion: "ClientRegion Name is Required",
-        isActive: " Please select a Active Button"
+        projectName: "Project Name Is Required",
+        description: "Description Is Required",
+        clientName: "Client Name Is Required",
+        clientRegion: "ClientRegion Name Is Required",
+       //isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -90,7 +90,7 @@ export class ProjectComponent {
       this.services.updateData(this.project.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -100,7 +100,7 @@ export class ProjectComponent {
       this.services.createData(this.project.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success(' Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)
