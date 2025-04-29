@@ -25,7 +25,7 @@ export class RegisterComponent {
   // http = inject(HttpClient)
   toaster = inject(ToastrService)
   // In your component.ts file
-  hide = true;
+  // hide = true;
 
   registretion = this.formBuilder.group({
     id: 0,
@@ -37,7 +37,11 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
   ngOnInit() { }
+  hide: boolean = true;
 
+  togglePasswordVisibility() {
+    this.hide = !this.hide;
+  }
   noWhitespaceValidator(control: any) {
     return control.value?.trim() === '' ? { 'whitespace': true } : null;
   }

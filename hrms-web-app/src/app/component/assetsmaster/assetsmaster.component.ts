@@ -57,7 +57,7 @@ export class AssetsmasterComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-    flex: 1,
+  flex: 1,
     minWidth: 120,
   }
 
@@ -108,7 +108,7 @@ export class AssetsmasterComponent {
             this.getData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

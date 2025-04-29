@@ -40,7 +40,7 @@ export class ShiftemployeeComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-    flex: 1,
+  flex: 1,
     minWidth: 120,
   };
   ngOnInit() {
@@ -76,7 +76,7 @@ export class ShiftemployeeComponent {
             this.getallData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

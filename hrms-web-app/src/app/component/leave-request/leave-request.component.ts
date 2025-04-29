@@ -58,7 +58,7 @@ export class LeaveRequestComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-    flex: 1,
+  flex: 1,
     minWidth: 120,
   };
 

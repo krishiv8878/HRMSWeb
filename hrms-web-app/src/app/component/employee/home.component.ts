@@ -36,12 +36,10 @@ export class HomeComponent {
     // { field: "id" },
     { field: "firstName" ,valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "lastName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''  },
-    { field: "emailAddress", tooltipField: "emailAddress" },
+    { field: "emailAddress", tooltipField: "emailAddress"},
     { field: "mobileNumber" },
     { field: "permanentAddress", tooltipField: "permanentAddress",headerName:"Per.Address" },
-    { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },
-    { field: "permanentAddress", tooltipField: "permanentAddress",headerName:"Per.Address" },
-    { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },
+    { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },   
     {
       field: "dateOfJoining",headerName:'Joinig Date', valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
@@ -79,7 +77,7 @@ export class HomeComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-    flex: 1,
+   flex: 1,
     minWidth: 120,
   };
 
@@ -109,7 +107,7 @@ export class HomeComponent {
             this.getAllData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

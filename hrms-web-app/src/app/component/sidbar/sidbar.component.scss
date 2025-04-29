@@ -1,44 +1,15 @@
+* {
+    position: sticky;
+}
+
 mat-nav-list {
     margin-top: 2rem;
-
+    display: grid;
+    justify-content: center;
 }
 
 mat-divider {
     outline: none;
-}
-
-.side-menu {
-    display: flex;
-    margin-left: 1rem;
-    padding: 10px;
-    text-transform: capitalize;
-    font-weight: 400;
-}
-
-.side-menu:hover {
-    background-color: #3b799b;
-    // color: white;
-    transition: 1s ease;
-    // a{
-    //     color: #58efff;;
-    // }
-}
-
-.side-menu .item {
-    display: flex;
-    font-size: 16px;
-    padding: 5px;
-    font-weight: 400;
-}
-
-.side-menu .item mat-icon {
-    font-size: 20px;
-    margin-right: 0.5rem;
-}
-
-.side-menu a {
-    text-decoration: none;
-    color: white;
 }
 
 .logo {
@@ -53,5 +24,26 @@ mat-divider {
         height: 3.5rem;
         width: 3.5rem;
         align-items: center;
+    }
+}
+
+.side-menu {
+    padding: 1rem;
+}
+
+.item {
+    color: white;
+}
+
+mat-icon.mat-icon.notranslate.material-icons.mat-ligature-font.mat-icon-no-color {
+    font-size: 25px;
+    width: auto;
+    height: auto;
+}
+
+@media (max-width: 768px) {
+    mat-icon.mat-icon.notranslate.material-icons.mat-ligature-font.mat-icon-no-color {
+        font-size: 20px;
+
     }
 }

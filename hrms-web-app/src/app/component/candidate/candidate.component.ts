@@ -26,11 +26,11 @@ export class CandidateComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
-    { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },   
+    { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "emailAddress", tooltipField: "emailAddress" },
-        { field: "mobileNumber", },
-       { field: "relevantExperience", headerName: 'Relevant Exp' },
+    { field: "emailAddress", tooltipField: "emailAddress", minWidth: 300 },
+    { field: "mobileNumber", },
+    { field: "relevantExperience", headerName: 'Relevant Exp' },
     { field: "totalExperience", headerName: 'Totla Exp' },
 
     { field: "currentSalary", },
@@ -47,7 +47,7 @@ export class CandidateComponent {
   getData() {
     this.services.getData().subscribe((responce: any) => {
       this.rowData = responce.data;
-     
+
     })
   }
   pagination = true;
@@ -56,7 +56,7 @@ export class CandidateComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-    flex: 1,
+  flex: 1,
     minWidth: 120,
   };
 
@@ -86,15 +86,15 @@ export class CandidateComponent {
             this.getData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }
-    });  
-    
+    });
+
   }
-  
-  
+
+
   openAddForm() {
     const dialogRef = this.dialog.open(CandidateeComponent);
     dialogRef.afterClosed().subscribe({

@@ -8,11 +8,13 @@ import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 // import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
+import { MatIcon } from '@angular/material/icon';
+// import { MatCheckbox } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule,MatIcon],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
@@ -23,13 +25,19 @@ export class LoginComponent {
   router = inject(Router)
   toster = inject(ToastrService)
   constructor() { }
-
+ 
   login = this.formBuilder.group({
     id: 0,
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
   data!: any;
+  hide: boolean = true;
+
+togglePasswordVisibility() {
+  this.hide = !this.hide;
+}
+
   logindata() {
 
     if (this.login.invalid) {
@@ -70,7 +78,7 @@ export class LoginComponent {
           // localStorage.setItem('userEmail', this.login.value.email || '');
 
           this.toster.success('successfully login', 'success')
-          
+
           setTimeout(() => {
             this.toster.clear();
             this.router.navigateByUrl('index')
