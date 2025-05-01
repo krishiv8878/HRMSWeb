@@ -16,7 +16,7 @@ import { MatDividerModule } from '@angular/material/divider';
 @Component({
   selector: 'app-attendasedit',
   standalone: true,
-  imports: [MatInputModule, MatButtonModule, MatDividerModule, ReactiveFormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatIconModule, MatRadioModule, CommonModule],
+  imports: [MatInputModule, MatButtonModule,MatFormField, MatDividerModule, ReactiveFormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatIconModule, MatRadioModule, CommonModule],
   templateUrl: './attendasedit.component.html',
   styleUrl: './attendasedit.component.scss'
 })

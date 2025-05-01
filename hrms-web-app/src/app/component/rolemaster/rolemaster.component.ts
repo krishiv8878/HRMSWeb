@@ -48,7 +48,7 @@ export class RolemasterComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-  flex: 1,
+    flex: 1,
     minWidth: 120,
   };
 

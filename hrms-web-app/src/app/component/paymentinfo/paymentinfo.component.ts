@@ -30,11 +30,11 @@ export class PaymentinfoComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id",  },
-    { field: "employeeId",  },
-    { field: "bankName",  },
-    { field: "ifscCode",  },
-    { field: "accountNumber",  },
-    { field: "nameOnAccount",  },
+    { field: "employeeId", },
+    { field: "bankName", },
+    { field: "ifscCode", },
+    { field: "accountNumber", },
+    { field: "nameOnAccount", },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
 
@@ -90,7 +90,7 @@ export class PaymentinfoComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-  flex: 1,
+    flex: 1,
     minWidth: 150,
   };
   openAddForm() {

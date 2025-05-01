@@ -3,9 +3,7 @@
 }
 
 mat-nav-list {
-    margin-top: 2rem;
-    display: grid;
-    justify-content: center;
+    margin-top: 1rem;
 }
 
 mat-divider {
@@ -29,10 +27,27 @@ mat-divider {
 
 .side-menu {
     padding: 1rem;
+
+    &:hover {
+        background-color: #a2acf0;
+        color: black;
+        transition: 2s ease;
+    }
 }
 
 .item {
     color: white;
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    font-size: smaller;
+    text-align: center;
+    text-decoration: none;
+
+    &:hover {
+        transition: 2s ease;
+        color: black;
+    }
 }
 
 mat-icon.mat-icon.notranslate.material-icons.mat-ligature-font.mat-icon-no-color {

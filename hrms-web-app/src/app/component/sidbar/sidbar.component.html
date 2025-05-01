@@ -4,13 +4,8 @@
             <img src="assets/images/image.png" alt="" />
         </div>
         <mat-nav-list>
-            <!-- <mat-divider></mat-divider> -->
-
+                    
             <!-- <div class="side-menu">
-                <a class="item" [routerLink]="['/index/home']"><mat-icon>groups</mat-icon>Employees</a>
-            </div> -->
-            
-            <div class="side-menu">
                 <a class="item" [routerLink]="['/index/home']"><mat-icon [matMenuTriggerFor]="menu">groups</mat-icon>
                     <mat-menu #menu="matMenu" class="custom-menu">
                         <button mat-menu-item
@@ -20,17 +15,8 @@
                         <button mat-menu-item
                             [routerLink]="['/index/candidate']"><mat-icon>person_search</mat-icon>candidate</button>
                     </mat-menu></a>
-            </div>
+            </div> 
 
-            <!-- <div class="side-menu">
-                <a class="item" [routerLink]="['/index/services']"><mat-icon>build</mat-icon>services</a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/skill']"><mat-icon>psychology</mat-icon>skills</a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/candidate']"><mat-icon>person_search</mat-icon>candidates</a>
-            </div> -->
             <div class="side-menu">
                 <a class="item" [routerLink]="['/index/designation']"><mat-icon>badge</mat-icon></a>
             </div>
@@ -63,11 +49,16 @@
             </div>
             <div class="side-menu">
                 <a class="item" [routerLink]="['/index/leaveRequest']"><mat-icon>description</mat-icon> </a>
-            </div>
+            </div> -->
             <!-- <div class="side-menu">
                 <a class="item" href="/index/contact"><mat-icon>call</mat-icon>contact</a>
             </div> -->
-
+            <div class="side-menu" *ngFor="let item of menuItems">
+                <a class="item" [routerLink]='[item.route]' routerLinkActive="active">
+                    <mat-icon>{{item.icon}}</mat-icon>
+                    <span class="menu-text">{{item.label}}</span>
+                </a>
+            </div>
         </mat-nav-list>
     </div>
 </div>

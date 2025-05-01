@@ -16,13 +16,13 @@ mat-card {
     }
 }
 
-// .ag-root-wrapper {
-//     position: relative !important;
-// }
-
-.ag-paging-panel {
-    position: sticky;
-    bottom: 0;
-    background-color: white;
-    z-index: 1;   
+.ag-root-wrapper {
+    position: relative !important; 
 }
+
+// .ag-paging-panel {
+//     position: sticky;
+//     bottom: 0;
+//     background-color: white;
+//     z-index: 1;
+// }

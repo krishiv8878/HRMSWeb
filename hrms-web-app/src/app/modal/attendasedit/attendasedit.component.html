@@ -1,16 +1,16 @@
-<div class="aatend-form">
-    <div class="row">
-        <!-- <div class="col" (click)="closeDialog()" style="color: gray;">
+<!-- <div class="aatend-form">
+    <div class="row"> -->
+<!-- <div class="col" (click)="closeDialog()" style="color: gray;">
             <mat-icon style="font-size: xx;">close</mat-icon>
         </div> -->
-        <div class="col-xl-10">
+<!-- <div class="col-xl-10">
             <h4>Request Attendance Regularization</h4>
         </div>
         <mat-divider></mat-divider>
     </div>
 
     <form action="" [formGroup]="attendaseform" (ngSubmit)="submitdata()">
-        <div mat-dialog-content style="padding-top: 3rem;">
+        <div mat-dialog-content style="padding-top: 2rem;">
             <mat-label>Selected Date</mat-label>
             <mat-form-field class="full-width">
                 <input matInput [matDatepicker]="picker" formControlName="selectedDate">
@@ -21,7 +21,7 @@
                 <mat-radio-button value="add">Add/update time entries to adjust attendance logs.</mat-radio-button>
             </mat-radio-group>
 
-            <p style="padding-top: 3rem; color: gray;">Click and select time stamp box that you would like to adjust and
+            <p style="padding-top: 1rem; color: gray;">Click and select time stamp box that you would like to adjust and
                 make changes to the time</p>
 
             <div class="logs-section">
@@ -62,6 +62,64 @@
         <div mat-dialog-actions align="end" style="padding-top: 5rem; display: flex; gap: 2rem;">
             <button mat-raised-button (click)="closeDialog()"  style="border-radius: 0;">Cancel</button>
             <button mat-flat-button  style="border-radius: 0;">Request</button>
+        </div>
+    </form>
+</div> -->
+
+<div class="regularization-card">
+    <h2 class="title">Request Attendance Regularization</h2>
+    <mat-divider></mat-divider>
+
+    <form [formGroup]="attendaseform" (ngSubmit)="submitdata()">
+        <div class="section">
+            <mat-label>Selected Date</mat-label>
+            <mat-form-field appearance="outline" class="full-width">
+                <input matInput [matDatepicker]="picker" formControlName="selectedDate">
+                <mat-datepicker #picker></mat-datepicker>
+            </mat-form-field>
+        </div>
+
+        <div class="section">
+            <mat-radio-group formControlName="actionType">
+                <mat-radio-button value="add">Add/update time entries to adjust attendance logs.</mat-radio-button>
+            </mat-radio-group>
+            <p class="note">Click and select the time stamp box that you would like to adjust and make changes to the
+                time.</p>
+        </div>
+
+        <div class="section logs-section">
+            <p class="sub-title">Attendance Adjustment</p>
+            <button mat-raised-button color="primary" (click)="addLog()"  style="border-radius: 0;">+ Add Log</button>
+
+            <div *ngFor="let log of logs; let i = index" class="log-entry">
+                <mat-form-field appearance="outline">
+                    <mat-label>In Time</mat-label>
+                    <input matInput type="time" formControlName="clockIn">
+                </mat-form-field>
+
+                <mat-icon>arrow_forward</mat-icon>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Out Time</mat-label>
+                    <input matInput type="time" formControlName="clockOut">
+                </mat-form-field>
+
+                <button mat-icon-button color="warn" (click)="removeLog(i)">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <div class="section">
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Enter Note</mat-label>
+                <textarea matInput formControlName="regularizationReason" rows="4"></textarea>
+            </mat-form-field>
+        </div>
+
+        <div class="actions">
+            <button mat-raised-button color="warn" (click)="closeDialog()"  style="border-radius: 0;">Cancel</button>
+            <button mat-flat-button color="primary" type="submit"  style="border-radius: 0;">Request</button>
         </div>
     </form>
 </div>

@@ -24,8 +24,8 @@ export class LeavetypeComponent {
   public columnDefs: ColDef[] = [
     // { field: "id",},
     // { field: "leaveName",},
-    { field: "type",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "description",tooltipField:"description"},
+    { field: "type", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "description", tooltipField: "description" },
     // { field: "createdDate",},
     // { field: "createdBy",},
     // { field: "updatedDate",},
@@ -51,7 +51,7 @@ export class LeavetypeComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-  flex: 1,
+    flex: 1,
     minWidth: 120,
   };
 

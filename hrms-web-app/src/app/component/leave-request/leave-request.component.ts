@@ -18,7 +18,7 @@ import { LeavetypeService } from '../../services/leave/leavetype.service';
   styleUrl: './leave-request.component.scss'
 })
 export class LeaveRequestComponent {
-  constructor() { this.columnDefs}
+  constructor() { this.columnDefs }
   services = inject(EmailService)
   leaveservices = inject(LeavetypeService)
   dialog = inject(MatDialog)
@@ -27,14 +27,18 @@ export class LeaveRequestComponent {
   public columnDefs: ColDef[] = [
     // { field: "emailAddress" },
     // { field: "type" },
-    { field: "startDate",headerName:'From',valueFormatter: params => {
-      return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-    } },
-    { field: "endDate",headerName:'To',valueFormatter: params => {
-      return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-    } },
-    { field: "leaveReason",headerName:'Reason', },
-    { field: "isApproved", headerName:'Status' },
+    {
+      field: "startDate", headerName: 'From', valueFormatter: params => {
+        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+      }
+    },
+    {
+      field: "endDate", headerName: 'To', valueFormatter: params => {
+        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+      }
+    },
+    { field: "leaveReason", headerName: 'Reason', },
+    { field: "isApproved", headerName: 'Status' },
   ]
 
   ngOnInit() {
@@ -58,7 +62,7 @@ export class LeaveRequestComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-  flex: 1,
+    flex: 1,
     minWidth: 120,
   };
 

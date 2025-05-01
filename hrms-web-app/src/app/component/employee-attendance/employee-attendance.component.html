@@ -4,8 +4,10 @@
             <h2>Employee Attendance</h2>
         </div>
         <div class="col" style="display: flex; justify-content: end;">
-            <button mat-flat-button color="primary" (click)="onClockIn()"
-                style="border-radius: 0;"><mat-icon>access_time</mat-icon> Clock In</button>
+            <button mat-flat-button *ngIf="!isClockedIn" (click)="openClockInDialog()"
+                style="border-radius: 0;"><mat-icon>access_time</mat-icon>Clock-In</button>
+            <button mat-flat-button *ngIf="isClockedIn" (click)="onClockOut()"
+                style="border-radius: 0;">Clock-Out</button>
         </div>
     </div>
 </div>
@@ -29,7 +31,8 @@
     <div class="ag-theme-quartz">
         <ag-grid-angular style="width: 100%; height: 85vh;" [rowData]="rowData" [columnDefs]="columnDefs"
             class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-            [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector">
+            [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector"
+            [getRowStyle]="getRowStyle">
         </ag-grid-angular>
     </div>
 </div>
