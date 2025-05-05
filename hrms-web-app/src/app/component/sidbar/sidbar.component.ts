@@ -29,7 +29,7 @@ export class SidbarComponent {
     { label: 'TIME TRKD', icon: 'event_available', route: '/index/attendance' },
     // { label: 'SHIFT', icon: 'schedule', route: '/index/shift' },
     // { label: 'PAYROLL', icon: 'account_balance_wallet', route: '/index/paymentinfo' },
-    // { label: 'DOCS', icon: 'description', route: '/index/document' },
+    { label: 'DOCS', icon: 'description', route: '/index/document' },
     // { label: 'APPS', icon: 'description', route: '/index/leaveRequest' },
   ];
 }

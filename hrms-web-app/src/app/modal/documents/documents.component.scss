@@ -1,0 +1,65 @@
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    p {
+        font-size: 20px;
+    }
+}
+
+.upload-content mat-icon {
+    font-size: 40px;
+    color: #3f51b5;
+    width: auto;
+    height: auto;
+}
+
+.upload-content a {
+    color: #3f51b5;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+
+
+.form {
+    padding: 2vw;
+    height: auto;
+
+
+    p {
+        text-transform: capitalize;
+        font-size: 20px;
+        font-weight: 500;
+        text-align: center;
+    }
+}
+
+.full-width {
+    width: 100% !important;
+}
+
+.upload-area {
+    border: 2px dashed #ccc;
+    text-align: center;
+    margin: 20px 0;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+
+    &:hover {
+        border-color: #3f51b5;
+    }
+}
+
+.file-types {
+    font-size: 12px;
+    color: #777;
+    margin-top: 10px;
+}
+
+button {
+    width: 100%;
+}
