@@ -1,52 +1,55 @@
 form {
-    display: inline-grid;
-    justify-content: center;
-    align-items: center;
-    top: 50%;
-    position: absolute;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0.1rem 0.1rem 1rem #80808a59;
-    // width: 25%;
-    padding: 1.5rem;
-    border-radius: 10px;
+  display: inline-grid;
+  justify-content: center;
+  align-items: center;
+  top: 50%;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0.1rem 0.1rem 1rem #80808a59;
+  // width: 25%;
+  padding: 1.5rem;
+  border-radius: 10px;
 }
 
 .login-form {
-    display: grid;
-    width: 17.5rem;
+  display: grid;
+  width: 17.5rem;
 }
 
 p {
-    font-weight: 500;
-    text-transform: capitalize;
-    font-size: 24px;
-    text-align: center;
+  font-weight: 500;
+  text-transform: capitalize;
+  font-size: 24px;
+  text-align: center;
 }
- 
+
 .login-btn {
-    display: flex;
-    justify-content: center;
+  display: flex;
+  justify-content: center;
 }
 
 .login-btn button {
-    padding: 10px 20px;
-    border: none;
-    outline: none;
-    background: linear-gradient(90deg, #1E72C2, #015BB1);
-    color: white;
-    text-transform: capitalize;
-    font-weight: 500;
-    font-size: 15px;
+  padding: 10px 20px;
+  border: none;
+  outline: none;
+  background: linear-gradient(90deg, #1E72C2, #015BB1);
+  // color: white;
+  text-transform: capitalize;
+  // font-weight: 500;
+  font-size: 15px;
+  width: 100%;
+  border-radius: 2px;
 }
 
 .login-btn button:hover {
-    transition: 2s ease;
-    box-shadow: 0 12px 25px 5px rgba(0, 0, 0, 0.25);
+  transition: 2s ease;
+  box-shadow: 0 12px 25px 5px rgba(0, 0, 0, 0.25);
 }
 
 .login-info {
-    font-size: 15px;
+  font-size: 15px;
+  padding-top: 1rem;
 }
 
 // @media only screen and (max-width: 600px) {

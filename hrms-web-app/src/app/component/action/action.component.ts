@@ -10,8 +10,8 @@ import {MatDialogModule} from '@angular/material/dialog';
   standalone: true,
   imports: [MatIconModule, MatDialogModule],
   template: `<div class="button">
-  <button class="edit" (click)="onEdit(params.data)"><mat-icon>edit</mat-icon></button> 
-  <button class="delete" (click)="onDelete(params.data)"><mat-icon>delete</mat-icon></button>
+  <button class="edit" (click)="onEdit(params.data)"><mat-icon class="material-icons-outlined">edit</mat-icon></button> 
+  <button class="delete" (click)="onDelete(params.data)"><mat-icon>delete_outline</mat-icon></button>
   </div> `,
   styleUrl: './action.component.scss'
 })

@@ -66,11 +66,11 @@ export class AssetsmastersComponent {
     if (this.Assets.invalid) {
       this.Assets.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        assetsMasterName: "Name is Required",
-        description: "Description is Required",
-        serialNumber: "Serial Number is Required",
-        dateOfPurchase: "Date is Required",    
-        isActive:" Please select a Active Button"    
+        assetsMasterName: "Name Is Required",
+        description: "Description Is Required",
+        serialNumber: "Serial Number Is Required",
+        dateOfPurchase: "Date Is Required",    
+       // isActive:"Please select a Active Button"    
       };
 
       for (const field in errorMessages) {
@@ -85,7 +85,7 @@ export class AssetsmastersComponent {
       this.services.updateData(this.Assets.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Assets Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -95,7 +95,7 @@ export class AssetsmastersComponent {
       this.services.createData(this.Assets.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success(' Assets Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

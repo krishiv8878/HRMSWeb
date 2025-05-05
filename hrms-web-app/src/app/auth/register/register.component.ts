@@ -25,7 +25,7 @@ export class RegisterComponent {
   // http = inject(HttpClient)
   toaster = inject(ToastrService)
   // In your component.ts file
-  hide = true;
+  // hide = true;
 
   registretion = this.formBuilder.group({
     id: 0,
@@ -37,7 +37,11 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
   ngOnInit() { }
+  hide: boolean = true;
 
+  togglePasswordVisibility() {
+    this.hide = !this.hide;
+  }
   noWhitespaceValidator(control: any) {
     return control.value?.trim() === '' ? { 'whitespace': true } : null;
   }
@@ -63,12 +67,12 @@ export class RegisterComponent {
     if (this.registretion.invalid) {
       this.registretion.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        FirstName: "First Name is Required",
-        LastName: "Last Name is Required",
+        FirstName: "First Name Is Required",
+        LastName: "Last Name Is Required",
         email: "Enter Valid Email",
         mobileNumber: "Mobile Number Must Be 10 Digits",
-        Address: " Address is Required",
-        password: "Password is Required",
+        Address: " Address Is Required",
+        password: "Password Is Required",
       };
 
       for (const field in errorMessages) {

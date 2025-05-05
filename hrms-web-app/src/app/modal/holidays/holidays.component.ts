@@ -57,9 +57,9 @@ export class HolidaysComponent {
     if (this.Holidayform.invalid) {
       this.Holidayform.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        holidayName: "Holiday Name is Required",
-        description: "Description is Required",
-        isActive: " Please select a Active Button"
+        holidayName: "Holiday Name Is Required",
+        description: "Description Is Required",
+       //isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -74,7 +74,7 @@ export class HolidaysComponent {
       this.services.updateHoliday(this.Holidayform.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Holiday Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -84,7 +84,7 @@ export class HolidaysComponent {
       this.services.createHoliday(this.Holidayform.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success(' Holiday Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

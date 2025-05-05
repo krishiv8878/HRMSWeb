@@ -74,11 +74,11 @@ export class RolemasterComponent {
       if (confirmed) {
         this.services.DeleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('RoleMaster Record Successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

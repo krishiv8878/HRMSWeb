@@ -78,28 +78,28 @@ export class CandidateeComponent {
     if (this.CandidateForm.invalid) {
       this.CandidateForm.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        firstName: "First Name is Required",
-        lastName: "Last Name is Required",
+        firstName: "First Name Is Required",
+        lastName: "Last Name Is Required",
         // emailAddress: "Enter Valid Email",
         // mobileNumber: "Mobile Number Must Be 10 Digits",
         emailAddress: this.getControl('emailAddress')?.hasError('required')
-          ? "Email Address is required"
+          ? "Email Address Is Required"
           : this.getControl('emailAddress')?.hasError('email')
             ? "Enter a valid email address (e.g., user@example.com)"
             : "",
 
         mobileNumber: this.getControl('mobileNumber')?.hasError('required')
-          ? "Mobile Number is required"
+          ? "Mobile Number Is Required"
           : this.getControl('mobileNumber')?.hasError('pattern')
             ? "Mobile Number must be 10 digits"
             : "Invalid Mobile Number",
 
-        totalExperience: "Total Experience is Required",
-        relevantExperience: "Relevant Experience is Required",
-        expectedSalary: "Expected Salary is Required",
-        currentSalary: "Current Salary is Required",
-        noticePeriod: "Notice Period is Required",
-        isActive: " Please select a Active Button"
+        totalExperience: "Total Experience Is Required",
+        relevantExperience: "Relevant Experience Is Required",
+        expectedSalary: "Expected Salary Is Required",
+        currentSalary: "Current Salary Is Required",
+        noticePeriod: "Notice Period Is Required",
+       //isActive: " Please select a Active Button"
 
       };
 
@@ -115,7 +115,7 @@ export class CandidateeComponent {
       this.services.updateData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Candidate Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -125,7 +125,7 @@ export class CandidateeComponent {
       this.services.createData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success(' Candidate Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

@@ -55,7 +55,7 @@ export class SkillComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-    flex: 1,
+  flex: 1,
     minWidth: 120,
   };
 
@@ -81,11 +81,11 @@ export class SkillComponent {
       if (confirmed) {
         this.services.DeleteSkill(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Skill Record Successfully Deleted ', 'Delete');
             this.getSkill();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

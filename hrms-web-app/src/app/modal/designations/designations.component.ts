@@ -55,7 +55,7 @@ export class DesignationsComponent {
     if (this.designation.invalid) {
       this.designation.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        designationName: "Designation Name is Required",
+        designationName: "Designation Name Is Required",
          isActive:" Please select a Active Button"
       };
 
@@ -71,7 +71,7 @@ export class DesignationsComponent {
       this.services.updateData(this.designation.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Designation Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -81,7 +81,7 @@ export class DesignationsComponent {
       this.services.createData(this.designation.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success('Designation Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

@@ -15,9 +15,11 @@ export class DocumentService {
   getAll() {
     return this.http.get<any[]>(this.apiUrl + `/EmployeeDocument/GetAllDocumentsInfo`)
   }
-
-  viewDocument(id: number):Observable<any> {
+  creatDocument(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/EmployeeDocument/UploadDocument`, data)
+  }
+  viewDocument(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/EmployeeDocument/view/${id}`, { responseType: 'blob' });
   }
-  
+
 }

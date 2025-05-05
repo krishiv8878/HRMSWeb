@@ -1,1 +1,33 @@
-<p>documents works!</p>
+<div class="form">
+    <form action="" [formGroup]="documentForm" (ngSubmit)="onSubmit()">
+        <p>add documents</p>
+        <div class="employee-form">
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Document Name</mat-label>
+                        <input type="text" matInput name="documentName" placeholder="Enter Document Name"
+                            formControlName="documentName">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="upload-area" appDragDrop>
+                        <input type="file" #fileInput hidden accept=".doc,.docx" formControlName="filePath" />
+                        <div class="upload-content">
+                            <mat-icon>cloud_upload</mat-icon>
+                            <p>Drag and Drop here</p>
+                            <span>or</span>
+                            <a>Browse files</a>
+                            <p class="file-types">Accepted File Types: .doc and .docx only</p>
+                        </div>
+                    </div>
+
+                    <button mat-flat-button color="primary" type="submit" style="border-radius: 0;">Upload</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

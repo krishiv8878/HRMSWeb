@@ -1,28 +1,68 @@
-// * {
-//     overflow: hidden;
+// // * {
+// //     overflow: hidden;
+// // }
+
+// .aatend-form{
+//     padding: 2rem 3rem;
 // }
 
-.aatend-form{
-    padding: 2rem 3rem;
+// .full-width {
+//     width: 100%;
+// }
+
+// .logs-section {
+//     margin-top: 10px;
+// }
+
+// .log-entry {
+//     display: flex;
+//     align-items: center;
+//     gap: 10px;
+//     margin-bottom: 8px;
+//     padding-top: 2rem;
+// }
+// p{
+//     font-size: 15px;
+//     text-transform: capitalize;
+//     font-weight: 600;   
+// }
+.regularization-card {
+    padding: 2rem;
+    border-radius: 16px;
+    background: white;
+}
+
+.title {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2e3c52;
+}
+
+.section {
+    margin-top: 2rem;
+}
+
+.note {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+}
+
+.logs-section .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
 .full-width {
     width: 100%;
 }
 
-.logs-section {
-    margin-top: 10px;
-}
-
-.log-entry {
+.actions {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-    padding-top: 2rem;
-}
-p{
-    font-size: 15px;
-    text-transform: capitalize;
-    font-weight: 600;   
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 3rem;
 }

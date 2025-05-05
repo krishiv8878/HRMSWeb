@@ -67,11 +67,11 @@ export class PaymeenInfoComponent {
     if (this.paymentinfo.invalid) {
       this.paymentinfo.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
-        bankName: "Bank Name is Required",
+        bankName: "Bank Name Is Required",
         ifscCode: "Please Enter A Valid IFSC Code",
         accountNumber: "Enter Account Number",
         nameOnAccount: "Enter Account Name",
-        isActive: " Please select a Active Button"
+       //isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -87,7 +87,7 @@ export class PaymeenInfoComponent {
       this.services.updateData(this.paymentinfo.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('successfully update data', 'success')
+          this.toaster.success('Payment Recode Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -97,7 +97,7 @@ export class PaymeenInfoComponent {
       this.services.createData(this.paymentinfo.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('successfully add data', 'success')
+          this.toaster.success('Payment Recode Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

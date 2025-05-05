@@ -4,57 +4,61 @@
             <img src="assets/images/image.png" alt="" />
         </div>
         <mat-nav-list>
-            <!-- <mat-divider></mat-divider> -->
+                    
+            <!-- <div class="side-menu">
+                <a class="item" [routerLink]="['/index/home']"><mat-icon [matMenuTriggerFor]="menu">groups</mat-icon>
+                    <mat-menu #menu="matMenu" class="custom-menu">
+                        <button mat-menu-item
+                            [routerLink]="['/index/services']"><mat-icon>build</mat-icon>services</button>
+                        <button mat-menu-item [routerLink]="['/index/skill']"><mat-icon>psychology</mat-icon>skill
+                        </button>
+                        <button mat-menu-item
+                            [routerLink]="['/index/candidate']"><mat-icon>person_search</mat-icon>candidate</button>
+                    </mat-menu></a>
+            </div> 
 
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/home']"><mat-icon>groups</mat-icon>Employees</a>
+                <a class="item" [routerLink]="['/index/designation']"><mat-icon>badge</mat-icon></a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/services']"><mat-icon>build</mat-icon>services</a>
+                <a class="item" [routerLink]="['/index/holiday']"><mat-icon>beach_access</mat-icon></a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/skill']"><mat-icon>psychology</mat-icon>skills</a>
+                <a class="item" [routerLink]="['/index/leavetype']"><mat-icon>event_busy</mat-icon></a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/candidate']"><mat-icon>person_search</mat-icon>candidates</a>
+                <a class="item" [routerLink]="['/index/assets']"><mat-icon>inventory</mat-icon> </a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/designation']"><mat-icon>badge</mat-icon>designations</a>
+                <a class="item" [routerLink]="['/index/project']"><mat-icon>assignment</mat-icon></a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/holiday']"><mat-icon>beach_access</mat-icon>holidays</a>
+                <a class="item" [routerLink]="['/index/rolemaster']"><mat-icon>supervisor_account</mat-icon> </a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/leavetype']"><mat-icon>event_busy</mat-icon>leaveTypes</a>
+                <a class="item" [routerLink]="['/index/attendance']"><mat-icon>event_available</mat-icon> </a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/assets']"><mat-icon>inventory</mat-icon>assets Masters</a>
+                <a class="item" [routerLink]="['/index/shift']"><mat-icon>schedule</mat-icon></a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/project']"><mat-icon>assignment</mat-icon>projects</a>
+                <a class="item" [routerLink]="['/index/paymentinfo']"><mat-icon>account_balance_wallet</mat-icon> </a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/rolemaster']"><mat-icon>supervisor_account</mat-icon>Role Masters</a>
+                <a class="item" [routerLink]="['/index/document']"><mat-icon>description</mat-icon></a>
             </div>
             <div class="side-menu">
-                <a class="item" [routerLink]="['/index/attendance']"><mat-icon>event_available</mat-icon>Employee Attendance</a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/shift']"><mat-icon>schedule</mat-icon>Shifts</a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/paymentinfo']"><mat-icon>account_balance_wallet</mat-icon>Payment Info</a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/document']"><mat-icon>description</mat-icon>Document</a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/leaveRequest']"><mat-icon>description</mat-icon>Leave Request</a>
-            </div>
+                <a class="item" [routerLink]="['/index/leaveRequest']"><mat-icon>description</mat-icon> </a>
+            </div> -->
             <!-- <div class="side-menu">
                 <a class="item" href="/index/contact"><mat-icon>call</mat-icon>contact</a>
             </div> -->
-
+            <div class="side-menu" *ngFor="let item of menuItems">
+                <a class="item" [routerLink]='[item.route]' routerLinkActive="active">
+                    <mat-icon>{{item.icon}}</mat-icon>
+                    <span class="menu-text">{{item.label}}</span>
+                </a>
+            </div>
         </mat-nav-list>
     </div>
 </div>

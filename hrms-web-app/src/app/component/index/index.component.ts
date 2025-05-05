@@ -21,8 +21,8 @@ export class IndexComponent {
     this.breakpointObserver.observe([Breakpoints.Handset])
       .subscribe(result => {
         if (result.matches) {
-          this.drawerMode = 'over';
-          this.sidebaropen = false; // close on mobile by default
+          this.drawerMode = 'side';
+          this.sidebaropen = true; // close on mobile by default
         } else {
           this.drawerMode = 'side';
           this.sidebaropen = true; // open on desktop

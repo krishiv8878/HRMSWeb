@@ -54,7 +54,7 @@ export class DesignationComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-    flex: 1,
+  flex: 1,
     minWidth: 120,
   };
 
@@ -79,11 +79,11 @@ export class DesignationComponent {
       if (confirmed) {
         this.services.DeleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Designation Record Successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

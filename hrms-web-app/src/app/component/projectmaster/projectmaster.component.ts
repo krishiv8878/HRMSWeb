@@ -25,10 +25,10 @@ export class ProjectmasterComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id", floatingFilter: true, filter: true },
-    { field: "clientName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "clientRegion",},
-    { field: "projectName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "description",tooltipField:"description"},
+    { field: "clientName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "clientRegion", },
+    { field: "projectName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "description", tooltipField: "description" },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="font-size: x-large; color: red; "></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ];
@@ -41,7 +41,7 @@ export class ProjectmasterComponent {
     this.services.getAllData().subscribe((response: any) => {
       this.rowData = response.data;
       console.log(response)
-    }) 
+    })
   }
   rowData: any;
   pagination = true;
@@ -75,11 +75,11 @@ export class ProjectmasterComponent {
       if (confirmed) {
         this.services.DeleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Project Record Successfully Deleted ', 'Delete');
             this.getData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

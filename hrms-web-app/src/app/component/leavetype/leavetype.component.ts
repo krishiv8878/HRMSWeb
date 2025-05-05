@@ -24,8 +24,8 @@ export class LeavetypeComponent {
   public columnDefs: ColDef[] = [
     // { field: "id",},
     // { field: "leaveName",},
-    { field: "type",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "description",tooltipField:"description"},
+    { field: "type", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "description", tooltipField: "description" },
     // { field: "createdDate",},
     // { field: "createdBy",},
     // { field: "updatedDate",},
@@ -76,11 +76,11 @@ export class LeavetypeComponent {
       if (confirmed) {
         this.services.DeleteData(DesignationId).subscribe({
           next: () => {
-            this.toaster.success('Record deleted successfully!', 'Delete');
+            this.toaster.success('Leave Record Successfully Deleted ', 'Delete');
             this.getAllData();
           },
           error: () => {
-            this.toaster.error('Failed to delete the record', 'Error');
+            this.toaster.error('Failed To Delete The Record', 'Error');
           }
         });
       }

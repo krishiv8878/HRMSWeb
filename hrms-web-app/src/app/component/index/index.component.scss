@@ -1,17 +1,24 @@
+*{
+    overflow-x: hidden;
+}
+
 mat-drawer-container {
     height: 100vh;
 }
 
 mat-drawer {
-    width: 250px;
+    width: 6rem;
     background: linear-gradient(90deg, #015BB1, #1E72C2);
     color: white;
     position: fixed;
     border-radius: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
 }
 
 @media (max-width: 768px) {
     mat-drawer {
-        width: 200px;
+        width: 4rem;
     }
 }
