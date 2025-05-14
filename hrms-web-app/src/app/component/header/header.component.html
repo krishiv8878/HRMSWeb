@@ -12,8 +12,8 @@
       </div>
       <mat-icon [matMenuTriggerFor]="menu">keyboard_arrow_down</mat-icon>
       <mat-menu #menu="matMenu" class="custom-menu">
-        <button mat-menu-item><mat-icon>person</mat-icon>Add Profile</button>        
-        <button routerLink="/login" mat-menu-item> <mat-icon>power_settings_new</mat-icon>Log Out</button>
+        <button mat-menu-item [routerLink]="['/index/user-profile']"><mat-icon>person</mat-icon>Add Profile</button>        
+        <button [routerLink]='["/login"]' mat-menu-item> <mat-icon>power_settings_new</mat-icon>Log Out</button>
       </mat-menu>
       <!-- <button routerLink="login"><mat-icon>person</mat-icon>logout</button> -->
     </div>

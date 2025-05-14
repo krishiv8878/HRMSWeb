@@ -19,6 +19,7 @@ import { PaymentinfoComponent } from './component/paymentinfo/paymentinfo.compon
 import { ShiftemployeeComponent } from './component/shiftemployee/shiftemployee.component';
 import { DocumentComponent } from './component/document/document.component';
 import { LeaveRequestComponent } from './component/leave-request/leave-request.component';
+import { UserprofileComponent } from './modal/userprofile/userprofile.component';
 
 
 export const routes: Routes = [
@@ -84,6 +85,9 @@ export const routes: Routes = [
             },
             {
                 path: 'leaveRequest', component: LeaveRequestComponent
+            },
+            {
+                path:'user-profile', component:UserprofileComponent
             }
         ]
     }
