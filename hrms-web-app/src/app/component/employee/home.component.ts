@@ -34,14 +34,14 @@ export class HomeComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "id" },
-    { field: "firstName" ,valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "lastName",valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : ''  },
-    { field: "emailAddress", tooltipField: "emailAddress"},
+    { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
+    { field: "emailAddress", tooltipField: "emailAddress", minWidth: 300 },
     { field: "mobileNumber" },
-    { field: "permanentAddress", tooltipField: "permanentAddress",headerName:"Per.Address" },
-    { field: "currentAddress", tooltipField: "currentAddress",headerName:"Cur.Address" },   
+    { field: "permanentAddress", tooltipField: "permanentAddress", headerName: "Per.Address" },
+    { field: "currentAddress", tooltipField: "currentAddress", headerName: "Cur.Address" },
     {
-      field: "dateOfJoining",headerName:'Joinig Date', valueFormatter: params => {
+      field: "dateOfJoining", headerName: 'Joinig Date', valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
@@ -65,7 +65,7 @@ export class HomeComponent {
   getAllData() {
     this.service.getData().subscribe((response: any) => {
       this.rowData = response.data;
-    
+
       // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
       console.log('rowww data', this.rowData)
     })
@@ -77,7 +77,7 @@ export class HomeComponent {
 
   defaultColDef: ColDef = {
     resizable: true,
-   flex: 1,
+    flex: 1,
     minWidth: 120,
   };
 
@@ -93,12 +93,12 @@ export class HomeComponent {
 
   }
 
- Delete(employeeId: any) {
+  Delete(employeeId: any) {
     const dialogRef = this.dialog.open(DeleteModalComponent, {
       width: '350px',
       data: { id: employeeId }
     });
-  
+
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
         this.service.DeleteData(employeeId).subscribe({

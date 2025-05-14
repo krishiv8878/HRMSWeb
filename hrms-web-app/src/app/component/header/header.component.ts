@@ -6,11 +6,12 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 // import { RouterLink } from '@angular/router';
 import {MatMenuModule} from '@angular/material/menu';
 import {RouterLink} from '@angular/router'
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [MatToolbarModule,MatIconModule,MatSlideToggleModule,MatMenuModule,RouterLink],
+  imports: [MatToolbarModule,MatIconModule,MatSlideToggleModule,MatMenuModule,RouterLink,CommonModule],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss'
 })
