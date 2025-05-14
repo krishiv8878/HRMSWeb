@@ -20,6 +20,7 @@ import { ShiftemployeeComponent } from './component/shiftemployee/shiftemployee.
 import { DocumentComponent } from './component/document/document.component';
 import { LeaveRequestComponent } from './component/leave-request/leave-request.component';
 import { UserprofileComponent } from './modal/userprofile/userprofile.component';
+import { authGuard } from './auth.guard';
 
 
 export const routes: Routes = [
@@ -33,7 +34,7 @@ export const routes: Routes = [
         path: 'register', component: RegisterComponent,
     },
     {
-        path: 'index', component: IndexComponent, children: [
+        path: 'index', component: IndexComponent,canActivate:[authGuard], children: [
 
             {
                 path: 'home', component: HomeComponent

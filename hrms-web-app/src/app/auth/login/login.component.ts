@@ -14,7 +14,7 @@ import { MatIcon } from '@angular/material/icon';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule,MatIcon],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule, MatIcon],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
@@ -25,7 +25,7 @@ export class LoginComponent {
   router = inject(Router)
   toster = inject(ToastrService)
   constructor() { }
- 
+
   login = this.formBuilder.group({
     id: 0,
     email: ['', [Validators.required, Validators.email]],
@@ -34,9 +34,9 @@ export class LoginComponent {
   data!: any;
   hide: boolean = true;
 
-togglePasswordVisibility() {
-  this.hide = !this.hide;
-}
+  togglePasswordVisibility() {
+    this.hide = !this.hide;
+  }
 
   logindata() {
 
@@ -72,10 +72,7 @@ togglePasswordVisibility() {
         next: (res) => {
           console.log("ress", res)
 
-          //  Store ID from res.data
-          // localStorage.setItem('userId', res.data);
-          //  Store email from form value
-          // localStorage.setItem('userEmail', this.login.value.email || '');
+          localStorage.setItem('LoginTokan', res.data.token);
 
           this.toster.success('successfully login', 'success')
 
