@@ -43,7 +43,7 @@ export class ProjectComponent {
 
   ngOnInit() {
     this.countries = getNames();
-    // this.project.patchValue(this.data);
+    this.project.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
     }

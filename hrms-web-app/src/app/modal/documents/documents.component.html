@@ -1,31 +1,37 @@
 <div class="form">
-    <form action="" [formGroup]="documentForm" (ngSubmit)="onSubmit()">
+    <form [formGroup]="documentForm" (ngSubmit)="onSubmit()">
         <p>add documents</p>
+
         <div class="employee-form">
+            <!-- Document Name Field -->
             <div class="row">
                 <div class="col">
                     <mat-form-field appearance="outline" class="full-width">
                         <mat-label>Document Name</mat-label>
-                        <input type="text" matInput name="documentName" placeholder="Enter Document Name"
-                            formControlName="documentName">
+                        <input type="text" matInput formControlName="documentName" placeholder="Enter Document Name" />
                     </mat-form-field>
                 </div>
             </div>
 
+            <!-- File Upload -->
             <div class="row">
                 <div class="col">
-                    <div class="upload-area" appDragDrop>
-                        <input type="file" #fileInput hidden accept=".doc,.docx" formControlName="filePath" />
-                        <div class="upload-content">
+                    <div class="upload-area">
+                        <input type="file" #fileInput hidden (change)="onFileSelected($event)"
+                            accept=".doc,.docx,.pdf" />
+                        <div class="upload-content" (click)="fileInput.click()">
                             <mat-icon>cloud_upload</mat-icon>
                             <p>Drag and Drop here</p>
                             <span>or</span>
                             <a>Browse files</a>
-                            <p class="file-types">Accepted File Types: .doc and .docx only</p>
+                            <p class="file-types">Accepted File Types: .doc, .docx, .pdf</p>
+                            <p *ngIf="selectedFileName">{{ selectedFileName }}</p>
                         </div>
                     </div>
-
-                    <button mat-flat-button color="primary" type="submit" style="border-radius: 0;">Upload</button>
+                    <button mat-flat-button color="primary" type="submit"
+                        [disabled]="!documentForm.valid || !selectedFile">
+                        Upload
+                    </button>
                 </div>
             </div>
         </div>
