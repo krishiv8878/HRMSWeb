@@ -97,18 +97,8 @@ export class EmployeeAttendanceComponent {
 
   ngOnInit() {
     this.getAllData();
-
-    const storedClockIn = localStorage.getItem('clockInTime');
-    const isClockedInStored = localStorage.getItem('isClockedIn');
-
-    if (storedClockIn && isClockedInStored === 'true') {
-      this.firstClockIn = new Date(storedClockIn);
-      this.isClockedIn = true;
-    }
   }
 
-
-  // Open edit modal for selected row
   openGrossModal(params: any) {
     if (params.data?.Date) {
       this.dialog.open(AttendaseditComponent, {
