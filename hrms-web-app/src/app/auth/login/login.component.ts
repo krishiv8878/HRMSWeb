@@ -71,7 +71,7 @@ export class LoginComponent {
       this.services.createLogin(this.login.value).subscribe({
         next: (res) => {
           console.log("ress", res)
-
+          localStorage.setItem('employeeId', res.data)
           localStorage.setItem('LoginTokan', res.data.token);
 
           this.toster.success('successfully login', 'success')

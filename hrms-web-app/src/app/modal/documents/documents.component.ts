@@ -26,13 +26,43 @@ export class DocumentsComponent {
 
   documentForm = this.formbuilder.group({
     documentName: ['', [Validators.required]],
-    filePath: ['']
+    // filePath: ['']
   })
+
+  selectedFile: File | null = null;
+  selectedFileName: string = '';
+
+  // Handle file selection
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+      this.selectedFileName = this.selectedFile.name;
+    }
+  }
+
+  // Submit form data + file using FormData
   onSubmit() {
-    this.services.creatDocument(this.documentForm.value).subscribe({
-      next: (val) => {
-        this.toster.success('Designation Recode Successfully Added', 'success')
+    if (!this.documentForm.valid || !this.selectedFile) return;
+    // debugger;
+    if (this.documentForm.invalid) {
+      return;
+    }
+    const formData = new FormData();
+    formData.append('documentName', this.documentForm.value.documentName??'');
+    formData.append('file', this.selectedFile);
+
+    this.services.creatDocument(formData).subscribe({
+      next: () => {
+        this.toster.success('Document uploaded successfully!', 'Success');
+        this.documentForm.reset();
+        this.selectedFile = null;
+        this.selectedFileName = '';
+      },
+      error: (err) => {
+        this.toster.error('Upload failed', 'Error');
+        console.error(err);
       }
-    })
+    });
   }
 }

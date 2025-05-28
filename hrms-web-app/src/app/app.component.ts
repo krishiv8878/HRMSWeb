@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -10,4 +10,9 @@ import { RouterOutlet } from '@angular/router';
 })
 export class AppComponent {
   title = 'hrms-web-app';
+  // @HostListener('window:beforeunload', ['$event'])
+  handleTabClose(event: Event) {
+    // Optional: remove auth token or update last activity
+    localStorage.removeItem('LoginTokan');
+  }
 }

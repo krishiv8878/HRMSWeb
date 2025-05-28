@@ -106,7 +106,7 @@ export class CandidateeComponent {
       for (const field in errorMessages) {
         const control = this.CandidateForm.get(field);
         if (control?.invalid) {
-          this.toaster.error(errorMessages[field], "Validation Error");
+          this.toaster.error(errorMessages[field], "Validation Error");0
           return;
         }
       }
