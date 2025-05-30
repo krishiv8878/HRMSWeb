@@ -21,6 +21,6 @@ export class EmployeeshiftService {
     return this.http.put<any[]>(this.apiUrl + `/Shift/UpdateShift/`+shiftId, data)
   }
   deleteData(shiftId: any) {
-    return this.http.delete(this.apiUrl + `/Shift/DeleteShift/`+ shiftId)
+    return this.http.delete(this.apiUrl + `/Shift/DeleteShift?id=`+ shiftId)
   }
 }

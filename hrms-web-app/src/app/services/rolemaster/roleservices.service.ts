@@ -20,6 +20,6 @@ export class RoleservicesService {
     return this.http.put<any[]>(this.apiUrl + `/RoleMaster/UpdateRole/`+RoleId, data);
   }
   DeleteData(RoleMasterId: any) {
-    return this.http.delete(this.apiUrl + `/RoleMaster/DeleteRole?RoleId=` + RoleMasterId);
+    return this.http.delete(this.apiUrl + `/RoleMaster/DeleteRole/` + RoleMasterId);
   }
 }
