@@ -16,8 +16,8 @@ export class LeavetypeService {
   createData(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/LeaveType/AddLeaveType`, data)
   }
-  updateData(data: any, LeaveTypeId: any) {
-    return this.http.put<any[]>(this.apiUrl + `/LeaveType/UpdateLeaveType/` + LeaveTypeId, data);
+  updateData(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/LeaveType/UpdateLeaveType/` , data);
   }
   DeleteData(LeaveTypeId: any) {
     return this.http.delete(this.apiUrl + `/LeaveType/DeleteLeaveType?LeaveTypeId=` + LeaveTypeId);
