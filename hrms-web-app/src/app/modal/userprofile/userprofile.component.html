@@ -26,10 +26,10 @@
                     <mat-card-subtitle class="mt-3">
                         <p><strong>Phone:</strong> {{employedata?.mobileNumber}}</p>
                         <p><strong>Email:</strong> {{employedata?.emailAddress}}</p>
-                        <p><strong>Birthday:</strong> {{employedata?.dateOfBirth}}</p>
+                        <p><strong>Birthday:</strong> {{employedata?.dateOfBirth | date:'yy/dd/mm'}}</p>
                         <p><strong>Address:</strong> {{employedata?.currentAddress}}</p>
                         <p><strong>Gender:</strong> {{employedata?.gender}}</p>
-                        <p><strong>Date of Join:</strong> {{employedata?.dateOfJoining}}</p>
+                        <p><strong>Date of Join:</strong> {{employedata?.dateOfJoining | date:'yy/dd/mm'}}</p>
                         <p><strong>Employee ID:</strong> {{employedata?.employeeCode}}</p>
                     </mat-card-subtitle>
                 </mat-card-header>
@@ -97,7 +97,7 @@
 
         <!-- Bank and Passport Info -->
         <div class="row" style="display: flex; justify-content:space-evenly;">
-            <mat-card class="col-xl-5 mt-3" >
+            <mat-card class="col-xl-5 mt-3" *ngIf="paymentdata">
                 <mat-card-header>
                     <mat-card-title>Bank Information</mat-card-title>
                     <mat-card-subtitle class="mt-3">
@@ -105,7 +105,7 @@
                         <p><strong>Account Number:</strong> {{paymentdata?.accountNumber}}</p>
                         <p><strong>Bank Name:</strong> {{paymentdata?.bankName}}</p>
                         <p><strong>IFSC Code:</strong> {{paymentdata?.ifscCode}}</p>
-                        <p><strong>Branch:</strong> {{paymentdata?.branch}}</p>
+                        <!-- <p><strong>Branch:</strong> {{paymentdata?.branch}}</p> -->
                     </mat-card-subtitle>
                 </mat-card-header>
             </mat-card>
@@ -116,8 +116,8 @@
                     <mat-card-subtitle class="mt-3">
                         <p><strong>Passport Number:</strong> {{employedata?.passportNumber}}</p>
                         <p><strong>Nationality:</strong> {{employedata?.nationality}}</p>
-                        <p><strong>Issue Date:</strong> {{employedata?.passportIssueDate}}</p>
-                        <p><strong>Expiry Date:</strong> {{employedata?.passportExpiryDate}}</p>
+                        <p><strong>Issue Date:</strong> {{employedata?.passportIssueDate | date:'yy/dd/mm'}}</p>
+                        <p><strong>Expiry Date:</strong> {{employedata?.passportExpiryDate | date:'yy/dd/mm'}}</p>
                         <p><strong>Scan Copy:</strong> {{employedata?.passportScanCopy}}</p>
                     </mat-card-subtitle>
                 </mat-card-header>

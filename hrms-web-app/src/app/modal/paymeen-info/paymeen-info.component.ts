@@ -84,7 +84,7 @@ export class PaymeenInfoComponent {
     }
     
     if (this.isEdit) {
-      this.services.updateData(this.paymentinfo.value, this.id).subscribe({
+      this.services.updateData(this.paymentinfo.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Payment Recode Successfully Updated', 'success')

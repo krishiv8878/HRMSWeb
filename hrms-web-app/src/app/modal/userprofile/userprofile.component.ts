@@ -29,11 +29,6 @@ export class UserprofileComponent {
         this.employedata = allEmployees.find((emp: any) => emp.id == userId);
       });
 
-      this.services.getData().subscribe((response: any) => {
-        const allEmployees = response.data;
-        this.employedata = allEmployees.find((emp: any) => emp.id == userId);
-      });
-
       this.paymentservices.getAllData().subscribe((response: any) => {
         const allpayment = response.data;
         console.log("All payments:", allpayment);

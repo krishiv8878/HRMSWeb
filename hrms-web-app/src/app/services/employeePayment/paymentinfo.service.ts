@@ -18,11 +18,11 @@ export class PaymentinfoService {
     return this.http.post<any[]>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data)
   }
 
-  updateData(data: any, paymentId: any) {
-    return this.http.put(this.apiUrl + `/EmployeePaymentInfo/UpdatePaymentInfo/` + paymentId, data)
+  updateData(data: any) {
+    return this.http.put(this.apiUrl + `/EmployeePaymentInfo/UpdatePaymentInfo/` , data)
   }
 
   deleteData(paymentId: any) {
-    return this.http.delete<any[]>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo/` + paymentId)
+    return this.http.delete<any[]>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo?id=` + paymentId)
   }
 }

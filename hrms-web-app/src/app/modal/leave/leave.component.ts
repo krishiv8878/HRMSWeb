@@ -77,7 +77,7 @@ export class LeaveComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.leavetype.value, this.id).subscribe({
+      this.services.updateData(this.leavetype.value).subscribe({
      
         next: (val: any) => {
           // console.log('update successfully')

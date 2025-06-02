@@ -94,9 +94,19 @@ export class EmployeeAttendanceComponent {
   };
 
   // Lifecycle hook to load initial data
+
   ngOnInit() {
     this.getAllData();
+
+    const storedClockIn = localStorage.getItem('clockInTime');
+    const isClockedInStored = localStorage.getItem('isClockedIn');
+
+    if (storedClockIn && isClockedInStored === 'true') {
+      this.firstClockIn = new Date(storedClockIn);
+      this.isClockedIn = true;
+    }
   }
+
 
   // Open edit modal for selected row
   openGrossModal(params: any) {
@@ -166,9 +176,10 @@ export class EmployeeAttendanceComponent {
   startClock() {
     if (!this.firstClockIn) {
       this.firstClockIn = new Date();
+      localStorage.setItem('clockInTime', this.firstClockIn.toISOString());
     }
     this.isClockedIn = true;
-
+    localStorage.setItem('isClockedIn', 'true');
     const now = new Date();
     const todayFormatted = this.formatDate(now);
     const clockInTime = this.formatHours(now.toISOString());
@@ -189,6 +200,10 @@ export class EmployeeAttendanceComponent {
     const clockOutTime = new Date();
     this.isClockedIn = false;
     clearInterval(this.interval);
+
+    // Clear local storage
+    localStorage.removeItem('isClockedIn');
+    localStorage.removeItem('clockInTime');
 
     const diffMs = clockOutTime.getTime() - this.firstClockIn.getTime();
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
