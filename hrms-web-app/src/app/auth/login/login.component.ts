@@ -80,7 +80,7 @@ export class LoginComponent {
             this.toster.clear();
             this.router.navigateByUrl('index')
             this.login.reset();
-          }, 300);
+          }, 1000);
         }, error: (res) => {
           this.toster.error("Invalid credentials", 'error')
         }

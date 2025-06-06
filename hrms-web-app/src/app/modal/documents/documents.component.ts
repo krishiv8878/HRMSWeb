@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+import { MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-documents',
@@ -18,7 +19,7 @@ import { ToastrService } from 'ngx-toastr';
   styleUrl: './documents.component.scss'
 })
 export class DocumentsComponent {
-  constructor() { }
+  constructor(private dialog:MatDialogRef<DocumentsComponent>) { }
   services = inject(DocumentService)
   formbuilder = inject(FormBuilder)
   router = inject(Router)
@@ -31,37 +32,34 @@ export class DocumentsComponent {
 
   selectedFile: File | null = null;
   selectedFileName: string = '';
+  ngOnInit() {
+    localStorage.getItem('employeeId')
+  }
 
   // Handle file selection
-  onFileSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      this.selectedFile = input.files[0];
-      this.selectedFileName = this.selectedFile.name;
-    }
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0]
   }
 
   // Submit form data + file using FormData
   onSubmit() {
-    if (!this.documentForm.valid || !this.selectedFile) return;
-    // debugger;
-    if (this.documentForm.invalid) {
-      return;
-    }
+    if (!this.documentForm.value || !this.selectedFile) return;
     const formData = new FormData();
-    formData.append('documentName', this.documentForm.value.documentName??'');
+    const documentName = this.documentForm.get('documentName')?.value?.trim();
+    formData.append('documentName', documentName ?? '');
     formData.append('file', this.selectedFile);
 
     this.services.creatDocument(formData).subscribe({
-      next: () => {
+      next: (val: any) => {
         this.toster.success('Document uploaded successfully!', 'Success');
         this.documentForm.reset();
         this.selectedFile = null;
         this.selectedFileName = '';
+        this.dialog.close(true)
       },
       error: (err) => {
         this.toster.error('Upload failed', 'Error');
-        console.error(err);
+        console.error('error', err);
       }
     });
   }
