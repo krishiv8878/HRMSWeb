@@ -26,7 +26,7 @@ export class EmployeeAttendanceComponent {
 
   // Component state
   isClockedIn: boolean = false;
-  employeeId = 1;
+  employeeId: any;
   rowData: any[] = [];
   pagination = true;
   paginationPageSize = 10;
@@ -88,7 +88,7 @@ export class EmployeeAttendanceComponent {
       date.setMinutes(+m);
     }
 
-    const hours = date.getHours() % 12 || 12;
+    const hours = date.getHours();
     const minutes = date.getMinutes();
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
@@ -100,6 +100,11 @@ export class EmployeeAttendanceComponent {
 
     const storedClockIn = localStorage.getItem('clockInTime');
     const isClockedInStored = localStorage.getItem('isClockedIn');
+
+    const employeeIdFromStorage = localStorage.getItem('employeeId');
+    if (employeeIdFromStorage) {
+      this.employeeId = employeeIdFromStorage;
+    }
 
     if (storedClockIn && isClockedInStored === 'true') {
       this.firstClockIn = new Date(storedClockIn);
@@ -140,10 +145,10 @@ export class EmployeeAttendanceComponent {
 
       // Merge API data with generated date rows
       response.data.forEach((item: any) => {
-        const formattedDate = this.formatDate(new Date(item.clockIn));
+        const formattedDate = this.formatDate(new Date(item.clockIn)); 
         const index = this.rowData.findIndex(row => row.Date === formattedDate);
         if (index !== -1) {
-          this.rowData[index].clockIn = item.clockIn ? this.formatHours(item.clockIn) : "";
+          this.rowData[index].clockIn = item.clockIn ? this.formatHours(item.clockIn) : ""; 
           this.rowData[index].clockOut = item.clockOut ? this.formatHours(item.clockOut) : "";
           this.rowData[index].totalHours = item.totalHours || "";
           this.rowData[index].effectiveHours = item.effectiveHours || "";
@@ -180,6 +185,7 @@ export class EmployeeAttendanceComponent {
     }
     this.isClockedIn = true;
     localStorage.setItem('isClockedIn', 'true');
+
     const now = new Date();
     const todayFormatted = this.formatDate(now);
     const clockInTime = this.formatHours(now.toISOString());
@@ -187,7 +193,7 @@ export class EmployeeAttendanceComponent {
     const todayRow = this.rowData.find(row => row.Date === todayFormatted);
     if (todayRow) {
       todayRow.clockIn = clockInTime;
-    }
+    }    
   }
 
   // Clock out and calculate total and effective hours
@@ -201,35 +207,40 @@ export class EmployeeAttendanceComponent {
     this.isClockedIn = false;
     clearInterval(this.interval);
 
-    // Clear local storage
+    // Clear local storage 
     localStorage.removeItem('isClockedIn');
     localStorage.removeItem('clockInTime');
-
-    const diffMs = clockOutTime.getTime() - this.firstClockIn.getTime();
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    const todayDateStr = new Date().toISOString().split("T")[0];
-    const totalHoursFormatted = new Date(`${todayDateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
 
     const localStartTime = new Date(this.firstClockIn.getTime() - (this.firstClockIn.getTimezoneOffset() * 60000));
     const localEndTime = new Date(clockOutTime.getTime() - (clockOutTime.getTimezoneOffset() * 60000));
 
-    // Save data to backend
+    const diffMs = localEndTime.getTime() - localStartTime.getTime();
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+    const durationStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    const todayStr = new Date().toISOString().split("T")[0]; // e.g. 2025-06-03
+    const fullDateTimeStr = `${todayStr}T${durationStr}`; // e.g. 2025-06-03T01:23:45
+
+    // Update row in UI
+    const todayFormatted = this.formatDate(new Date());
+    const todayRow = this.rowData.find(row => row.Date === todayFormatted);
+    if (todayRow) {
+      todayRow.clockOut = this.formatHours(localEndTime.toISOString());
+      todayRow.totalHours = durationStr;
+      todayRow.effectiveHours = durationStr;
+    }
+
+    // API Call
     this.services.createData(
       this.employeeId,
       localStartTime.toISOString(),
       localEndTime.toISOString(),
-      totalHoursFormatted.toISOString(),
-      totalHoursFormatted.toISOString(), // Assuming effectiveHours is same
+      fullDateTimeStr, // totalHours
+      fullDateTimeStr, // effectiveHours
       "Present"
     ).subscribe(response => {
-      const todayFormatted = this.formatDate(new Date());
-      const todayRow = this.rowData.find(row => row.Date === todayFormatted);
-      if (todayRow) {
-        todayRow.clockOut = this.formatHours(localEndTime.toISOString());
-        todayRow.totalHours = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        todayRow.effectiveHours = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-      }
 
       console.log("Attendance Saved:", response);
       this.getAllData(); // Refresh table
