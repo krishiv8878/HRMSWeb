@@ -1,0 +1,13 @@
+.form {
+    padding: 1rem;
+    text-align: center;
+}
+.row {
+    mat-form-field {
+        width: 100%;
+
+        mat-label {
+            text-transform: capitalize;
+        }
+    }
+}

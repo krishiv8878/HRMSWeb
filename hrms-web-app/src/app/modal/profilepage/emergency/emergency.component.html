@@ -1,0 +1,114 @@
+<div class="form">
+    <form action="" [formGroup]="contact" (ngSubmit)="submitcontact()">
+        <p>Emergency Contact</p>
+        <mat-card>
+            <p>Primary Contact</p>
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>First Name</mat-label>
+                        <input type="text" matInput name="firstName" placeholder="Enter First Name"
+                            formControlName="primaryContactName">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Email</mat-label>
+                        <input type="email" matInput name="emailAddress" placeholder="Enter Email"
+                            formControlName="primaryContactEmail">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Phone Number</mat-label>
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter Phone Number"
+                            formControlName="primaryContactPhone">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Relationship</mat-label>
+                        <input type="text" matInput name="Relationship" placeholder="Enter Relationship"
+                            formControlName="primaryContactRelationship">
+
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Address</mat-label>
+                        <input type="text" matInput name="address" placeholder="Enter Address"
+                            formControlName="primaryContactAddress">
+
+                    </mat-form-field>
+                </div>
+            </div>
+        </mat-card>
+
+        <mat-card class="mt-4">
+            <p>secondary Contact</p>
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>First Name</mat-label>
+                        <input type="text" matInput name="firstName" placeholder="Enter First Name"
+                            formControlName="secondaryContactName">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Email</mat-label>
+                        <input type="email" matInput name="emailAddress" placeholder="Enter Email"
+                            formControlName="secondaryContactEmail">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Phone Number</mat-label>
+                        <input type="text" matInput name="mobileNumber" placeholder="Enter Phone Number"
+                            formControlName="secondaryContactPhone">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Relationship</mat-label>
+                        <input type="text" matInput name="Relationship" placeholder="Enter Relationship"
+                            formControlName="secondaryContactRelationship">
+
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+
+                <div class="col-xl-12">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Address</mat-label>
+                        <input type="text" matInput name="address" placeholder="Enter Address"
+                            formControlName="secondaryContactAddress">
+
+                    </mat-form-field>
+                </div>
+            </div>
+        </mat-card>
+
+        <div class="button-btn mt-4" mat-dialog-actions>
+            <button mat-flat-button class="edit-btn" style="border-radius: 0;">submit</button>
+        </div>
+    </form>
+</div>
