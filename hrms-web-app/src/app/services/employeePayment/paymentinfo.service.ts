@@ -16,7 +16,7 @@ export class PaymentinfoService {
   }
 
   createData(data: any): Observable<any> {
-    return this.http.post<any[]>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data)
+    return this.http.post<any[]>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data,{withCredentials:true})
   }
 
   updateData(data: any) {

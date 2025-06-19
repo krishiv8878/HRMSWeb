@@ -22,6 +22,12 @@ button.edit-btnimg {
 .image-container {
     position: relative;
 }
+
+p {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
 .row {
     mat-form-field {
         width: 100%;
@@ -31,6 +37,7 @@ button.edit-btnimg {
         }
     }
 }
+
 mat-icon {
     width: 2rem;
     height: 2rem;

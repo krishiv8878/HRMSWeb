@@ -1,0 +1,43 @@
+<div class="form">
+    <form action="" [formGroup]="resignationForm" (ngSubmit)="submitResignation()">
+        <p>Resignation Letter</p>
+
+        <div class="row">
+            <div class="col-xl-6">
+                <mat-form-field appearance="outline">
+                    <mat-label>Name</mat-label>
+                    <input type="text" matInput name="name" placeholder="Enter name" formControlName="managerName">
+                </mat-form-field>
+            </div>
+            <div class="col-xl-6">
+                <mat-form-field appearance="outline">
+                    <mat-label>Resignation Date</mat-label>
+                    <input matInput [matDatepicker]="picker" formControlName="resignation_Date">
+                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-xl-12">
+                <mat-form-field appearance="outline">
+                    <mat-label> Notice Period</mat-label>
+                    <input type="text" matInput name="resignationNoticePeriod" placeholder="Notice Period"
+                        formControlName="noticePeriod">
+                </mat-form-field>
+            </div>
+            <div class="col-xl-12">
+                <mat-form-field appearance="outline">
+                    <mat-label>Reason</mat-label>
+                    <textarea matInput name="resignationReason" placeholder="Enter Resignation Reason" rows="4"
+                        formControlName="reason"></textarea>
+                </mat-form-field>
+            </div>
+        </div>
+
+        <div class="button-btn mt-4" mat-dialog-actions>
+            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
+        </div>
+    </form>
+</div>

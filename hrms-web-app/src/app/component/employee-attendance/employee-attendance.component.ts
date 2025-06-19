@@ -35,7 +35,7 @@ export class EmployeeAttendanceComponent {
 
   // Default AG Grid column configuration
   defaultColDef = {
-    resizable: true, 
+    resizable: true,
     flex: 1
   };
 
@@ -144,7 +144,6 @@ export class EmployeeAttendanceComponent {
             const formattedDate = this.formatDate(new Date(item.clockIn));
             const index = this.rowData.findIndex(row => row.Date === formattedDate);
             if (index !== -1) {
-              // this.rowData[index].clockIn = item.clockIn ? this.formatHours(item.clockIn) : ""; 
               this.rowData[index].clockIn = item.clockIn ? this.formatHours(item.clockIn) : "";
               this.rowData[index].clockOut = item.clockOut ? this.formatHours(item.clockOut) : "";
               this.rowData[index].totalHours = item.totalHours || "";

@@ -10,8 +10,9 @@ import { InformationComponent } from '../profilepage/information/information.com
 import { EmergencyComponent } from '../profilepage/emergency/emergency.component';
 import { EducationDetailsComponent } from '../profilepage/education-details/education-details.component';
 import { ExperienceComponent } from '../profilepage/experience/experience.component';
-import { BankinfoComponent } from '../profilepage/bankinfo/bankinfo.component';
+// import { BankinfoComponent } from '../profilepage/bankinfo/bankinfo.component';
 import { PassportinfoComponent } from '../profilepage/passportinfo/passportinfo.component';
+import { PaymeenInfoComponent } from '../paymeen-info/paymeen-info.component';
 
 @Component({
   selector: 'app-userprofile',
@@ -37,18 +38,22 @@ export class UserprofileComponent {
         const allEmployees = response.data;
         this.employedata = allEmployees.find((emp: any) => emp.id == userId);
       });
+      this.bankinfoloadedata();
 
-      this.paymentservices.getAllData().subscribe((response: any) => {
-        const allpayment = response.data;
-        console.log("All payments:", allpayment);
-        this.paymentdata = allpayment.find((pay: any) => pay.employeeId == userId);
-        console.log("Found paymentdata:", this.paymentdata);
-      })
     } else {
       this.router.navigate(['/login']); // fallback
     }
   }
 
+  bankinfoloadedata() {
+    const userId = localStorage.getItem('employeeId');
+    this.paymentservices.getAllData().subscribe((response: any) => {
+      const allpayment = response.data;
+      console.log("All payments:", allpayment);
+      this.paymentdata = allpayment.find((pay: any) => pay.employeeId == userId);
+      console.log("Found paymentdata:", this.paymentdata);
+    })
+  }
   info(data: any) {
     const dialogRef = this.dialgo.open(InformationComponent, {
       data,
@@ -90,15 +95,16 @@ export class UserprofileComponent {
     })
   }
   bankinfo(data: any) {
-    const dialogRef = this.dialgo.open(BankinfoComponent, {
+    const dialogRef = this.dialgo.open(PaymeenInfoComponent, {
       data,
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {
-        this.services.getData();
+        this.bankinfoloadedata();
       }
     })
   }
+
   passportinfo() {
     const dialogRef = this.dialgo.open(PassportinfoComponent, {
 

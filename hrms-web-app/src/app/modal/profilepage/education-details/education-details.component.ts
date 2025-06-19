@@ -27,7 +27,10 @@ export class EducationDetailsComponent {
   toaster = inject(ToastrService)
 
   educationDetailsForm = this.formbuilder.group({
-
+    degree: [''],
+    university: ['']
   })
-  submitEducationDetails() { }
+  submitEducationDetails() {
+    console.log("edu details", this.educationDetailsForm.value)
+  }
 }

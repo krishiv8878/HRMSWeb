@@ -27,12 +27,15 @@ export class EmergencyComponent {
   toaster = inject(ToastrService)
 
   contact = this.formbuilder.group({
+    //* primary contact
     primaryEmailAddress: [''],
     primaryContactName: [''],
     primaryContactRelationship: [''],
     primaryContactPhone: [''],
     primaryContactEmail: [''],
     primaryContactAddress: [''],
+
+    //* secondary contact
     secondaryContactName: [''],
     secondaryContactRelationship: [''],
     secondaryContactPhone: [''],
@@ -44,8 +47,10 @@ export class EmergencyComponent {
     this.contact.patchValue(this.data)
   }
   submitcontact() {
+    console.log("contact value", this.contact.value)
     this.services.updateData(this.contact.value).subscribe({
       next: () => {
+        console.log("contact value", this.contact.value)
         this.toaster.success('Recode Successfully Added')
       }, error: (err) => {
         console.log("invalid data", err)

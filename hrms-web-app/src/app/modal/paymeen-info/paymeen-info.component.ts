@@ -28,17 +28,19 @@ export class PaymeenInfoComponent {
   isEdit = false;
 
   paymentinfo = this.formBuilder.group({
-    id: 0,
+    id: [0],
+    employeeId: [0],
     bankName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     ifscCode: ['', [Validators.required, Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$'), Validators.maxLength(11)]],
     accountNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(12)]],
     nameOnAccount: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
+    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   id!: any;
 
   ngOnInit() {
+    const userId = localStorage.getItem('employeeId')
     if (this.data) {
       this.isEdit = true;
       this.id = this.data.id;
@@ -46,7 +48,7 @@ export class PaymeenInfoComponent {
       this.paymentinfo.patchValue(this.data);
     }
   }
- 
+
   allowOnlyLetters(event: KeyboardEvent) {
     const key = event.key;
     // Allow letters and space only
@@ -62,8 +64,13 @@ export class PaymeenInfoComponent {
       event.preventDefault();
     }
   }
-  
+
   submitdata() {
+    const userId = localStorage.getItem('employeeId');
+    this.paymentinfo.patchValue({
+      employeeId: +userId!,
+    });
+  
     if (this.paymentinfo.invalid) {
       this.paymentinfo.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
@@ -71,7 +78,7 @@ export class PaymeenInfoComponent {
         ifscCode: "Please Enter A Valid IFSC Code",
         accountNumber: "Enter Account Number",
         nameOnAccount: "Enter Account Name",
-       //isActive: " Please select a Active Button"
+        //isActive: " Please select a Active Button"
       };
 
       for (const field in errorMessages) {
@@ -82,7 +89,7 @@ export class PaymeenInfoComponent {
         }
       }
     }
-    
+    console.log("Submitting Payment Info:", this.paymentinfo.value);
     if (this.isEdit) {
       this.services.updateData(this.paymentinfo.value).subscribe({
         next: (val: any) => {
@@ -94,6 +101,7 @@ export class PaymeenInfoComponent {
         }
       })
     } else {
+      // console.log(this.paymentinfo.value, "successfully add")
       this.services.createData(this.paymentinfo.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")

@@ -46,7 +46,7 @@ export class PaymentinfoComponent {
     const storeID = localStorage.getItem('employeeId')
     if (storeID) {
       this.employeeId = storeID;
-       console.log(this.employeeId,'payement iddd')
+      console.log(this.employeeId, 'payement iddd')
       this.getData()
     } else {
       console.error("No payment ID found in localStorage.");
@@ -56,7 +56,7 @@ export class PaymentinfoComponent {
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((item:any)=>item.employeeId == this.employeeId);
     })
   }
 

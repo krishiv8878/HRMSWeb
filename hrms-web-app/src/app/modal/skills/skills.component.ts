@@ -38,7 +38,7 @@ export class SkillsComponent {
   Skillform = this.formBuilder.group({
     id: 0,
     skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\-,#,+]+$')]],
-    isActive: ['', [Validators.required, Validators.pattern('true|false')]]
+    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
