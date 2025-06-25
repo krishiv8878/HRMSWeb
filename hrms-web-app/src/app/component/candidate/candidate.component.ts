@@ -29,11 +29,12 @@ export class CandidateComponent {
     { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "emailAddress", tooltipField: "emailAddress", minWidth: 300 },
-    { field: "mobileNumber", },
-    { field: "relevantExperience", headerName: 'Relevant Exp' },
+    { field: "mobileNumber", },   
     { field: "totalExperience", headerName: 'Totla Exp' },
-
-    { field: "currentSalary", },
+     { field: "relevantExperience", headerName: 'Relevant Exp' },
+    { field: "currentSalary",headerName:"Curr Salary" },
+    {field:'expectedSalary',headerName:"Exp Salary"},
+    { field:"noticePeriod",headerName:"NoticeP"},
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]

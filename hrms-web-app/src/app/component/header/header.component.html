@@ -12,7 +12,8 @@
       </div>
       <mat-icon [matMenuTriggerFor]="menu">keyboard_arrow_down</mat-icon>
       <mat-menu #menu="matMenu" class="custom-menu">
-        <button mat-menu-item [routerLink]="['/index/user-profile']"><mat-icon>person</mat-icon>Add Profile</button>        
+        <button mat-menu-item [routerLink]="['/index/user-profile']"><mat-icon>person</mat-icon>Add Profile</button> 
+        <button mat-menu-item (click)="resignation()"><mat-icon>exit_to_app</mat-icon>Resignation</button>        
         <button (click)="logout()" mat-menu-item> <mat-icon>power_settings_new</mat-icon>Log Out</button>
       </mat-menu>
       <!-- <button routerLink="login"><mat-icon>person</mat-icon>logout</button> -->

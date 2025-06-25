@@ -21,6 +21,8 @@ import { DocumentComponent } from './component/document/document.component';
 import { LeaveRequestComponent } from './component/leave-request/leave-request.component';
 import { UserprofileComponent } from './modal/userprofile/userprofile.component';
 import { authGuard } from './auth.guard';
+import { ResignationComponent } from './modal/resignation/resignation.component';
+
 
 
 export const routes: Routes = [
@@ -89,6 +91,9 @@ export const routes: Routes = [
             },
             {
                 path:'user-profile', component:UserprofileComponent
+            },
+            {
+                path:'resignation', component:ResignationComponent
             }
         ]
     }

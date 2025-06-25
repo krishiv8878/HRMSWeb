@@ -23,18 +23,32 @@ mat-card {
     background-color: white;
 }
 
-.profile-info {
-    display: -webkit-box;
-    gap: 2rem;
-}
+// .profile-info {
+//     display: -webkit-box;
+//     gap: 2rem;
+// }
 
 @media screen and (max-width: 768px) {
     .profile-info {
         display: block;
-        // text-align: center;
+        
     }
 
     .contact-info {
         margin-top: 1rem;
     }
+}
+
+.mat-icon {
+    color: #2196f3;
+}
+
+button {
+    border: none;
+    float: right;
+    border-radius: 50%;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    display: flex;
 }

@@ -9,36 +9,52 @@
         <!-- Check if employedata exists -->
         <div class="row" style="display: flex; justify-content:space-evenly;" *ngIf="employedata">
             <!-- Profile Information -->
-            <mat-card class="col-xl-6 profile-info">
+            <mat-card class="col-xl-5 profile-info">
                 <mat-card-header>
-                    <mat-card-title>Profile Information</mat-card-title>
-                    <mat-card-subtitle class="mt-3">
-                        <img src="https://material.angular.io/assets/img/examples/shiba2.jpg" alt="User Image" class="user-image">
-                        <p><strong>Designation:</strong> Software Engineer</p>
-                        <p><strong>Department:</strong> IT</p>
-                        <p><strong>Location:</strong> Miami</p>
-                    </mat-card-subtitle>
-                </mat-card-header>
+                    <mat-card-title>
+                        Personal Information
+                        <button mat-icon-button (click)="info(employedata)">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                    </mat-card-title>
 
-                <!-- Personal Information -->
-                <mat-card-header>
-                    <mat-card-title>Personal Information</mat-card-title>
                     <mat-card-subtitle class="mt-3">
-                        <p><strong>Phone:</strong> {{employedata?.mobileNumber}}</p>
-                        <p><strong>Email:</strong> {{employedata?.emailAddress}}</p>
-                        <p><strong>Birthday:</strong> {{employedata?.dateOfBirth | date:'yy/dd/mm'}}</p>
-                        <p><strong>Address:</strong> {{employedata?.currentAddress}}</p>
-                        <p><strong>Gender:</strong> {{employedata?.gender}}</p>
-                        <p><strong>Date of Join:</strong> {{employedata?.dateOfJoining | date:'yy/dd/mm'}}</p>
-                        <p><strong>Employee ID:</strong> {{employedata?.employeeCode}}</p>
+                        <div class="row Contact">
+                            <div class="col-md-6">
+                                <img src="https://material.angular.io/assets/img/examples/shiba2.jpg" alt="User Image"
+                                    class="user-image">
+                                <p><strong>First Name:</strong> {{employedata.firstName}} {{employedata.lastName}}</p>
+                                <p><strong>Department:</strong> IT</p>
+                                <p><strong>Location:</strong> Miami</p>
+                            </div>
+
+                            <div class="col-md-6">
+                                <!-- Personal Information -->
+                                <mat-card-subtitle class="mt-3">
+                                    <p><strong>Phone:</strong> {{employedata?.mobileNumber}}</p>
+                                    <p><strong>Email:</strong> {{employedata?.emailAddress}}</p>
+                                    <p><strong>Birthday:</strong> {{employedata?.dateOfBirth | date:'dd/mm/yyyy'}}</p>
+                                    <p><strong>Address:</strong> {{employedata?.currentAddress}}</p>
+                                    <p><strong>Gender:</strong> {{employedata?.gender}}</p>
+                                    <p><strong>Date of Join:</strong> {{employedata?.dateOfJoining | date:'dd/mm/yyyy'}}</p>
+                                    <p><strong>Employee ID:</strong> {{employedata?.employeeCode}}</p>
+                                </mat-card-subtitle>
+                            </div>
+                        </div>
                     </mat-card-subtitle>
                 </mat-card-header>
             </mat-card>
 
             <!-- Emergency Contact -->
-            <mat-card class="col-xl-5 contact-info">
+            <mat-card class="col-xl-6 contact-info">
                 <mat-card-header>
-                    <mat-card-title>Emergency Contact</mat-card-title>
+                    <mat-card-title>
+                        Emergency Contact
+                        <button mat-icon-button (click)="contact(employedata)">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                    </mat-card-title>
+
                     <mat-card-subtitle class="mt-3">
                         <div class="row Contact">
                             <div class="col-md-6">
@@ -68,7 +84,11 @@
         <div class="row" style="display: flex; justify-content:space-evenly;" *ngIf="employedata">
             <mat-card class="col-xl-5 mt-3">
                 <mat-card-header>
-                    <mat-card-title>Education Qualification</mat-card-title>
+                    <mat-card-title>Education Qualification
+                        <button mat-icon-button (click)="education()">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                    </mat-card-title>
                     <mat-card-subtitle class="mt-3">
                         <p><strong>Degree:</strong> {{employedata?.degree}}</p>
                         <p><strong>University:</strong> {{employedata?.university}}</p>
@@ -80,7 +100,11 @@
 
             <mat-card class="col-xl-6 mt-3">
                 <mat-card-header>
-                    <mat-card-title>Experience Details</mat-card-title>
+                    <mat-card-title>Experience Details
+                        <button mat-icon-button (click)="experience()">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                    </mat-card-title>
                     <mat-card-subtitle class="mt-3">
                         <p><strong>Company Name:</strong> {{employedata?.companyName}}</p>
                         <p><strong>Designation:</strong> {{employedata?.designation}}</p>
@@ -99,7 +123,11 @@
         <div class="row" style="display: flex; justify-content:space-evenly;">
             <mat-card class="col-xl-5 mt-3" *ngIf="paymentdata">
                 <mat-card-header>
-                    <mat-card-title>Bank Information</mat-card-title>
+                    <mat-card-title>Bank Information
+                        <button mat-icon-button (click)="bankinfo(paymentdata)">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                    </mat-card-title>
                     <mat-card-subtitle class="mt-3">
                         <p><strong>Account Holder Name:</strong> {{paymentdata?.nameOnAccount}}</p>
                         <p><strong>Account Number:</strong> {{paymentdata?.accountNumber}}</p>
@@ -112,7 +140,11 @@
 
             <mat-card class="col-xl-6 mt-3" *ngIf="employedata">
                 <mat-card-header>
-                    <mat-card-title>Passport Information</mat-card-title>
+                    <mat-card-title>Passport Information
+                        <button mat-icon-button (click)="passportinfo()">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                    </mat-card-title>
                     <mat-card-subtitle class="mt-3">
                         <p><strong>Passport Number:</strong> {{employedata?.passportNumber}}</p>
                         <p><strong>Nationality:</strong> {{employedata?.nationality}}</p>

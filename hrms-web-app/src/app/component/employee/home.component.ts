@@ -37,16 +37,16 @@ export class HomeComponent {
     { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "emailAddress", tooltipField: "emailAddress", minWidth: 300 },
-    { field: "mobileNumber" },
-    { field: "permanentAddress", tooltipField: "permanentAddress", headerName: "Per.Address" },
-    { field: "currentAddress", tooltipField: "currentAddress", headerName: "Cur.Address" },
+    { field: "mobileNumber",minWidth: 200  },
+    { field: "permanentAddress", tooltipField: "permanentAddress", headerName: "Per.Address",minWidth: 300  },
+    { field: "currentAddress", tooltipField: "currentAddress", headerName: "Cur.Address",minWidth: 300  },
     {
-      field: "dateOfJoining", headerName: 'Joinig Date', valueFormatter: params => {
+      field: "dateOfJoining", headerName: 'Joinig Date',minWidth: 150 , valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
-    { field: "rolenames", headerName: 'Roles', tooltipField: "rolenames" },
-    { field: "managerName", headerName: 'Managers', tooltipField: "managerName" },
+    { field: "rolenames", headerName: 'Roles', tooltipField: "rolenames",minWidth: 200 },
+    { field: "managerName", headerName: 'Managers', tooltipField: "managerName" ,minWidth: 300},
     { field: "gender", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },

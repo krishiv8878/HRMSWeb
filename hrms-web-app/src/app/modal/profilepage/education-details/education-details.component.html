@@ -1,0 +1,125 @@
+<div class="form">
+    <form action="" [formGroup]="educationDetailsForm" (ngSubmit)="submitEducationDetails()">
+
+        <p>Education Qualification</p>
+        
+        <mat-card>
+            <p class="contactt">Higher Degree</p>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Degree</mat-label>
+                        <input type="text" matInput name="degree" placeholder="Enter Degree" formControlName="degree">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Institution Name</mat-label>
+                        <input type="text" matInput name="institution" placeholder="Enter Institution Name" formControlName="university">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Start Date</mat-label>
+                        <input matInput [matDatepicker]="picker">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>End Date</mat-label>
+                       <input matInput [matDatepicker]="picker1">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                        <mat-datepicker #picker1></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+        </mat-card>
+
+        <mat-card>
+            <p class="contactt">Bachelor Degree</p>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Degree</mat-label>
+                        <input type="text" matInput name="degree" placeholder="Enter Degree" formControlName="degree">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Institution Name</mat-label>
+                        <input type="text" matInput name="institution" placeholder="Enter Institution Name" formControlName="university">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Start Date</mat-label>
+                        <input matInput [matDatepicker]="picker2">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                        <mat-datepicker #picker2></mat-datepicker>
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>End Date</mat-label>
+                       <input matInput [matDatepicker]="picker3">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
+                        <mat-datepicker #picker3></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+        </mat-card>
+
+        <mat-card>
+            <p class="contactt">Secondary Education</p>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Degree</mat-label>
+                        <input type="text" matInput name="degree" placeholder="Enter Degree" formControlName="degree">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Institution Name</mat-label>
+                        <input type="text" matInput name="institution" placeholder="Enter Institution Name" formControlName="university">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Start Date</mat-label>
+                        <input matInput [matDatepicker]="picker4">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
+                        <mat-datepicker #picker4></mat-datepicker>
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>End Date</mat-label>
+                       <input matInput [matDatepicker]="picker5">
+                        <mat-datepicker-toggle matIconSuffix [for]="picker5"></mat-datepicker-toggle>
+                        <mat-datepicker #picker5></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+        </mat-card>
+
+        <div class="button-btn mt-4" mat-dialog-actions>
+            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
+        </div>
+
+    </form>
+</div>

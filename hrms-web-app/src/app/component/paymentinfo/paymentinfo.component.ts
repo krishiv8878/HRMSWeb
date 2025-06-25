@@ -40,14 +40,23 @@ export class PaymentinfoComponent {
 
     { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
   ]
+  employeeId: any;
   rowData: any[] = [];
   ngOnInit() {
-    this.getData()
+    const storeID = localStorage.getItem('employeeId')
+    if (storeID) {
+      this.employeeId = storeID;
+      console.log(this.employeeId, 'payement iddd')
+      this.getData()
+    } else {
+      console.error("No payment ID found in localStorage.");
+    }
+
   }
 
   getData() {
     this.services.getAllData().subscribe((response: any) => {
-      this.rowData = response.data;
+      this.rowData = response.data.filter((item:any)=>item.employeeId == this.employeeId);
     })
   }
 

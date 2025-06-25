@@ -97,8 +97,15 @@ export class EmployeeAttendanceComponent {
 
 
   ngOnInit() {
-    this.getAllData();
+    const storedId = localStorage.getItem("employeeId");
+    if (storedId) {
+      this.employeeId = storedId;
+      this.getAllData();
+    } else {
+      console.error("No employee ID found in localStorage.");
+    }
   }
+
 
   openGrossModal(params: any) {
     if (params.data?.Date) {
@@ -113,35 +120,39 @@ export class EmployeeAttendanceComponent {
 
   // Load all attendance records
   getAllData() {
-    this.services.getAllData().subscribe((response: any) => {
-      const today = new Date();
-      const last30Days = Array.from({ length: 30 }, (_, i) => {
-        const date = new Date();
-        date.setDate(today.getDate() - i);
-        return date;
-      });
+    const user = localStorage.getItem("employeeId");
+    if (user) {
+      this.services.getAllData().subscribe((response: any) => {
+        const today = new Date();
+        const last30Days = Array.from({ length: 30 }, (_, i) => {
+          const date = new Date();
+          date.setDate(today.getDate() - i);
+          return date;
+        });
 
-      this.rowData = last30Days.map((date) => ({
-        Date: this.formatDate(date),
-        clockIn: "",
-        clockOut: "",
-        totalHours: "",
-        effectiveHours: ""
-      }));
+        this.rowData = last30Days.map((date) => ({
+          Date: this.formatDate(date),
+          clockIn: "",
+          clockOut: "",
+          totalHours: "",
+          effectiveHours: ""
+        }));
 
-      // Merge API data with generated date rows
-      response.data.forEach((item: any) => {
-        const formattedDate = this.formatDate(new Date(item.clockIn)); 
-        const index = this.rowData.findIndex(row => row.Date === formattedDate);
-        if (index !== -1) {
-          this.rowData[index].clockIn = item.clockIn ? this.formatHours(item.clockIn) : ""; 
-          this.rowData[index].clockIn = item.clockIn ? this.formatHours(item.clockIn) : ""; 
-          this.rowData[index].clockOut = item.clockOut ? this.formatHours(item.clockOut) : "";
-          this.rowData[index].totalHours = item.totalHours || "";
-          this.rowData[index].effectiveHours = item.effectiveHours || "";
-        }
+        // Merge API data with generated date rows
+        response.data.filter((item: any) => item.employeeId == this.employeeId)
+          .forEach((item: any) => {
+            const formattedDate = this.formatDate(new Date(item.clockIn));
+            const index = this.rowData.findIndex(row => row.Date === formattedDate);
+            if (index !== -1) {
+              this.rowData[index].clockIn = item.clockIn ? this.formatHours(item.clockIn) : "";
+              this.rowData[index].clockOut = item.clockOut ? this.formatHours(item.clockOut) : "";
+              this.rowData[index].totalHours = item.totalHours || "";
+              this.rowData[index].effectiveHours = item.effectiveHours || "";
+            }
+          });
       });
-    });
+    }
+
   }
 
   // Format date to "dd-MMM (Week Off)" if weekend
@@ -180,7 +191,7 @@ export class EmployeeAttendanceComponent {
     const todayRow = this.rowData.find(row => row.Date === todayFormatted);
     if (todayRow) {
       todayRow.clockIn = clockInTime;
-    }    
+    }
   }
 
   // Clock out and calculate total and effective hours
