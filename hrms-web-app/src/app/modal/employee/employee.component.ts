@@ -42,7 +42,7 @@ export class EmployeeComponent {
 
   Employeeform = this.formBuilder.group({
     id: 0,
-    employeeId:0,
+    employeeId: 0,
     //firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
     lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
@@ -56,7 +56,7 @@ export class EmployeeComponent {
     rolenames: [[]],
     managerId: [0],
     ManagerName: [''],
-      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
+    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   roles: any[] = []; // Role master list 
@@ -96,7 +96,7 @@ export class EmployeeComponent {
       event.preventDefault();
     }
   }
-  
+
 
   submitdata() {
     if (this.Employeeform.invalid) {

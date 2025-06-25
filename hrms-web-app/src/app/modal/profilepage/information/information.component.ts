@@ -8,7 +8,7 @@ import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { EmployeeService } from '../../../services/employee/employee.service';
 import { Router } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 
@@ -37,6 +37,7 @@ export class InformationComponent {
     currentAddress: [''],
     dateOfBirth: [''],
   })
+  
   id!: any;
   ngOnInit() {
     this.profileForm.patchValue(this.data)

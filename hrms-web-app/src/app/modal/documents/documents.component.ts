@@ -52,9 +52,9 @@ export class DocumentsComponent {
     this.services.creatDocument(formData).subscribe({
       next: (val: any) => {
         this.toster.success('Document uploaded successfully!', 'Success');
-        this.documentForm.reset();
-        this.selectedFile = null;
-        this.selectedFileName = '';
+        // this.documentForm.reset();
+        // this.selectedFile = null;
+        // this.selectedFileName = '';
         this.dialog.close(true)
       },
       error: (err) => {

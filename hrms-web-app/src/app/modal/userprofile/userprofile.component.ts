@@ -54,8 +54,9 @@ export class UserprofileComponent {
       console.log("Found paymentdata:", this.paymentdata);
     })
   }
+
   info(data: any) {
-    const dialogRef = this.dialgo.open(InformationComponent, {
+    const dialogRef = this.dialgo.open(InformationComponent, { 
       data,
     })
     dialogRef.afterClosed().subscribe({
@@ -64,6 +65,7 @@ export class UserprofileComponent {
       }
     })
   }
+
   contact(data: any) {
     const dialogRef = this.dialgo.open(EmergencyComponent, {
 
@@ -74,6 +76,7 @@ export class UserprofileComponent {
       }
     })
   }
+
   education() {
     const dialogRef = this.dialgo.open(EducationDetailsComponent, {
 
@@ -84,6 +87,7 @@ export class UserprofileComponent {
       }
     })
   }
+  
   experience() {
     const dialogRef = this.dialgo.open(ExperienceComponent, {
 
@@ -94,6 +98,7 @@ export class UserprofileComponent {
       }
     })
   }
+  
   bankinfo(data: any) {
     const dialogRef = this.dialgo.open(PaymeenInfoComponent, {
       data,
