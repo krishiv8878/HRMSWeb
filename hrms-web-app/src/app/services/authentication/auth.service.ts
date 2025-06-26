@@ -11,13 +11,21 @@ export class AuthService {
   http = inject(HttpClient)
   apiUrl = environment.host
 
-  createLogin(data:any) {
-    return this.http.post<any>(this.apiUrl + `/UserLogin/Login?email=${data.email}&password=${data.password}`, data, {withCredentials:true}).pipe(map(data=>{
+  createLogin(data: any) {
+    return this.http.post<any>(this.apiUrl + `/UserLogin/Login?email=${data.email}&password=${data.password}`, data, { withCredentials: true }).pipe(map(data => {
       return data;
     }))
   }
 
-  createRegister(data:any){
-    return this.http.post<any[]>(this.apiUrl+`/UserRegistration/Registration`, data)
+  createRegister(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/UserRegistration/Registration`, data)
+  }
+
+  resetPassword(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/UserLogin/forgot-password`, data)
+  }
+
+  forgotpassword(data: any) {
+    return this.http.post<any[]>(this.apiUrl + `/UserLogin/reset-password`, data)
   }
 }

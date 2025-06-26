@@ -4,7 +4,7 @@ import { MatFormField } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/authentication/auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 // import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -14,7 +14,7 @@ import { MatIcon } from '@angular/material/icon';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule, MatIcon],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule, MatIcon, RouterLink],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
