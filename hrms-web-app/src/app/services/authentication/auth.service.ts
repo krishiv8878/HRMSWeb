@@ -16,7 +16,7 @@ export class AuthService {
       return data;
     }))
   }
-
+       
   createRegister(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/UserRegistration/Registration`, data)
   }

@@ -1,54 +1,64 @@
-<div class="register-img">
-    <form [formGroup]="registretion" (ngSubmit)="submit()">
-        <p>register</p>
-        <div class="register-form">
-            <mat-form-field appearance="outline">
-                <mat-label>First Name</mat-label>
-                <mat-icon matPrefix>person</mat-icon>
-                <input type="text" matInput placeholder="Enter FirstName" formControlName="FirstName"
-                    (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>Last Name</mat-label>
-                <mat-icon matPrefix>person_outline</mat-icon>
-                <input type="text" matInput placeholder="Enter LastName" formControlName="LastName"
-                    (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>Email</mat-label>
-                <mat-icon matPrefix>email</mat-icon>
-                <input type="email" matInput placeholder="Enter Email" formControlName="email"
-                    (keydown.space)="$event.preventDefault()">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>Phone</mat-label>
-                <mat-icon matPrefix>phone</mat-icon>
-                <input type="text" matInput placeholder="Enter phoneNo" formControlName="mobileNumber" maxLength="10"
-                    (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>Address</mat-label>
-                <mat-icon matPrefix>home</mat-icon>
-                <input type="text" matInput placeholder="Enter Address" formControlName="Address">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-                <mat-label>Password</mat-label>
-                <input [type]="hide ? 'password' : 'text'" matInput placeholder="Enter Password"
-                    formControlName="password" maxlength="16">
-                <button mat-icon-button matPrefix type="button" (click)="togglePasswordVisibility()">
-                    <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
-                </button>
-            </mat-form-field>
-
-            <div class="register-btn">
-                <button mat-flat-button>register</button>
-            </div>
-            <p class="register-info"> Already have an account? <a href="login">login</a></p>
+<div class="row">
+    <div class="col-xl-6 d-none d-xl-block">
+        <div class="login-img">
+            <img src="../../../assets/images/bg-02.png" alt="Login Image" class="img-fluid">
         </div>
-    </form>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="register-page">
+            <form [formGroup]="registretion" (ngSubmit)="submit()">
+                <p>register</p>
+                <div class="register-form">
+                    <mat-form-field appearance="outline">
+                        <mat-label>First Name</mat-label>
+                        <mat-icon matPrefix>person</mat-icon>
+                        <input type="text" matInput placeholder="Enter FirstName" formControlName="FirstName"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Last Name</mat-label>
+                        <mat-icon matPrefix>person_outline</mat-icon>
+                        <input type="text" matInput placeholder="Enter LastName" formControlName="LastName"
+                            (keypress)="allowOnlyLetters($event)" (keydown.space)="$event.preventDefault()">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Email</mat-label>
+                        <mat-icon matPrefix>email</mat-icon>
+                        <input type="email" matInput placeholder="Enter Email" formControlName="email"
+                            (keydown.space)="$event.preventDefault()">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Phone</mat-label>
+                        <mat-icon matPrefix>phone</mat-icon>
+                        <input type="text" matInput placeholder="Enter phoneNo" formControlName="mobileNumber"
+                            maxLength="10" (keypress)="preventInvalidNumbers($event)" (paste)="preventPaste($event)">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Address</mat-label>
+                        <mat-icon matPrefix>home</mat-icon>
+                        <input type="text" matInput placeholder="Enter Address" formControlName="Address">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Password</mat-label>
+                        <input [type]="hide ? 'password' : 'text'" matInput placeholder="Enter Password"
+                            formControlName="password" maxlength="16">
+                        <button mat-icon-button matPrefix type="button" (click)="togglePasswordVisibility()">
+                            <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+                        </button>
+                    </mat-form-field>
+
+                    <div class="register-btn">
+                        <button mat-flat-button>register</button>
+                    </div>
+                    <p class="register-info"> Already have an account? <a href="login">login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>

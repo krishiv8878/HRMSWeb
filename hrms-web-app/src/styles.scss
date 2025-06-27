@@ -1,4 +1,3 @@
-
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
 @use '@angular/material' as mat;
@@ -10,16 +9,12 @@
 @include mat.core();
 
 // Define the theme object.
-$hrms-web-app-theme: mat.define-theme((
-  color: (
-    theme-type: light,
-    primary: mat.$azure-palette,
-    tertiary: mat.$blue-palette,
-  ),
-  density: (
-    scale: 0,
-  )
-));
+$hrms-web-app-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      density: (scale: 0,
+      )));
 
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
@@ -36,21 +31,31 @@ $hrms-web-app-theme: mat.define-theme((
 // @include mat.color-variants-backwards-compatibility($hrms-web-app-theme);
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
 // regular style toast
 @import 'ngx-toastr/toastr';
 
 /* Importing Bootstrap SCSS file. */
 @import 'bootstrap/scss/bootstrap';
+
 .ag-theme-quartz,
 .ag-theme-quartz-dark {
-    // --ag-foreground-color: rgb(255, 255, 255);
-    // --ag-background-color: rgb(249, 245, 227);
-    // --ag-header-foreground-color: rgb(254, 255, 253);
-    // --ag-header-background-color: rgb(86, 123, 255);
-    // --ag-odd-row-background-color: rgb(249, 249, 249);
-    --ag-header-column-resize-handle-color: rgb(247, 247, 247);
-    --ag-font-size: 17px;
-    --ag-font-family: Roboto;
+  // --ag-foreground-color: rgb(255, 255, 255);
+  // --ag-background-color: rgb(249, 245, 227);
+  // --ag-header-foreground-color: rgb(254, 255, 253);
+  // --ag-header-background-color: rgb(86, 123, 255);
+  // --ag-odd-row-background-color: rgb(249, 249, 249);
+  --ag-header-column-resize-handle-color: rgb(247, 247, 247);
+  --ag-font-size: 17px;
+  --ag-font-family: Roboto;
 }
