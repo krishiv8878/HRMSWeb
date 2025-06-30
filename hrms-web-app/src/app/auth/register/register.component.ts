@@ -8,12 +8,13 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/authentication/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
 // import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, CommonModule, ReactiveFormsModule, MatIconModule],
+  imports: [MatInputModule, MatFormField, MatButtonModule, CommonModule, ReactiveFormsModule, MatIconModule, MatDividerModule],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })

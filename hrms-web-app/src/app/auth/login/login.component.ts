@@ -10,21 +10,24 @@ import { ToastrService } from 'ngx-toastr';
 import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 // import { MatCheckbox } from '@angular/material/checkbox';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule, MatIcon, RouterLink],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, CommonModule, MatIcon, RouterLink, MatDividerModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {
+  constructor() { }
+
   formBuilder = inject(FormBuilder)
   services = inject(AuthService)
   // http = inject(HttpClient)
   router = inject(Router)
   toster = inject(ToastrService)
-  constructor() { }
+
 
   login = this.formBuilder.group({
     id: 0,

@@ -1,22 +1,24 @@
 <div class="row">
-  <div class="col-xl-6 d-none d-xl-block">
+  <div class="col-xl-6 col-md-6 d-none d-md-block">
     <div class="login-img">
       <img src="../../../assets/images/bg-01.png" alt="Login Image" class="img-fluid">
     </div>
   </div>
 
-  <div class="col-xl-6">
+  <div class="col-xl-6 col-md-6">
     <div class="login-page">
       <form [formGroup]="login" (ngSubmit)="logindata()">
         <p>Login</p>
+
+        <p class="login-info">Don't have an account? <a href="register">Register</a></p>
         <div class="login-form">
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
             <mat-icon matPrefix>email</mat-icon>
             <input type="email" matInput placeholder="Enter Email" formControlName="email" />
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
             <input [type]="hide ? 'password' : 'text'" matInput placeholder="Enter Password" formControlName="password"
               maxlength="16" />
@@ -34,7 +36,21 @@
             <button mat-flat-button>login</button>
           </div>
 
-          <p class="login-info">Don't have an account? <a href="register">Register</a></p>
+          <!-- OR Divider -->
+          <div class="divider-container">
+            <mat-divider></mat-divider>
+            <span class="divider-text">OR</span>
+            <mat-divider></mat-divider>
+          </div>
+
+          <!-- Social Icons -->
+          <div class="social-icons">
+            <button mat-icon-button><i class="fab fa-google"></i></button>
+            <button mat-icon-button><i class="fab fa-facebook-f"></i></button>
+            <button mat-icon-button><i class="fab fa-twitter"></i></button>
+            <button mat-icon-button><i class="fab fa-linkedin-in"></i></button>
+          </div>
+
         </div>
       </form>
     </div>

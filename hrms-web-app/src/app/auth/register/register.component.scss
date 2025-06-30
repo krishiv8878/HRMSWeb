@@ -73,10 +73,72 @@ p {
 
 .register-info {
     font-size: 15px;
-    padding-top: 1rem;
+    // padding-top: 1rem;
 }
 
 // mat-icon {
 //     font-size: 23px;
 //     color: #59595991;
 // }
+
+
+.divider-container {
+    display: flex;
+    align-items: center;
+    margin: 1rem 0;
+
+    mat-divider {
+        flex: 1;
+    }
+
+    .divider-text {
+        margin: 0 10px;
+        font-weight: 500;
+        color: gray;
+    }
+}
+
+.social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    // margin-top: 20px;
+
+    button {
+        width: 45px;
+        height: 45px;
+        border: 1px solid #ccc;
+        border-radius: 50%;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+
+        i {
+            font-size: 20px;
+        }
+
+        &:hover {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            transform: scale(1.1);
+        }
+    }
+
+    // Individual Icon Colors
+    .fa-google {
+        color: #db4437;
+    }
+
+    .fa-facebook-f {
+        color: #3b5998;
+    }
+
+    .fa-twitter {
+        color: #1da1f2;
+    }
+
+    .fa-linkedin-in {
+        color: #0077b5;
+    }
+}

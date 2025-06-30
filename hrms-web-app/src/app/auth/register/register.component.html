@@ -1,14 +1,16 @@
 <div class="row">
-    <div class="col-xl-6 d-none d-xl-block">
+    <div class="col-xl-6 col-md-6 d-none d-md-block">
         <div class="login-img">
-            <img src="../../../assets/images/bg-02.png" alt="Login Image" class="img-fluid">
+            <img src="../../../assets/images/bg-02.png" alt="Register Image" class="img-fluid">
         </div>
     </div>
 
-    <div class="col-xl-6">
+     <div class="col-xl-6 col-md-6 col-12 d-flex align-items-center justify-content-center">
         <div class="register-page">
             <form [formGroup]="registretion" (ngSubmit)="submit()">
                 <p>register</p>
+
+                <p class="register-info"> Already have an account? <a href="login">login</a></p>
                 <div class="register-form">
                     <mat-form-field appearance="outline">
                         <mat-label>First Name</mat-label>
@@ -56,7 +58,22 @@
                     <div class="register-btn">
                         <button mat-flat-button>register</button>
                     </div>
-                    <p class="register-info"> Already have an account? <a href="login">login</a></p>
+
+                    <!-- OR Divider -->
+                    <div class="divider-container">
+                        <mat-divider></mat-divider>
+                        <span class="divider-text">OR</span>
+                        <mat-divider></mat-divider>
+                    </div>
+
+                    <!-- Social Icons -->
+                    <div class="social-icons">
+                        <button mat-icon-button><i class="fab fa-google"></i></button>
+                        <button mat-icon-button><i class="fab fa-facebook-f"></i></button>
+                        <button mat-icon-button><i class="fab fa-twitter"></i></button>
+                        <button mat-icon-button><i class="fab fa-linkedin-in"></i></button>
+                    </div>
+
                 </div>
             </form>
         </div>
