@@ -22,6 +22,8 @@ import { LeaveRequestComponent } from './component/leave-request/leave-request.c
 import { UserprofileComponent } from './modal/userprofile/userprofile.component';
 import { authGuard } from './auth.guard';
 import { ResignationComponent } from './modal/resignation/resignation.component';
+import { ResetpasswordComponent } from './modal/resetpassword/resetpassword.component';
+import { ForgotpasswordComponent } from './modal/forgotpassword/forgotpassword.component';
 
 
 
@@ -36,7 +38,13 @@ export const routes: Routes = [
         path: 'register', component: RegisterComponent,
     },
     {
-        path: 'index', component: IndexComponent,canActivate:[authGuard], children: [
+        path: 'reset-password', component: ResetpasswordComponent
+    },
+    {
+        path:'forgot-password', component:ForgotpasswordComponent
+    },
+    {
+        path: 'index', component: IndexComponent, canActivate: [authGuard], children: [
 
             {
                 path: 'home', component: HomeComponent
@@ -90,11 +98,11 @@ export const routes: Routes = [
                 path: 'leaveRequest', component: LeaveRequestComponent
             },
             {
-                path:'user-profile', component:UserprofileComponent
+                path: 'user-profile', component: UserprofileComponent
             },
             {
-                path:'resignation', component:ResignationComponent
-            }
+                path: 'resignation', component: ResignationComponent
+            },
         ]
     }
 ];
