@@ -26,26 +26,28 @@ export class ForgotpasswordComponent {
   route = inject(ActivatedRoute);
   hide: boolean = true;
   emailreset!: string;
+
   togglePasswordVisibility() {
     this.hide = !this.hide;
   }
+  
   forgotPasswordForm = this.formbuilder.group({
-    email: [''],
+    token: [''],
     password: ['']
-  })
+  }) 
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-    const email = params['Email'];
-    if (email) {
-      this.forgotPasswordForm.patchValue({ email });
-      this.onSubmit(); // ✅ Optional: remove if you want manual click
-    }
-  });
+      const token = params['Token'];
+      if (token) {
+        this.forgotPasswordForm.patchValue({ token });
+        this.onSubmit(); //  Optional: remove if you want manual click
+      }
+    });
   }
 
   onSubmit() {
-    this.services.forgotpassword(this.forgotPasswordForm.value).subscribe({
+    this.services.forgotpassword(this.forgotPasswordForm.value).subscribe({ 
       next: (val: any) => {
         this.toster.success('SuccesFully Password Forgot')
         this.router.navigateByUrl('login')
