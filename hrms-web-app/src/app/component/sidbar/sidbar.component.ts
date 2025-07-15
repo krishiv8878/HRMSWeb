@@ -16,7 +16,7 @@ import { CommonModule } from '@angular/common';
 export class SidbarComponent {
   constructor() { }
   menuItems = [
-    { label: 'Home', icon: 'home', route: '/index/home' },
+    { label: 'Employee', icon: 'people', route: '/index/home' },
     // { label: 'SERVICES', icon: 'build', route: '/index/services' },
     { label: 'Skill', icon: 'psychology', route: '/index/skill' },
     { label: 'Candidate', icon: 'person_search', route: '/index/candidate' },
@@ -24,8 +24,8 @@ export class SidbarComponent {
     { label: 'Holiday', icon: 'beach_access', route: '/index/holiday' },
     { label: 'Leave', icon: 'event_busy', route: '/index/leavetype' },
     { label: 'Assets', icon: 'inventory', route: '/index/assets' },
-    { label: 'Project', icon: 'assignment', route: '/index/project' },
-    { label: 'Role', icon: 'supervisor_account', route: '/index/rolemaster' },
+    { label: 'Project', icon: 'storage', route: '/index/project' },
+    { label: 'Role', icon: 'person', route: '/index/rolemaster' },
     { label: 'Time Attend', icon: 'event_available', route: '/index/attendance' },
     { label: 'Shift', icon: 'schedule', route: '/index/shift' },
     { label: 'Payroll', icon: 'account_balance_wallet', route: '/index/paymentinfo' },

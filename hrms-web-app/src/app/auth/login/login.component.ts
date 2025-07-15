@@ -81,7 +81,7 @@ export class LoginComponent {
 
           setTimeout(() => {
             this.toster.clear();
-            this.router.navigateByUrl('index')
+            this.router.navigateByUrl('/index/home')
             this.login.reset();
           }, 1000);
         }, error: (res) => {

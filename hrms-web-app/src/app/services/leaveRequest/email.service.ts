@@ -22,4 +22,8 @@ export class EmailService {
   Leaverequest(data: any) {
     return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/AddLeaveRequest`, data, {withCredentials:true})
   }
+
+  leaveaprovel(data:any){
+    return this.http.put<any[]>(this.apiUrl+`/LeaveRequest/ApproveLeaveRequest`,data)
+  }
 }

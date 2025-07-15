@@ -35,9 +35,10 @@ export class LeaverequestComponent {
 
   leaveRequestForm = this.formbuilder.group({
     // id: 0,
-    type: ['', [Validators.required]],
+    leaveTypeId: 1,
     // employeeId: 0,
-    LeaveReason: [''],
+    type: ['', [Validators.required]],
+    LeaveReason: ['', [Validators.required]],
     leaveMode: [''],
     startDate: ['', [Validators.required]],
     endDate: ['', [Validators.required]],

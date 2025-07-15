@@ -27,6 +27,7 @@ export class LeaveRequestComponent {
   public columnDefs: ColDef[] = [
     // { field: "emailAddress" },
     // { field: "type" },
+    { field: "leaveTypeName" },
     {
       field: "startDate", headerName: 'From', valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
@@ -37,16 +38,13 @@ export class LeaveRequestComponent {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
-    { field: "leaveReason", headerName: 'Reason', },
+    { field: 'leaveMode' },
+    { field: "leaveReson", headerName: 'Reason', },
     { field: "isApproved", headerName: 'Status' },
   ]
 
   ngOnInit() {
     this.getAllData();
-    // this.leaveservices.getAllData().subscribe((response: any) => {
-    //   this.rowData = response.data;
-    //   console.log('rowww data', this.rowData)
-    // })
   }
 
   getAllData() {
