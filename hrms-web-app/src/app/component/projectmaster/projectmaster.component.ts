@@ -9,6 +9,7 @@ import { ActionComponent } from '../action/action.component';
 import { ProjectComponent } from '../../modal/project/project.component';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-projectmaster',
@@ -38,7 +39,7 @@ export class ProjectmasterComponent {
   }
 
   getData() {
-    this.services.getAllData().subscribe((response: any) => {
+    this.services.getAllData().then((response: any) => {
       this.rowData = response.data;
       console.log(response)
     })
@@ -73,15 +74,13 @@ export class ProjectmasterComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteData(DesignationId).subscribe({
-          next: () => {
+        this.services.DeleteData(DesignationId).then(
+          () => {
             this.toaster.success('Project Record Successfully Deleted ', 'Delete');
             this.getData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          });
       }
     });
   }

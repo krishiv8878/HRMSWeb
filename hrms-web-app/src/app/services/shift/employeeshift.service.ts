@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,19 +9,19 @@ import { environment } from '../../../environments/environment';
 export class EmployeeshiftService {
   http = inject(HttpClient)
   apiUrl = environment.host;
-  constructor() { }
+  constructor(private tokenInterceptor :  tokenInterceptor) { }
 
-  getData() {
-    return this.http.get<any[]>(this.apiUrl + `/Shift/GetAllShifts`);
+  async getData() {
+    return this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + `/Shift/GetAllShifts`).then(response =>{ return response.data});
   }
 
-  createData(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/Shift/CreateShiftType/`, data);
+  async createData(data: any) {
+    return this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/Shift/CreateShiftType/`, data).then(response =>{ return response.data});
   }
-  updateData(data: any, shiftId:any) {
-    return this.http.put<any[]>(this.apiUrl + `/Shift/UpdateShift/`+shiftId, data)
+  async updateData(data: any, shiftId:any) {
+    return this.tokenInterceptor.getAxiosInstance().put(this.apiUrl + `/Shift/UpdateShift/`+shiftId, data).then(response =>{ return response.data});
   }
-  deleteData(shiftId: any) {
-    return this.http.delete(this.apiUrl + `/Shift/DeleteShift?id=`+ shiftId)
+  async deleteData(shiftId: any) {
+    return this.tokenInterceptor.getAxiosInstance().delete(this.apiUrl + `/Shift/DeleteShift?id=`+ shiftId).then(response =>{ return response.data});
   }
 }

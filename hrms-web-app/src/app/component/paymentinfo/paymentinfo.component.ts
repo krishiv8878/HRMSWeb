@@ -12,6 +12,7 @@ import { ActionComponent } from '../action/action.component';
 import { PaymeenInfoComponent } from '../../modal/paymeen-info/paymeen-info.component';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-paymentinfo',
@@ -55,7 +56,7 @@ export class PaymentinfoComponent {
   }
 
   getData() {
-    this.services.getAllData().subscribe((response: any) => {
+    this.services.getAllData().then((response: any) => {
       this.rowData = response.data.filter((item:any)=>item.employeeId == this.employeeId);
     })
   }
@@ -80,15 +81,14 @@ export class PaymentinfoComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.deleteData(paymentId).subscribe({
-          next: () => {
+        this.services.deleteData(paymentId).then(
+          () => {
             this.toaster.success('Record successfully Deleted ', 'Delete');
             this.getData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).
+          catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          })
       }
     });
   }

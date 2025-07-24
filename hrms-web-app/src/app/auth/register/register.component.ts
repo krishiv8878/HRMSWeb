@@ -85,7 +85,7 @@ export class RegisterComponent {
       }
     }
     if (this.registretion.valid) {
-      this.services.createRegister(this.registretion.value).subscribe(() => {
+      this.services.createRegister(this.registretion.value).then(() => {
         console.log(this.registretion.value)
         this.registretion.reset()
         this.router.navigateByUrl('login')

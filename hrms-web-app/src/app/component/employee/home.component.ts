@@ -13,6 +13,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 // import { TogglebuttonComponent } from '../togglebutton/togglebutton.component';
 
 
@@ -63,7 +64,7 @@ export class HomeComponent {
   }
 
   getAllData() {
-    this.service.getData().subscribe((response: any) => {
+    this.service.getData().then((response: any) => {
       this.rowData = response.data;
 
       // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
@@ -101,15 +102,13 @@ export class HomeComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.service.DeleteData(employeeId).subscribe({
-          next: () => {
+        this.service.DeleteData(employeeId).then(
+          () => {
             this.toaster.success('Employee Record Successfully Deleted ', 'Delete');
             this.getAllData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          });
       }
     });
   }

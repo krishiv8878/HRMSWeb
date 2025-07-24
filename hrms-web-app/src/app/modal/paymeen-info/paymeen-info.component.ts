@@ -91,26 +91,24 @@ export class PaymeenInfoComponent {
     }
     console.log("Submitting Payment Info:", this.paymentinfo.value);
     if (this.isEdit) {
-      this.services.updateData(this.paymentinfo.value).subscribe({
-        next: (val: any) => {
+      this.services.updateData(this.paymentinfo.value).then(
+        (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Payment Recode Successfully Updated', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log("err msg", err)
-        }
-      })
+        })
     } else {
       // console.log(this.paymentinfo.value, "successfully add")
-      this.services.createData(this.paymentinfo.value).subscribe({
-        next: (val: any) => {
+      this.services.createData(this.paymentinfo.value).then(
+        (val: any) => {
           // console.log("successfully add")
           this.toaster.success('Payment Recode Successfully Added', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log(err)
-        }
-      })
+        })
     }
   }
 }

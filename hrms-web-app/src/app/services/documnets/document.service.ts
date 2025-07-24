@@ -2,32 +2,36 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { catchError, Observable, tap, throwError } from 'rxjs';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
+import { response } from 'express';
+import { resolve } from 'path';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DocumentService {
-  constructor() { }
+  constructor(private tokenInterceptor: tokenInterceptor) { }
 
   http = inject(HttpClient)
   apiUrl = environment.host;
 
-  getAll() {
-    return this.http.get<any[]>(this.apiUrl + `/EmployeeDocument/GetAllDocumentsInfo`)
+  async getAll() {
+    return await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + `/EmployeeDocument/GetAllDocumentsInfo`).then(response =>{ return response.data});
   }
-  creatDocument(formData: FormData): Observable<any> {
+  async creatDocument(formData: FormData): Promise<Observable<any>> {
     const documentName = formData.get('documentName') as string;
     // debugger
-    return this.http.post<any[]>(this.apiUrl + `/EmployeeDocument/UploadDocument?documentName=${encodeURIComponent(documentName)}`, formData).pipe(
-      tap(() => console.log(' API called')),
-      catchError((error) => {
+    return await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/EmployeeDocument/UploadDocument?documentName=${encodeURIComponent(documentName)}`, formData).then(
+      response=>{
+        console.log(' API called');
+        return response.data
+      }).catch(error => {
         console.error(' Error from API service:', error);
         return throwError(() => error);
-      })
-    )
+      });
   }
-  viewDocument(id: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/EmployeeDocument/view/${id}`, { responseType: 'blob' });
+  async viewDocument(id: number): Promise<Observable<any>> {
+    return await this.tokenInterceptor.getAxiosInstance().get(`${this.apiUrl}/EmployeeDocument/view/${id}`, { responseType: 'blob' }).then(response =>{ return response.data});
   }
 
 }

@@ -34,7 +34,7 @@ export class UserprofileComponent {
     const userId = localStorage.getItem('employeeId');
 
     if (userId) {
-      this.services.getData().subscribe((response: any) => {
+      this.services.getData().then((response: any) => {
         const allEmployees = response.data;
         this.employedata = allEmployees.find((emp: any) => emp.id == userId);
       });
@@ -47,7 +47,7 @@ export class UserprofileComponent {
 
   bankinfoloadedata() {
     const userId = localStorage.getItem('employeeId');
-    this.paymentservices.getAllData().subscribe((response: any) => {
+    this.paymentservices.getAllData().then((response: any) => {
       const allpayment = response.data;
       console.log("All payments:", allpayment);
       this.paymentdata = allpayment.find((pay: any) => pay.employeeId == userId);

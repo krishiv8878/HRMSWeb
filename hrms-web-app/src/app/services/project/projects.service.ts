@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,18 +9,18 @@ import { environment } from '../../../environments/environment';
 export class ProjectsService {
   http = inject(HttpClient)
   apiUrl = environment.host;
-  constructor() { }
+  constructor(private tokenInterceptor:  tokenInterceptor) { }
 
-  getAllData() {
-    return this.http.get<any[]>(this.apiUrl + "/ProjectMaster/GetProjectMaster");
+  async getAllData() {
+    return await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + "/ProjectMaster/GetProjectMaster").then(response =>{ return response.data});
   }
-  createData(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/ProjectMaster/AddProjectMaster`, data)
+  async createData(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/ProjectMaster/AddProjectMaster`, data).then(response =>{ return response.data});
   }
-  updateData(data: any, projectId:any) {
-    return this.http.put<any[]>(this.apiUrl + `/ProjectMaster/UpdateProjectMaster/`+ projectId, data);
+  async updateData(data: any, projectId:any) {
+    return await this.tokenInterceptor.getAxiosInstance().put(this.apiUrl + `/ProjectMaster/UpdateProjectMaster/`+ projectId, data).then(response =>{ return response.data});
   }
-  DeleteData(ProjectMasterId: any) {
-    return this.http.delete(this.apiUrl + `/ProjectMaster/DeleteProjectMaster/` + ProjectMasterId);
+  async DeleteData(ProjectMasterId: any) {
+    return await this.tokenInterceptor.getAxiosInstance().delete(this.apiUrl + `/ProjectMaster/DeleteProjectMaster/` + ProjectMasterId).then(response =>{ return response.data});
   }
 }

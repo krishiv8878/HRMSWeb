@@ -11,6 +11,8 @@ import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 // import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
+import { error } from 'console';
+import { ContentObserver } from '@angular/cdk/observers';
 
 @Component({
   selector: 'app-login',
@@ -71,11 +73,16 @@ export class LoginComponent {
     //return this.http.get<any>
     if (this.login.valid) {
       console.log(this.login.value)
-      this.services.createLogin(this.login.value).subscribe({
-        next: (res) => {
-          console.log("ress", res)
+      this.services.createLogin(this.login.value).then(
+        (res) => {
+          // console.log("ress", res)
           localStorage.setItem('employeeId', res.data)
-          localStorage.setItem('LoginTokan', res.data.token);
+          // if(res.data.token){
+            localStorage.setItem('LoginTokan', res.data.token);
+          //   console.log(res.data.token)
+          // }else{
+          //   console.log("not found token")
+          // }
 
           this.toster.success('successfully login', 'success')
 
@@ -84,10 +91,9 @@ export class LoginComponent {
             this.router.navigateByUrl('index')
             this.login.reset();
           }, 1000);
-        }, error: (res) => {
-          this.toster.error("Invalid credentials", 'error')
-        }
-      })
+        }).catch(error => {
+          this.toster.error("Invalid credentials", error)
+        })
     }
   }
 }

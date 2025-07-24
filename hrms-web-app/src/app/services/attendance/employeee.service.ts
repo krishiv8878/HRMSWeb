@@ -2,20 +2,21 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EmployeeeService {
-  constructor() { }
+  constructor(private tokenInterceptor : tokenInterceptor) { }
   http = inject(HttpClient)
   apiUrl = environment.host
 
-  getAllData() {
-    return this.http.get<any[]>(this.apiUrl + `/EmployeeAttendance/GetAll`)
+  async getAllData() {
+    return await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + `/EmployeeAttendance/GetAll`).then(response =>{ return response.data});
   }
 
-  createData(employeeId: number, clockIn: string | null, clockOut: string | null, totalHours: string | number | null, effectiveHours: string | number | null, attendance: string): Observable<any> {
+  async createData(employeeId: number, clockIn: string | null, clockOut: string | null, totalHours: string | number | null, effectiveHours: string | number | null, attendance: string): Promise<Observable<any>> {
     const requestData = {
       employeeId: employeeId,
       clockIn: clockIn,
@@ -26,13 +27,13 @@ export class EmployeeeService {
     };
     console.log("Sending API Request:", requestData);
 
-    return this.http.post(this.apiUrl + `/EmployeeAttendance/AddEmployeeAttendanceRequest`, requestData)
+    return await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/EmployeeAttendance/AddEmployeeAttendanceRequest`, requestData).then(response =>{ return response.data});
   }
-  updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/EmployeeAttendance/UpdateEmployeeAttendanceRequest`, data)
+  async updateData(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().put(this.apiUrl + `/EmployeeAttendance/UpdateEmployeeAttendanceRequest`, data).then(response =>{ return response.data});
   }
 
-  creatRegular(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/EmployeeAttendance/AddRegularizationRequest`, data,{withCredentials:true})
+  async creatRegular(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/EmployeeAttendance/AddRegularizationRequest`, data,{withCredentials:true}).then(response =>{ return response.data});
   }
 }

@@ -68,25 +68,23 @@ export class DesignationsComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.designation.value).subscribe({
-        next: (val: any) => {
+      this.services.updateData(this.designation.value).then(
+        (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Designation Recode Successfully Updated', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log("err msg", err)
-        }
-      })
+        });
     } else {
-      this.services.createData(this.designation.value).subscribe({
-        next: (val: any) => {
+      this.services.createData(this.designation.value).then(
+        (val: any) => {
           // console.log("successfully add")
           this.toaster.success('Designation Recode Successfully Added', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }). catch(err => {
           console.log(err)
-        }
-      })
+        });  
     }
   }
   getControl(controleName: string) {

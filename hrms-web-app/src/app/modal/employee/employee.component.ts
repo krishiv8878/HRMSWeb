@@ -14,6 +14,7 @@ import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material
 import { ToastrService } from 'ngx-toastr';
 import { MatSelectModule } from '@angular/material/select';
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
+import { error } from 'console';
 
 @Component({
   selector: 'app-employee',
@@ -71,11 +72,11 @@ export class EmployeeComponent {
       //   console.log("form ", result)
       // })
     }
-    this.roleservises.getAllData().subscribe((roles: any) => {
+    this.roleservises.getAllData().then((roles: any) => {
       this.roles = roles.data;
       console.log('Role Masters:', this.roles);
     })
-    this.services.getManager().subscribe((managers: any) => {
+    this.services.getManager().then((managers: any) => {
       this.managers = managers;
       console.log('managers Masters:', this.managers);
     })
@@ -138,25 +139,21 @@ export class EmployeeComponent {
 
     // Proceed with API call if form is valid
     if (this.isEdit) {
-      this.services.updateData(this.Employeeform.value).subscribe({
-        next: () => {
+      this.services.updateData(this.Employeeform.value).then(
+        () => {
           this.toaster.success('Employee Recode Successfully Updated', 'Success');
           this._dialogref.close(true);
-        },
-        error: (err) => {
-          console.log("Error:", err);
-        }
-      });
+        }).catch(error =>{
+          console.log("Error:", error);
+        });
     } else {
-      this.services.createData(this.Employeeform.value).subscribe({
-        next: () => {
+      this.services.createData(this.Employeeform.value).then(
+        () => {
           this.toaster.success('Employee Recode Successfully Added', 'Success');
           this._dialogref.close(true);
-        },
-        error: (err) => {
-          console.log("Error:", err);
-        }
-      });
+        }).catch(error =>{
+          console.log("Error:", error);
+        });
     }
   }
   getControl(controleName: string) {

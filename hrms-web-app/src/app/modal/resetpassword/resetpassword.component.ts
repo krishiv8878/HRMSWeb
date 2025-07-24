@@ -36,14 +36,13 @@ export class ResetpasswordComponent {
     }
 
 
-    this.services.resetPassword(this.passwordResetForm.value).subscribe({
-      next: (res) => {
+    this.services.resetPassword(this.passwordResetForm.value).then(
+      (res) => {
         this.toster.success('successfully Send Email')
 
-      }, error: (err) => {
+      }).catch(err => {
         console.log(err)
         this.toster.error("Invalid credentials")
-      }
-    })
+      })
   }
 }

@@ -9,6 +9,7 @@ import { DesignationsComponent } from '../../modal/designations/designations.com
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 
 @Component({
@@ -42,7 +43,7 @@ export class DesignationComponent {
   }
 
   getData() {
-    this.services.getData().subscribe((response: any) => {
+    this.services.getData().then((response: any) => {
       this.rowData = response.data;
       console.log(response)
     })
@@ -77,15 +78,13 @@ export class DesignationComponent {
   
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteData(DesignationId).subscribe({
-          next: () => {
+        this.services.DeleteData(DesignationId).then(
+          () => {
             this.toaster.success('Designation Record Successfully Deleted ', 'Delete');
             this.getData();
-          },
-          error: () => {
+          }).catch(error => {
             this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          });
       }
     });
   }

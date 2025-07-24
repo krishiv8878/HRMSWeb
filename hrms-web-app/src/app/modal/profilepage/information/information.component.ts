@@ -44,12 +44,11 @@ export class InformationComponent {
 
   }
   submitProfile() {
-    this.services.updateData(this.profileForm.value).subscribe({
-      next: () => {
+    this.services.updateData(this.profileForm.value).then(
+      () => {
         this.toaster.success('Recode Successfully Added')
-      }, error: (err) => {
+      }).catch(err=> {
         console.log("invalid data", err)
-      }
-    })
+      })
   }
 }

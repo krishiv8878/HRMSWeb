@@ -29,13 +29,11 @@ export class ResignationComponent {
   ngOnInit() { }
   submitResignation() {
     console.log("resign value", this.resignationForm.value)
-    this.services.createData(this.resignationForm.value).subscribe({
-      next: (val: any) => {
+    this.services.createData(this.resignationForm.value).then(
+      (val: any) => {
         console.log("resign value", this.resignationForm.value)
-      },
-      error: (err) => {
+      }).catch(err => {
         console.log(err)
-      }
-    })
+      })
   }
 }

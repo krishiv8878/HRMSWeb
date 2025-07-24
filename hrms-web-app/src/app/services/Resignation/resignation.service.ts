@@ -1,17 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ResignationService {
-  constructor() { }
+  constructor(private tokenInterceptor : tokenInterceptor) { }
   http = inject(HttpClient)
   Api = environment.host;
 
-  createData(data: any) {
-    return this.http.post<any[]>(this.Api + `/Resignation/AddResignation`, data)
+  async createData(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().post(this.Api + `/Resignation/AddResignation`, data).then(response =>{ return response.data});
   }
 
 }

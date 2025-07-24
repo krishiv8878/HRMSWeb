@@ -44,7 +44,7 @@ export class SkillComponent {
     this.getSkill();
   }
   getSkill() {
-    this.services.getSkill().subscribe((response: any) => {
+    this.services.getSkill().then((response: any) => {
       this.rowData = response.data;
     })
   }
@@ -79,14 +79,12 @@ export class SkillComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteSkill(DesignationId).subscribe({
-          next: () => {
+        this.services.DeleteSkill(DesignationId).then(
+          () => {
             this.toaster.success('Skill Record Successfully Deleted ', 'Delete');
             this.getSkill();
-          },
-          error: () => {
+          }).catch(error=>{
             this.toaster.error('Failed To Delete The Record', 'Error');
-          }
         });
       }
     });

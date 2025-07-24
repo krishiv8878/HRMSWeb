@@ -10,6 +10,7 @@ import { RolemastersComponent } from '../../modal/rolemasters/rolemasters.compon
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-rolemaster',
@@ -36,7 +37,7 @@ export class RolemasterComponent {
   }
 
   getData() {
-    this.services.getAllData().subscribe((response: any) => {
+    this.services.getAllData().then((response: any) => {
       this.rowData = response.data;
       console.log(response)
     })
@@ -72,15 +73,13 @@ export class RolemasterComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteData(DesignationId).subscribe({
-          next: () => {
+        this.services.DeleteData(DesignationId).then(
+          () => {
             this.toaster.success('RoleMaster Record Successfully Deleted ', 'Delete');
             this.getData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          });
       }
     });
   }

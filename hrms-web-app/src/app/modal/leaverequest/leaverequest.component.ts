@@ -35,7 +35,7 @@ export class LeaverequestComponent {
 
   leaveRequestForm = this.formbuilder.group({
     // id: 0,
-    type: ['', [Validators.required]],
+    type: [''] ,
     // employeeId: 0,
     LeaveReason: [''],
     leaveMode: [''],
@@ -50,7 +50,7 @@ export class LeaverequestComponent {
     this.LeaveTypes();
   }
   LeaveTypes() {
-    this.service.getAllData().subscribe((leavetype: any) => {
+    this.service.getAllData().then((leavetype: any) => {
       this.leavetype = leavetype.data;
       console.log("leavess", this.leavetype)
     })
@@ -65,15 +65,13 @@ export class LeaverequestComponent {
     // console.log('Sending leave data:', leaveData);
 
     console.log('Form Value:', this.leaveRequestForm.value);
-    this.services.Leaverequest(this.leaveRequestForm.value).subscribe({
-      next: (val: any) => {
+    this.services.Leaverequest(this.leaveRequestForm.value).then(
+      (val: any) => {
         this.toaster.success('leaveRequest Successfully Added', 'Success');
         this._dialogref.close(true)
-      },
-      error: (error) => {
+      }).catch(error => {
         console.error('API Error:', error);
         this.toaster.error('Something went wrong!', 'Error');
-      }
-    });
+      });
   }
 }

@@ -47,14 +47,12 @@ export class ForgotpasswordComponent {
   }
 
   onSubmit() {
-    this.services.forgotpassword(this.forgotPasswordForm.value).subscribe({ 
-      next: (val: any) => {
+    this.services.forgotpassword(this.forgotPasswordForm.value).then( 
+      (val: any) => {
         this.toster.success('SuccesFully Password Forgot')
         this.router.navigateByUrl('login')
-      },
-      error: (err) => {
+      }).catch(err => {
         console.log(err)
-      }
-    })
+      })
   }
 }

@@ -87,25 +87,23 @@ export class ProjectComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.project.value, this.id).subscribe({
-        next: (val: any) => {
+      this.services.updateData(this.project.value, this.id).then(
+        (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Recode Successfully Updated', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log("err msg", err)
-        }
-      })
+        })
     } else {
-      this.services.createData(this.project.value).subscribe({
-        next: (val: any) => {
+      this.services.createData(this.project.value).then(
+        (val: any) => {
           // console.log("successfully add")
           this.toaster.success(' Recode Successfully Added', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log(err)
-        }
-      })
+        })
     }
   }
   getControl(controleName: string) {

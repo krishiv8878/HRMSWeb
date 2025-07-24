@@ -112,25 +112,23 @@ export class CandidateeComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.CandidateForm.value).subscribe({
-        next: (val: any) => {
+      this.services.updateData(this.CandidateForm.value).then(
+        (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Candidate Recode Successfully Updated', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log("err msg", err)
-        }
-      })
+        })
     } else {
-      this.services.createData(this.CandidateForm.value).subscribe({
-        next: (val: any) => {
+      this.services.createData(this.CandidateForm.value).then(
+        (val: any) => {
           // console.log("successfully add")
           this.toaster.success(' Candidate Recode Successfully Added', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log(err)
-        }
-      })
+        })
     }
   }
 

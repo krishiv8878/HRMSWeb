@@ -26,7 +26,7 @@ export class LeaveRequestComponent {
 
   public columnDefs: ColDef[] = [
     // { field: "emailAddress" },
-    // { field: "type" },
+    // { field: "leaveTypeName" },
     {
       field: "startDate", headerName: 'From', valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
@@ -50,7 +50,7 @@ export class LeaveRequestComponent {
   }
 
   getAllData() {
-    this.services.getData().subscribe((response: any) => {
+    this.services.getData().then((response: any) => {
       this.rowData = response.data;
       console.log('rowww data', this.rowData)
     })

@@ -1,25 +1,26 @@
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AssetsmasterService {
-  constructor() { }
+  constructor(private tokenInterceptor : tokenInterceptor) { }
   apiUrl = environment.host
   http = inject(HttpClient)
 
-  getData() {
-    return this.http.get<any[]>(this.apiUrl + "/AssetsMaster/GetAssetsMaster")
+  async getData() {
+    return await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + "/AssetsMaster/GetAssetsMaster").then(response =>{ return response.data});
   }
-  createData(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/AssetsMaster/AddAssetsMaster`, data)
+  async createData(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/AssetsMaster/AddAssetsMaster`, data).then(response =>{ return response.data});
   }
-  updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/AssetsMaster/UpdateAssetsMaster/`, data);
+  async updateData(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().put(this.apiUrl + `/AssetsMaster/UpdateAssetsMaster/`, data).then(response =>{ return response.data});
   }
-  DeleteData(AssetsMasterId: any) {
-    return this.http.delete(this.apiUrl + `/AssetsMaster/DeleteAssetsMaster?AssetsMasterId=`+ AssetsMasterId);
+  async DeleteData(AssetsMasterId: any) {
+    return await this.tokenInterceptor.getAxiosInstance().delete(this.apiUrl + `/AssetsMaster/DeleteAssetsMaster?AssetsMasterId=`+ AssetsMasterId).then(response =>{ return response.data});
   }
 }

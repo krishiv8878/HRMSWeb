@@ -71,25 +71,24 @@ export class SkillsComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateSkill(this.Skillform.value).subscribe({
-        next: (val: any) => {
+      this.services.updateSkill(this.Skillform.value).then(
+        (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Recode Successfully Updated', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log("err msg", err)
-        }
-      })
-    } else {
-      this.services.createSkill(this.Skillform.value).subscribe({
-        next: (val: any) => {
+        });
+    }
+    else {
+      this.services.createSkill(this.Skillform.value).then(
+        (val: any) => {
           // console.log("successfully add")
           this.toaster.success(' Recode Successfully Added', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }). catch(err => {
           console.log(err)
-        }
-      })
+        });
     }
   }
   getControl(controleName: string) {

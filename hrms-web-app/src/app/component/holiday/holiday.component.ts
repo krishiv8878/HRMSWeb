@@ -12,6 +12,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { HolidaysComponent } from '../../modal/holidays/holidays.component';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-holiday',
@@ -49,7 +50,7 @@ export class HolidayComponent {
   }
 
   getHoliday() {
-    this.services.getHoliday().subscribe((response: any) => {
+    this.services.getHoliday().then((response: any) => {
       this.rowData = response.data;
     })
   }
@@ -85,15 +86,13 @@ export class HolidayComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteHoliday(holidayId).subscribe({
-          next: () => {
+        this.services.DeleteHoliday(holidayId).then(
+          () => {
             this.toaster.success('Holiday Record Successfully Deleted ', 'Delete');
             this.getHoliday();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          });
       }
     });
   }

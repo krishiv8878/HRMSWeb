@@ -48,13 +48,12 @@ export class EmergencyComponent {
   }
   submitcontact() {
     console.log("contact value", this.contact.value)
-    this.services.updateData(this.contact.value).subscribe({
-      next: () => {
+    this.services.updateData(this.contact.value).then(
+      () => {
         console.log("contact value", this.contact.value)
         this.toaster.success('Recode Successfully Added')
-      }, error: (err) => {
+      }).catch(err => {
         console.log("invalid data", err)
-      }
-    })
+      })
   }
 }

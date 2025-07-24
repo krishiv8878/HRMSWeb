@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { CommonModule } from '@angular/common';
 import { MatDividerModule } from '@angular/material/divider';
+import { error } from 'console';
 @Component({
   selector: 'app-attendasedit',
   standalone: true,
@@ -106,16 +107,14 @@ export class AttendaseditComponent {
       }
     };
 
-    this.services.creatRegular(payload).subscribe({
-      next: () => {
+    this.services.creatRegular(payload).then(
+        () => {
         this.toaster.success('Regularization request submitted');
         this.dialogref.close(true);
-      },
-      error: (err) => {
-        console.error('API error:', err);
-        this.toaster.error('Submission failed');
-      }
-    });
+        }).catch(error=>{
+          console.error('API error:', error);
+          this.toaster.error('Submission failed');
+        });
   }
 
   closeDialog() {

@@ -1,28 +1,29 @@
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HolidayservicesService {
-  constructor() { }
+  constructor(private tokenInterceptor :tokenInterceptor) { }
   apiUrl = environment.host
   http = inject(HttpClient)
 
-  getHoliday(){
-    return this.http.get<any[]>(this.apiUrl + "/Holiday/GetHolidays")
+  async getHoliday(){
+    return await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + "/Holiday/GetHolidays").then(response =>{ return response.data});
   }
 
-  createHoliday(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/Holiday/AddHoliday/`, data)
+  async createHoliday(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/Holiday/AddHoliday/`, data).then(response =>{ return response.data});
   }
 
-  updateHoliday(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/Holiday/UpdateHoliday/`, data);
+  async updateHoliday(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().put(this.apiUrl + `/Holiday/UpdateHoliday/`, data).then(response =>{ return response.data});
   }
 
-  DeleteHoliday(holidayId: any) {
-    return this.http.delete(this.apiUrl + `/Holiday/DeleteHoliday?holidayId=`+ holidayId);
+  async DeleteHoliday(holidayId: any) {
+    return await this.tokenInterceptor.getAxiosInstance().delete(this.apiUrl + `/Holiday/DeleteHoliday?holidayId=`+ holidayId).then(response =>{ return response.data});
   }
 }

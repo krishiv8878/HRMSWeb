@@ -8,6 +8,7 @@ import { ActionComponent } from '../action/action.component';
 import { LeaveComponent } from '../../modal/leave/leave.component';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-leavetype',
@@ -39,7 +40,7 @@ export class LeavetypeComponent {
   }
 
   getAllData() {
-    this.services.getAllData().subscribe((response: any) => {
+    this.services.getAllData().then((response: any) => {
       this.rowData = response.data;
       console.log(response)
     })
@@ -74,15 +75,13 @@ export class LeavetypeComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteData(DesignationId).subscribe({
-          next: () => {
+        this.services.DeleteData(DesignationId).then(
+          () => {
             this.toaster.success('Leave Record Successfully Deleted ', 'Delete');
             this.getAllData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          });
       }
     });
   }

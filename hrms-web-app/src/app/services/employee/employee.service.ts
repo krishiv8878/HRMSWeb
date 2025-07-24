@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 // import { IEmployee } from '../interface/intrface';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
+import { themeAlpine } from 'ag-grid-community';
 
 @Injectable({
   providedIn: 'root'
@@ -11,21 +13,21 @@ import { environment } from '../../../environments/environment';
 export class EmployeeService {
   http = inject(HttpClient)
   apiUrl = environment.host
-  constructor() { }
+  constructor(private tokenInterceptor : tokenInterceptor) { }
 
-  getData(){
-    return  this.http.get<any[]>(this.apiUrl + "/Employee/GetEmployees");
+  async getData(){
+    return  await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + "/Employee/GetEmployees").then(response =>{ return response.data});
   }
-  getManager(){
-    return  this.http.get<any[]>(this.apiUrl + "/Employee/GetManagers");
+  async getManager(){
+    return  await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + "/Employee/GetManagers").then(response =>{ return response.data});
   }
-  createData(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/Employee/AddEmployee`, data)
+  async createData(data: any) {
+    return  await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/Employee/AddEmployee`, data).then(response =>{ return response.data});
   }
-  updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/Employee/UpdateEmployee/`, data);
+  async updateData(data: any) {
+    return  await this.tokenInterceptor.getAxiosInstance().put(this.apiUrl + `/Employee/UpdateEmployee/`, data).then(response =>{ return response.data});
   }
-  DeleteData(employeeId: any) {
-    return this.http.delete(this.apiUrl + `/Employee/DeleteEmployee?employeeId=` + employeeId);
+  async DeleteData(employeeId: any) {
+    return  await this.tokenInterceptor.getAxiosInstance().delete(this.apiUrl + `/Employee/DeleteEmployee?employeeId=` + employeeId).then(response =>{ return response.data});
   }
 }

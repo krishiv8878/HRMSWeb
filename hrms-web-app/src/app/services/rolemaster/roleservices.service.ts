@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { tokenInterceptor } from '../tokenInterceptor/tokeninterceptor.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,18 +9,18 @@ import { environment } from '../../../environments/environment';
 export class RoleservicesService {
   http = inject(HttpClient)
   apiUrl = environment.host;
-  constructor() { }
+  constructor(private tokenInterceptor : tokenInterceptor) { }
 
-  getAllData() {
-    return this.http.get<any[]>(this.apiUrl + "/RoleMaster/GetRoles");
+  async getAllData() {
+    return await this.tokenInterceptor.getAxiosInstance().get(this.apiUrl + "/RoleMaster/GetRoles").then(response =>{ return response.data});
   }
-  createData(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/RoleMaster/AddRole`, data)
+  async createData(data: any) {
+    return await this.tokenInterceptor.getAxiosInstance().post(this.apiUrl + `/RoleMaster/AddRole`, data).then(response =>{ return response.data});
   }
-  updateData(data: any, RoleId:any) {
-    return this.http.put<any[]>(this.apiUrl + `/RoleMaster/UpdateRole/`+RoleId, data);
+  async updateData(data: any, RoleId:any) {
+    return await this.tokenInterceptor.getAxiosInstance().put(this.apiUrl + `/RoleMaster/UpdateRole/`+RoleId, data).then(response =>{ return response.data});
   }
-  DeleteData(RoleMasterId: any) {
-    return this.http.delete(this.apiUrl + `/RoleMaster/DeleteRole/` + RoleMasterId);
+  async DeleteData(RoleMasterId: any) {
+    return await this.tokenInterceptor.getAxiosInstance().delete(this.apiUrl + `/RoleMaster/DeleteRole/` + RoleMasterId).then(response =>{ return response.data});
   }
 }

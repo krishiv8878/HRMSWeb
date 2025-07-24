@@ -51,7 +51,7 @@ export class DocumentComponent {
     this.AllData();
   }
   AllData() {
-    this.services.getAll().subscribe((response: any) => {
+    this.services.getAll().then((response: any) => {
       this.documents = response.data
       console.log("data", response.data)
     })
@@ -60,7 +60,7 @@ export class DocumentComponent {
   viewDocument(id: number) {
     console.log("Selected Document ID:", id); // Debugging ke liye
 
-    this.services.viewDocument(id).subscribe((response: any) => {
+    this.services.viewDocument(id).then((response: any) => {
       const url = window.URL.createObjectURL(response);
       this.selectedDocument = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     }, error => {

@@ -10,6 +10,7 @@ import { CandidateeComponent } from '../../modal/candidatee/candidate.component'
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-candidate',
@@ -45,10 +46,9 @@ export class CandidateComponent {
     this.getData();
   }
 
-  getData() {
-    this.services.getData().subscribe((responce: any) => {
+  async getData() {
+    await this.services.getData().then((responce: any) => {
       this.rowData = responce.data;
-
     })
   }
   pagination = true;
@@ -81,15 +81,13 @@ export class CandidateComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteData(candidateId).subscribe({
-          next: () => {
+        this.services.DeleteData(candidateId).then(
+          () => {
             this.toaster.success('Candidate Record Successfully Deleted ', 'Delete');
             this.getData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          });
       }
     });
 

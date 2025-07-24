@@ -49,18 +49,16 @@ export class DocumentsComponent {
     formData.append('documentName', documentName ?? '');
     formData.append('file', this.selectedFile);
 
-    this.services.creatDocument(formData).subscribe({
-      next: (val: any) => {
+    this.services.creatDocument(formData).then(
+      (val: any) => {
         this.toster.success('Document uploaded successfully!', 'Success');
         // this.documentForm.reset();
         // this.selectedFile = null;
         // this.selectedFileName = '';
         this.dialog.close(true)
-      },
-      error: (err) => {
+      }).catch(err => {
         this.toster.error('Upload failed', 'Error');
         console.error('error', err);
-      }
-    });
+      });
   }
 }

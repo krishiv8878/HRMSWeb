@@ -82,25 +82,23 @@ export class AssetsmastersComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateData(this.Assets.value).subscribe({
-        next: (val: any) => {
+      this.services.updateData(this.Assets.value).then(
+        (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Assets Recode Successfully Updated', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log("err msg", err)
-        }
-      })
+        });
     } else {
-      this.services.createData(this.Assets.value).subscribe({
-        next: (val: any) => {
+      this.services.createData(this.Assets.value).then(
+        (val: any) => {
           // console.log("successfully add")
           this.toaster.success(' Assets Recode Successfully Added', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log(err)
-        }
-      })
+        });
     }
   }
   getControl(controleName: string) {

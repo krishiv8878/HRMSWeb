@@ -71,25 +71,23 @@ export class HolidaysComponent {
       }
     }
     if (this.isEdit) {
-      this.services.updateHoliday(this.Holidayform.value).subscribe({
-        next: (val: any) => {
+      this.services.updateHoliday(this.Holidayform.value).then(
+        (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Holiday Recode Successfully Updated', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log("err msg", err)
-        }
-      })
+        })
     } else {
-      this.services.createHoliday(this.Holidayform.value).subscribe({
-        next: (val: any) => {
+      this.services.createHoliday(this.Holidayform.value).then(
+        (val: any) => {
           // console.log("successfully add")
           this.toaster.success(' Holiday Recode Successfully Added', 'success')
           this._dialogref.close(true);
-        }, error: (err) => {
+        }).catch(err => {
           console.log(err)
-        }
-      })
+        })
     }
   }
   getControl(controleName: string) {

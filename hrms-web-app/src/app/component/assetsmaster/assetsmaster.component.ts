@@ -10,6 +10,7 @@ import { AssetsmastersComponent } from '../../modal/assetsmasters/assetsmasters.
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-assetsmaster',
@@ -47,7 +48,7 @@ export class AssetsmasterComponent {
     this.getData();
   }
   getData() {
-    this.services.getData().subscribe((response: any) => {
+    this.services.getData().then((response: any) => {
       this.rowData = response.data;
     })
   }
@@ -102,15 +103,13 @@ export class AssetsmasterComponent {
   
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.DeleteData(AssetsMasterId).subscribe({
-          next: () => {
+        this.services.DeleteData(AssetsMasterId).then(
+          () => {
             this.toaster.success('Assert Record Successfully Deleted ', 'Delete');
             this.getData();
-          },
-          error: () => {
+          }).catch(error=>{
             this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          });
       }
     });
   }

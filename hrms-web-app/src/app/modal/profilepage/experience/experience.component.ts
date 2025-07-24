@@ -28,12 +28,11 @@ export class ExperienceComponent {
 
   })
   submitExperience() {
-    this.services.updateData(this.experienceForm.value).subscribe({
-      next: () => {
+    this.services.updateData(this.experienceForm.value).then(
+      () => {
         console.log(this.experienceForm.value)
-      }, error: (err) => {
+      }).catch(err => {
         console.log("error", err)
-      }
-    })
+      })
   }
 }

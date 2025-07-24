@@ -10,6 +10,7 @@ import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { ShiftComponent } from '../../modal/shift/shift.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { error } from 'console';
 
 @Component({
   selector: 'app-shiftemployee',
@@ -47,7 +48,7 @@ export class ShiftemployeeComponent {
     this.getallData();
   }
   getallData() {
-    this.services.getData().subscribe((responce: any) => {
+    this.services.getData().then((responce: any) => {
       this.rowData = responce.data;
     })
   }
@@ -70,15 +71,13 @@ export class ShiftemployeeComponent {
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        this.services.deleteData(DesignationId).subscribe({
-          next: () => {
+        this.services.deleteData(DesignationId).then(
+          () => {
             this.toaster.success('Shift Record Successfully Deleted ', 'Delete');
             this.getallData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+          }).catch(error => {
+            this.toaster.error('Failed To Delete The Record', error);
+          });
       }
     });
   }

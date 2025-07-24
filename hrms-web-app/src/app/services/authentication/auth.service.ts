@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { map } from 'rxjs';
+import axios, { Axios } from 'axios';
 
 @Injectable({
   providedIn: 'root'
@@ -11,21 +12,21 @@ export class AuthService {
   http = inject(HttpClient)
   apiUrl = environment.host
 
-  createLogin(data: any) {
-    return this.http.post<any>(this.apiUrl + `/UserLogin/Login?email=${data.email}&password=${data.password}`, data, { withCredentials: true }).pipe(map(data => {
-      return data;
-    }))
+  async createLogin(data: any) {
+    return await axios.post(this.apiUrl + `/UserLogin/Login?email=${data.email}&password=${data.password}`, data, { withCredentials: true }).then(data => {
+      return data.data;
+    })
   }
        
-  createRegister(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/UserRegistration/Registration`, data)
+  async createRegister(data: any) {
+    return await axios.post(this.apiUrl + `/UserRegistration/Registration`, data).then(response =>{ return response.data});
   }
 
-  resetPassword(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/UserLogin/forgot-password`, data)
+  async resetPassword(data: any) {
+    return await axios.post(this.apiUrl + `/UserLogin/forgot-password`, data).then(response =>{ return response.data});
   }
 
-  forgotpassword(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/UserLogin/reset-password`, data)
+  async forgotpassword(data: any) {
+    return await axios.post(this.apiUrl + `/UserLogin/reset-password`, data).then(response =>{ return response.data});
   }
 }

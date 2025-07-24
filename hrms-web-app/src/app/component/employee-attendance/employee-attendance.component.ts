@@ -122,7 +122,7 @@ export class EmployeeAttendanceComponent {
   getAllData() {
     const user = localStorage.getItem("employeeId");
     if (user) {
-      this.services.getAllData().subscribe((response: any) => {
+      this.services.getAllData().then((response: any) => {
         const today = new Date();
         const last30Days = Array.from({ length: 30 }, (_, i) => {
           const date = new Date();
@@ -238,7 +238,7 @@ export class EmployeeAttendanceComponent {
       fullDateTimeStr, // totalHours
       fullDateTimeStr, // effectiveHours
       "Present"
-    ).subscribe(response => {
+    ).then(response => {
 
       console.log("Attendance Saved:", response);
       this.getAllData(); // Refresh table
