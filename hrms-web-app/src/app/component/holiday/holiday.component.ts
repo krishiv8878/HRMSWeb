@@ -19,7 +19,6 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
   imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule, MatDialogModule, MatButtonModule],
   templateUrl: './holiday.component.html',
   styleUrl: './holiday.component.scss',
-  providers: [HolidayservicesService]
 })
 export class HolidayComponent {
   services = inject(HolidayservicesService)

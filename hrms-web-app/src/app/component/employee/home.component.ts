@@ -22,7 +22,6 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
   imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule, MatDialogModule, MatButtonModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
-  providers: [EmployeeService]
 })
 
 export class HomeComponent {
