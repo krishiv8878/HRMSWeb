@@ -24,6 +24,7 @@ import { authGuard } from './auth.guard';
 import { ResignationComponent } from './modal/resignation/resignation.component';
 import { ResetpasswordComponent } from './modal/resetpassword/resetpassword.component';
 import { ForgotpasswordComponent } from './modal/forgotpassword/forgotpassword.component';
+import { RequestsApprovalsComponent } from './component/requests-approvals/requests-approvals.component';
 
 
 
@@ -102,6 +103,9 @@ export const routes: Routes = [
             },
             {
                 path: 'resignation', component: ResignationComponent
+            },
+            {
+                path: 'request', component: RequestsApprovalsComponent
             },
         ]
     }

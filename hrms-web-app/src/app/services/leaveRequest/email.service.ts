@@ -20,6 +20,19 @@ export class EmailService {
   }
   
   Leaverequest(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/AddLeaveRequest`, data, {withCredentials:true})
+    return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/AddLeaveRequest`, data )
+  }
+  approveLeaveRequest(body:any) {
+    return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, body )
+  }
+  UpdateLeaverequest(data: any) {
+    return this.http.put<any[]>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest/${data.id}`, data)
+  }
+  GetAllEmployeesLeaveRequest( ){
+     return this.http.get<any[]>(this.apiUrl + `/LeaveRequest/GetAllEmployeesLeaveRequest`)
+  }
+
+DeleteData(ProjectMasterId: any) {
+    return this.http.delete(this.apiUrl + `/LeaveRequest/DeleteLeaveRequest/` + ProjectMasterId);
   }
 }

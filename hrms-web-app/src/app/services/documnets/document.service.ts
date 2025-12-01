@@ -17,7 +17,6 @@ export class DocumentService {
   }
   creatDocument(formData: FormData): Observable<any> {
     const documentName = formData.get('documentName') as string;
-    // debugger
     return this.http.post<any[]>(this.apiUrl + `/EmployeeDocument/UploadDocument?documentName=${encodeURIComponent(documentName)}`, formData).pipe(
       tap(() => console.log(' API called')),
       catchError((error) => {

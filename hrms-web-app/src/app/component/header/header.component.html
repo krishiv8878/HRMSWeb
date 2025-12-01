@@ -10,11 +10,19 @@
       <div class="user-img">
         <mat-icon>person</mat-icon>
       </div>
+      {{getUserName()}}
       <mat-icon [matMenuTriggerFor]="menu">keyboard_arrow_down</mat-icon>
       <mat-menu #menu="matMenu" class="custom-menu">
-        <button mat-menu-item [routerLink]="['/index/user-profile']"><mat-icon>person</mat-icon>Add Profile</button> 
+        <div class="text-center bg-warning-subtle px-3">
+        <h5 >Role: {{getUserRole()}}</h5>
+        
+        </div>
+        <div>
+          <button mat-menu-item [routerLink]="['/index/user-profile']"><mat-icon>person</mat-icon>Add Profile</button> 
         <button mat-menu-item (click)="resignation()"><mat-icon>exit_to_app</mat-icon>Resignation</button>        
         <button (click)="logout()" mat-menu-item> <mat-icon>power_settings_new</mat-icon>Log Out</button>
+        </div>
+        
       </mat-menu>
       <!-- <button routerLink="login"><mat-icon>person</mat-icon>logout</button> -->
     </div>

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,9 +13,13 @@ import { CommonModule } from '@angular/common';
   templateUrl: './sidbar.component.html',
   styleUrl: './sidbar.component.scss'
 })
-export class SidbarComponent {
-  constructor() { }
-  menuItems = [
+export class SidbarComponent implements OnInit {
+  constructor() {
+       
+   }
+  menuItems : any[] = [];
+  ngOnInit(): void {
+    this.menuItems = [
     { label: 'Home', icon: 'home', route: '/index/home' },
     // { label: 'SERVICES', icon: 'build', route: '/index/services' },
     { label: 'Skill', icon: 'psychology', route: '/index/skill' },
@@ -32,4 +36,10 @@ export class SidbarComponent {
     { label: 'Docs', icon: 'description', route: '/index/document' },
     { label: 'leave Request', icon: 'description', route: '/index/leaveRequest' },
   ];
+
+ if(localStorage.getItem("RoleType")?.split(',').some( (x): any=> x ==='Manager')){
+     this.menuItems = [...this.menuItems ,{ label: 'Requests Approvals', icon: 'description', route: '/index/request' }]
+    }
+    console.log("this.menuItems",this.menuItems)
+  }
 }

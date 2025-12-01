@@ -17,10 +17,9 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 @Component({
   selector: 'app-skill',
   standalone: true,
-  imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule, MatDialogModule, MatButtonModule],
+  imports: [CommonModule, AgGridAngular, MatIconModule, AgGridModule, MatDialogModule, MatButtonModule],
   templateUrl: './skill.component.html',
   styleUrl: './skill.component.scss',
-  providers: [SkillservicesService]
 })
 export class SkillComponent {
   services = inject(SkillservicesService)

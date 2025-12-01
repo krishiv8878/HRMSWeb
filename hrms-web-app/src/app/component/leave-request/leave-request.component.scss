@@ -24,3 +24,13 @@
         font-size: 16px;
     }
 }
+
+.status-approved {
+  color: green !important;
+  font-weight: bold;
+}
+
+.status-rejected {
+  color: red !important;
+  font-weight: bold;
+}

@@ -1,0 +1,30 @@
+button {
+    border: none;
+    outline: none;
+    background: transparent;
+    padding-top: 5px;
+
+}
+
+.button {
+    gap: 0.5rem;
+    display: flex;
+    padding-top: 0.4rem;
+}
+
+// }
+.edit {
+    color: blue;
+    font-size: 15px;
+    /* border-radius: 10px; */
+    height: 30px;
+    width: 30px;
+    // background: #0000ff30;
+    background: rgb(0 0 255 / 11%);
+
+    &:hover {
+        background: blue;
+        transition: 0.5s ease;
+        color: white;
+    }
+}

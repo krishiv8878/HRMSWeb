@@ -74,14 +74,16 @@ export class LoginComponent {
       this.services.createLogin(this.login.value).subscribe({
         next: (res) => {
           console.log("ress", res)
-          localStorage.setItem('employeeId', res.data)
+          localStorage.setItem('employeeId', res.data.userId)
           localStorage.setItem('LoginTokan', res.data.token);
+          localStorage.setItem('UserName', res.data.userName);
+          localStorage.setItem('RoleType', res.data.roleType);
 
           this.toster.success('successfully login', 'success')
 
           setTimeout(() => {
             this.toster.clear();
-            this.router.navigateByUrl('index')
+            this.router.navigateByUrl('index/home')
             this.login.reset();
           }, 1000);
         }, error: (res) => {

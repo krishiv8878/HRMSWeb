@@ -1,0 +1,12 @@
+<mat-tab-group [selectedIndex]="0" (selectedTabChange)="onTabChanged($event)">
+  <mat-tab label="Leave Request"> 
+     <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
+        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
+        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" /> 
+     </mat-tab>
+  <mat-tab label="Time Attend Request">  
+    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
+        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
+        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    </mat-tab>
+</mat-tab-group>
