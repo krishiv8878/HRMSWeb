@@ -4,7 +4,7 @@
             <img src="assets/images/image.png" alt="" />
         </div>
         <mat-nav-list>
-                    
+
             <!-- <div class="side-menu">
                 <a class="item" [routerLink]="['/index/home']"><mat-icon [matMenuTriggerFor]="menu">groups</mat-icon>
                     <mat-menu #menu="matMenu" class="custom-menu">
@@ -53,12 +53,15 @@
             <!-- <div class="side-menu">
                 <a class="item" href="/index/contact"><mat-icon>call</mat-icon>contact</a>
             </div> -->
-            <div class="side-menu" *ngFor="let item of menuItems">
-                <a class="item" [routerLink]='[item.route]' routerLinkActive="active">
-                    <mat-icon>{{item.icon}}</mat-icon>
-                    <span class="menu-text">{{item.label}}</span>
-                </a>
-            </div>
+            <ng-container *ngFor="let item of menuItems">
+                <div class="side-menu" [routerLink]='[item.route]' routerLinkActive="active">
+                    <a class="item">
+                        <mat-icon>{{item.icon}}</mat-icon>
+                        <span class="menu-text">{{item.label}}</span>
+                    </a>
+                </div>
+            </ng-container>
+
         </mat-nav-list>
     </div>
 </div>

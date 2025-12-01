@@ -47,9 +47,9 @@ export class HomeComponent {
     { field: "rolenames", headerName: 'Roles', tooltipField: "rolenames",minWidth: 200 },
     { field: "managerName", headerName: 'Managers', tooltipField: "managerName" ,minWidth: 300},
     { field: "gender", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
+    { field: "isActive", pinned: 'right',width: 100,cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
     // { field: "isActive", cellRenderer: TogglebuttonComponent },
-    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
+    { field: "action", cellRenderer: ActionComponent,pinned: 'right',width: 100, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) }, }
   ]
 
   rowData: any[] = [];

@@ -41,7 +41,6 @@ export class ForgotpasswordComponent {
       const token = params['Token'];
       if (token) {
         this.forgotPasswordForm.patchValue({ token });
-        this.onSubmit(); //  Optional: remove if you want manual click
       }
     });
   }

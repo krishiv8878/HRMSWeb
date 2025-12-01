@@ -23,12 +23,17 @@ export class HeaderComponent {
   constructor() { }
   router = inject(Router)
   dialog = inject(MatDialog)
-
+getUserName(){
+  return `${localStorage.getItem('UserName')}`
+}
+getUserRole(){
+  return `${localStorage.getItem('RoleType')}`
+}
   toggleSidebar() {
     this.toggleSidebarForMe.emit();
   }
   logout() {
-    localStorage.removeItem("LoginTokan");
+    localStorage.clear();
     this.router.navigate(['login'])
   }
   resignation() {

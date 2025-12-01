@@ -43,7 +43,6 @@ export class SkillsComponent {
 
   ngOnInit() {
     this.Skillform.patchValue(this.data);
-    console.log('update data', this.data)
     if (this.data) {
       this.isEdit = true;
       // this.services.getSkill(this.data).subscribe((result) => {

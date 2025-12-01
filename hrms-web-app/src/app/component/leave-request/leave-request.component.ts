@@ -9,6 +9,10 @@ import { HttpClientModule } from '@angular/common/http';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { ColDef } from 'ag-grid-community';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { ActionComponent } from '../action/action.component';
+import { ToastrService } from 'ngx-toastr';
+import { ProjectComponent } from '../../modal/project/project.component';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-leave-request',
@@ -22,11 +26,10 @@ export class LeaveRequestComponent {
   services = inject(EmailService)
   leaveservices = inject(LeavetypeService)
   dialog = inject(MatDialog)
+    toaster = inject(ToastrService)
   rowData: any[] = [];
 
   public columnDefs: ColDef[] = [
-    // { field: "emailAddress" },
-    // { field: "type" },
     {
       field: "startDate", headerName: 'From', valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
@@ -38,18 +41,54 @@ export class LeaveRequestComponent {
       }
     },
     { field: "leaveReason", headerName: 'Reason', },
-    { field: "isApproved", headerName: 'Status' },
+    { field: "leaveMode", headerName: 'Mode', },
+    { field: "leaveTypeName", headerName: 'Leave Type', },
+    { field: "isApproved", headerName: 'Status', valueGetter: params => params.data.approvedBy !=  0 ? params.data.isApproved ? 'Approved' : 'Rejected' : 'Pending',
+       cellClassRules: {
+    'status-approved': params => params.data.isApproved === true && params.data.approvedBy !=  0,
+    'status-rejected': params => params.data.isApproved === false && params.data.approvedBy !=  0
+  } },
+      { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
+  
   ]
 
   ngOnInit() {
     this.getAllData();
-    // this.leaveservices.getAllData().subscribe((response: any) => {
-    //   this.rowData = response.data;
-    //   console.log('rowww data', this.rowData)
-    // })
+  }
+  Edit(data: any) {
+    const dialogRef = this.dialog.open(LeaverequestComponent, {
+       width: '600px',
+      data,
+    })
+    dialogRef.afterClosed().subscribe({
+      next: (val) => {
+       this.getAllData();
+      }
+    })
   }
 
+  Delete(DesignationId: any) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '350px',
+      data: { id: DesignationId }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.services.DeleteData(DesignationId).subscribe({
+          next: () => {
+            this.toaster.success('Leave Request Deleted Sucessfully', 'Delete');
+           this.getAllData();
+          },
+          error: () => {
+            this.toaster.error('Failed To Delete The Record', 'Error');
+          }
+        });
+      }
+    });
+  }
   getAllData() {
+    this.rowData = []
     this.services.getData().subscribe((response: any) => {
       this.rowData = response.data;
       console.log('rowww data', this.rowData)
@@ -67,10 +106,16 @@ export class LeaveRequestComponent {
   };
 
   openAddForm() {
-    this.dialog.open(LeaverequestComponent, {
+  let dialogRef =  this.dialog.open(LeaverequestComponent, {
       width: '600px',
       // height: '100vh',
       // position: { right: '0px' },
+    })
+
+     dialogRef.afterClosed().subscribe({
+      next: (val) => {
+       this.getAllData();
+      }
     })
   }
 }

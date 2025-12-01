@@ -100,10 +100,8 @@ export class AttendaseditComponent {
     const payload = {
       regularizationReason,
       selectedDate: selectedDate.toISOString(),
-      attendance: {
         clockIn: this.combine(selectedDate, clockIn),
         clockOut: this.combine(selectedDate, clockOut),
-      }
     };
 
     this.services.creatRegular(payload).subscribe({
