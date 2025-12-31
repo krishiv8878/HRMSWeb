@@ -27,8 +27,9 @@ export class AttendaseditComponent {
   logs: { clockIn: string; clockOut: string }[] = [];
 
   attendaseform = this.formbuilder.group({
+    RequestType: ['Regularization', Validators.required],
     selectedDate: [{ value: new Date(), disabled: true }],
-    regularizationReason: ['', Validators.required],
+    Reason: ['', Validators.required],
     clockIn: [''],
     clockOut: ['']
   })
@@ -37,8 +38,19 @@ export class AttendaseditComponent {
     console.log("Received Date:", this.data?.Date);
 
     if (this.data?.Date) {
-      let receivedDate = new Date(this.data.Date);
-      console.log("Parsed Date Before Fix:", receivedDate);
+      const parts = this.data.Date.split(" "); 
+
+      const day = parseInt(parts[1], 10);
+      const monthStr = parts[2];
+      const year = new Date().getFullYear();
+
+      const monthMap = {Jan: 0,Feb: 1,Mar: 2,Apr: 3,May: 4,Jun: 5,Jul: 6,Aug: 7,Sep: 8,Oct: 9,Nov: 10,Dec: 11};
+
+      const month = monthMap[monthStr as keyof typeof monthMap];
+      console.log("Parsed Date Components:", { month, day, year });
+
+      const receivedDate = new Date(year, month, day);
+      console.log("Parsed Date:", receivedDate);
 
       if (!isNaN(receivedDate.getTime())) {
         receivedDate.setFullYear(new Date().getFullYear());
@@ -90,16 +102,17 @@ export class AttendaseditComponent {
       return;
     }
 
-    const { selectedDate, clockIn, clockOut, regularizationReason } = this.attendaseform.getRawValue();
+    const { selectedDate, clockIn, clockOut, Reason } = this.attendaseform.getRawValue();
 
-    if (!selectedDate || !clockIn || !clockOut || !regularizationReason) {
+    if (!selectedDate || !clockIn || !clockOut || !Reason) {
       this.toaster.warning('All fields are required');
       return;
     }
 
     const payload = {
-      regularizationReason,
-      selectedDate: selectedDate.toISOString(),
+      RequestType: 'Regularization',
+      Reason,
+      RequestedDate: selectedDate.toISOString(),
         clockIn: this.combine(selectedDate, clockIn),
         clockOut: this.combine(selectedDate, clockOut),
     };

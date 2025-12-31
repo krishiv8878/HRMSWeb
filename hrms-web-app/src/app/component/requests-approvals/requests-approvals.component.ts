@@ -5,12 +5,14 @@ import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ActionComponent } from '../action/action.component';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { RequestsApprovalsModalComponent} from '../../modal/requests-approvals-modal/requests-approvals-modal.component';
 import { RequestActionComponent } from '../request-action/request-action.component';
+import { stat } from 'fs';
 @Component({
   selector: 'app-requests-approvals',
   standalone: true,
@@ -20,6 +22,7 @@ import { RequestActionComponent } from '../request-action/request-action.compone
 })
 export class RequestsApprovalsComponent implements OnInit {
   service = inject(EmailService)
+  service2 = inject(AttendanceRequestService)
     dialog = inject(MatDialog)
         toaster = inject(ToastrService)
     
@@ -34,8 +37,9 @@ export class RequestsApprovalsComponent implements OnInit {
     flex: 1,
     minWidth: 120,
   };
+  currentTabIndex = 0;
 
-  public columnDefs: ColDef[] = [
+  public leaveRequestColDef: ColDef[] = [
     {field : "fullName",headerName:"Requested By"},
     {field : "leaveMode",headerName:"Leave Mode"},
     
@@ -54,9 +58,32 @@ export class RequestsApprovalsComponent implements OnInit {
     {field : "isApproved",headerName:"Is Approved"},
    { field: "action", cellRenderer: RequestActionComponent, cellRendererParams: { onSendRequest:(row: any, isApproved: boolean) =>  this.SendRequest(row, isApproved), } }
   ];
-  ngOnInit(): void {
+  public AttendanceRequestColDef: ColDef[] = [
+    {field : "employeeName",headerName:"Requested By"},
+    {field : "requestType",headerName:"Request Type"},
+   {
+      field: "requestedDate", headerName: 'Requested Date', valueFormatter: params => {
+        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+      }
+    },
+    {
+      field: "clockIn", headerName: 'ClockInTime', valueFormatter: params => {
+        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+      }
+    },
+    {
+      field: "clockOut", headerName: 'ClockOutTime', valueFormatter: params => {
+        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
+      }
+    },
+    { field: "reason", headerName: 'Reason', },
+    {field : "status",headerName:"Status"},
+    {field: "action", cellRenderer: RequestActionComponent, cellRendererParams: { onSendRequest:(row:any) =>  this.Edit(row), } }
 
-    this.onTabChanged({ index: 1 })
+  ];
+  columnDefs: ColDef[] = this.leaveRequestColDef;
+  ngOnInit(): void {
+    this.onTabChanged({ index: 0 })
     this.callFirstTabAPI()
   }
 
@@ -82,17 +109,44 @@ export class RequestsApprovalsComponent implements OnInit {
         }
       });
     }
+    
+    Edit(DesignationId: any) 
+    {
+      console.log("Test",DesignationId)
+      const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
+        width: '350px',
+        data:{ ...DesignationId , status : DesignationId.status},
+      });
+      dialogRef.afterClosed().subscribe((confirmed: boolean) => 
+        {
+        if (confirmed) {
+          DesignationId.status = "Approved"
+          this.service2.updateData(DesignationId).subscribe({
+            next: () => {
+              this.toaster.success('Attendance Request Approved Sucessfully', 'Delete');
+              this.callSecondTabAPI()
+            },
+            error: () => {
+              this.toaster.error('Failed To Approve The Record', 'Error');
+            }
+          });
+        }
+      });
+    }
 
  getData() {
     
   }
   onTabChanged(event: any) {
+    this.currentTabIndex = event.index;
     switch (event.index) {
       case 0:
+        this.columnDefs = this.leaveRequestColDef;
         this.callFirstTabAPI();
         break;
 
       case 1:
+        this.columnDefs = this.AttendanceRequestColDef;
         this.callSecondTabAPI();
         break;
 
@@ -100,20 +154,26 @@ export class RequestsApprovalsComponent implements OnInit {
         this.callThirdTabAPI();
         break;
     }
-
-
   }
   callThirdTabAPI() { }
-  callSecondTabAPI() { }
+  callSecondTabAPI() {
+        this.service2.getAllData().subscribe((response: any) => {
+          this.rowData = response.data.map((x: any) => {
+            console.log(x);
+      return { 
+        ...x,
+      };
+    });
+    })
+  }
   callFirstTabAPI() { 
-this.service.GetAllEmployeesLeaveRequest().subscribe((response: any) => {
-      this.rowData = response.data.map((x: any) => {
-  return { 
-    ...x, 
-    fullName: `${x.employee.firstName} ${x.employee.lastName}`,isApproved : x.isApproved ? 'YES':'NO' 
-  };
-});
-
+      this.service.GetAllEmployeesLeaveRequest().subscribe((response: any) => {
+            this.rowData = response.data.map((x: any) => {
+        return { 
+          ...x, 
+          fullName: `${x.employee.firstName} ${x.employee.lastName}`,isApproved : x.isApproved ? 'YES':'NO' 
+        };
+      });
     })
 
   }

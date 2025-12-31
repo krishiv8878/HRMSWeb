@@ -15,14 +15,16 @@ export class EmployeeeService {
     return this.http.get<any[]>(this.apiUrl + `/EmployeeAttendance/GetAll`)
   }
 
-  createData(employeeId: number, clockIn: string | null, clockOut: string | null, totalHours: string | number | null, effectiveHours: string | number | null, attendance: string): Observable<any> {
+  createData(employeeId: number, clockIn: string | null, clockOut: string | null, totalHours: string | number | null, effectiveHours: string | number | null, attendance: string, createdDate: string | null, attendanceDate: string | null): Observable<any> {
     const requestData = {
       employeeId: employeeId,
       clockIn: clockIn,
       clockOut: clockOut,
       totalHours: totalHours,
       attendance: attendance,
-      effectiveHours: effectiveHours
+      effectiveHours: effectiveHours,
+      createdDate: createdDate,
+      attendanceDate: attendanceDate
     };
     console.log("Sending API Request:", requestData);
 
@@ -33,6 +35,10 @@ export class EmployeeeService {
   }
 
   creatRegular(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/EmployeeAttendance/AddRegularizationRequest`, data,{withCredentials:true})
+    return this.http.post(this.apiUrl + `/AttendanceRequest/AddAttendanceRequest`,data)
   }
+
+  // creatRegular(data: any) {
+  //   return this.http.post<any[]>(this.apiUrl + `/EmployeeAttendance/AddRegularizationRequest`, data,{withCredentials:true})
+  // }
 }
