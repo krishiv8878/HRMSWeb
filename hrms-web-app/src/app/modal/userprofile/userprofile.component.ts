@@ -13,6 +13,7 @@ import { ExperienceComponent } from '../profilepage/experience/experience.compon
 // import { BankinfoComponent } from '../profilepage/bankinfo/bankinfo.component';
 import { PassportinfoComponent } from '../profilepage/passportinfo/passportinfo.component';
 import { PaymeenInfoComponent } from '../paymeen-info/paymeen-info.component';
+import { SkillservicesService } from '../../services/skill/skillservices.service';
 
 @Component({
   selector: 'app-userprofile',
@@ -26,17 +27,23 @@ export class UserprofileComponent {
   services = inject(EmployeeService)
   router = inject(Router)
   paymentservices = inject(PaymentinfoService)
+  skillservices = inject(SkillservicesService)
   employedata: any;
   paymentdata: any;
   dialgo = inject(MatDialog)
+  skills : any[] = [];
 
   ngOnInit() {
-    const userId = localStorage.getItem('employeeId');
+    this.getData();
+  }
 
+  getData(){
+    const userId = localStorage.getItem('employeeId');
     if (userId) {
       this.services.getData().subscribe((response: any) => {
         const allEmployees = response.data;
         this.employedata = allEmployees.find((emp: any) => emp.id == userId);
+        // console.log("Found employedata:", this.employedata);
       });
       this.bankinfoloadedata();
 
@@ -49,9 +56,9 @@ export class UserprofileComponent {
     const userId = localStorage.getItem('employeeId');
     this.paymentservices.getAllData().subscribe((response: any) => {
       const allpayment = response.data;
-      console.log("All payments:", allpayment);
+      // console.log("All payments:", allpayment);
       this.paymentdata = allpayment.find((pay: any) => pay.employeeId == userId);
-      console.log("Found paymentdata:", this.paymentdata);
+      // console.log("Found paymentdata:", this.paymentdata);
     })
   }
 
@@ -61,40 +68,40 @@ export class UserprofileComponent {
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {
-        this.services.getData();
+        this.getData();
       }
     })
   }
 
   contact(data: any) {
     const dialogRef = this.dialgo.open(EmergencyComponent, {
-
+      data,
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {
-        this.services.getData();
+        this.getData();
       }
     })
   }
 
-  education() {
+  education(data : any) {
     const dialogRef = this.dialgo.open(EducationDetailsComponent, {
-
+      data,
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {
-        this.services.getData();
+        this.getData();
       }
     })
   }
   
-  experience() {
+  experience(data : any) {
     const dialogRef = this.dialgo.open(ExperienceComponent, {
-
+      data,
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {
-        this.services.getData();
+        this.getData();
       }
     })
   }
@@ -105,14 +112,14 @@ export class UserprofileComponent {
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {
-        this.bankinfoloadedata();
+        this.getData();
       }
     })
   }
 
-  passportinfo() {
+  passportinfo(data: any) {
     const dialogRef = this.dialgo.open(PassportinfoComponent, {
-
+      data,
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {

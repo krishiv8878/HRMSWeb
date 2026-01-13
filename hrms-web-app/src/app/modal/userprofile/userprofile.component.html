@@ -26,6 +26,7 @@
                                 <p><strong>First Name:</strong> {{employedata.firstName}} {{employedata.lastName}}</p>
                                 <p><strong>Department:</strong> IT</p>
                                 <p><strong>Location:</strong> Miami</p>
+                                <p><strong>Skills:</strong> {{employedata.skills}}</p>
                             </div>
 
                             <div class="col-md-6">
@@ -85,7 +86,7 @@
             <mat-card class="col-xl-5 mt-3">
                 <mat-card-header>
                     <mat-card-title>Education Qualification
-                        <button mat-icon-button (click)="education()">
+                        <button mat-icon-button (click)="education(employedata)">
                             <mat-icon>edit</mat-icon>
                         </button>
                     </mat-card-title>
@@ -101,7 +102,7 @@
             <mat-card class="col-xl-6 mt-3">
                 <mat-card-header>
                     <mat-card-title>Experience Details
-                        <button mat-icon-button (click)="experience()">
+                        <button mat-icon-button (click)="experience(employedata)">
                             <mat-icon>edit</mat-icon>
                         </button>
                     </mat-card-title>
@@ -110,10 +111,7 @@
                         <p><strong>Designation:</strong> {{employedata?.designation}}</p>
                         <p><strong>Duration:</strong> {{employedata?.experienceDuration}}</p>
                         <p><strong>Location:</strong> {{employedata?.experienceLocation}}</p>
-                        <p><strong>Responsibilities:</strong></p>
-                        <ul>
-                            <li>{{employedata?.responsibilities}}</li>
-                        </ul>
+                        <p><strong>Responsibilities:</strong></p><ul><li>{{employedata?.responsibilities}}</li></ul>
                     </mat-card-subtitle>
                 </mat-card-header>
             </mat-card>
@@ -141,7 +139,7 @@
             <mat-card class="col-xl-6 mt-3" *ngIf="employedata">
                 <mat-card-header>
                     <mat-card-title>Passport Information
-                        <button mat-icon-button (click)="passportinfo()">
+                        <button mat-icon-button (click)="passportinfo(employedata)">
                             <mat-icon>edit</mat-icon>
                         </button>
                     </mat-card-title>

@@ -49,7 +49,7 @@ export class AttendaseditComponent {
       const month = monthMap[monthStr as keyof typeof monthMap];
       console.log("Parsed Date Components:", { month, day, year });
 
-      const receivedDate = new Date(year, month, day);
+      const receivedDate = new Date(year, month, day,12);
       console.log("Parsed Date:", receivedDate);
 
       if (!isNaN(receivedDate.getTime())) {

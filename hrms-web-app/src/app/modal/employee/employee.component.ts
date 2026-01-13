@@ -2,9 +2,11 @@ import { Component, Inject, inject } from '@angular/core';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormField } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatRadioModule } from '@angular/material/radio';
 import { EmployeeService } from '../../services/employee/employee.service';
+import { SkillservicesService } from '../../services/skill/skillservices.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -18,7 +20,7 @@ import { RoleservicesService } from '../../services/rolemaster/roleservices.serv
 @Component({
   selector: 'app-employee',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
+  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule,MatSlideToggleModule],
   providers: [provideNativeDateAdapter()],
   templateUrl: './employee.component.html',
   styleUrl: './employee.component.scss'
@@ -36,31 +38,72 @@ export class EmployeeComponent {
   router = inject(Router)
   toaster = inject(ToastrService)
   roleservises = inject(RoleservicesService)
+  SkillservicesService = inject(SkillservicesService)
   isEdit = false;
+  isChecked = true;
+
+  emp = localStorage.getItem('employeeId');
 
 
 
   Employeeform = this.formBuilder.group({
     id: 0,
     employeeId: 0,
-    //firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
-    firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
+    firstName: ['', [Validators.required,Validators.pattern('^[a-zA-Z ]+$')]],
     lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
     emailAddress: ['', [Validators.required, Validators.email, Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}$')]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
-    permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
+    // permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
     gender: ['', [Validators.required]],
     currentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
+    Designation : [''],
     dateOfJoining: ['', [Validators.required]],
+    CreatedBy: this.emp ? parseInt(this.emp) : 0,
     roleIds: [[], [Validators.required]],
     rolenames: [[]],
     managerId: [0],
     ManagerName: [''],
-    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
+    skillIds: [[]],
+    skills: [''],
+    isActive: [true, [Validators.required, Validators.pattern('true|false')]],
+    ClientUrl: [`http://localhost:4200/forgot-password`],
+    designation : [''],
+    createdBy: 0,
+    employeeCode: [''],
+    designationId: [''],
+    createdDate: [''],
+    shiftId: [''],
+    primaryContactName: [''],
+    primaryContactRelationship: [''],
+    primaryContactPhone: [''],
+    primaryContactEmail: [''],
+    primaryContactAddress: [''],
+    secondaryContactName: [''],
+    secondaryContactRelationship: [''],
+    secondaryContactPhone: [''],
+    secondaryContactEmail: [''],
+    secondaryContactAddress: [''],
+    degree: [''],
+    university: [''],
+    yearOfPassing: [''],
+    percentage: [''],
+    companyName: [''],
+    experienceDuration: [''],
+    experienceLocation: [''],
+    responsibilities: [''],
+    passportNumber: [''],
+    nationality: [''],
+    passportIssueDate: [''],
+    passportExpiryDate: [''],
+    passportScanCopy: [''],
+    branch: [''],
+    dateOfBirth: [''],
+    //* primary contact
+    primaryEmailAddress: [''],
   })
-
   roles: any[] = []; // Role master list 
   managers: any; // Manager master list 
+  skills : any[] = []; 
 
   ngOnInit() {
     this.Employeeform.patchValue(this.data);
@@ -71,6 +114,10 @@ export class EmployeeComponent {
       //   console.log("form ", result)
       // })
     }
+    this.SkillservicesService.getSkill().subscribe((skills: any) => {
+      this.skills = skills.data;
+      console.log('Skill Masters:', this.skills);
+    })
     this.roleservises.getAllData().subscribe((roles: any) => {
       this.roles = roles.data;
       console.log('Role Masters:', this.roles);

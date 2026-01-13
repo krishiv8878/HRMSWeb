@@ -14,11 +14,13 @@ export class HolidayservicesService {
     return this.http.get<any[]>(this.apiUrl + "/Holiday/GetHolidays")
   }
 
-  createHoliday(data: any) {
+  createHoliday(data: any , Hdate : any) {
+    data.holidayDate = Hdate;
     return this.http.post<any[]>(this.apiUrl + `/Holiday/AddHoliday/`, data)
   }
 
-  updateHoliday(data: any) {
+  updateHoliday(data: any , Hdate : any) {
+    data.holidayDate = Hdate;
     return this.http.put<any[]>(this.apiUrl + `/Holiday/UpdateHoliday/`, data);
   }
 

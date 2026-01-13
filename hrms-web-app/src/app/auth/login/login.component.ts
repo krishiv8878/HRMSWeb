@@ -32,7 +32,7 @@ export class LoginComponent {
   login = this.formBuilder.group({
     id: 0,
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
+    password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16)]]
   })
   data!: any;
   hide: boolean = true;
@@ -79,12 +79,21 @@ export class LoginComponent {
           localStorage.setItem('UserName', res.data.userName);
           localStorage.setItem('RoleType', res.data.roleType);
 
+
           this.toster.success('successfully login', 'success')
 
           setTimeout(() => {
             this.toster.clear();
-            this.router.navigateByUrl('index/home')
-            this.login.reset();
+            const val = localStorage.getItem('PasswordResetStatus');
+            console.log("val",val)
+            if(res.data.isResetPasswordRequired==true){
+              this.router.navigateByUrl('reset-password');
+              this.login.reset();
+              return
+            }else{
+              this.router.navigateByUrl('index/attendance');
+              this.login.reset();
+            }
           }, 1000);
         }, error: (res) => {
           this.toster.error("Invalid credentials", 'error')
