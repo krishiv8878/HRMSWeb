@@ -44,6 +44,7 @@ export class HomeComponent {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
       }
     },
+    { field: "skills", headerName: 'Skills', tooltipField: "skills",minWidth: 200  },
     { field: "rolenames", headerName: 'Roles', tooltipField: "rolenames",minWidth: 200 },
     { field: "managerName", headerName: 'Managers', tooltipField: "managerName" ,minWidth: 300},
     { field: "gender", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },

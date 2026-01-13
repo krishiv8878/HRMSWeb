@@ -33,17 +33,18 @@ export class HolidaysComponent {
   toaster = inject(ToastrService)
   holidayId!: number;
   isEdit = false;
+  selectedDate!: Date;
 
   Holidayform = this.formBuilder.group({
     id: 0,
     holidayName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 ]*$')]],
+    holidayDate: ['', [Validators.required,]],
     description: ['',[Validators.required,]],
       isActive: [true, [Validators.required, Validators.pattern('true|false')]]
   })
 
   ngOnInit() {
     this.Holidayform.patchValue(this.data);
-    console.log('update data', this.data)
     if (this.data) {
       this.isEdit = true;
       // this.services.getSkill(this.data).subscribe((result) => {
@@ -70,8 +71,11 @@ export class HolidaysComponent {
         }
       }
     }
+      const parts = this.Holidayform.value.holidayDate? new Date(this.Holidayform.value.holidayDate) : new Date();
+    this.selectedDate = new Date(parts.getFullYear(), parts.getMonth(), parts.getDate(), 12);
     if (this.isEdit) {
-      this.services.updateHoliday(this.Holidayform.value).subscribe({
+      const formattedDate = this.selectedDate.toISOString().split('T')[0];
+      this.services.updateHoliday(this.Holidayform.value, formattedDate).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
           this.toaster.success('Holiday Recode Successfully Updated', 'success')
@@ -81,7 +85,8 @@ export class HolidaysComponent {
         }
       })
     } else {
-      this.services.createHoliday(this.Holidayform.value).subscribe({
+      const formattedDate = this.selectedDate.toISOString().split('T')[0];
+      this.services.createHoliday(this.Holidayform.value, formattedDate).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
           this.toaster.success(' Holiday Recode Successfully Added', 'success')

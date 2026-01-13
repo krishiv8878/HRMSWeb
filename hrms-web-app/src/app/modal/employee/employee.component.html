@@ -13,7 +13,6 @@
         <div class="employee-form">
             <!-- Row for First Name & Last Name -->
             <div class="row">
-                <!-- First Name Field -->
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>first name</mat-label>
@@ -21,8 +20,6 @@
                             (keypress)="allowOnlyLetters($event)" formControlName="firstName">
                     </mat-form-field>
                 </div>
-
-                <!-- Last Name Field -->
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>last name</mat-label>
@@ -30,7 +27,7 @@
                             (keypress)="allowOnlyLetters($event)" formControlName="lastName">
                     </mat-form-field>
                 </div>
-            </div>
+            </div> 
 
             <!-- Row for Email Address -->
             <div class="row">
@@ -47,7 +44,7 @@
             <!-- Row for Joining Date & Phone Number -->
 
             <div class="row">
-                <div class="col-xl-6">
+                <!-- <div class="col-xl-6"> -->
                     <!-- Joining Date Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>joining date</mat-label>
@@ -56,7 +53,7 @@
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
-                </div>
+                <!-- </div> -->
 
                 <!-- Phone Number Field -->
                 <div class="col-xl-6">
@@ -72,7 +69,6 @@
             <!-- Row for Permanent & Current Address -->
             <div class="row">
                 <div class="col-xl-6">
-                    <!-- Permanent Address Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>permanent Address</mat-label>
                         <input type="text" matInput name="permanent Address" placeholder="Permanet Address"
@@ -81,7 +77,6 @@
                 </div>
 
                 <div class="col-xl-6">
-                    <!-- Current Address Field -->
                     <mat-form-field appearance="outline">
                         <mat-label>current Address</mat-label>
                         <input type="text" matInput name="current Address" placeholder="Current Address"
@@ -92,19 +87,18 @@
 
             <!-- Row for Gender Selection  -->
             <div class="row">
-                <div class="col">
-                    <!-- Gender Selection -->
-                    <mat-radio-group formControlName="gender">
+                <!-- <div class="col"> -->
+
+                    <!-- <mat-radio-group formControlName="gender">
                         <mat-label><b>Gender</b></mat-label>
                         <mat-radio-button value="male">Male</mat-radio-button>
                         <mat-radio-button value="female">Female</mat-radio-button>
-                    </mat-radio-group>
+                    </mat-radio-group> -->
 
-                    <!-- Active Status Checkbox -->
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-
-                <!-- Role Selection Dropdown -->
+                    
+                <!-- </div> -->
+                
+                
                 <mat-form-field appearance="outline">
                     <mat-label>role</mat-label>
                     <mat-select formControlName="roleIds" multiple>
@@ -112,7 +106,7 @@
                     </mat-select>
                 </mat-form-field>
             </div>
-
+            
             <div class="row">
                 <div class="col">
                     <mat-form-field appearance="outline">
@@ -125,6 +119,18 @@
                 </div>
             </div>
 
+            <div class="row">
+                <div class="col">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Skills</mat-label>
+                        <mat-select formControlName="skillIds" multiple>
+                            <mat-option *ngFor="let skill of skills" [value]="skill.id"> {{ skill.skillName }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <mat-slide-toggle [(ngModel)]="isChecked">Slide Toggle Checked: {{isChecked}}</mat-slide-toggle>
             <!-- Buttons: Save, Update, or Cancel -->
             @if(isEdit){
             <!-- Edit Mode: Update and Cancel Buttons -->

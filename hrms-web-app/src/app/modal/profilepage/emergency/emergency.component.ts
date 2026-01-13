@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { EmployeeService } from '../../../services/employee/employee.service';
 import { Router } from '@angular/router';
-import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
@@ -19,7 +19,7 @@ import { ToastrService } from 'ngx-toastr';
   styleUrl: './emergency.component.scss'
 })
 export class EmergencyComponent {
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any) { }
+  constructor(private _dilogref : MatDialogRef<EmergencyComponent>,@Inject(MAT_DIALOG_DATA) public data: any) { }
 
   services = inject(EmployeeService)
   router = inject(Router)
@@ -27,31 +27,63 @@ export class EmergencyComponent {
   toaster = inject(ToastrService)
 
   contact = this.formbuilder.group({
-    //* primary contact
-    primaryEmailAddress: [''],
+    id : [localStorage.getItem('employeeId') || ''],
+    firstName: [''],
+    lastName: [''],
+    emailAddress: [''],
+    mobileNumber: [''],
+    permanentAddress: [''],
+    gender: [''],
+    currentAddress: [''],
+    designation : [''],
+    dateOfJoining: [''],
+    createdBy: 0,
+    roleIds: [[]],
+    rolenames: [[]],
+    managerId: [0],
+    managerName: [''],
+    isActive: [],
+    employeeCode: [''],
+    designationId: [''],
+    createdDate: [''],
+    shiftId: [''],
     primaryContactName: [''],
     primaryContactRelationship: [''],
     primaryContactPhone: [''],
     primaryContactEmail: [''],
     primaryContactAddress: [''],
-
-    //* secondary contact
     secondaryContactName: [''],
     secondaryContactRelationship: [''],
     secondaryContactPhone: [''],
     secondaryContactEmail: [''],
     secondaryContactAddress: [''],
+    degree: [''],
+    university: [''],
+    yearOfPassing: [''],
+    percentage: [''],
+    companyName: [''],
+    experienceDuration: [''],
+    experienceLocation: [''],
+    responsibilities: [''],
+    passportNumber: [''],
+    nationality: [''],
+    passportIssueDate: [''],
+    passportExpiryDate: [''],
+    passportScanCopy: [''],
+    branch: [''],
+    dateOfBirth: [''],
+    //* primary contact
+    primaryEmailAddress: [''],
   })
 
   ngOnInit() {
     this.contact.patchValue(this.data)
   }
   submitcontact() {
-    console.log("contact value", this.contact.value)
     this.services.updateData(this.contact.value).subscribe({
       next: () => {
-        console.log("contact value", this.contact.value)
-        this.toaster.success('Recode Successfully Added')
+        this.toaster.success('Record Successfully Added')
+        this._dilogref.close(true);
       }, error: (err) => {
         console.log("invalid data", err)
       }

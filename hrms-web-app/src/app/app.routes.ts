@@ -106,7 +106,7 @@ export const routes: Routes = [
             },
             {
                 path: 'request', component: RequestsApprovalsComponent
-            },
+            }
         ]
     }
 ];

@@ -31,6 +31,7 @@ export class HolidayComponent {
     // { field: "id", },
     { field: "holidayName", },
     { field: "description", tooltipField: "description" },
+    { field : "holidayDate", },
     // { field: "createdDate", },
     // { field: "createdBy", },
     // { field: "updatedDate", },
