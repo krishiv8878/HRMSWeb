@@ -8,14 +8,28 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>Company Name</mat-label>
-                        <input type="text" matInput name="companyName" placeholder="Enter Company Name">
+                        <input type="text" matInput name="companyName" placeholder="Enter Company Name" formControlName="companyName">
                     </mat-form-field>
                 </div>
 
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>Position</mat-label>
-                        <input type="text" matInput name="jobTitle" placeholder="Enter Position">
+                        <input type="text" matInput name="jobTitle" placeholder="Enter Position" formControlName="designation">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Location</mat-label>
+                        <input type="text" matInput name="jobLocation" placeholder="Enter Location" formControlName="experienceLocation">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Responsibilities</mat-label>
+                        <input type="text" matInput name="jobResponsibilities" placeholder="Enter Responsibilities" formControlName="responsibilities">
                     </mat-form-field>
                 </div>
             </div>
@@ -23,7 +37,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>Start Date</mat-label>
-                        <input matInput [matDatepicker]="picker">
+                        <input matInput [matDatepicker]="picker" formControlName="experienceStartDate" (dateChange)="calculateExperienceDuration()">
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
@@ -32,7 +46,7 @@
                 <div class="col-xl-6">
                     <mat-form-field appearance="outline">
                         <mat-label>End Date</mat-label>
-                        <input matInput [matDatepicker]="picker1">
+                        <input matInput [matDatepicker]="picker1" formControlName="experienceEndDate" (dateChange)="calculateExperienceDuration()">
                         <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
                         <mat-datepicker #picker1></mat-datepicker>
                     </mat-form-field>
@@ -54,6 +68,19 @@
                     <mat-form-field appearance="outline">
                         <mat-label>Position</mat-label>
                         <input type="text" matInput name="jobTitle" placeholder="Enter Position">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Location</mat-label>
+                        <input type="text" matInput name="jobLocation" placeholder="Enter Location" formControlName="experienceLocation">
+                    </mat-form-field>
+                </div>
+
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Responsibilities</mat-label>
+                        <input type="text" matInput name="jobResponsibilities" placeholder="Enter Responsibilities" formControlName="responsibilities">
                     </mat-form-field>
                 </div>
             </div>
@@ -95,6 +122,18 @@
                         <input type="text" matInput name="jobTitle" placeholder="Enter Position">
                     </mat-form-field>
                 </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Location</mat-label>
+                        <input type="text" matInput name="jobLocation" placeholder="Enter Location" formControlName="experienceLocation">
+                    </mat-form-field>
+                </div>
+                <div class="col-xl-6">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Responsibilities</mat-label>
+                        <input type="text" matInput name="jobResponsibilities" placeholder="Enter Responsibilities" formControlName="responsibilities">
+                    </mat-form-field>
+                </div>
             </div>
             <div class="row">
                 <div class="col-xl-6">
@@ -118,7 +157,7 @@
         </mat-card>
 
         <div class="button-btn mt-4" mat-dialog-actions>
-            <button mat-flat-button class="edit-btn" style="border-radius: 0;">submit</button>
+            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
         </div>
     </form>
 </div>

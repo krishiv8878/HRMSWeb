@@ -22,16 +22,19 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
   styleUrl: './information.component.scss'
 })
 export class InformationComponent {
-  constructor(private _dilogref : MatDialogRef<InformationComponent>,@Inject(MAT_DIALOG_DATA) public data: any) { }
+  constructor(private _dilogref : MatDialogRef<InformationComponent>, @Inject(MAT_DIALOG_DATA) public data: any) { }
   services = inject(EmployeeService)
   router = inject(Router)
   formbuilder = inject(FormBuilder)
   skillservices = inject(SkillservicesService)
   toaster = inject(ToastrService)
   skills : any[] = [];
+  selectedImage: string | ArrayBuffer | null = null;
+  defaultImage =
+    'https://material.angular.io/assets/img/examples/shiba2.jpg';
 
   profileForm = this.formbuilder.group({
-    id : [localStorage.getItem('employeeId') || ''],
+    id: [localStorage.getItem('employeeId') || ''],
     firstName: [''],
     lastName: [''],
     emailAddress: [''],
@@ -78,16 +81,57 @@ export class InformationComponent {
     dateOfBirth: [''],
     //* primary contact
     primaryEmailAddress: [''],
-    skills : [''],
-    skillIds : [[]],
+    skills: [''],
+    skillIds: [[]],
+    profileImage: [''],
   })
-  
+
   id!: any;
   ngOnInit() {
     this.skillservices.getSkill().subscribe((skills: any) => {
       this.skills = skills.data;
-    })
-    this.profileForm.patchValue(this.data)
+    });
+    this.profileForm.patchValue(this.data);
+    if (this.data?.profileImage) {
+      this.selectedImage =
+        this.services.apiUrl.replace('/api', '') + "/ProfileImages/" +
+        this.data.profileImage;
+    }
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+    // Preview image
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.selectedImage = reader.result;
+    };
+    reader.readAsDataURL(file);
+    const employeeId = Number(
+      localStorage.getItem('employeeId')
+    );
+    // Upload image
+    this.services
+      .uploadProfileImage(employeeId, file)
+      .subscribe({
+        next: (response: any) => {
+          this.profileForm.patchValue({
+            profileImage: response.data
+          });
+          this.toaster.success(
+            'Profile Image Uploaded Successfully'
+          );
+        },
+        error: (err) => {
+          console.log(err);
+          this.toaster.error(
+            'Failed To Upload Image'
+          );
+        }
+      });
   }
   submitProfile() {
     this.services.updateData(this.profileForm.value).subscribe({

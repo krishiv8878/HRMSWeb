@@ -94,7 +94,7 @@ export class PaymeenInfoComponent {
       this.services.updateData(this.paymentinfo.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('Payment Recode Successfully Updated', 'success')
+          this.toaster.success('Payment Record Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -105,7 +105,7 @@ export class PaymeenInfoComponent {
       this.services.createData(this.paymentinfo.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('Payment Recode Successfully Added', 'success')
+          this.toaster.success('Payment Record Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

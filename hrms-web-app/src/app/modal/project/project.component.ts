@@ -90,7 +90,7 @@ export class ProjectComponent {
       this.services.updateData(this.project.value, this.id).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('Recode Successfully Updated', 'success')
+          this.toaster.success('Record Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -100,7 +100,7 @@ export class ProjectComponent {
       this.services.createData(this.project.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success(' Recode Successfully Added', 'success')
+          this.toaster.success(' Record Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

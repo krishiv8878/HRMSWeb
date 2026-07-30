@@ -6,7 +6,7 @@
         <div class="col" style="display: flex; justify-content: end;">
             <button mat-flat-button *ngIf="!isClockedIn" (click)="openClockInDialog()"
                 style="border-radius: 0;"><mat-icon>access_time</mat-icon>Clock-In</button>
-            <button mat-flat-button *ngIf="isClockedIn" (click)="onClockOut()"
+            <button mat-flat-button *ngIf="isClockedIn" (click)="openClockOutDialog()"
                 style="border-radius: 0;"><mat-icon>access_time</mat-icon>Clock-Out</button>
         </div>
     </div>

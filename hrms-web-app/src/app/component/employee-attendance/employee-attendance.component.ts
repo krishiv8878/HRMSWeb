@@ -89,10 +89,10 @@ export class EmployeeAttendanceComponent {
   formateHrs(decimalHours: number): string {
     const hours = Math.floor(decimalHours);
     const minutes = Math.round((decimalHours - hours) * 60);
-    
+
     const h = hours.toString().padStart(2, '0');
     const m = minutes.toString().padStart(2, '0');
-    
+
     return `${h}:${m}`;
   }
 
@@ -101,14 +101,14 @@ export class EmployeeAttendanceComponent {
     if (!time) return "";
     let timeString = time;
     if (!timeString.endsWith("Z") && !timeString.includes("+")) {
-        timeString += "Z";
+      timeString += "Z";
     }
     const date = new Date(timeString);
     if (isNaN(date.getTime())) return "";
-    return date.toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: false 
+    return date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
     });
   };
 
@@ -158,12 +158,12 @@ export class EmployeeAttendanceComponent {
             const formattedDate = this.formatDate(itemDate);
             const index = this.rowData.findIndex(row => row.Date === formattedDate);
             if (index !== -1) {
-              this.rowData[index].clockIn = item.clockIn; 
-              this.rowData[index].clockOut = item.clockOut;             
+              this.rowData[index].clockIn = item.clockIn;
+              this.rowData[index].clockOut = item.clockOut;
               this.rowData[index].totalHours = item.totalHours || "";
               this.rowData[index].effectiveHours = item.effectiveHours || "";
             }
-            if((new Date(item.createdDate).toDateString === today.toDateString) && (item.clockOut === null && item.clockIn !== null)){
+            if ((new Date(item.createdDate).toDateString === today.toDateString) && (item.clockOut === null && item.clockIn !== null)) {
               this.isClockedIn = true;
               this.createdDate = item.createdDate;
               console.log(this.isClockedIn)
@@ -182,12 +182,36 @@ export class EmployeeAttendanceComponent {
     return (dayOfWeek === 0 || dayOfWeek === 6) ? `${formattedDate} (Week Off)` : formattedDate;
   }
 
-  // Open clock-in confirmation dialog
+  // Clock In
   openClockInDialog() {
-    const dialogRef = this.dialog.open(EmployeeAttendComponent, { width: '500px' });
+    const dialogRef = this.dialog.open(EmployeeAttendComponent, {
+      width: '500px',
+      data: {
+        title: 'Confirm Clock-In',
+        message: 'Are you sure you want to clock in?'
+      }
+    });
+
     dialogRef.afterClosed().subscribe(result => {
       if (result === 'confirm') {
         this.startClock();
+      }
+    });
+  }
+
+  // Clock Out
+  openClockOutDialog() {
+    const dialogRef = this.dialog.open(EmployeeAttendComponent, {
+      width: '500px',
+      data: {
+        title: 'Confirm Clock-Out',
+        message: 'Are you sure you want to clock out?'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'confirm') {
+        this.onClockOut();
       }
     });
   }
@@ -196,7 +220,7 @@ export class EmployeeAttendanceComponent {
 
   // Start clock-in process
   startClock() {
-    const now = new Date(); 
+    const now = new Date();
     const totalDecimalHours = 0;
     this.isClockedIn = true;
     this.firstClockIn = now;
@@ -204,20 +228,20 @@ export class EmployeeAttendanceComponent {
     const todayFormatted = this.formatDate(now);
     const todayRow = this.rowData.find(row => row.Date === todayFormatted);
     if (todayRow) {
-      todayRow.clockIn = now.toISOString(); 
+      todayRow.clockIn = now.toISOString();
     }
     this.services.createData(
       this.employeeId,
-      now.toISOString(),   
+      now.toISOString(),
       null,
-      totalDecimalHours, 
+      totalDecimalHours,
       totalDecimalHours,
       "Present",
       null,
       this.getISODateOnly()
     ).subscribe(response => {
       console.log("Attendance Saved:", response);
-      this.getAllData(); 
+      this.getAllData();
     });
   }
 
@@ -230,7 +254,7 @@ export class EmployeeAttendanceComponent {
     const totalDecimalHours = 0;
     const clockInTime = new Date();
     // const diffMs = clockOutTime.getTime() - this.firstClockIn.getTime();
-    
+
     // const hours = Math.floor(diffMs / (1000 * 60 * 60));
     // const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     // const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
@@ -249,16 +273,16 @@ export class EmployeeAttendanceComponent {
 
     this.services.createData(
       this.employeeId,
-      clockInTime.toISOString(), 
-      clockOutTime.toISOString(), 
-      totalDecimalHours, 
+      clockInTime.toISOString(),
+      clockOutTime.toISOString(),
+      totalDecimalHours,
       totalDecimalHours,
       "Present",
       this.createdDate,
       this.getISODateOnly()
     ).subscribe(response => {
       console.log("Attendance Saved:", response);
-      this.getAllData(); 
+      this.getAllData();
     });
   }
 }

@@ -80,7 +80,7 @@ export class LoginComponent {
           localStorage.setItem('RoleType', res.data.roleType);
 
 
-          this.toster.success('successfully login', 'success')
+          this.toster.success('Successfully login', 'Success')
 
           setTimeout(() => {
             this.toster.clear();

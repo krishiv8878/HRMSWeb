@@ -11,6 +11,8 @@ import { ToastrService } from 'ngx-toastr';
 import { MatCard } from '@angular/material/card';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { SkillservicesService } from '../../../services/skill/skillservices.service';
+
 
 @Component({
   selector: 'app-education-details',
@@ -21,14 +23,17 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
   styleUrl: './education-details.component.scss'
 })
 export class EducationDetailsComponent {
-  constructor(private _dilogref : MatDialogRef<EducationDetailsComponent>,@Inject(MAT_DIALOG_DATA) public data: any) { }
+  constructor(private _dilogref: MatDialogRef<EducationDetailsComponent>, @Inject(MAT_DIALOG_DATA) public data: any) { }
   services = inject(EmployeeService)
   router = inject(Router)
   formbuilder = inject(FormBuilder)
   toaster = inject(ToastrService)
+  skillservices = inject(SkillservicesService)
+  skills: any[] = [];
+
 
   educationDetailsForm = this.formbuilder.group({
-    id : [localStorage.getItem('employeeId') || ''],
+    id: [localStorage.getItem('employeeId') || ''],
     firstName: [''],
     lastName: [''],
     emailAddress: [''],
@@ -36,7 +41,7 @@ export class EducationDetailsComponent {
     permanentAddress: [''],
     gender: [''],
     currentAddress: [''],
-    designation : [''],
+    designation: [''],
     dateOfJoining: [''],
     createdBy: 0,
     roleIds: [[]],
@@ -75,12 +80,24 @@ export class EducationDetailsComponent {
     dateOfBirth: [''],
     //* primary contact
     primaryEmailAddress: [''],
+    skills: [''],
+    skillIds: [[]],
   })
   ngOnInit() {
+    this.skillservices.getSkill().subscribe((skills: any) => {
+      this.skills = skills.data;
+    })
     this.educationDetailsForm.patchValue(this.data)
   }
   submitEducationDetails() {
-    this.services.updateData(this.educationDetailsForm.value).subscribe({
+    const formValue = this.educationDetailsForm.getRawValue();
+    const payload = {
+      ...formValue,
+      yearOfPassing: formValue.yearOfPassing
+        ? new Date(formValue.yearOfPassing as any).getFullYear()
+        : null
+    };
+    this.services.updateData(payload).subscribe({
       next: (res) => {
         this.toaster.success('Education Details Added Successfully', 'Success');
         this.router.navigate(['/userprofile']);

@@ -81,7 +81,7 @@ export class LeaveComponent {
      
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('Leave Recode Successfully Updated', 'success')
+          this.toaster.success('Leave Record Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -91,7 +91,7 @@ export class LeaveComponent {
       this.services.createData(this.leavetype.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('Leave Recode Successfully Added', 'success')
+          this.toaster.success('Leave Record Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

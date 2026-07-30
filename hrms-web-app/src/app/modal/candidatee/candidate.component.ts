@@ -115,7 +115,7 @@ export class CandidateeComponent {
       this.services.updateData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('Candidate Recode Successfully Updated', 'success')
+          this.toaster.success('Candidate Record Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -125,7 +125,7 @@ export class CandidateeComponent {
       this.services.createData(this.CandidateForm.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success(' Candidate Recode Successfully Added', 'success')
+          this.toaster.success(' Candidate Record Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

@@ -51,13 +51,20 @@ export class SkillsComponent {
     }
   }
 
+  allowOnlyLetters(event: KeyboardEvent) {
+    const key = event.key;
+    // Allow letters and space only
+    if (!/^[a-zA-Z .-]$/.test(key)) {
+      event.preventDefault();
+    }
+  }
 
   submitdata() {
     if (this.Skillform.invalid) {
       this.Skillform.markAllAsTouched(); // Show errors in UI  
       const errorMessages: { [key: string]: string } = {
         skillName: "Skill Name Is Required",
-       //isActive: " Please select a Active Button"
+        //isActive: " Please select a Active Button"
       };
 
       // Show error messages in a popup
@@ -73,22 +80,40 @@ export class SkillsComponent {
       this.services.updateSkill(this.Skillform.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('Recode Successfully Updated', 'success')
+          this.toaster.success('Record Successfully Updated', 'Success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
         }
       })
     } else {
-      this.services.createSkill(this.Skillform.value).subscribe({
-        next: (val: any) => {
-          // console.log("successfully add")
-          this.toaster.success(' Recode Successfully Added', 'success')
-          this._dialogref.close(true);
-        }, error: (err) => {
-          console.log(err)
+
+      this.services.getSkill().subscribe({
+        next: (skills: any) => {
+
+          const skillName = this.Skillform.value.skillName?.trim().toLowerCase();
+
+          const isDuplicate = skills['data'].some((x: any) =>
+            x.skillName?.trim().toLowerCase() === skillName
+          );
+
+          if (isDuplicate) {
+            this.toaster.warning('Skill already exists.');
+          }
+          else {
+            this.services.createSkill(this.Skillform.value).subscribe({
+              next: (val: any) => {
+                this.toaster.success('Record Successfully Added', 'Success');
+                this._dialogref.close(true);
+              },
+            });
+          }
+        },
+        error: (err) => {
+          console.log(err);
         }
-      })
+      });
+
     }
   }
   getControl(controleName: string) {

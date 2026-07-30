@@ -28,4 +28,10 @@ export class EmployeeService {
   DeleteData(employeeId: any) {
     return this.http.delete(this.apiUrl + `/Employee/DeleteEmployee?employeeId=` + employeeId);
   }
+  uploadProfileImage(employeeId: number, file: File) {
+    const formData = new FormData();
+    formData.append('employeeId', employeeId.toString());
+    formData.append('file', file);
+    return this.http.post<any>(this.apiUrl + '/Employee/UploadProfileImage',formData);
+  }
 }

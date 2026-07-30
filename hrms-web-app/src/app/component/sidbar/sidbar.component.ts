@@ -34,7 +34,7 @@ export class SidbarComponent implements OnInit {
     { label: 'Shift', icon: 'schedule', route: '/index/shift' },
     { label: 'Payroll', icon: 'account_balance_wallet', route: '/index/paymentinfo' },
     { label: 'Docs', icon: 'description', route: '/index/document' },
-    { label: 'leave Request', icon: 'description', route: '/index/leaveRequest' },
+    { label: 'Leave Request', icon: 'description', route: '/index/leaveRequest' },
   ];
 
  if(localStorage.getItem("RoleType")?.split(',').some( (x): any=> x ==='Manager')){

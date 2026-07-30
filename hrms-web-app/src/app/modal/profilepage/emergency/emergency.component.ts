@@ -10,6 +10,7 @@ import { EmployeeService } from '../../../services/employee/employee.service';
 import { Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { SkillservicesService } from '../../../services/skill/skillservices.service';
 
 @Component({
   selector: 'app-emergency',
@@ -25,6 +26,8 @@ export class EmergencyComponent {
   router = inject(Router)
   formbuilder = inject(FormBuilder)
   toaster = inject(ToastrService)
+  skillservices = inject(SkillservicesService)
+  skills : any[] = [];
 
   contact = this.formbuilder.group({
     id : [localStorage.getItem('employeeId') || ''],
@@ -74,9 +77,14 @@ export class EmergencyComponent {
     dateOfBirth: [''],
     //* primary contact
     primaryEmailAddress: [''],
+    skills : [''],
+    skillIds : [[]],
   })
 
   ngOnInit() {
+    this.skillservices.getSkill().subscribe((skills: any) => {
+      this.skills = skills.data;
+    })
     this.contact.patchValue(this.data)
   }
   submitcontact() {

@@ -9,6 +9,8 @@ import { EmployeeService } from '../../../services/employee/employee.service';
 import { Router } from '@angular/router';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { SkillservicesService } from '../../../services/skill/skillservices.service';
+
 
 @Component({
   selector: 'app-experience',
@@ -23,6 +25,9 @@ export class ExperienceComponent {
   services = inject(EmployeeService)
   router = inject(Router)
   toaster = inject(ToastrService)
+  skillservices = inject(SkillservicesService)
+  skills : any[] = [];
+
 
   formbuilder = inject(FormBuilder)
   experienceForm = this.formbuilder.group({
@@ -61,6 +66,8 @@ export class ExperienceComponent {
     yearOfPassing: [''],
     percentage: [''],
     companyName: [''],
+    experienceStartDate: [null],
+    experienceEndDate: [null],
     experienceDuration: [''],
     experienceLocation: [''],
     responsibilities: [''],
@@ -73,12 +80,18 @@ export class ExperienceComponent {
     dateOfBirth: [''],
     //* primary contact
     primaryEmailAddress: [''],
+    skills : [''],
+    skillIds : [[]],
 
   })
   ngOnInit() {
+    this.skillservices.getSkill().subscribe((skills: any) => {
+      this.skills = skills.data;
+    })
     this.experienceForm.patchValue(this.data)
   }
   submitExperience() {
+    this.calculateExperienceDuration();
     this.services.updateData(this.experienceForm.value).subscribe({
       next: () => {
         this.toaster.success('Record Successfully Added')
@@ -88,4 +101,23 @@ export class ExperienceComponent {
       }
     })
   }
+
+  calculateExperienceDuration() {
+  const startDate = this.experienceForm.get('experienceStartDate')?.value;
+  const endDate = this.experienceForm.get('experienceEndDate')?.value;
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let years = end.getFullYear() - start.getFullYear();
+    let months = end.getMonth() - start.getMonth();
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    const duration = `${years} Year(s) ${months} Month(s)`;
+    this.experienceForm.patchValue({
+      experienceDuration: duration
+    });
+  }
+}
 }
