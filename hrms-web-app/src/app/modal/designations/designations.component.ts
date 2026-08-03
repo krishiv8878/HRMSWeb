@@ -71,7 +71,7 @@ export class DesignationsComponent {
       this.services.updateData(this.designation.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('Designation Recode Successfully Updated', 'success')
+          this.toaster.success('Designation Record Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -81,7 +81,7 @@ export class DesignationsComponent {
       this.services.createData(this.designation.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success('Designation Recode Successfully Added', 'success')
+          this.toaster.success('Designation Record Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

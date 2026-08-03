@@ -32,7 +32,7 @@ export class UserprofileComponent {
   paymentdata: any;
   dialgo = inject(MatDialog)
   skills : any[] = [];
-
+  profileImageUrl = '';
   ngOnInit() {
     this.getData();
   }
@@ -44,6 +44,11 @@ export class UserprofileComponent {
         const allEmployees = response.data;
         this.employedata = allEmployees.find((emp: any) => emp.id == userId);
         // console.log("Found employedata:", this.employedata);
+        if (this.employedata?.profileImage) {
+          this.profileImageUrl =
+            this.services.apiUrl.replace('/api', '') + "/ProfileImages/" +
+            this.employedata.profileImage;
+        }
       });
       this.bankinfoloadedata();
 
@@ -57,13 +62,15 @@ export class UserprofileComponent {
     this.paymentservices.getAllData().subscribe((response: any) => {
       const allpayment = response.data;
       // console.log("All payments:", allpayment);
+      //console.log('User Id:', userId);  
+      //console.log('Payment Records:', response.data);
       this.paymentdata = allpayment.find((pay: any) => pay.employeeId == userId);
-      // console.log("Found paymentdata:", this.paymentdata);
+     //console.log("Found paymentdata:", this.paymentdata);
     })
   }
 
   info(data: any) {
-    const dialogRef = this.dialgo.open(InformationComponent, { 
+    const dialogRef = this.dialgo.open(InformationComponent, {
       data,
     })
     dialogRef.afterClosed().subscribe({
@@ -94,7 +101,7 @@ export class UserprofileComponent {
       }
     })
   }
-  
+
   experience(data : any) {
     const dialogRef = this.dialgo.open(ExperienceComponent, {
       data,
@@ -105,7 +112,7 @@ export class UserprofileComponent {
       }
     })
   }
-  
+
   bankinfo(data: any) {
     const dialogRef = this.dialgo.open(PaymeenInfoComponent, {
       data,
@@ -123,7 +130,7 @@ export class UserprofileComponent {
     })
     dialogRef.afterClosed().subscribe({
       next: (val) => {
-        this.services.getData();
+        this.getData();
       }
     })
   }

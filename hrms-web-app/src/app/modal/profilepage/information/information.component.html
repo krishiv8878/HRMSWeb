@@ -3,16 +3,12 @@
         <p>Profile Information</p>
 
         <div class="profileInfo-form">
-            <div class="row">
-                <div class="col profile-wrapper">
-                    <div class="image-container">
-                        <img src="https://material.angular.io/assets/img/examples/shiba2.jpg" alt="User Image"
-                            class="user-image" />
-                        <button class="edit-btnimg">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                    </div>
-                </div>
+            <div class="image-container">
+                <img [src]="selectedImage || defaultImage" alt="User Image" class="user-image" />
+                <button type="button" class="edit-btnimg" (click)="fileInput.click()">
+                    <mat-icon>edit</mat-icon>
+                </button>
+                <input #fileInput hidden type="file" accept="image/*" (change)="onFileSelected($event)">
             </div>
 
             <div class="row mt-4">
@@ -80,9 +76,9 @@
                     <mat-form-field appearance="outline">
                         <mat-label>Gender</mat-label>
                         <mat-select name="gander" formControlName="gender">
-                            <mat-option value="male">male</mat-option>
+                            <mat-option value="Male">Male</mat-option>
                             <mat-option value="Female">Female</mat-option>
-                            <mat-option value="other">other</mat-option>
+                            <mat-option value="Other">Other</mat-option>
                         </mat-select>
                     </mat-form-field>
                 </div>
@@ -112,7 +108,7 @@
                 <div class="col-xl-6"></div>
             </div> -->
             <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">submit</button>
+                <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
             </div>
         </div>
     </form>

@@ -37,8 +37,8 @@ export class HomeComponent {
     { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
     { field: "emailAddress", tooltipField: "emailAddress", minWidth: 300 },
     { field: "mobileNumber",minWidth: 200  },
-    { field: "permanentAddress", tooltipField: "permanentAddress", headerName: "Per.Address",minWidth: 300  },
-    { field: "currentAddress", tooltipField: "currentAddress", headerName: "Cur.Address",minWidth: 300  },
+    { field: "permanentAddress", tooltipField: "permanentAddress", headerName: "Permanent Add",minWidth: 300  },
+    { field: "currentAddress", tooltipField: "currentAddress", headerName: "Current Add",minWidth: 300  },
     {
       field: "dateOfJoining", headerName: 'Joinig Date',minWidth: 150 , valueFormatter: params => {
         return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';

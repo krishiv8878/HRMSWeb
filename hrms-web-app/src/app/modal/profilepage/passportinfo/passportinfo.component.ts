@@ -10,6 +10,7 @@ import { ToastrService } from 'ngx-toastr';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { SkillservicesService } from '../../../services/skill/skillservices.service';
 
 @Component({
   selector: 'app-passportinfo',
@@ -25,6 +26,8 @@ export class PassportinfoComponent {
   router = inject(Router)
   formbuilder = inject(FormBuilder)
   toaster = inject(ToastrService)
+  skillservices = inject(SkillservicesService)
+  skills : any[] = [];
 
   passportinfo = this.formbuilder.group({
     id : [localStorage.getItem('employeeId') || ''],
@@ -73,8 +76,13 @@ export class PassportinfoComponent {
     branch: [''],
     dateOfBirth: [''],
     primaryEmailAddress: [''],
+    skills : [''],
+    skillIds : [[]],
   })
   ngOnInit() { 
+    this.skillservices.getSkill().subscribe((skills: any) => {
+      this.skills = skills.data;
+    })
     this.passportinfo.patchValue(this.data)
   }
   submitpassportinfo() {

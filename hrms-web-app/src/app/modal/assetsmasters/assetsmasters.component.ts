@@ -85,7 +85,7 @@ export class AssetsmastersComponent {
       this.services.updateData(this.Assets.value).subscribe({
         next: (val: any) => {
           // console.log('update successfully')
-          this.toaster.success('Assets Recode Successfully Updated', 'success')
+          this.toaster.success('Assets Record Successfully Updated', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log("err msg", err)
@@ -95,7 +95,7 @@ export class AssetsmastersComponent {
       this.services.createData(this.Assets.value).subscribe({
         next: (val: any) => {
           // console.log("successfully add")
-          this.toaster.success(' Assets Recode Successfully Added', 'success')
+          this.toaster.success(' Assets Record Successfully Added', 'success')
           this._dialogref.close(true);
         }, error: (err) => {
           console.log(err)

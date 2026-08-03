@@ -1,7 +1,11 @@
-import { Component } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { Component, Inject } from '@angular/core';
+import {
+  MatDialogRef,
+  MAT_DIALOG_DATA
+} from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+
 @Component({
   selector: 'app-employee-attend',
   standalone: true,
@@ -11,7 +15,10 @@ import { MatButtonModule } from '@angular/material/button';
 })
 export class EmployeeAttendComponent {
 
-  constructor(private dialogRef: MatDialogRef<EmployeeAttendComponent>) { }
+  constructor(
+    private dialogRef: MatDialogRef<EmployeeAttendComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) {}
 
   onConfirm() {
     this.dialogRef.close('confirm');

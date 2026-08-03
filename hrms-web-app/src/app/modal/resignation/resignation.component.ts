@@ -5,6 +5,8 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatInputModule } from '@angular/material/input';
 import { ResignationService } from '../../services/Resignation/resignation.service';
+import { MatDialogRef } from '@angular/material/dialog';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-resignation',
@@ -15,9 +17,11 @@ import { ResignationService } from '../../services/Resignation/resignation.servi
   styleUrl: './resignation.component.scss'
 })
 export class ResignationComponent {
-  constructor() { }
+  constructor(private _dialogref: MatDialogRef<ResignationComponent>) { }
   services = inject(ResignationService)
   formbulider = inject(FormBuilder)
+  toaster = inject(ToastrService)
+  
 
   resignationForm = this.formbulider.group({
     reason: [''], 
@@ -32,6 +36,8 @@ export class ResignationComponent {
     this.services.createData(this.resignationForm.value).subscribe({
       next: (val: any) => {
         console.log("resign value", this.resignationForm.value)
+        this.toaster.success('Resignation Request Sent Successfully', 'success')
+        this._dialogref.close(true);
       },
       error: (err) => {
         console.log(err)

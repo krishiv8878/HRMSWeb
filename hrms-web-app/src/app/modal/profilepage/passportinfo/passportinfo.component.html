@@ -32,7 +32,7 @@
             <div class="col-xl-6">
                 <mat-form-field appearance="outline">
                     <mat-label>Date of Expiry</mat-label>
-                    <input matInput [matDatepicker]="picker">
+                    <input matInput [matDatepicker]="picker" formControlName="passportExpiryDate">
                     <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                     <mat-datepicker #picker></mat-datepicker>
                 </mat-form-field>

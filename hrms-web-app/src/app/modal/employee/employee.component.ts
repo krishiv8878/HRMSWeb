@@ -53,7 +53,7 @@ export class EmployeeComponent {
     lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')],],
     emailAddress: ['', [Validators.required, Validators.email, Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}$')]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
-    // permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
+    permanentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
     gender: ['', [Validators.required]],
     currentAddress: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,-,=]+$')]],
     Designation : [''],
@@ -187,7 +187,7 @@ export class EmployeeComponent {
     if (this.isEdit) {
       this.services.updateData(this.Employeeform.value).subscribe({
         next: () => {
-          this.toaster.success('Employee Recode Successfully Updated', 'Success');
+          this.toaster.success('Employee Record Successfully Updated', 'Success');
           this._dialogref.close(true);
         },
         error: (err) => {
@@ -197,7 +197,7 @@ export class EmployeeComponent {
     } else {
       this.services.createData(this.Employeeform.value).subscribe({
         next: () => {
-          this.toaster.success('Employee Recode Successfully Added', 'Success');
+          this.toaster.success('Employee Record Successfully Added', 'Success');
           this._dialogref.close(true);
         },
         error: (err) => {
