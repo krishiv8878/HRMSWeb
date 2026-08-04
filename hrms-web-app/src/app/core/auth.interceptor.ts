@@ -7,12 +7,13 @@ import { ToastrService } from 'ngx-toastr';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
-  const toster = inject(ToastrService)
-  const token = localStorage.getItem('LoginTokan');
+  const toster = inject(ToastrService);
+  const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+  const token = isBrowser ? localStorage.getItem('LoginTokan') : null;
   const excludeUrls = environment.excludeUrls;
 
   // Check if request should skip interceptor
-  const shouldSkip = excludeUrls.some(url => req.url.includes(url));
+  const shouldSkip = excludeUrls ? excludeUrls.some(url => req.url.includes(url)) : false;
 
   if (shouldSkip) {
     console.log("⛔ Interceptor skipped for:", req.url);
@@ -30,9 +31,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (Date.now() > exp) {
         console.log("⚠ Token Expired — Auto Logout");
 
-        localStorage.clear();
+        if (isBrowser) {
+          localStorage.clear();
+        }
         router.navigate(['/login']);
-        toster.error('Session is expired !')
+        toster.error('Session is expired !');
         return throwError(() => new Error("Token expired"));
       }
     } catch (e) {
@@ -56,10 +59,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status === 401) {
         console.log("❌ 401 Unauthorized — Auto Logout");
 
-        localStorage.clear();
+        if (isBrowser) {
+          localStorage.clear();
+        }
         router.navigate(['/login']);
-        toster.error('Session is expired !')
-
+        toster.error('Session is expired !');
       }
 
       return throwError(() => error);

@@ -1,11 +1,15 @@
-<mat-drawer-container>
-  <mat-drawer-content>
-    <app-header (toggleSidebarForMe)="sidebarToggler()" />
-    <router-outlet />  
-  </mat-drawer-content>
+<div class="app-layout-wrapper">
+  <!-- Fixed Left Sidebar (280px) -->
+  <app-sidbar></app-sidbar>
 
-  <mat-drawer [mode]="drawerMode" [opened]="sidebaropen" (closedStart)="sidebaropen = false">
-    <app-sidbar />
-  </mat-drawer>
+  <!-- Main Content Container -->
+  <div class="main-layout-container">
+    <!-- Top Navigation Header (70px) -->
+    <app-header></app-header>
 
-</mat-drawer-container>
+    <!-- Page Body Content Area -->
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

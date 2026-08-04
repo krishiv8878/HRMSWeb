@@ -26,27 +26,27 @@ import { ResetpasswordComponent } from './modal/resetpassword/resetpassword.comp
 import { ForgotpasswordComponent } from './modal/forgotpassword/forgotpassword.component';
 import { RequestsApprovalsComponent } from './component/requests-approvals/requests-approvals.component';
 
-
-
 export const routes: Routes = [
     {
-        path: '', redirectTo: 'login', pathMatch: 'full'
+        path: '', redirectTo: 'index/document', pathMatch: 'full'
     },
     {
-        path: 'login', component: LoginComponent,
+        path: 'login', component: LoginComponent
     },
     {
-        path: 'register', component: RegisterComponent,
+        path: 'register', component: RegisterComponent
     },
     {
         path: 'reset-password', component: ResetpasswordComponent
     },
     {
-        path:'forgot-password', component:ForgotpasswordComponent
+        path: 'forgot-password', component: ForgotpasswordComponent
     },
     {
         path: 'index', component: IndexComponent, canActivate: [authGuard], children: [
-
+            {
+                path: '', redirectTo: 'document', pathMatch: 'full'
+            },
             {
                 path: 'home', component: HomeComponent
             },

@@ -1,30 +1,74 @@
-<mat-toolbar>
-  <mat-toolbar-row>
-    <!-- <div class="header-item"> -->
-    <!-- <button class="header-item" mat-icon-button (click)="toggleSidebar()"><mat-icon>menu</mat-icon></button> -->
-    <!-- </div> -->
-    <span>Krishiv Innovations</span>
-    <span class="example-spacer"></span>
+<header class="top-header-container">
+  <!-- Search Input Area -->
+  <div class="search-wrapper">
+    <mat-icon class="search-icon">search</mat-icon>
+    <input
+      type="text"
+      class="search-input"
+      [(ngModel)]="headerSearchQuery"
+      (ngModelChange)="onSearchChange($event)"
+      placeholder="Search across Enterprise HRMS..."
+      aria-label="Search across Enterprise HRMS"
+    />
+  </div>
 
-    <div class="header-menu" style="display: flex; gap: 5px; padding: 0 2rem;">
-      <div class="user-img">
-        <mat-icon>person</mat-icon>
+  <!-- Center Navigation Tabs -->
+  <nav class="center-nav">
+    <button
+      *ngFor="let tab of navTabs"
+      type="button"
+      class="nav-tab"
+      [class.active]="tab.active"
+      (click)="selectTab(tab.label)"
+    >
+      {{ tab.label }}
+      <span class="active-line" *ngIf="tab.active"></span>
+    </button>
+  </nav>
+
+  <!-- Right Actions & User Profile -->
+  <div class="right-actions">
+    <button type="button" class="action-btn" aria-label="Notifications">
+      <mat-icon>notifications</mat-icon>
+    </button>
+
+    <button type="button" class="action-btn" aria-label="Help Center">
+      <mat-icon>help_outline</mat-icon>
+    </button>
+
+    <button type="button" class="action-btn" aria-label="App Menu">
+      <mat-icon>apps</mat-icon>
+    </button>
+
+    <!-- User Profile Avatar Container -->
+    <div class="user-avatar-container" [matMenuTriggerFor]="userMenu">
+      <img
+        *ngIf="getUserAvatar()"
+        [src]="getUserAvatar()"
+        [alt]="getUserName()"
+        class="user-avatar"
+      />
+      <div *ngIf="!getUserAvatar()" class="user-initials-badge">
+        {{ getUserInitials() }}
       </div>
-      {{getUserName()}}
-      <mat-icon [matMenuTriggerFor]="menu">keyboard_arrow_down</mat-icon>
-      <mat-menu #menu="matMenu" class="custom-menu">
-        <div class="text-center bg-warning-subtle px-3">
-        <h5 >Role: {{getUserRole()}}</h5>
-        
-        </div>
-        <div>
-          <button mat-menu-item [routerLink]="['/index/user-profile']"><mat-icon>person</mat-icon>Add Profile</button> 
-        <button mat-menu-item (click)="resignation()"><mat-icon>exit_to_app</mat-icon>Resignation</button>        
-        <button (click)="logout()" mat-menu-item> <mat-icon>power_settings_new</mat-icon>Log Out</button>
-        </div>
-        
-      </mat-menu>
-      <!-- <button routerLink="login"><mat-icon>person</mat-icon>logout</button> -->
     </div>
-  </mat-toolbar-row>
-</mat-toolbar>
+
+    <mat-menu #userMenu="matMenu" xPosition="before" class="custom-user-menu">
+      <div class="menu-header">
+        <strong>{{ getUserName() }}</strong>
+        <span class="menu-role">{{ getUserRole() }}</span>
+      </div>
+      <mat-divider></mat-divider>
+      <button mat-menu-item [routerLink]="['/index/user-profile']">
+        <mat-icon>person</mat-icon> My Profile
+      </button>
+      <button mat-menu-item (click)="resignation()">
+        <mat-icon>exit_to_app</mat-icon> Resignation
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="logout()" class="logout-item">
+        <mat-icon>power_settings_new</mat-icon> Log Out
+      </button>
+    </mat-menu>
+  </div>
+</header>

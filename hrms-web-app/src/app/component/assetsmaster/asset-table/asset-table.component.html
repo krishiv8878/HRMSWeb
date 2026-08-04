@@ -1,0 +1,208 @@
+<div class="table-card-container">
+  <!-- Table Header Controls Bar -->
+  <div class="table-header">
+    <!-- Left Search Input -->
+    <div class="table-search-box">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (input)="filterAssets()"
+        placeholder="Search by ID, Model..."
+        class="search-input"
+        aria-label="Search by ID, Model"
+      />
+    </div>
+
+    <!-- Right Filters Group -->
+    <div class="header-filters-group">
+      <!-- Category Filter -->
+      <div class="filter-dropdown">
+        <mat-select
+          [(ngModel)]="selectedCategory"
+          (selectionChange)="filterAssets()"
+          class="custom-select"
+          aria-label="Filter by Category"
+        >
+          <mat-option *ngFor="let cat of categories" [value]="cat">
+            {{ cat === 'All' ? 'Category: All' : cat }}
+          </mat-option>
+        </mat-select>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="filter-dropdown">
+        <mat-select
+          [(ngModel)]="selectedStatus"
+          (selectionChange)="filterAssets()"
+          class="custom-select"
+          aria-label="Filter by Status"
+        >
+          <mat-option *ngFor="let st of statuses" [value]="st">
+            {{ st === 'All' ? 'Status: All' : st }}
+          </mat-option>
+        </mat-select>
+      </div>
+
+      <!-- Location Filter -->
+      <div class="filter-dropdown">
+        <mat-select
+          [(ngModel)]="selectedLocation"
+          (selectionChange)="filterAssets()"
+          class="custom-select"
+          aria-label="Filter by Location"
+        >
+          <mat-option *ngFor="let loc of locations" [value]="loc">
+            {{ loc === 'All' ? 'Location: All' : loc }}
+          </mat-option>
+        </mat-select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assets Data Table -->
+  <div class="table-responsive">
+    <table class="assets-table">
+      <thead>
+        <tr>
+          <th>ASSET ID</th>
+          <th>TYPE & MODEL</th>
+          <th>ASSIGNED TO</th>
+          <th>LOCATION</th>
+          <th>STATUS</th>
+          <th>LAST AUDIT</th>
+          <th class="text-right">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let asset of paginatedAssets">
+          <!-- Asset ID -->
+          <td class="col-id">
+            <span class="asset-id-link" (click)="openViewDetails(asset)">{{ asset.id }}</span>
+          </td>
+
+          <!-- Type & Model -->
+          <td class="col-model" (click)="openViewDetails(asset)">
+            <div class="model-wrapper">
+              <span class="model-title">{{ asset.modelName }}</span>
+              <span class="model-specs">{{ asset.specifications }}</span>
+            </div>
+          </td>
+
+          <!-- Assigned To -->
+          <td class="col-assigned">
+            <div class="assigned-wrapper">
+              <img
+                *ngIf="asset.assignedAvatar"
+                [src]="asset.assignedAvatar"
+                [alt]="asset.assignedTo"
+                class="user-avatar"
+              />
+              <div *ngIf="!asset.assignedAvatar" class="user-initials">
+                {{ asset.assignedInitials || 'UN' }}
+              </div>
+              <span class="user-name">{{ asset.assignedTo || 'Unassigned' }}</span>
+            </div>
+          </td>
+
+          <!-- Location -->
+          <td class="col-location">
+            <span class="location-text">{{ asset.location }}</span>
+          </td>
+
+          <!-- Status Badge -->
+          <td class="col-status">
+            <span class="status-pill" [ngClass]="getStatusPillClass(asset.status)">
+              {{ asset.status }}
+            </span>
+          </td>
+
+          <!-- Last Audit Date -->
+          <td class="col-audit">
+            <span class="audit-date" [class.is-overdue]="asset.isOverdue">
+              {{ asset.lastAudit }}
+            </span>
+          </td>
+
+          <!-- Actions Dropdown Menu -->
+          <td class="col-actions text-right">
+            <button type="button" class="action-dots-btn" [matMenuTriggerFor]="assetMenu" aria-label="Asset options">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #assetMenu="matMenu" xPosition="before">
+              <button mat-menu-item (click)="openViewDetails(asset)">
+                <mat-icon>visibility</mat-icon> View Details
+              </button>
+              <button mat-menu-item (click)="openEditAsset(asset)">
+                <mat-icon>edit</mat-icon> Edit Asset
+              </button>
+              <button mat-menu-item (click)="openEditAsset(asset)">
+                <mat-icon>person_add</mat-icon> Assign Employee
+              </button>
+              <mat-divider></mat-divider>
+              <button mat-menu-item class="delete-action" (click)="onDelete(asset.id)">
+                <mat-icon>delete_outline</mat-icon> Delete Asset
+              </button>
+            </mat-menu>
+          </td>
+        </tr>
+
+        <!-- Empty State -->
+        <tr *ngIf="paginatedAssets.length === 0">
+          <td colspan="7" class="empty-state">
+            <div class="empty-box">
+              <mat-icon class="empty-icon">inventory_2</mat-icon>
+              <p *ngIf="assets.length === 0">
+                No corporate assets found. Click <strong>'+ Add Asset'</strong> above to create your first asset entry.
+              </p>
+              <p *ngIf="assets.length > 0">
+                No matching assets found for your search or filters.
+              </p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table Pagination Footer -->
+  <div class="table-footer">
+    <span class="entry-count" *ngIf="filteredAssets.length > 0">
+      Showing {{ startItemIndex }} to {{ endItemIndex }} of {{ filteredAssets.length }} assets
+    </span>
+    <span class="entry-count" *ngIf="filteredAssets.length === 0">0 assets</span>
+
+    <!-- Interactive Working Pagination Buttons -->
+    <div class="pagination-controls">
+      <button
+        type="button"
+        class="page-nav-btn"
+        [disabled]="currentPage === 1"
+        (click)="prevPage()"
+        aria-label="Previous Page"
+      >
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+
+      <button
+        *ngFor="let p of pages"
+        type="button"
+        class="page-num-btn"
+        [class.active]="currentPage === p"
+        (click)="goToPage(p)"
+      >
+        {{ p }}
+      </button>
+
+      <button
+        type="button"
+        class="page-nav-btn"
+        [disabled]="currentPage === totalPages || filteredAssets.length === 0"
+        (click)="nextPage()"
+        aria-label="Next Page"
+      >
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

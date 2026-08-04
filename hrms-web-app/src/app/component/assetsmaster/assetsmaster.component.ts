@@ -1,129 +1,56 @@
-import { Component, inject } from '@angular/core';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.service';
-import { Router } from '@angular/router';
-import { ColDef, ICellRendererParams } from 'ag-grid-community';
-import { ActionComponent } from '../action/action.component';
-import { MatDialog } from '@angular/material/dialog';
-import { AssetsmastersComponent } from '../../modal/assetsmasters/assetsmasters.component';
+import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { Observable } from 'rxjs';
+import { AssetItem, AssetMetricCard } from '../../interface/asset.interface';
+import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.service';
+import { AssetCardComponent } from './asset-card/asset-card.component';
+import { AssetTableComponent } from './asset-table/asset-table.component';
+import { AssetsmastersComponent } from '../../modal/assetsmasters/assetsmasters.component';
 
 @Component({
   selector: 'app-assetsmaster',
   standalone: true,
-  imports: [AgGridAngular, AgGridModule, CommonModule,MatButtonModule],
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatButtonModule,
+    MatDialogModule,
+    AssetCardComponent,
+    AssetTableComponent
+  ],
   templateUrl: './assetsmaster.component.html',
   styleUrl: './assetsmaster.component.scss'
 })
-export class AssetsmasterComponent {
-  services = inject(AssetsmasterService)
-  router = inject(Router)
-  dialog = inject(MatDialog)
-  toaster = inject(ToastrService)
+export class AssetsmasterComponent implements OnInit {
+  private assetService = inject(AssetsmasterService);
+  private dialog = inject(MatDialog);
+  private toastr = inject(ToastrService);
 
-  public columnDefs: ColDef[] = [
-    // { field: "id",},
-    // { field: "id", floatingFilter: true, filter: true,},
-    { field: "assetsMasterName", headerName: "Name", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },  
-    { field: "serialNumber", },
-    { field: "description", tooltipField: "description" },
-    {
-      field: "dateOfPurchase", valueFormatter: params => {
-        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-      }
-    },
-    // { field: "createdDate",},
-    // { field: "createdBy",},    
-    { field: "isActive", cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
-    { field: "action", cellRenderer: ActionComponent, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) } }
-  ]
-
-  rowData: any;
+  metrics$: Observable<AssetMetricCard[]> = this.assetService.metrics$;
+  assets$: Observable<AssetItem[]> = this.assetService.assets$;
 
   ngOnInit() {
-    this.getData();
-  }
-  getData() {
-    this.services.getData().subscribe((response: any) => {
-      this.rowData = response.data;
-    })
-  }
-  pagination = true;
-  paginationPageSize = 10;
-  paginationPageSizeSelector = [5, 10, 20];
-
-  defaultColDef: ColDef = {
-    resizable: true,
-  flex: 1,
-    minWidth: 120,
+    this.assetService.recalculateMetrics();
   }
 
-  Edit(data: any) {
+  onExport() {
+    this.assetService.exportToCsv();
+    this.toastr.success('Asset Inventory exported successfully!');
+  }
+
+  openAddAssetModal() {
     const dialogRef = this.dialog.open(AssetsmastersComponent, {
-      data,
-    })
-    dialogRef.afterClosed().subscribe({
-      next: (val) => {
-        this.getData();
-
-      }
-    })
-  }
-
-  // Delete(AssetsMasterId: any) {
-  //   const dialogRef = this.dialog.open(DeleteModalComponent, {
-  //     width: '350px',
-  //     data: { id: AssetsMasterId }
-  //   })
-  //   if (AssetsMasterId != null) {
-  //   dialogRef.afterClosed().subscribe((confirmed: boolean) => {
-  //     this.services.DeleteData(AssetsMasterId).subscribe(() => {
-  //       AssetsMasterId.isDeleted = true;
-  //       AssetsMasterId.isActive = false;
-
-  //     })
-  //     this.services.DeleteData(AssetsMasterId).subscribe({
-  //       next: (res) => {
-  //         this.getData();
-  //         this.toaster.success('Records Are Successfully Deleted', 'Delete')
-  //       }
-  //     })
-  //   })
-  //   }
-  // }
-  Delete(AssetsMasterId: any) {
-    const dialogRef = this.dialog.open(DeleteModalComponent, {
-      width: '350px',
-      data: { id: AssetsMasterId }
+      width: '560px'
     });
-  
-    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
-      if (confirmed) {
-        this.services.DeleteData(AssetsMasterId).subscribe({
-          next: () => {
-            this.toaster.success('Assert Record Successfully Deleted ', 'Delete');
-            this.getData();
-          },
-          error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
-          }
-        });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
+        this.assetService.recalculateMetrics();
       }
     });
-  }
-  
-
-  openAddForm() {
-    const dialogRef = this.dialog.open(AssetsmastersComponent);
-    dialogRef.afterClosed().subscribe({
-      next: (val) => {
-        if (val) {
-          this.getData();
-        }
-      }
-    })
   }
 }

@@ -1,42 +1,70 @@
 import { Component, EventEmitter, inject, Output } from '@angular/core';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatIconModule } from '@angular/material/icon';
-// import { SidbarComponent } from "../sidbar/sidbar.component";
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-// import { RouterLink } from '@angular/router';
-import { MatMenuModule } from '@angular/material/menu';
-import { Router, RouterLink } from '@angular/router'
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { Router, RouterLink } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { ResignationComponent } from '../../modal/resignation/resignation.component';
-
+import { DocumentService } from '../../services/documnets/document.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [MatToolbarModule, MatIconModule, MatSlideToggleModule, MatMenuModule, RouterLink, CommonModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatMenuModule, MatDividerModule, RouterLink],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss'
 })
 export class HeaderComponent {
   @Output() toggleSidebarForMe: EventEmitter<any> = new EventEmitter();
-  constructor() { }
-  router = inject(Router)
-  dialog = inject(MatDialog)
-getUserName(){
-  return `${localStorage.getItem('UserName')}`
-}
-getUserRole(){
-  return `${localStorage.getItem('RoleType')}`
-}
-  toggleSidebar() {
-    this.toggleSidebarForMe.emit();
+  router = inject(Router);
+  dialog = inject(MatDialog);
+  documentService = inject(DocumentService);
+
+  headerSearchQuery: string = '';
+
+  navTabs = [
+    { label: 'Dashboard', active: false },
+    { label: 'Workforce', active: false },
+    { label: 'Projects', active: true }
+  ];
+
+  onSearchChange(query: string) {
+    this.documentService.setSearchQuery(query);
   }
+
+  selectTab(tabName: string) {
+    this.navTabs.forEach(t => t.active = t.label === tabName);
+  }
+
+  getUserName() {
+    return this.documentService.getLoggedInUser().name;
+  }
+
+  getUserInitials() {
+    return this.documentService.getLoggedInUser().initials;
+  }
+
+  getUserAvatar(): string | undefined {
+    return this.documentService.getLoggedInUser().avatar;
+  }
+
+  getUserRole() {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      return localStorage.getItem('RoleType') || 'HR Administrator';
+    }
+    return 'HR Administrator';
+  }
+
   logout() {
-    localStorage.clear();
-    this.router.navigate(['login'])
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+    this.router.navigate(['login']);
   }
+
   resignation() {
-    const dialogRef = this.dialog.open(ResignationComponent)
+    this.dialog.open(ResignationComponent);
   }
 }

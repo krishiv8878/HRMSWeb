@@ -1,70 +1,89 @@
-<div class="form">
-    <form action="" [formGroup]="Assets" (ngSubmit)="submitdata()">
-        @if (isEdit) {
-        <p>edit assets </p>
-        }@else {
-        <p>add assets</p>
-        }
-        <div class="employee-form">
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label> Name</mat-label>
-                        <input type="text" matInput name="assetsMasterName" placeholder="Enter Assets Name"
-                            (keypress)="allowOnlyLetters($event)" formControlName="assetsMasterName">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>serialNumber</mat-label>
-                        <input type="text" matInput name="serialNumber" placeholder="Enter SerialNumber"
-                            formControlName="serialNumber">
-                    </mat-form-field>
-                </div>
-            </div>
+<div class="asset-modal-card">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-title">
+      <div class="icon-box">
+        <mat-icon>inventory_2</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEdit ? 'Edit Corporate Asset' : 'Add New Asset' }}</h2>
+        <span class="subtitle">Enter equipment hardware details and assignment location.</span>
+      </div>
+    </div>
+    <button type="button" class="close-icon-btn" (click)="onCancel()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-            <div class="row">
-               
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>dateOfPurchase</mat-label>
-                        <input matInput [matDatepicker]="picker3" formControlName="dateOfPurchase">
-                        <!-- <mat-hint>MM/DD/YYYY</mat-hint> -->
-                        <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
-                        <mat-datepicker #picker3></mat-datepicker>
-                    </mat-form-field>
-                </div>
- 
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>description</mat-label>
-                        <!-- <input type="text" matInput name="description" placeholder="Enter Description"
-                            formControlName="description"> -->
-                        <textarea matInput placeholder="Enter Assets Description" rows="2" formControlName="description"></textarea>
-                    </mat-form-field>
-                </div>
-            </div>
-        
+  <!-- Modal Form Body -->
+  <form [formGroup]="assetForm" (ngSubmit)="submitdata()" class="modal-form-body">
+    <!-- Model Name -->
+    <div class="form-field-group">
+      <label class="form-label">Asset / Model Name <span class="required">*</span></label>
+      <input
+        type="text"
+        formControlName="modelName"
+        placeholder="e.g. MacBook Pro 16&quot;"
+        class="form-input"
+      />
+    </div>
 
-            <div class="row">
-                <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-            </div>
+    <!-- Category & Specifications Grid -->
+    <div class="form-row">
+      <!-- Asset Type / Category -->
+      <div class="form-field-group">
+        <label class="form-label">Asset Type <span class="required">*</span></label>
+        <select formControlName="assetType" class="form-select">
+          <option *ngFor="let type of assetTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
 
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-               
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-               
-                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }
-        </div>
-    </form>
+      <!-- Specifications -->
+      <div class="form-field-group">
+        <label class="form-label">Specifications / Subtitle <span class="required">*</span></label>
+        <input
+          type="text"
+          formControlName="specifications"
+          placeholder="e.g. Laptop • 2023 M2 Max"
+          class="form-input"
+        />
+      </div>
+    </div>
+
+    <!-- Assigned Employee & Status Grid -->
+    <div class="form-row">
+      <!-- Assigned To -->
+      <div class="form-field-group">
+        <label class="form-label">Assigned Employee <span class="required">*</span></label>
+        <select formControlName="assignedTo" class="form-select">
+          <option *ngFor="let emp of employees" [value]="emp">{{ emp }}</option>
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div class="form-field-group">
+        <label class="form-label">Status <span class="required">*</span></label>
+        <select formControlName="status" class="form-select">
+          <option *ngFor="let st of statusList" [value]="st">{{ st }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="form-field-group">
+      <label class="form-label">Office Location / Desk <span class="required">*</span></label>
+      <select formControlName="location" class="form-select">
+        <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+      </select>
+    </div>
+
+    <!-- Form Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>check</mat-icon>
+        <span>{{ isEdit ? 'Save Changes' : 'Add Asset' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

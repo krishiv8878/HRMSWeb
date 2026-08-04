@@ -1,23 +1,112 @@
-.table-title {
-    letter-spacing: 1px;
-    // font-size: 25px;
-    font-weight: 500;
+.asset-dashboard-container {
+  padding: 32px;
+  background-color: #f8fafc;
+  min-height: calc(100vh - 70px);
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-.table-menu {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-align: center;
-    padding: 0.4rem 1rem;
-}
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
 
-.table-btn {
-    text-transform: capitalize;
-    font-weight: 500;
-
-    button {
-        font-size: 16px;
-        letter-spacing: 1px;
+  .title-group {
+    .page-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.02em;
     }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .btn-export {
+      height: 40px;
+      background-color: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.15s ease;
+
+      .btn-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #4b5563;
+      }
+
+      &:hover {
+        background-color: #f9fafb;
+        border-color: #9ca3af;
+      }
+    }
+
+    .btn-add-asset {
+      height: 40px;
+      background-color: #2563eb;
+      border: 1px solid #2563eb;
+      border-radius: 8px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+      transition: all 0.15s ease;
+
+      .btn-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        background-color: #1d4ed8;
+        border-color: #1d4ed8;
+      }
+    }
+  }
+}
+
+.metrics-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.table-section {
+  width: 100%;
 }

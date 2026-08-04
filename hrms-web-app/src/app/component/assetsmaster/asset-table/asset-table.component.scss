@@ -1,0 +1,366 @@
+.table-card-container {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.table-header {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  .table-search-box {
+    position: relative;
+    width: 280px;
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 38px;
+      background-color: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 0 12px 0 38px;
+      font-size: 13px;
+      color: #1e293b;
+      outline: none;
+      box-sizing: border-box;
+
+      &::placeholder {
+        color: #94a3b8;
+      }
+
+      &:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+      }
+    }
+  }
+
+  .header-filters-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .filter-dropdown {
+      min-width: 130px;
+
+      ::ng-deep .mat-mdc-select {
+        height: 38px;
+        background-color: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 0 12px;
+        font-size: 13px;
+        color: #374151;
+        display: flex;
+        align-items: center;
+      }
+
+      ::ng-deep .mat-mdc-select-trigger {
+        height: 38px;
+        display: flex;
+        align-items: center;
+      }
+    }
+  }
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.assets-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  thead {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+
+    th {
+      padding: 14px 24px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      white-space: nowrap;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: #f8fafc;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 16px 24px;
+      vertical-align: middle;
+      font-size: 14px;
+      color: #1e293b;
+    }
+  }
+}
+
+.asset-id-link {
+  font-weight: 700;
+  color: #2563eb;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.model-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .model-title {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 14px;
+  }
+
+  .model-specs {
+    font-size: 12px;
+    color: #64748b;
+  }
+}
+
+.assigned-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .user-initials {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .user-name {
+    font-weight: 500;
+    color: #1e293b;
+  }
+}
+
+.location-text {
+  color: #475569;
+  font-size: 13px;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+
+  &.pill-active {
+    background-color: #ecfdf5;
+    color: #059669;
+  }
+
+  &.pill-available {
+    background-color: #f1f5f9;
+    color: #475569;
+  }
+
+  &.pill-repair {
+    background-color: #fef2f2;
+    color: #dc2626;
+  }
+}
+
+.audit-date {
+  color: #64748b;
+  font-size: 13px;
+
+  &.is-overdue {
+    color: #dc2626;
+    font-weight: 600;
+  }
+}
+
+.action-dots-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background-color: #f1f5f9;
+    color: #1e293b;
+  }
+}
+
+.text-right {
+  text-align: right;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px !important;
+
+  .empty-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .empty-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+
+      strong {
+        color: #2563eb;
+      }
+    }
+  }
+}
+
+.table-footer {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #f1f5f9;
+
+  .entry-count {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .page-nav-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &:disabled {
+        color: #cbd5e1;
+        cursor: not-allowed;
+      }
+    }
+
+    .page-num-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+
+      &:hover:not(:disabled) {
+        background-color: #f1f5f9;
+      }
+
+      &.active {
+        background-color: #2563eb;
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      &:disabled {
+        color: #cbd5e1;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+::ng-deep .delete-action {
+  color: #dc2626 !important;
+  mat-icon {
+    color: #dc2626 !important;
+  }
+}
