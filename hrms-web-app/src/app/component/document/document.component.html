@@ -1,52 +1,34 @@
-<div class="container-flued" style="background:#dee3e426; height: 100vh;">
-    <div class="row">
-        <div class="col">
-            <div class="table-menu">
-                <div class="table-title">
-                    <h2>Employee Document</h2>
-                </div>
-                <div class="table-btn">
-                    <button mat-flat-button (click)="openAddForm()" style="border-radius: 0;">add </button>
-                </div>
-            </div>
-        </div>
+<div class="document-page-wrapper">
+  <!-- Top Page Header Bar -->
+  <header class="page-header">
+    <div class="header-text-group">
+      <h1 class="page-title">Document Management</h1>
+      <p class="page-subtitle">
+        Centralized repository for all enterprise documentation and policies.
+      </p>
     </div>
 
-    <div class="document">
-        <div class="row">
-            <div class="col-xl-3">
-                <mat-card class="document-card">
-                    <h5 style="text-transform: uppercase; font-size: 1rem; padding: 1rem;">Employee Document Folders
-                    </h5>
-                    <mat-divider></mat-divider>
-                    <mat-list>
-                        <mat-list-item *ngFor="let doc of documents" (click)="viewDocument(doc.id)"
-                            [class.active]="selectedDocument === doc.filePath">
-                            {{doc.documentName }}
-                        </mat-list-item>
-                    </mat-list>
-                </mat-card>
-            </div>
-            <div class="col-xl-9">
-                <div class="right-panel">
-                    <!-- <h3>Preview</h3> -->
-                    <div *ngIf="selectedDocument">
-                        <iframe [src]="selectedDocument"></iframe>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="header-action-buttons">
+      <!-- Upload Document Button -->
+      <button type="button" class="btn-primary" (click)="onUploadDocument()">
+        <mat-icon class="btn-icon">cloud_upload</mat-icon>
+        <span>Upload Document</span>
+      </button>
     </div>
+  </header>
 
-    <div class="row">
-        <div class="col">
-            <div class="hero-img">
-                <div class="container-fluid data">
-                    <!-- <ag-grid-angular style=" width: 100%; border: 0;" [rowData]="rowData"
-                        class="ag-theme-quartz"  /> -->
-                </div>
-            </div>
-        </div>
+  <!-- 4-Grid Document Category Cards -->
+  <section class="categories-section" aria-label="Document Categories">
+    <div class="categories-grid">
+      <app-category-card
+        *ngFor="let category of categories"
+        [category]="category"
+      ></app-category-card>
     </div>
+  </section>
 
+  <!-- Main Documents Data Table -->
+  <section class="table-section" aria-label="Recent Documents">
+    <app-document-table [documents]="documents"></app-document-table>
+  </section>
 </div>

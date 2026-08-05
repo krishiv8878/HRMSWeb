@@ -12,20 +12,6 @@
     />
   </div>
 
-  <!-- Center Navigation Tabs -->
-  <nav class="center-nav">
-    <button
-      *ngFor="let tab of navTabs"
-      type="button"
-      class="nav-tab"
-      [class.active]="tab.active"
-      (click)="selectTab(tab.label)"
-    >
-      {{ tab.label }}
-      <span class="active-line" *ngIf="tab.active"></span>
-    </button>
-  </nav>
-
   <!-- Right Actions & User Profile -->
   <div class="right-actions">
     <button type="button" class="action-btn" aria-label="Notifications">

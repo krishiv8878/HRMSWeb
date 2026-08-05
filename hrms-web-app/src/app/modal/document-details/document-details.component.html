@@ -1,0 +1,90 @@
+<div class="details-modal-card">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="title-wrapper">
+      <div class="file-icon-box">
+        <mat-icon>description</mat-icon>
+      </div>
+      <div>
+        <h2>Document Details</h2>
+        <span class="file-subtitle">{{ data.name }}</span>
+      </div>
+    </div>
+
+    <!-- Header Top Right Close Button -->
+    <button type="button" class="close-icon-btn" (click)="onClose()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Modal Body Grid -->
+  <div class="modal-body">
+    <div class="info-grid">
+      <!-- File Name -->
+      <div class="info-item full-row">
+        <span class="info-label">File Name</span>
+        <span class="info-value text-bold">{{ data.name }}</span>
+      </div>
+
+      <!-- Category -->
+      <div class="info-item">
+        <span class="info-label">Category</span>
+        <span class="info-value">{{ data.category }}</span>
+      </div>
+
+      <!-- Access Level -->
+      <div class="info-item">
+        <span class="info-label">Access Level</span>
+        <span class="access-pill" [ngClass]="getAccessPillClass(data.accessLevel)">
+          {{ data.accessLevel }}
+        </span>
+      </div>
+
+      <!-- Owner -->
+      <div class="info-item">
+        <span class="info-label">Uploaded By (Owner)</span>
+        <div class="owner-chip">
+          <img *ngIf="data.ownerAvatar" [src]="data.ownerAvatar" [alt]="data.ownerName" class="owner-avatar" />
+          <div *ngIf="!data.ownerAvatar && data.ownerInitials" class="owner-initials">
+            {{ data.ownerInitials }}
+          </div>
+          <span class="owner-name">{{ data.ownerName }}</span>
+        </div>
+      </div>
+
+      <!-- Last Modified -->
+      <div class="info-item">
+        <span class="info-label">Last Modified</span>
+        <span class="info-value">{{ data.lastModified }}</span>
+      </div>
+
+      <!-- File Size -->
+      <div class="info-item">
+        <span class="info-label">File Size</span>
+        <span class="info-value">{{ data.fileSize || '1.5 MB' }}</span>
+      </div>
+
+      <!-- File Extension -->
+      <div class="info-item">
+        <span class="info-label">File Type</span>
+        <span class="info-value uppercase">{{ data.fileType }}</span>
+      </div>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Modal Actions Footer -->
+  <div class="modal-footer">
+    <button type="button" class="btn-action btn-share" (click)="onShareLink()">
+      <mat-icon>share</mat-icon> Share Link
+    </button>
+    <button type="button" class="btn-action btn-download" (click)="onDownload()">
+      <mat-icon>download</mat-icon> Download
+    </button>
+    <!-- Secondary Bottom Close Button -->
+    <button type="button" class="btn-action btn-close-modal" (click)="onClose()">
+      <mat-icon>cancel</mat-icon> Close
+    </button>
+  </div>
+</div>

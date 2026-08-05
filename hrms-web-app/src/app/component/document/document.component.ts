@@ -1,82 +1,68 @@
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute } from '@angular/router';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
-import { ColDef, ICellRendererParams } from 'ag-grid-community';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Subscription } from 'rxjs';
 import { DocumentService } from '../../services/documnets/document.service';
-import { MatCardModule } from '@angular/material/card';
-import { MatListModule } from '@angular/material/list';
+import { DocumentCategory, DocumentItem } from '../../interface/document.interface';
+import { CategoryCardComponent } from './category-card/category-card.component';
+import { DocumentTableComponent } from './document-table/document-table.component';
 import { DocumentsComponent } from '../../modal/documents/documents.component';
+
 @Component({
   selector: 'app-document',
   standalone: true,
-  imports: [CommonModule, MatCardModule, AgGridModule, MatListModule, MatIconModule, HttpClientModule, MatButtonModule],
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatDialogModule,
+    CategoryCardComponent,
+    DocumentTableComponent
+  ],
   templateUrl: './document.component.html',
   styleUrl: './document.component.scss'
 })
-export class DocumentComponent {
-  constructor() { }
-  route = inject(ActivatedRoute)
-  dialog = inject(MatDialog)
-  services = inject(DocumentService)
-  sanitizer = inject(DomSanitizer);
-  public columnDefs: ColDef[] = [
+export class DocumentComponent implements OnInit, OnDestroy {
+  private documentService = inject(DocumentService);
+  private dialog = inject(MatDialog);
 
-    // { field: 'id' },
-    // { field: 'employeeId' },
-    { field: 'filePath', headerName: "Employee Document" },
-    // { field: 'isActive', cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>`  },
-  ]
+  categories: DocumentCategory[] = [];
+  documents: DocumentItem[] = [];
 
-  rowData: any[] = [];
-  documents: any[] = [];
-  selectedDocument: SafeResourceUrl | null = null;
+  private sub = new Subscription();
 
-  pagination = true;
-  paginationPageSize = 10;
-  paginationPageSizeSelector = [5, 10, 20];
+  ngOnInit(): void {
+    this.sub.add(
+      this.documentService.categories$.subscribe(cats => {
+        this.categories = cats;
+      })
+    );
 
-  defaultColDef: ColDef = {
-    resizable: true,
-    flex: 1,
-    minWidth: 120,
-  };
-
-  ngOnInit() {
-    this.AllData();
-  }
-  AllData() {
-    this.services.getAll().subscribe((response: any) => {
-      this.documents = response.data
-      console.log("data", response.data)
-    })
+    this.sub.add(
+      this.documentService.documents$.subscribe(docs => {
+        this.documents = docs;
+      })
+    );
   }
 
-  viewDocument(id: number) {
-    console.log("Selected Document ID:", id); // Debugging ke liye
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
+  }
 
-    this.services.viewDocument(id).subscribe((response: any) => {
-      const url = window.URL.createObjectURL(response);
-      this.selectedDocument = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-    }, error => {
-      console.error("Error loading document:", error);
+  onBrowseFolders(): void {
+    console.log('Browse Folders clicked');
+  }
+
+  onUploadDocument(): void {
+    const dialogRef = this.dialog.open(DocumentsComponent, {
+      width: '560px',
+      disableClose: false
     });
-  }
 
-  openAddForm() {
-    const dialogRef = this.dialog.open(DocumentsComponent);
-
-    dialogRef.afterClosed().subscribe({
-      next: (val) => {
-        if (val) {
-          this.AllData();
-        }
-      }    
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Document upload completed successfully.');
+      }
     });
   }
 }

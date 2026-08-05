@@ -1,39 +1,113 @@
-<div class="form">
-    <form [formGroup]="documentForm" (ngSubmit)="onSubmit()">
-        <p>add documents</p>
+<div class="dialog-card">
+  <!-- Dialog Header -->
+  <div class="dialog-header">
+    <div class="header-title">
+      <div class="header-icon">
+        <mat-icon>cloud_upload</mat-icon>
+      </div>
+      <div>
+        <h2>Upload Document</h2>
+        <p>Add new enterprise documentation to the repository</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <div class="employee-form">
-            <!-- Document Name Field -->
-            <div class="row">
-                <div class="col">
-                    <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Document Name</mat-label>
-                        <input type="text" matInput formControlName="documentName" placeholder="Enter Document Name" />
-                    </mat-form-field>
-                </div>
-            </div>
+  <form [formGroup]="documentForm" (ngSubmit)="onSubmit()" class="dialog-form">
+    <!-- Document Name -->
+    <div class="form-group">
+      <label class="field-label" for="docName">Document Name *</label>
+      <mat-form-field appearance="outline" class="full-width">
+        <input
+          id="docName"
+          matInput
+          formControlName="documentName"
+          placeholder="e.g. Q4_Strategy_Plan"
+        />
+        <mat-error *ngIf="documentForm.get('documentName')?.hasError('required')">
+          Document name is required
+        </mat-error>
+      </mat-form-field>
+    </div>
 
-            <!-- File Upload -->
-            <div class="row">
-                <div class="col">
-                    <div class="upload-area">
-                        <input type="file" #fileInput hidden (change)="onFileSelected($event)"
-                            accept=".doc,.docx,.pdf" />
-                        <div class="upload-content" (click)="fileInput.click()">
-                            <mat-icon>cloud_upload</mat-icon>
-                            <p>Drag and Drop here</p>
-                            <span>or</span>
-                            <a>Browse files</a>
-                            <p class="file-types">Accepted File Types: .doc, .docx, .pdf</p>
-                            <p *ngIf="selectedFileName">{{ selectedFileName }}</p>
-                        </div>
-                    </div>
-                    <button mat-flat-button color="primary" type="submit"
-                        [disabled]="!documentForm.valid || !selectedFile">
-                        Upload
-                    </button>
-                </div>
-            </div>
+    <!-- Category & Access Level Row -->
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label class="field-label" for="categorySelect">Category *</label>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-select id="categorySelect" formControlName="category">
+            <mat-option *ngFor="let cat of categories" [value]="cat">
+              {{ cat }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-group half-width">
+        <label class="field-label" for="accessSelect">Access Level *</label>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-select id="accessSelect" formControlName="accessLevel">
+            <mat-option *ngFor="let lvl of accessLevels" [value]="lvl">
+              {{ lvl }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- File Drop Zone -->
+    <div class="form-group">
+      <label class="field-label">File Attachment *</label>
+      <div
+        class="upload-dropzone"
+        [class.dragging]="isDragging"
+        [class.has-file]="selectedFile"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+        (click)="fileInput.click()"
+      >
+        <input
+          #fileInput
+          type="file"
+          hidden
+          (change)="onFileSelected($event)"
+          accept=".pdf,.doc,.docx,.xlsx,.pptx,.zip"
+        />
+
+        <div *ngIf="!selectedFile" class="dropzone-empty">
+          <mat-icon class="drop-icon">cloud_upload</mat-icon>
+          <div class="drop-text">
+            <strong>Upload Document</strong> or drag & drop file here
+          </div>
+          <span class="drop-hint">PDF, DOCX, XLSX, PPTX, or ZIP (Max 25MB)</span>
         </div>
-    </form>
+
+        <div *ngIf="selectedFile" class="file-preview">
+          <mat-icon class="file-icon">insert_drive_file</mat-icon>
+          <div class="file-info">
+            <span class="file-name">{{ selectedFileName }}</span>
+            <span class="file-size">{{ selectedFileSize }}</span>
+          </div>
+          <mat-icon class="check-icon">check_circle</mat-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialog Footer Actions -->
+    <div class="dialog-footer">
+      <button type="button" class="btn-cancel" (click)="onCancel()">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn-submit"
+        [disabled]="documentForm.invalid || !selectedFile"
+      >
+        <mat-icon>cloud_upload</mat-icon> Upload Document
+      </button>
+    </div>
+  </form>
 </div>

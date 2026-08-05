@@ -1,0 +1,181 @@
+<div class="table-card-container">
+  <!-- Table Header Controls -->
+  <div class="table-header">
+    <div class="title-group">
+      <mat-icon class="title-icon">history</mat-icon>
+      <h2 class="table-title">Recent Documents</h2>
+    </div>
+
+    <div class="header-actions">
+      <!-- Table Search Input -->
+      <div class="table-search-box">
+        <mat-icon class="search-icon" (click)="onSearchButtonClick()">search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="filterDocuments()"
+          (keyup.enter)="onSearchButtonClick()"
+          placeholder="Search documents..."
+          class="search-input"
+          aria-label="Search documents"
+        />
+      </div>
+
+      <!-- Filter Button Hidden For Now -->
+    </div>
+  </div>
+
+  <!-- Documents Table -->
+  <div class="table-responsive">
+    <table class="documents-table">
+      <thead>
+        <tr>
+          <th>DOCUMENT NAME</th>
+          <th>CATEGORY</th>
+          <th>OWNER</th>
+          <th>ACCESS LEVEL</th>
+          <th>LAST MODIFIED</th>
+          <th class="text-right">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let doc of paginatedDocuments">
+          <!-- Document Name with Custom Badge -->
+          <td class="col-name">
+            <div class="file-name-wrapper">
+              <div class="file-badge" [ngClass]="getFileBadgeClass(doc.fileType)">
+                <span class="file-type-text" *ngIf="doc.fileType === 'pdf'">pdf</span>
+                <span class="file-type-text" *ngIf="doc.fileType === 'docx'">word</span>
+                <span class="file-type-text" *ngIf="doc.fileType === 'xlsx'">excel</span>
+                <mat-icon *ngIf="doc.fileType !== 'pdf' && doc.fileType !== 'docx' && doc.fileType !== 'xlsx'">description</mat-icon>
+              </div>
+              <span class="doc-name">{{ doc.name }}</span>
+            </div>
+          </td>
+
+          <!-- Category -->
+          <td class="col-category">
+            <span class="category-text">{{ doc.category }}</span>
+          </td>
+
+          <!-- Owner -->
+          <td class="col-owner">
+            <div class="owner-wrapper">
+              <img
+                *ngIf="doc.ownerAvatar"
+                [src]="doc.ownerAvatar"
+                [alt]="doc.ownerName"
+                class="owner-avatar"
+              />
+              <div *ngIf="!doc.ownerAvatar && doc.ownerInitials" class="owner-initials">
+                {{ doc.ownerInitials }}
+              </div>
+              <span class="owner-name">{{ doc.ownerName }}</span>
+            </div>
+          </td>
+
+          <!-- Access Level -->
+          <td class="col-access">
+            <span class="access-pill" [ngClass]="getAccessPillClass(doc.accessLevel)">
+              {{ doc.accessLevel }}
+            </span>
+          </td>
+
+          <!-- Last Modified -->
+          <td class="col-date">
+            <span class="date-text">{{ doc.lastModified }}</span>
+          </td>
+
+          <!-- Actions Dropdown -->
+          <td class="col-actions text-right">
+            <button type="button" class="action-dots-btn" [matMenuTriggerFor]="docMenu" aria-label="Document options">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #docMenu="matMenu" xPosition="before">
+              <!-- Action 1: View Details -->
+              <button mat-menu-item (click)="onViewDetails(doc)">
+                <mat-icon>visibility</mat-icon> View Details
+              </button>
+
+              <!-- Action 2: Download -->
+              <button mat-menu-item (click)="onDownload(doc)">
+                <mat-icon>download</mat-icon> Download
+              </button>
+
+              <!-- Action 3: Share Link -->
+              <button mat-menu-item (click)="onShareLink(doc)">
+                <mat-icon>share</mat-icon> Share Link
+              </button>
+
+              <mat-divider></mat-divider>
+
+              <!-- Action 4: Delete -->
+              <button mat-menu-item class="delete-action" (click)="onDelete(doc.id)">
+                <mat-icon>delete_outline</mat-icon> Delete
+              </button>
+            </mat-menu>
+          </td>
+        </tr>
+
+        <!-- Empty State -->
+        <tr *ngIf="paginatedDocuments.length === 0">
+          <td colspan="6" class="empty-state">
+            <div class="empty-box">
+              <mat-icon class="empty-icon">folder_open</mat-icon>
+              <p *ngIf="documents.length === 0">
+                No documents uploaded yet. Click <strong>'Upload Document'</strong> above to add your first file.
+              </p>
+              <p *ngIf="documents.length > 0">
+                No matching documents found for "{{ searchQuery }}".
+              </p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table Pagination Footer -->
+  <div class="table-footer">
+    <span class="entry-count" *ngIf="filteredDocuments.length > 0">
+      Showing {{ startItemIndex }} to {{ endItemIndex }} of {{ filteredDocuments.length }} entries
+    </span>
+    <span class="entry-count" *ngIf="filteredDocuments.length === 0">0 entries</span>
+
+    <!-- Interactive Working Pagination Buttons -->
+    <div class="pagination-controls">
+      <!-- Previous Page -->
+      <button
+        type="button"
+        class="page-nav-btn"
+        [disabled]="currentPage === 1"
+        (click)="prevPage()"
+        aria-label="Previous Page"
+      >
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+
+      <!-- Dynamic Page Numbers (1, 2, 3...) -->
+      <button
+        *ngFor="let p of pages"
+        type="button"
+        class="page-num-btn"
+        [class.active]="currentPage === p"
+        (click)="goToPage(p)"
+      >
+        {{ p }}
+      </button>
+
+      <!-- Next Page -->
+      <button
+        type="button"
+        class="page-nav-btn"
+        [disabled]="currentPage === totalPages || filteredDocuments.length === 0"
+        (click)="nextPage()"
+        aria-label="Next Page"
+      >
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
