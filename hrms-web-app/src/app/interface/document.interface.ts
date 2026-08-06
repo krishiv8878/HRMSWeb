@@ -23,4 +23,5 @@ export interface DocumentItem {
   fileSize?: string;
   file?: File;
   fileUrl?: string;
+  isActive?: boolean;
 }

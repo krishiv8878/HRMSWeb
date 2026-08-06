@@ -20,8 +20,6 @@
           aria-label="Search documents"
         />
       </div>
-
-      <!-- Filter Button Hidden For Now -->
     </div>
   </div>
 
@@ -34,12 +32,13 @@
           <th>CATEGORY</th>
           <th>OWNER</th>
           <th>ACCESS LEVEL</th>
+          <th>STATUS</th>
           <th>LAST MODIFIED</th>
           <th class="text-right">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let doc of paginatedDocuments">
+        <tr *ngFor="let doc of paginatedDocuments" [class.is-inactive-row]="doc.isActive === false">
           <!-- Document Name with Custom Badge -->
           <td class="col-name">
             <div class="file-name-wrapper">
@@ -81,6 +80,13 @@
             </span>
           </td>
 
+          <!-- Active Status Badge Column -->
+          <td class="col-status">
+            <span class="status-badge" [ngClass]="doc.isActive !== false ? 'badge-active' : 'badge-inactive'">
+              {{ doc.isActive !== false ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+
           <!-- Last Modified -->
           <td class="col-date">
             <span class="date-text">{{ doc.lastModified }}</span>
@@ -109,9 +115,10 @@
 
               <mat-divider></mat-divider>
 
-              <!-- Action 4: Delete -->
-              <button mat-menu-item class="delete-action" (click)="onDelete(doc.id)">
-                <mat-icon>delete_outline</mat-icon> Delete
+              <!-- Action 4: Toggle Active/Inactive Status (Don't Delete from UI) -->
+              <button mat-menu-item (click)="onToggleActiveStatus(doc)">
+                <mat-icon>{{ doc.isActive !== false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+                <span>{{ doc.isActive !== false ? 'Set Inactive' : 'Set Active' }}</span>
               </button>
             </mat-menu>
           </td>
@@ -119,7 +126,7 @@
 
         <!-- Empty State -->
         <tr *ngIf="paginatedDocuments.length === 0">
-          <td colspan="6" class="empty-state">
+          <td colspan="7" class="empty-state">
             <div class="empty-box">
               <mat-icon class="empty-icon">folder_open</mat-icon>
               <p *ngIf="documents.length === 0">

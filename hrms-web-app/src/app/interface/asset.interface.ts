@@ -1,4 +1,4 @@
-export type AssetStatus = 'Active' | 'Available' | 'In Repair';
+export type AssetStatus = 'Active' | 'Available' | 'In Repair' | 'Inactive' | 'Deactivated';
 export type AssetType = 'Laptop' | 'Monitor' | 'Tablet' | 'Furniture' | 'Peripherals';
 
 export interface AssetItem {
@@ -13,6 +13,7 @@ export interface AssetItem {
   status: AssetStatus;
   lastAudit: string;      // e.g. Oct 12, 2023
   isOverdue?: boolean;
+  isActive?: boolean;
 }
 
 export interface AssetMetricCard {

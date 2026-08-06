@@ -153,7 +153,7 @@ export class AssetTableComponent implements OnInit, OnChanges {
 
   onDelete(id: string) {
     this.assetService.deleteAsset(id);
-    this.toastr.info('Asset record deleted successfully');
+    this.toastr.warning(`Asset ${id} status changed to 'In Repair'`, 'Asset Status Updated');
   }
 
   getStatusPillClass(status: AssetStatus): string {

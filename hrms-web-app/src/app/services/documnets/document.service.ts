@@ -132,7 +132,8 @@ export class DocumentService {
             ownerInitials: empInitials,
             accessLevel: item.accessLevel || 'Public',
             lastModified: item.createdDate ? new Date(item.createdDate).toLocaleDateString() : new Date().toLocaleDateString(),
-            fileSize: item.fileSize || '1.0 MB'
+            fileSize: item.fileSize || '1.0 MB',
+            isActive: item.isActive !== undefined ? Boolean(item.isActive) : true
           };
         });
 
@@ -202,7 +203,8 @@ export class DocumentService {
       lastModified: todayStr,
       fileSize: fileSizeStr,
       file: docData.file,
-      fileUrl: fileObjectUrl
+      fileUrl: fileObjectUrl,
+      isActive: true
     };
 
     const currentDocs = this.documentsSubject.value;
@@ -213,17 +215,25 @@ export class DocumentService {
     return newDoc;
   }
 
-  deleteDocument(id: string) {
-    const docToDelete = this.documentsSubject.value.find(d => d.id === id);
-    if (!docToDelete) return;
+  toggleDocumentActive(id: string): boolean {
+    const currentDocs = this.documentsSubject.value;
+    let targetActiveState = false;
 
-    if (docToDelete.fileUrl && typeof window !== 'undefined') {
-      URL.revokeObjectURL(docToDelete.fileUrl);
-    }
+    const updatedDocs = currentDocs.map(doc => {
+      if (doc.id === id) {
+        targetActiveState = doc.isActive === false ? true : false;
+        return { ...doc, isActive: targetActiveState };
+      }
+      return doc;
+    });
 
-    const updatedDocs = this.documentsSubject.value.filter(d => d.id !== id);
     this.documentsSubject.next(updatedDocs);
-    this.recalculateCategoryCounts(updatedDocs);
+    return targetActiveState;
+  }
+
+  deleteDocument(id: string) {
+    // Soft delete: set isActive to false instead of removing document
+    this.toggleDocumentActive(id);
   }
 
   getAll() {

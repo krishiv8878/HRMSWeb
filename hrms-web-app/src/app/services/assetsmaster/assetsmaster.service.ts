@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, catchError, Observable, of } from 'rxjs';
+import { BehaviorSubject, catchError, Observable, of, tap } from 'rxjs';
 import { AssetItem, AssetMetricCard, AssetStatus, AssetType } from '../../interface/asset.interface';
 
 @Injectable({
@@ -21,7 +21,8 @@ export class AssetsmasterService {
       assignedAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120',
       location: 'NY Office - Floor 4',
       status: 'Active',
-      lastAudit: 'Oct 12, 2023'
+      lastAudit: 'Oct 12, 2023',
+      isActive: true
     },
     {
       id: 'AST-2199',
@@ -32,7 +33,8 @@ export class AssetsmasterService {
       assignedInitials: 'UN',
       location: 'Storage Room B',
       status: 'Available',
-      lastAudit: 'Nov 01, 2023'
+      lastAudit: 'Nov 01, 2023',
+      isActive: true
     },
     {
       id: 'AST-0931',
@@ -44,7 +46,8 @@ export class AssetsmasterService {
       location: 'Remote (UK)',
       status: 'In Repair',
       lastAudit: 'Sep 15, 2023',
-      isOverdue: true
+      isOverdue: true,
+      isActive: false
     },
     {
       id: 'AST-1550',
@@ -55,7 +58,8 @@ export class AssetsmasterService {
       assignedAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
       location: 'SF Office - Floor 2',
       status: 'Active',
-      lastAudit: 'Oct 28, 2023'
+      lastAudit: 'Oct 28, 2023',
+      isActive: true
     },
     {
       id: 'AST-3012',
@@ -66,7 +70,8 @@ export class AssetsmasterService {
       assignedAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120',
       location: 'NY Office - Desk 42',
       status: 'Active',
-      lastAudit: 'Jan 10, 2023'
+      lastAudit: 'Jan 10, 2023',
+      isActive: true
     }
   ];
 
@@ -88,17 +93,24 @@ export class AssetsmasterService {
     this.http.get<any>(this.apiUrl + `/AssetsMaster/GetAssetsMaster`).pipe(
       catchError(() => of({ data: [] }))
     ).subscribe((response: any) => {
-      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
-        const apiAssets: AssetItem[] = response.data.map((item: any, idx: number) => ({
-          id: item.assetsMasterName?.startsWith('AST-') ? item.assetsMasterName : `AST-${1000 + idx}`,
-          modelName: item.assetsMasterName || 'Hardware Asset',
-          specifications: item.description || item.serialNumber || 'Corporate Asset',
-          assetType: (item.assetType as AssetType) || 'Laptop',
-          assignedTo: item.assignedTo || 'Sarah Jenkins',
-          location: item.location || 'Main HQ Office',
-          status: item.isActive ? 'Active' : 'In Repair',
-          lastAudit: item.dateOfPurchase ? new Date(item.dateOfPurchase).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Oct 12, 2023'
-        }));
+      const rawList = Array.isArray(response) ? response : (response?.data || response?.result || []);
+      if (Array.isArray(rawList) && rawList.length > 0) {
+        const apiAssets: AssetItem[] = rawList.map((item: any, idx: number) => {
+          const activeState = item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false' && item.isActive !== '0';
+          const assetStatus: AssetStatus = activeState ? (item.status || 'Active') : 'In Repair';
+
+          return {
+            id: item.assetsMasterId ? String(item.assetsMasterId) : (item.id ? String(item.id) : `AST-${1000 + idx}`),
+            modelName: item.assetsMasterName || item.modelName || 'Hardware Asset',
+            specifications: item.description || item.specifications || item.serialNumber || 'Corporate Asset',
+            assetType: (item.assetType as AssetType) || 'Laptop',
+            assignedTo: item.assignedTo || 'Sarah Jenkins',
+            location: item.location || 'Main HQ Office',
+            status: assetStatus,
+            isActive: activeState,
+            lastAudit: item.dateOfPurchase ? new Date(item.dateOfPurchase).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Oct 12, 2023'
+          };
+        });
 
         this.assetsSubject.next(apiAssets);
         this.recalculateMetrics();
@@ -110,7 +122,7 @@ export class AssetsmasterService {
     const assets = this.assetsSubject.value;
     const total = assets.length || 1248;
     const assignedCount = assets.filter(a => a.status === 'Active' || (a.assignedTo && a.assignedTo !== 'Unassigned')).length;
-    const repairCount = assets.filter(a => a.status === 'In Repair').length;
+    const repairCount = assets.filter(a => a.status === 'In Repair' || a.isActive === false).length;
     const availableCount = assets.filter(a => a.status === 'Available' || a.assignedTo === 'Unassigned').length;
 
     const assignedPercent = Math.round((assignedCount / (total || 1)) * 100);
@@ -135,9 +147,9 @@ export class AssetsmasterService {
       },
       {
         id: 'metric-3',
-        title: 'IN REPAIR',
+        title: 'IN REPAIR (SOFT-DELETED)',
         value: repairCount,
-        subtitle: repairCount > 0 ? `⚠️ Action required on ${repairCount}` : 'All operating normally',
+        subtitle: repairCount > 0 ? `⚠️ ${repairCount} asset(s) currently in repair` : 'All operating normally',
         iconName: 'build',
         theme: 'rose',
         isWarning: repairCount > 0
@@ -175,7 +187,8 @@ export class AssetsmasterService {
       assignedAvatar: !isUnassigned ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120' : undefined,
       location: assetData.location || 'NY Office - Floor 4',
       status: assetData.status || (isUnassigned ? 'Available' : 'Active'),
-      lastAudit: todayStr
+      lastAudit: todayStr,
+      isActive: true
     };
 
     const current = this.assetsSubject.value;
@@ -185,10 +198,38 @@ export class AssetsmasterService {
     return newAsset;
   }
 
+  updateAsset(updatedAsset: AssetItem) {
+    const current = this.assetsSubject.value;
+    const index = current.findIndex(a => String(a.id) === String(updatedAsset.id));
+    if (index !== -1) {
+      current[index] = { ...current[index], ...updatedAsset };
+      this.assetsSubject.next([...current]);
+    } else {
+      this.assetsSubject.next([updatedAsset, ...current]);
+    }
+    this.recalculateMetrics();
+  }
+
   deleteAsset(id: string) {
-    const updated = this.assetsSubject.value.filter(a => a.id !== id);
+    const updated = this.assetsSubject.value.map(a => {
+      if (a.id === id) {
+        return {
+          ...a,
+          status: 'In Repair' as AssetStatus,
+          isActive: false
+        };
+      }
+      return a;
+    });
+
     this.assetsSubject.next(updated);
     this.recalculateMetrics();
+
+    const numericId = parseInt(id.replace(/\D/g, ''), 10) || 1;
+    this.DeleteData(numericId).subscribe({
+      next: () => console.log('Asset sent to repair via API database'),
+      error: (err) => console.log('API call finished:', err)
+    });
   }
 
   exportToCsv() {
@@ -216,20 +257,38 @@ export class AssetsmasterService {
     URL.revokeObjectURL(url);
   }
 
-  // Preserve existing backend API endpoints
+  // Backend API Endpoints
   getData() {
-    return this.http.get<any[]>(this.apiUrl + "/AssetsMaster/GetAssetsMaster");
+    return this.http.get<any>(this.apiUrl + "/AssetsMaster/GetAssetsMaster");
   }
 
-  createData(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/AssetsMaster/AddAssetsMaster`, data);
+  createData(data: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl + `/AssetsMaster/AddAssetsMaster`, data).pipe(
+      tap(() => this.fetchAssetsFromApi()),
+      catchError((err) => {
+        console.error('Error calling AddAssetsMaster API:', err);
+        return of(null);
+      })
+    );
   }
 
-  updateData(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/AssetsMaster/UpdateAssetsMaster/`, data);
+  updateData(data: any): Observable<any> {
+    return this.http.put<any>(this.apiUrl + `/AssetsMaster/UpdateAssetsMaster`, data).pipe(
+      tap(() => this.fetchAssetsFromApi()),
+      catchError((err) => {
+        console.error('Error calling UpdateAssetsMaster API:', err);
+        return of(null);
+      })
+    );
   }
 
-  DeleteData(AssetsMasterId: any) {
-    return this.http.delete(this.apiUrl + `/AssetsMaster/DeleteAssetsMaster?AssetsMasterId=` + AssetsMasterId);
+  DeleteData(AssetsMasterId: any): Observable<any> {
+    return this.http.delete<any>(this.apiUrl + `/AssetsMaster/DeleteAssetsMaster?AssetsMasterId=` + AssetsMasterId).pipe(
+      tap(() => this.fetchAssetsFromApi()),
+      catchError((err) => {
+        console.error('Error calling DeleteAssetsMaster API:', err);
+        return of(null);
+      })
+    );
   }
 }

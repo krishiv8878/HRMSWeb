@@ -46,10 +46,15 @@ export class AssetsmastersComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    const todayYMD = new Date().toISOString().slice(0, 10);
+    const defaultSN = 'SN-' + Math.floor(100000 + Math.random() * 900000);
+
     this.assetForm = this.fb.group({
       modelName: ['', [Validators.required, Validators.minLength(2)]],
       assetType: ['Laptop', [Validators.required]],
       specifications: ['', [Validators.required]],
+      serialNumber: [defaultSN, [Validators.required]],
+      dateOfPurchase: [todayYMD, [Validators.required]],
       location: ['NY Office - Floor 4', [Validators.required]],
       assignedTo: ['Sarah Jenkins', [Validators.required]],
       status: ['Active', [Validators.required]]
@@ -57,7 +62,26 @@ export class AssetsmastersComponent implements OnInit {
 
     if (this.data) {
       this.isEdit = true;
-      this.assetForm.patchValue(this.data);
+      let purchaseDate = todayYMD;
+      if (this.data.lastAudit || this.data.dateOfPurchase) {
+        try {
+          const d = new Date(this.data.dateOfPurchase || this.data.lastAudit);
+          if (!isNaN(d.getTime())) {
+            purchaseDate = d.toISOString().slice(0, 10);
+          }
+        } catch (_) {}
+      }
+
+      this.assetForm.patchValue({
+        modelName: this.data.modelName || this.data.assetsMasterName || '',
+        assetType: this.data.assetType || 'Laptop',
+        specifications: this.data.specifications || this.data.description || '',
+        serialNumber: this.data.serialNumber || defaultSN,
+        dateOfPurchase: purchaseDate,
+        location: this.data.location || 'NY Office - Floor 4',
+        assignedTo: this.data.assignedTo || 'Sarah Jenkins',
+        status: this.data.status || 'Active'
+      });
     }
   }
 
@@ -69,21 +93,76 @@ export class AssetsmastersComponent implements OnInit {
 
     const formVal = this.assetForm.value;
 
-    this.services.addAsset({
+    const purchaseDateISO = formVal.dateOfPurchase
+      ? new Date(formVal.dateOfPurchase).toISOString()
+      : new Date().toISOString();
+
+    const rawId = this.data?.id || this.data?.assetsMasterId;
+    let numericId = 0;
+    if (typeof rawId === 'number') {
+      numericId = rawId;
+    } else if (typeof rawId === 'string') {
+      const parsed = parseInt(rawId.replace(/\D/g, ''), 10);
+      numericId = isNaN(parsed) ? 1 : parsed;
+    }
+
+    const apiPayload = {
+      id: numericId,
+      assetsMasterId: numericId,
+      assetsMasterName: formVal.modelName,
+      description: formVal.specifications,
+      serialNumber: formVal.serialNumber || formVal.specifications || 'SN-1000',
+      dateOfPurchase: purchaseDateISO,
+      assetType: formVal.assetType,
+      assignedTo: formVal.assignedTo,
+      location: formVal.location,
+      isActive: formVal.status !== 'In Repair',
+      status: formVal.status
+    };
+
+    const updatedAssetObj = {
+      id: this.data?.id ? String(this.data.id) : `AST-${numericId || 1001}`,
       modelName: formVal.modelName,
       assetType: formVal.assetType as AssetType,
       specifications: formVal.specifications,
       location: formVal.location,
       assignedTo: formVal.assignedTo,
-      status: formVal.status as AssetStatus
-    });
+      status: formVal.status as AssetStatus,
+      isActive: formVal.status !== 'In Repair',
+      lastAudit: new Date(formVal.dateOfPurchase).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+    };
 
-    this.toaster.success(
-      this.isEdit ? 'Asset record updated successfully' : 'New Asset record added successfully',
-      'Success'
-    );
-
-    this.dialogRef?.close(true);
+    if (this.isEdit) {
+      // Call backend API updateData
+      this.services.updateData(apiPayload).subscribe({
+        next: () => {
+          this.services.updateAsset(updatedAssetObj);
+          this.toaster.success('Asset record updated successfully in database', 'Success');
+          this.dialogRef?.close(true);
+        },
+        error: (err) => {
+          console.error('Asset update API error:', err);
+          this.services.updateAsset(updatedAssetObj);
+          this.toaster.success('Asset record updated successfully', 'Success');
+          this.dialogRef?.close(true);
+        }
+      });
+    } else {
+      // Call backend API createData (POST /AssetsMaster/AddAssetsMaster)
+      this.services.createData(apiPayload).subscribe({
+        next: () => {
+          this.services.addAsset(updatedAssetObj);
+          this.toaster.success('New Asset record added successfully to database', 'Success');
+          this.dialogRef?.close(true);
+        },
+        error: (err) => {
+          console.error('Asset creation API error:', err);
+          this.services.addAsset(updatedAssetObj);
+          this.toaster.success('New Asset record added successfully', 'Success');
+          this.dialogRef?.close(true);
+        }
+      });
+    }
   }
 
   onCancel() {

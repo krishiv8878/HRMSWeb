@@ -45,7 +45,6 @@ export function downloadDocumentFile(doc: DocumentItem, toastr: ToastrService) {
   const ext = doc.fileType ? doc.fileType.toLowerCase() : 'pdf';
 
   if (ext === 'pdf') {
-    // Valid PDF 1.4 Header & Structure readable by Adobe Reader, Chrome, Edge
     const pdfContent = `%PDF-1.4
 1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj
 2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj
@@ -70,7 +69,6 @@ startxref
 %%EOF`;
     blob = new Blob([pdfContent], { type: 'application/pdf' });
   } else if (ext === 'docx') {
-    // HTML Word XML format readable natively by Microsoft Word
     const docxHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8"><title>${doc.name}</title></head>
 <body style="font-family: Arial, sans-serif; padding: 30px;">
@@ -84,7 +82,6 @@ startxref
 </html>`;
     blob = new Blob([docxHtml], { type: 'application/msword' });
   } else if (ext === 'xlsx') {
-    // Excel XML format readable natively by Microsoft Excel
     const excelHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8"><title>${doc.name}</title></head>
 <body>
@@ -241,10 +238,14 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  // Action 4: Delete
-  onDelete(id: string) {
-    this.documentService.deleteDocument(id);
-    this.toastr.info('Document deleted');
+  // Action 4: Toggle Active/Inactive Status (Don't delete in UI)
+  onToggleActiveStatus(doc: DocumentItem) {
+    const newStatus = this.documentService.toggleDocumentActive(doc.id);
+    if (newStatus) {
+      this.toastr.success(`Set status for "${doc.name}" to Active`);
+    } else {
+      this.toastr.warning(`Set status for "${doc.name}" to Inactive`);
+    }
   }
 
   getFileBadgeClass(type: string): string {

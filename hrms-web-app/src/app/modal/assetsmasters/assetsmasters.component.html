@@ -40,11 +40,35 @@
 
       <!-- Specifications -->
       <div class="form-field-group">
-        <label class="form-label">Specifications / Subtitle <span class="required">*</span></label>
+        <label class="form-label">Specifications / Description <span class="required">*</span></label>
         <input
           type="text"
           formControlName="specifications"
           placeholder="e.g. Laptop • 2023 M2 Max"
+          class="form-input"
+        />
+      </div>
+    </div>
+
+    <!-- Serial Number & Purchase Date Grid -->
+    <div class="form-row">
+      <!-- Serial Number -->
+      <div class="form-field-group">
+        <label class="form-label">Serial Number <span class="required">*</span></label>
+        <input
+          type="text"
+          formControlName="serialNumber"
+          placeholder="e.g. SN-982341"
+          class="form-input"
+        />
+      </div>
+
+      <!-- Date of Purchase -->
+      <div class="form-field-group">
+        <label class="form-label">Date of Purchase <span class="required">*</span></label>
+        <input
+          type="date"
+          formControlName="dateOfPurchase"
           class="form-input"
         />
       </div>
