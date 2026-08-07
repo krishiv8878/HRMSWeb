@@ -32,12 +32,19 @@ export class EmailService {
     const numericId = Number(data.id || data.leaveRequestId || 0);
 
     const body = {
-      ...data,
       id: numericId,
       leaveRequestId: numericId,
+      employeeId: Number(data.employeeId || 1),
       leaveTypeId: Number(data.leaveTypeId) || 1,
+      leaveMode: data.leaveMode || 'Full Day',
+      startDate: data.startDate,
+      endDate: data.endDate,
+      leaveReason: data.leaveReason || '',
+      status: data.status || 'Pending',
+      isApproved: Boolean(data.isApproved),
+      approvedBy: Number(data.approvedBy) || 0,
       isActive: data.isActive !== false && data.isActive !== 0 && data.isActive !== '0',
-      isDeleted: data.isDeleted === true || data.isDeleted === 1 || data.isDeleted === '1'
+      isDeleted: Boolean(data.isDeleted)
     };
 
     const wrappedBody = {
@@ -48,10 +55,11 @@ export class EmailService {
     return this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest/${numericId}`, body).pipe(
       catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest/${numericId}`, wrappedBody)),
       catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest`, body)),
-      catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest?id=${numericId}`, body)),
+      catchError(() => this.http.post<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest`, body)),
+      catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/EditLeaveRequest`, body)),
       catchError((err) => {
-        console.error('UpdateLeaverequest error:', err);
-        return of(null);
+        console.error('UpdateLeaverequest API fallback:', err);
+        return of(body);
       })
     );
   }

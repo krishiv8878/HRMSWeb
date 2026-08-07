@@ -22,6 +22,10 @@ export class AssetDetailsComponent {
     this.dialogRef.close();
   }
 
+  sendForDeployment() {
+    this.dialogRef.close({ action: 'deploy', id: this.asset.id });
+  }
+
   getStatusPillClass(status: string): string {
     switch (status) {
       case 'Active': return 'pill-active';

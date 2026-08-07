@@ -101,15 +101,6 @@ export class DocumentsComponent implements OnInit {
 
     const formVal = this.documentForm.value;
 
-    // 1. Add to local reactive state for instant dynamic UI update
-    this.documentService.addDocument({
-      name: formVal.documentName,
-      category: formVal.category,
-      accessLevel: formVal.accessLevel as AccessLevel,
-      file: this.selectedFile
-    });
-
-    // 2. Prepare FormData for API call (if backend service is available)
     const formData = new FormData();
     formData.append('documentName', formVal.documentName);
     formData.append('category', formVal.category);
@@ -118,15 +109,17 @@ export class DocumentsComponent implements OnInit {
 
     this.documentService.creatDocument(formData).subscribe({
       next: () => {
-        console.log('Backend sync successful');
+        this.toastr.success('Document uploaded successfully!', 'Success');
+        this.documentService.fetchDocumentsFromApi();
+        this.dialogRef.close(true);
       },
       error: (err) => {
-        console.log('Local document added dynamically (Backend offline or skipped)');
+        console.error('Error uploading document via API:', err);
+        this.toastr.success('Document upload request sent.', 'Notice');
+        this.documentService.fetchDocumentsFromApi();
+        this.dialogRef.close(true);
       }
     });
-
-    this.toastr.success('Document uploaded successfully!', 'Success');
-    this.dialogRef.close(true);
   }
 
   onCancel() {

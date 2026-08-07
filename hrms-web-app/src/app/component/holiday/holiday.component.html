@@ -1,14 +1,244 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Holiday</h2>
+<div class="holiday-management-container">
+  <!-- Top Header Title & Action Buttons Area -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Holiday Management</h1>
+      <p class="page-subtitle">Manage and configure organization holidays for {{ selectedYear }}.</p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openHolidayForm()"  style="border-radius: 0;">Add </button>
-    </div>
-</div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [columnDefs]="columnDefs" [rowData]="rowData"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <div class="header-actions">
+      <!-- Export List Button with Upward Reversed Arrow Icon -->
+      <button type="button" class="btn-export" (click)="onExportList()">
+        <mat-icon class="btn-icon">upload</mat-icon>
+        <span>Export List</span>
+      </button>
+      <button type="button" class="btn-add-holiday" (click)="openHolidayForm()">
+        <mat-icon class="btn-icon">add</mat-icon>
+        <span>Add Holiday</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Top 2-Card Metric & Featured Grid -->
+  <div class="top-cards-grid">
+    <!-- Card 1: Total Holidays & Active/Inactive Metrics -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">Total Holidays</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>calendar_today</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalHolidaysCount }}</div>
+      <div class="card-subtitle-group">
+        <span class="badge-sub active-sub">Active: {{ activeHolidaysCount }}</span>
+        <span class="badge-sub inactive-sub">Inactive: {{ inactiveHolidaysCount }}</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Featured Next Upcoming Holiday Widget -->
+    <div class="featured-card" *ngIf="nextHoliday">
+      <div class="accent-line"></div>
+      <div class="card-content">
+        <div class="featured-info">
+          <div class="pill-tag">
+            <mat-icon class="tag-icon">campaign</mat-icon>
+            <span>Next Upcoming</span>
+          </div>
+          <h2 class="featured-name">{{ nextHoliday.holidayName }}</h2>
+          <p class="featured-date-detail">
+            {{ nextHoliday.dayName }}, {{ nextHoliday.holidayDate | date:'MMMM d, yyyy' }} • {{ nextHoliday.type || 'National Holiday' }}
+          </p>
+        </div>
+
+        <!-- Dynamic Days Left Widget -->
+        <div class="days-left-widget">
+          <div class="days-number">{{ nextHoliday.daysLeft !== undefined && nextHoliday.daysLeft >= 0 ? nextHoliday.daysLeft : 0 }}</div>
+          <div class="days-label">DAYS LEFT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container Box (Holiday Schedule) -->
+  <div class="table-card-container">
+    <!-- Table Controls Header -->
+    <div class="table-header">
+      <div class="table-title">
+        <h2>{{ selectedYear }} Holiday Schedule</h2>
+      </div>
+
+      <!-- Right Filters Group -->
+      <div class="filters-group">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterHolidays()"
+            placeholder="Search holidays..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Type Dropdown Filter -->
+        <select [(ngModel)]="selectedType" (change)="filterHolidays()" class="custom-select">
+          <option value="All">All Types</option>
+          <option value="NATIONAL">NATIONAL</option>
+          <option value="REGIONAL">REGIONAL</option>
+          <option value="OPTIONAL">OPTIONAL</option>
+        </select>
+
+        <!-- Dynamic Year Dropdown Filter (Current Year + Next 2 Years) -->
+        <select [(ngModel)]="selectedYear" (change)="filterHolidays()" class="custom-select select-year">
+          <option *ngFor="let yr of availableYears" [value]="yr.toString()">
+            {{ yr }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Responsive Table -->
+    <div class="table-responsive">
+      <table class="holiday-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th>HOLIDAY NAME</th>
+            <th>DATE</th>
+            <th>DAY</th>
+            <th>TYPE</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let h of paginatedHolidays; let i = index"
+            [class.is-next-upcoming]="h.isNext"
+            [class.is-inactive-row]="h.isActive === false"
+          >
+            <!-- # Index -->
+            <td class="col-num">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+
+            <!-- Holiday Name -->
+            <td class="col-name">
+              <span class="name-text">{{ h.holidayName }}</span>
+            </td>
+
+            <!-- Date -->
+            <td class="col-date">
+              <span class="date-text">{{ h.holidayDate | date:'MMM d, yyyy' }}</span>
+            </td>
+
+            <!-- Day -->
+            <td class="col-day">
+              <span class="day-text">{{ h.dayName }}</span>
+            </td>
+
+            <!-- Type Badge -->
+            <td class="col-type">
+              <span class="type-badge" [ngClass]="getTypeBadgeClass(h.type)">
+                {{ h.type || 'NATIONAL' }}
+              </span>
+            </td>
+
+            <!-- Status Soft Badge -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="h.isActive !== false ? 'badge-active' : 'badge-inactive'">
+                {{ h.isActive !== false ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <!-- Edit Button -->
+              <button type="button" class="btn-action-icon" (click)="openHolidayForm(h)" title="Edit Holiday">
+                <mat-icon>edit</mat-icon>
+              </button>
+
+              <!-- Active/Inactive Toggle Button -->
+              <button
+                type="button"
+                class="btn-action-icon"
+                [class.btn-toggle-off]="h.isActive !== false"
+                [class.btn-toggle-on]="h.isActive === false"
+                (click)="onToggleActiveStatus(h)"
+                [title]="h.isActive !== false ? 'Set Inactive' : 'Set Active'"
+              >
+                <mat-icon>{{ h.isActive !== false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+              </button>
+
+              <!-- Delete/Restore Soft Toggle Button -->
+              <button
+                type="button"
+                class="btn-action-icon"
+                [class.btn-delete-active]="h.isDeleted"
+                (click)="onToggleDeletedStatus(h)"
+                [title]="h.isDeleted ? 'Deleted (Click to Restore)' : 'Delete (Click to Mark Deleted)'"
+              >
+                <mat-icon>{{ h.isDeleted ? 'restore_from_trash' : 'delete_outline' }}</mat-icon>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedHolidays.length === 0">
+            <td colspan="7" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">event_busy</mat-icon>
+                <p *ngIf="allHolidays.length === 0">
+                  No holidays configured. Click <strong>'+ Add Holiday'</strong> to add holidays to the {{ selectedYear }} schedule.
+                </p>
+                <p *ngIf="allHolidays.length > 0">
+                  No holidays match your search filters for year {{ selectedYear }}.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Footer Pagination -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredHolidays.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredHolidays.length) }} of {{ filteredHolidays.length }} holidays
+      </span>
+      <span class="entry-count" *ngIf="filteredHolidays.length === 0">0 holidays</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredHolidays.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

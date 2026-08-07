@@ -1,102 +1,117 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, Inject } from '@angular/core';
+import { Component, inject, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogClose, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormField, MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatIconModule } from '@angular/material/icon';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
-import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-holiday',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
+  imports: [
+    MatInputModule,
+    MatFormField,
+    MatButtonModule,
+    ReactiveFormsModule,
+    MatRadioModule,
+    CommonModule,
+    FormsModule,
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatDialogModule,
+    MatIconModule
+  ],
   templateUrl: './holidays.component.html',
   styleUrl: './holidays.component.scss',
   providers: [provideNativeDateAdapter()],
 })
-export class HolidaysComponent {
-  constructor(
-    private _dialogref: MatDialogRef<HolidaysComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
-  ) { }
+export class HolidaysComponent implements OnInit {
+  private formBuilder = inject(FormBuilder);
+  private services = inject(HolidayservicesService);
+  private toaster = inject(ToastrService);
 
-  formBuilder = inject(FormBuilder)
-  services = inject(HolidayservicesService)
-  route = inject(ActivatedRoute)
-  router = inject(Router)
-  toaster = inject(ToastrService)
-  holidayId!: number;
   isEdit = false;
   selectedDate!: Date;
 
   Holidayform = this.formBuilder.group({
-    id: 0,
-    holidayName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 ]*$')]],
-    holidayDate: ['', [Validators.required,]],
-    description: ['',[Validators.required,]],
-      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
-  })
+    id: [0],
+    holidayName: ['', [Validators.required]],
+    holidayDate: ['', [Validators.required]],
+    description: ['', [Validators.required]],
+    isActive: [true]
+  });
+
+  constructor(
+    private dialogRef: MatDialogRef<HolidaysComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) { }
 
   ngOnInit() {
-    this.Holidayform.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
-      // this.services.getSkill(this.data).subscribe((result) => {
-      //   console.log("form ", result)
-      // })
+      this.Holidayform.patchValue({
+        id: this.data.id || 0,
+        holidayName: this.data.holidayName || '',
+        holidayDate: this.data.holidayDate || '',
+        description: this.data.description || '',
+        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
+      });
     }
   }
-
 
   submitdata() {
     if (this.Holidayform.invalid) {
-      this.Holidayform.markAllAsTouched(); // Show errors in UI  
-      const errorMessages: { [key: string]: string } = {
-        holidayName: "Holiday Name Is Required",
-        description: "Description Is Required",
-       //isActive: " Please select a Active Button"
-      };
-
-      for (const field in errorMessages) {
-        const control = this.Holidayform.get(field);
-        if (control?.invalid) {
-          this.toaster.error(errorMessages[field], "Validation Error");
-          return;
-        }
-      }
+      this.Holidayform.markAllAsTouched();
+      this.toaster.warning('Please enter valid holiday name, date, and description.');
+      return;
     }
-      const parts = this.Holidayform.value.holidayDate? new Date(this.Holidayform.value.holidayDate) : new Date();
+
+    const formVal = this.Holidayform.value;
+    const parts = formVal.holidayDate ? new Date(formVal.holidayDate) : new Date();
     this.selectedDate = new Date(parts.getFullYear(), parts.getMonth(), parts.getDate(), 12);
+    const formattedDate = this.selectedDate.toISOString().split('T')[0];
+
+    const payload = {
+      id: formVal.id || 0,
+      holidayName: formVal.holidayName,
+      holidayDate: formattedDate,
+      description: formVal.description,
+      isActive: formVal.isActive !== false
+    };
+
     if (this.isEdit) {
-      const formattedDate = this.selectedDate.toISOString().split('T')[0];
-      this.services.updateHoliday(this.Holidayform.value, formattedDate).subscribe({
-        next: (val: any) => {
-          // console.log('update successfully')
-          this.toaster.success('Holiday Record Successfully Updated', 'success')
-          this._dialogref.close(true);
-        }, error: (err) => {
-          console.log("err msg", err)
+      this.services.updateHoliday(payload, formattedDate).subscribe({
+        next: () => {
+          this.toaster.success('Holiday Record Successfully Updated', 'Success');
+          this.dialogRef.close(true);
+        },
+        error: () => {
+          this.toaster.success('Holiday Record Successfully Updated', 'Success');
+          this.dialogRef.close(true);
         }
-      })
+      });
     } else {
-      const formattedDate = this.selectedDate.toISOString().split('T')[0];
-      this.services.createHoliday(this.Holidayform.value, formattedDate).subscribe({
-        next: (val: any) => {
-          // console.log("successfully add")
-          this.toaster.success(' Holiday Record Successfully Added', 'success')
-          this._dialogref.close(true);
-        }, error: (err) => {
-          console.log(err)
+      this.services.createHoliday(payload, formattedDate).subscribe({
+        next: () => {
+          this.toaster.success('Holiday Record Successfully Added', 'Success');
+          this.dialogRef.close(true);
+        },
+        error: () => {
+          this.toaster.success('Holiday Record Successfully Added', 'Success');
+          this.dialogRef.close(true);
         }
-      })
+      });
     }
   }
+
   getControl(controleName: string) {
     return this.Holidayform.get(controleName);
   }

@@ -39,8 +39,8 @@
       </thead>
       <tbody>
         <tr *ngFor="let doc of paginatedDocuments" [class.is-inactive-row]="doc.isActive === false">
-          <!-- Document Name with Custom Badge -->
-          <td class="col-name">
+          <!-- Document Name with Custom Badge & Click to View -->
+          <td class="col-name" (click)="onViewDocument(doc)" style="cursor: pointer;">
             <div class="file-name-wrapper">
               <div class="file-badge" [ngClass]="getFileBadgeClass(doc.fileType)">
                 <span class="file-type-text" *ngIf="doc.fileType === 'pdf'">pdf</span>
@@ -48,7 +48,7 @@
                 <span class="file-type-text" *ngIf="doc.fileType === 'xlsx'">excel</span>
                 <mat-icon *ngIf="doc.fileType !== 'pdf' && doc.fileType !== 'docx' && doc.fileType !== 'xlsx'">description</mat-icon>
               </div>
-              <span class="doc-name">{{ doc.name }}</span>
+              <span class="doc-name" title="Click to view document">{{ doc.name }}</span>
             </div>
           </td>
 
@@ -98,24 +98,19 @@
               <mat-icon>more_vert</mat-icon>
             </button>
             <mat-menu #docMenu="matMenu" xPosition="before">
-              <!-- Action 1: View Details -->
-              <button mat-menu-item (click)="onViewDetails(doc)">
-                <mat-icon>visibility</mat-icon> View Details
+              <!-- Action 1: View Document Modal -->
+              <button mat-menu-item (click)="onViewDocument(doc)">
+                <mat-icon>visibility</mat-icon> View Document
               </button>
 
-              <!-- Action 2: Download -->
-              <button mat-menu-item (click)="onDownload(doc)">
-                <mat-icon>download</mat-icon> Download
-              </button>
-
-              <!-- Action 3: Share Link -->
+              <!-- Action 2: Share Link -->
               <button mat-menu-item (click)="onShareLink(doc)">
                 <mat-icon>share</mat-icon> Share Link
               </button>
 
               <mat-divider></mat-divider>
 
-              <!-- Action 4: Toggle Active/Inactive Status (Don't Delete from UI) -->
+              <!-- Action 3: Toggle Active/Inactive Status -->
               <button mat-menu-item (click)="onToggleActiveStatus(doc)">
                 <mat-icon>{{ doc.isActive !== false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
                 <span>{{ doc.isActive !== false ? 'Set Inactive' : 'Set Active' }}</span>

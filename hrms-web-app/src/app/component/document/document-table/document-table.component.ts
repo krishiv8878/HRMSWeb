@@ -11,102 +11,6 @@ import { DocumentItem } from '../../../interface/document.interface';
 import { DocumentService } from '../../../services/documnets/document.service';
 import { DocumentDetailsComponent } from '../../../modal/document-details/document-details.component';
 
-export function downloadDocumentFile(doc: DocumentItem, toastr: ToastrService) {
-  if (typeof window === 'undefined') return;
-
-  // 1. If user uploaded a real file, download that EXACT file object!
-  if (doc.file) {
-    const url = URL.createObjectURL(doc.file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = doc.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toastr.success(`Downloaded ${doc.name}`);
-    return;
-  }
-
-  // 2. If object URL is available
-  if (doc.fileUrl) {
-    const a = document.createElement('a');
-    a.href = doc.fileUrl;
-    a.download = doc.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toastr.success(`Downloaded ${doc.name}`);
-    return;
-  }
-
-  // 3. Fallback: Generate 100% valid un-corrupted binary File Blobs for PDF, DOCX, XLSX
-  let blob: Blob;
-  const ext = doc.fileType ? doc.fileType.toLowerCase() : 'pdf';
-
-  if (ext === 'pdf') {
-    const pdfContent = `%PDF-1.4
-1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj
-2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj
-3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources <</Font <</F1 5 0 R>>>> >> endobj
-4 0 obj <</Length 120>> stream
-BT /F1 18 Tf 50 700 TD (${doc.name.replace(/[()]/g, '')}) Tj ET
-BT /F1 12 Tf 50 670 TD (Category: ${doc.category}) Tj ET
-BT /F1 12 Tf 50 650 TD (Owner: ${doc.ownerName}) Tj ET
-endstream endobj
-5 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000262 00000 n 
-0000000431 00000 n 
-trailer <</Size 6 /Root 1 0 R>>
-startxref
-508
-%%EOF`;
-    blob = new Blob([pdfContent], { type: 'application/pdf' });
-  } else if (ext === 'docx') {
-    const docxHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="utf-8"><title>${doc.name}</title></head>
-<body style="font-family: Arial, sans-serif; padding: 30px;">
-  <h1 style="color: #2563eb;">${doc.name}</h1>
-  <p><strong>Category:</strong> ${doc.category}</p>
-  <p><strong>Owner:</strong> ${doc.ownerName}</p>
-  <p><strong>Last Modified:</strong> ${doc.lastModified}</p>
-  <hr/>
-  <p>Enterprise HRMS Document Management System.</p>
-</body>
-</html>`;
-    blob = new Blob([docxHtml], { type: 'application/msword' });
-  } else if (ext === 'xlsx') {
-    const excelHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="utf-8"><title>${doc.name}</title></head>
-<body>
-  <table border="1">
-    <tr><th style="background-color:#2563eb; color:#fff;">Document Name</th><th style="background-color:#2563eb; color:#fff;">Category</th><th style="background-color:#2563eb; color:#fff;">Owner</th></tr>
-    <tr><td>${doc.name}</td><td>${doc.category}</td><td>${doc.ownerName}</td></tr>
-  </table>
-</body>
-</html>`;
-    blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel' });
-  } else {
-    blob = new Blob([`Document Name: ${doc.name}\nCategory: ${doc.category}`], { type: 'text/plain' });
-  }
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = doc.name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-  toastr.success(`Downloaded ${doc.name}`);
-}
-
 @Component({
   selector: 'app-document-table',
   standalone: true,
@@ -214,17 +118,18 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  // Action 1: View Details
+  // Action 1: Open Document Viewer Modal
   onViewDetails(doc: DocumentItem) {
     this.dialog.open(DocumentDetailsComponent, {
-      width: '560px',
+      width: '760px',
+      maxHeight: '90vh',
       data: doc
     });
   }
 
-  // Action 2: Download
-  onDownload(doc: DocumentItem) {
-    downloadDocumentFile(doc, this.toastr);
+  // Action 2: View / Open Document Viewer directly
+  onViewDocument(doc: DocumentItem) {
+    this.onViewDetails(doc);
   }
 
   // Action 3: Share Link

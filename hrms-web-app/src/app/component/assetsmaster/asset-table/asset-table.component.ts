@@ -132,9 +132,15 @@ export class AssetTableComponent implements OnInit, OnChanges {
   }
 
   openViewDetails(asset: AssetItem) {
-    this.dialog.open(AssetDetailsComponent, {
+    const dialogRef = this.dialog.open(AssetDetailsComponent, {
       width: '520px',
       data: asset
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res && res.action === 'deploy') {
+        this.onSendForDeployment(res.id || asset.id);
+      }
     });
   }
 
@@ -149,6 +155,11 @@ export class AssetTableComponent implements OnInit, OnChanges {
         this.assetService.recalculateMetrics();
       }
     });
+  }
+
+  onSendForDeployment(id: string) {
+    this.assetService.sendForDeployment(id);
+    this.toastr.success(`Asset ${id} sent for deployment! Status set to 'Available'`, 'Ready for Deployment');
   }
 
   onDelete(id: string) {

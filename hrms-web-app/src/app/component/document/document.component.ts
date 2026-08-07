@@ -43,6 +43,9 @@ export class DocumentComponent implements OnInit, OnDestroy {
         this.documents = docs;
       })
     );
+
+    // Initial fetch from backend DB API
+    this.documentService.fetchDocumentsFromApi();
   }
 
   ngOnDestroy(): void {
@@ -61,7 +64,7 @@ export class DocumentComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('Document upload completed successfully.');
+        this.documentService.fetchDocumentsFromApi();
       }
     });
   }

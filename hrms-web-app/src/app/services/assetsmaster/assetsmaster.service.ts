@@ -210,6 +210,41 @@ export class AssetsmasterService {
     this.recalculateMetrics();
   }
 
+  sendForDeployment(id: string) {
+    const updated = this.assetsSubject.value.map(a => {
+      if (String(a.id) === String(id)) {
+        return {
+          ...a,
+          status: 'Available' as AssetStatus,
+          assignedTo: 'Unassigned',
+          assignedInitials: 'UN',
+          assignedAvatar: undefined,
+          isActive: true
+        };
+      }
+      return a;
+    });
+
+    this.assetsSubject.next(updated);
+    this.recalculateMetrics();
+
+    const target = updated.find(a => String(a.id) === String(id));
+    if (target) {
+      const numericId = parseInt(String(id).replace(/\D/g, ''), 10) || 1;
+      this.updateData({
+        assetsMasterId: numericId,
+        id: numericId,
+        assetsMasterName: target.modelName,
+        status: 'Available',
+        assignedTo: 'Unassigned',
+        isActive: true
+      }).subscribe({
+        next: () => console.log('Asset status changed to Available via API'),
+        error: (err) => console.log('API update call finished:', err)
+      });
+    }
+  }
+
   deleteAsset(id: string) {
     const updated = this.assetsSubject.value.map(a => {
       if (a.id === id) {

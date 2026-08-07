@@ -1,5 +1,5 @@
 export type AccessLevel = 'Restricted' | 'Public' | 'Private';
-export type FileType = 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'zip';
+export type FileType = 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'zip' | 'png' | 'jpg' | 'jpeg' | string;
 
 export interface DocumentCategory {
   id: string;

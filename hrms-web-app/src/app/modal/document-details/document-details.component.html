@@ -3,10 +3,10 @@
   <div class="modal-header">
     <div class="title-wrapper">
       <div class="file-icon-box">
-        <mat-icon>description</mat-icon>
+        <mat-icon>visibility</mat-icon>
       </div>
       <div>
-        <h2>Document Details</h2>
+        <h2>Document Viewer & Details</h2>
         <span class="file-subtitle">{{ data.name }}</span>
       </div>
     </div>
@@ -17,7 +17,39 @@
     </button>
   </div>
 
-  <!-- Modal Body Grid -->
+  <!-- Embedded Live Document Preview Section -->
+  <div class="preview-section-container">
+    <div *ngIf="isLoadingPreview" class="preview-loading-box">
+      <mat-icon class="loading-spin-icon">sync</mat-icon>
+      <span>Loading document preview...</span>
+    </div>
+
+    <div *ngIf="!isLoadingPreview && safePreviewUrl" class="document-preview-box">
+      <iframe
+        *ngIf="data.fileType === 'pdf' || data.fileType === 'docx' || data.fileType === 'xlsx'"
+        [src]="safePreviewUrl"
+        class="preview-iframe"
+        title="Document Preview"
+      ></iframe>
+
+      <img
+        *ngIf="data.fileType === 'png' || data.fileType === 'jpg' || data.fileType === 'jpeg'"
+        [src]="safePreviewUrl"
+        class="preview-image"
+        alt="Document Preview"
+      />
+
+      <div *ngIf="data.fileType !== 'pdf' && data.fileType !== 'docx' && data.fileType !== 'xlsx' && data.fileType !== 'png' && data.fileType !== 'jpg' && data.fileType !== 'jpeg'" class="text-preview-card">
+        <mat-icon class="preview-doc-icon">insert_drive_file</mat-icon>
+        <p class="preview-doc-title">Document file standard viewer ready</p>
+        <button type="button" class="btn-open-tab" (click)="onOpenInNewTab()">
+          <mat-icon>open_in_new</mat-icon> Open Document Content
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Body Grid Details -->
   <div class="modal-body">
     <div class="info-grid">
       <!-- File Name -->
@@ -76,11 +108,11 @@
 
   <!-- Modal Actions Footer -->
   <div class="modal-footer">
+    <button type="button" class="btn-action btn-view-tab" (click)="onOpenInNewTab()">
+      <mat-icon>open_in_new</mat-icon> Open in New Tab
+    </button>
     <button type="button" class="btn-action btn-share" (click)="onShareLink()">
       <mat-icon>share</mat-icon> Share Link
-    </button>
-    <button type="button" class="btn-action btn-download" (click)="onDownload()">
-      <mat-icon>download</mat-icon> Download
     </button>
     <!-- Secondary Bottom Close Button -->
     <button type="button" class="btn-action btn-close-modal" (click)="onClose()">

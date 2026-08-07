@@ -18,6 +18,7 @@ export interface SubmittedLeaveRequest {
   leaveTypeName?: string;
   leaveTypeId?: number;
   leaveMode?: string;
+  status?: string;
   isApproved: boolean;
   approvedBy: number;
   isActive?: boolean | number;
@@ -54,7 +55,7 @@ export class LeaveRequestComponent implements OnInit {
   selectedStatus: string = 'All';
   selectedType: string = 'All';
 
-  // Pagination State - set pageSize to 10
+  // Pagination State - pageSize 10
   currentPage: number = 1;
   pageSize: number = 10;
   totalPages: number = 1;
@@ -127,8 +128,10 @@ export class LeaveRequestComponent implements OnInit {
             const matchedType = this.leaveTypes.find(t => t.id === leaveTypeId);
             const typeName = item.leaveTypeName || item.leaveName || (matchedType ? matchedType.leaveTypeName : 'Annual Leave');
 
-            const approvedByVal = (item.approvedBy !== undefined && item.approvedBy !== null && item.approvedBy !== 0) ? Number(item.approvedBy) : 0;
-            const isApprovedVal = (approvedByVal !== 0 && (item.isApproved === true || item.isApproved === 1 || item.status === 'Approved'));
+            const approvedByVal = (item.approvedBy !== undefined && item.approvedBy !== null) ? Number(item.approvedBy) : 0;
+            const statusStr = item.status ? String(item.status).trim() : '';
+
+            let isApprovedVal = item.isApproved === true || item.isApproved === 1 || statusStr.toLowerCase() === 'approved';
 
             return {
               id: Number(item.id || item.leaveRequestId || 0),
@@ -138,14 +141,13 @@ export class LeaveRequestComponent implements OnInit {
               leaveTypeName: typeName,
               leaveTypeId: leaveTypeId,
               leaveMode: item.leaveMode || 'Full Day',
+              status: statusStr,
               isApproved: isApprovedVal,
               approvedBy: approvedByVal,
               isActive: item.isActive !== undefined ? (item.isActive === 1 || item.isActive === true ? 1 : 0) : 1,
               isDeleted: item.isDeleted === 1 || item.isDeleted === true ? 1 : 0
             };
           });
-        } else {
-          this.allRequests = [];
         }
 
         this.recalculateStats();
@@ -153,7 +155,6 @@ export class LeaveRequestComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error fetching leave requests from database:', err);
-        this.allRequests = [];
         this.recalculateStats();
         this.filterRequests();
       }
@@ -162,7 +163,7 @@ export class LeaveRequestComponent implements OnInit {
 
   recalculateStats() {
     this.totalCount = this.allRequests.length;
-    this.pendingCount = this.allRequests.filter(r => r.approvedBy === 0).length;
+    this.pendingCount = this.allRequests.filter(r => this.getStatusText(r) === 'Pending').length;
   }
 
   filterRequests() {
@@ -185,7 +186,6 @@ export class LeaveRequestComponent implements OnInit {
     }
 
     this.filteredRequests = result;
-    this.currentPage = 1;
     this.updatePagination();
   }
 
@@ -232,8 +232,55 @@ export class LeaveRequestComponent implements OnInit {
       data: editData
     });
 
-    dialogRef.afterClosed().subscribe((res) => {
+    dialogRef.afterClosed().subscribe((res: any) => {
       if (res) {
+        // Immediate optimistic in-memory update so table reflects edits instantly!
+        if (typeof res === 'object') {
+          const resId = Number(res.id || res.leaveRequestId || 0);
+          const matchedType = this.leaveTypes.find(t => t.id === Number(res.leaveTypeId));
+          const typeName = matchedType ? matchedType.leaveTypeName : (res.leaveTypeName || 'Annual Leave');
+
+          if (resId > 0) {
+            const idx = this.allRequests.findIndex(r => r.id === resId);
+            if (idx !== -1) {
+              this.allRequests[idx] = {
+                ...this.allRequests[idx],
+                startDate: res.startDate || this.allRequests[idx].startDate,
+                endDate: res.endDate || this.allRequests[idx].endDate,
+                leaveReason: res.leaveReason !== undefined ? res.leaveReason : this.allRequests[idx].leaveReason,
+                leaveTypeId: Number(res.leaveTypeId) || this.allRequests[idx].leaveTypeId,
+                leaveTypeName: typeName,
+                leaveMode: res.leaveMode || this.allRequests[idx].leaveMode,
+                status: res.status || this.allRequests[idx].status,
+                isApproved: Boolean(res.isApproved),
+                approvedBy: Number(res.approvedBy) || 0,
+                isActive: res.isActive !== false ? 1 : 0,
+                isDeleted: res.isDeleted ? 1 : 0
+              };
+            }
+          } else {
+            // New request submitted
+            this.allRequests.unshift({
+              id: Date.now(),
+              startDate: res.startDate || '',
+              endDate: res.endDate || '',
+              leaveReason: res.leaveReason || '',
+              leaveTypeName: typeName,
+              leaveTypeId: Number(res.leaveTypeId) || 1,
+              leaveMode: res.leaveMode || 'Full Day',
+              status: res.status || 'Pending',
+              isApproved: false,
+              approvedBy: 0,
+              isActive: 1,
+              isDeleted: 0
+            });
+          }
+
+          this.recalculateStats();
+          this.filterRequests();
+        }
+
+        // Trigger DB refresh
         this.loadData();
       }
     });
@@ -334,14 +381,16 @@ export class LeaveRequestComponent implements OnInit {
   }
 
   getStatusBadgeClass(req: SubmittedLeaveRequest): string {
-    if (req.approvedBy && req.approvedBy !== 0 && req.isApproved) return 'badge-approved';
-    if (req.approvedBy && req.approvedBy !== 0 && !req.isApproved) return 'badge-rejected';
+    const text = this.getStatusText(req);
+    if (text === 'Approved') return 'badge-approved';
+    if (text === 'Rejected') return 'badge-rejected';
     return 'badge-pending';
   }
 
   getStatusText(req: SubmittedLeaveRequest): string {
-    if (req.approvedBy && req.approvedBy !== 0 && req.isApproved) return 'Approved';
-    if (req.approvedBy && req.approvedBy !== 0 && !req.isApproved) return 'Rejected';
+    const statusStr = (req.status || '').toLowerCase().trim();
+    if (statusStr === 'rejected' || (req.approvedBy !== 0 && req.isApproved === false)) return 'Rejected';
+    if (statusStr === 'approved' || (req.approvedBy !== 0 && req.isApproved === true)) return 'Approved';
     return 'Pending';
   }
 }

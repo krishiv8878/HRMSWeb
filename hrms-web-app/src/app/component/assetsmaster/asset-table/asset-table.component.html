@@ -143,6 +143,10 @@
               <button mat-menu-item class="delete-action" (click)="onDelete(asset.id)">
                 <mat-icon>build</mat-icon> Send to Repair
               </button>
+              <button mat-menu-item (click)="onSendForDeployment(asset.id)">
+                <mat-icon style="color: #059669;">rocket_launch</mat-icon> Send for Deployment (Available)
+              </button>
+              
             </mat-menu>
           </td>
         </tr>

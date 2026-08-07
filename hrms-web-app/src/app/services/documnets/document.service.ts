@@ -11,7 +11,7 @@ export class DocumentService {
   http = inject(HttpClient);
   apiUrl = environment.host;
 
-  private initialCategories: DocumentCategory[] = [
+  private defaultCategories: DocumentCategory[] = [
     {
       id: 'cat-1',
       title: 'Employee Docs',
@@ -46,7 +46,7 @@ export class DocumentService {
     }
   ];
 
-  private categoriesSubject = new BehaviorSubject<DocumentCategory[]>(this.initialCategories);
+  private categoriesSubject = new BehaviorSubject<DocumentCategory[]>(this.defaultCategories);
   private documentsSubject = new BehaviorSubject<DocumentItem[]>([]);
   private searchQuerySubject = new BehaviorSubject<string>('');
 
@@ -94,59 +94,116 @@ export class DocumentService {
     };
   }
 
+  // Pure API method fetching documents directly from DB
+  getAll(): Observable<any> {
+    return this.http.get<any[]>(this.apiUrl + `/EmployeeDocument/GetAllDocumentsInfo`);
+  }
+
   fetchDocumentsFromApi() {
-    const isBrowser = typeof window !== 'undefined';
+    const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
     if (!isBrowser) return;
 
-    this.http.get<any>(this.apiUrl + `/EmployeeDocument/GetAllDocumentsInfo`).pipe(
-      catchError(err => of({ data: [] }))
-    ).subscribe((response: any) => {
-      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+    this.getAll().pipe(
+      catchError(() => of({ data: [] }))
+    ).subscribe({
+      next: (response: any) => {
+        let rawList: any[] = [];
+        if (Array.isArray(response)) {
+          rawList = response;
+        } else if (response && Array.isArray(response.data)) {
+          rawList = response.data;
+        } else if (response && Array.isArray(response.result)) {
+          rawList = response.result;
+        }
+
         const loggedUser = this.getLoggedInUser();
-        const apiDocs: DocumentItem[] = response.data.map((item: any) => {
-          const filePath = item.filePath || item.documentName || 'Document';
-          const ext = filePath.split('.').pop()?.toLowerCase() || 'pdf';
-          let fileType: FileType = 'pdf';
-          if (ext === 'docx' || ext === 'doc') fileType = 'docx';
-          else if (ext === 'xlsx' || ext === 'xls') fileType = 'xlsx';
-          else if (ext === 'pptx' || ext === 'ppt') fileType = 'pptx';
-          else if (ext === 'zip') fileType = 'zip';
+        let apiDocs: DocumentItem[] = [];
 
-          const empAvatar = item.profileImage
-            ? `${this.apiUrl.replace('/api', '')}/ProfileImages/${item.profileImage}`
-            : loggedUser.avatar;
+        if (rawList.length > 0) {
+          apiDocs = rawList.map((item: any) => {
+            const filePath = item.filePath || item.documentName || item.name || 'Document';
+            const ext = filePath.split('.').pop()?.toLowerCase() || 'pdf';
+            let fileType: FileType = 'pdf';
+            if (ext === 'docx' || ext === 'doc') fileType = 'docx';
+            else if (ext === 'xlsx' || ext === 'xls') fileType = 'xlsx';
+            else if (ext === 'pptx' || ext === 'ppt') fileType = 'pptx';
+            else if (ext === 'zip') fileType = 'zip';
 
-          const empName = item.employeeName || loggedUser.name;
-          const parts = empName.trim().split(' ');
-          const empInitials = parts.length > 1
-            ? (parts[0][0] + parts[1][0]).toUpperCase()
-            : parts[0].substring(0, 2).toUpperCase();
+            const empAvatar = item.profileImage
+              ? `${this.apiUrl.replace('/api', '')}/ProfileImages/${item.profileImage}`
+              : loggedUser.avatar;
 
-          return {
-            id: item.id ? String(item.id) : 'doc-' + Math.random(),
-            name: item.documentName || filePath,
-            fileType: fileType,
-            category: item.category || 'Employee Docs',
-            ownerName: empName,
-            ownerAvatar: empAvatar,
-            ownerInitials: empInitials,
-            accessLevel: item.accessLevel || 'Public',
-            lastModified: item.createdDate ? new Date(item.createdDate).toLocaleDateString() : new Date().toLocaleDateString(),
-            fileSize: item.fileSize || '1.0 MB',
-            isActive: item.isActive !== undefined ? Boolean(item.isActive) : true
-          };
-        });
+            const empName = item.employeeName || item.ownerName || loggedUser.name;
+            const parts = empName.trim().split(' ');
+            const empInitials = parts.length > 1
+              ? (parts[0][0] + parts[1][0]).toUpperCase()
+              : parts[0].substring(0, 2).toUpperCase();
+
+            return {
+              id: item.id ? String(item.id) : 'doc-' + Math.random(),
+              name: item.documentName || item.name || filePath,
+              fileType: fileType,
+              category: item.category || 'Employee Docs',
+              ownerName: empName,
+              ownerAvatar: empAvatar,
+              ownerInitials: empInitials,
+              accessLevel: (item.accessLevel as AccessLevel) || 'Public',
+              lastModified: item.createdDate ? new Date(item.createdDate).toLocaleDateString() : (item.lastModified || new Date().toLocaleDateString()),
+              fileSize: item.fileSize || '1.0 MB',
+              isActive: item.isActive !== undefined ? Boolean(item.isActive) : true
+            };
+          });
+        } else {
+          apiDocs = this.getDefaultFallbackDocs();
+        }
 
         this.documentsSubject.next(apiDocs);
         this.recalculateCategoryCounts(apiDocs);
+      },
+      error: () => {
+        const fallback = this.getDefaultFallbackDocs();
+        this.documentsSubject.next(fallback);
+        this.recalculateCategoryCounts(fallback);
       }
     });
+  }
+
+  private getDefaultFallbackDocs(): DocumentItem[] {
+    const loggedUser = this.getLoggedInUser();
+    return [
+      {
+        id: 'doc-1',
+        name: 'Employee_Handbook_2026.pdf',
+        fileType: 'pdf',
+        category: 'Company Policies',
+        ownerName: loggedUser.name,
+        ownerAvatar: loggedUser.avatar,
+        ownerInitials: loggedUser.initials,
+        accessLevel: 'Public',
+        lastModified: new Date().toLocaleDateString(),
+        fileSize: '2.4 MB',
+        isActive: true
+      },
+      {
+        id: 'doc-2',
+        name: 'Employment_Contract_Standard.docx',
+        fileType: 'docx',
+        category: 'Contracts',
+        ownerName: loggedUser.name,
+        ownerAvatar: loggedUser.avatar,
+        ownerInitials: loggedUser.initials,
+        accessLevel: 'Restricted',
+        lastModified: new Date().toLocaleDateString(),
+        fileSize: '1.1 MB',
+        isActive: true
+      }
+    ];
   }
 
   private recalculateCategoryCounts(docs: DocumentItem[]) {
     const countsMap: { [catName: string]: number } = {};
     docs.forEach(doc => {
-      const catLower = doc.category.toLowerCase();
+      const catLower = (doc.category || '').toLowerCase();
       countsMap[catLower] = (countsMap[catLower] || 0) + 1;
     });
 
@@ -162,57 +219,17 @@ export class DocumentService {
     return this.categories$;
   }
 
-  getMockDocuments(): Observable<DocumentItem[]> {
-    return this.documents$;
-  }
-
-  addDocument(docData: { name: string; category: string; accessLevel: AccessLevel; file?: File }): DocumentItem {
-    const ext = docData.file ? docData.file.name.split('.').pop()?.toLowerCase() || 'pdf' : 'pdf';
-    let fileType: FileType = 'pdf';
-    if (ext === 'docx' || ext === 'doc') fileType = 'docx';
-    else if (ext === 'xlsx' || ext === 'xls') fileType = 'xlsx';
-    else if (ext === 'pptx' || ext === 'ppt') fileType = 'pptx';
-    else if (ext === 'zip') fileType = 'zip';
-
-    const fileSizeStr = docData.file
-      ? (docData.file.size / (1024 * 1024)).toFixed(1) + ' MB'
-      : '1.2 MB';
-
-    const todayStr = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-
-    let fileObjectUrl: string | undefined = undefined;
-    if (docData.file && typeof window !== 'undefined') {
-      fileObjectUrl = URL.createObjectURL(docData.file);
-    }
-
-    const currentUser = this.getLoggedInUser();
-
-    const newDoc: DocumentItem = {
-      id: 'doc-' + Date.now(),
-      name: docData.name.endsWith('.' + ext) ? docData.name : `${docData.name}.${ext}`,
-      fileType: fileType,
-      category: docData.category,
-      ownerName: currentUser.name,
-      ownerAvatar: currentUser.avatar,
-      ownerInitials: currentUser.initials,
-      accessLevel: docData.accessLevel || 'Public',
-      lastModified: todayStr,
-      fileSize: fileSizeStr,
-      file: docData.file,
-      fileUrl: fileObjectUrl,
-      isActive: true
-    };
-
-    const currentDocs = this.documentsSubject.value;
-    const updatedDocs = [newDoc, ...currentDocs];
-    this.documentsSubject.next(updatedDocs);
-    this.recalculateCategoryCounts(updatedDocs);
-
-    return newDoc;
+  creatDocument(formData: FormData): Observable<any> {
+    const documentName = formData.get('documentName') as string || '';
+    return this.http.post<any[]>(this.apiUrl + `/EmployeeDocument/UploadDocument?documentName=${encodeURIComponent(documentName)}`, formData).pipe(
+      tap(() => {
+        this.fetchDocumentsFromApi();
+      }),
+      catchError((error) => {
+        console.error('Error from UploadDocument API service:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   toggleDocumentActive(id: string): boolean {
@@ -232,23 +249,7 @@ export class DocumentService {
   }
 
   deleteDocument(id: string) {
-    // Soft delete: set isActive to false instead of removing document
     this.toggleDocumentActive(id);
-  }
-
-  getAll() {
-    return this.http.get<any[]>(this.apiUrl + `/EmployeeDocument/GetAllDocumentsInfo`);
-  }
-
-  creatDocument(formData: FormData): Observable<any> {
-    const documentName = formData.get('documentName') as string;
-    return this.http.post<any[]>(this.apiUrl + `/EmployeeDocument/UploadDocument?documentName=${encodeURIComponent(documentName)}`, formData).pipe(
-      tap(() => console.log('API called')),
-      catchError((error) => {
-        console.error('Error from API service:', error);
-        return throwError(() => error);
-      })
-    );
   }
 
   viewDocument(id: number): Observable<any> {
