@@ -1,40 +1,58 @@
-<div class="form">
-    <form action="" [formGroup]="roledateForm" (ngSubmit)="submitdata()">
-        @if (isEdit) {
-        <p>edit role</p>
-        }@else {
-        <p>add role</p>
-        }
+<div class="role-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ isEdit ? 'security' : 'add_moderator' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Security Role' : 'Add New Role' }}</h2>
+        <p class="modal-subtitle">Configure authorization tier, portal permissions, and access privileges.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <div class="employee-form">
-            <div class="row">
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>role name</mat-label>
-                        <input type="text" matInput name="roleName" placeholder="Enter RoleName" (keypress)="allowOnlyLetters($event)"
-                            formControlName="roleName">
-                    </mat-form-field>
-                </div>
-            </div>
+  <!-- Form Body -->
+  <form [formGroup]="roledateForm" (ngSubmit)="submitdata()" class="role-form-body">
+    <!-- Role Name Field -->
+    <div class="form-group">
+      <label class="field-label">Role Definition Title <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">badge</mat-icon>
+        <input
+          type="text"
+          formControlName="roleName"
+          placeholder="e.g. Super Admin, HR Manager, Team Lead, Employee"
+          class="custom-input"
+          (keypress)="allowOnlyLetters($event)"
+        />
+      </div>
+      <span class="error-text" *ngIf="getControl('roleName')?.touched && getControl('roleName')?.invalid">
+        Role name is required
+      </span>
+    </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-            </div>
+    <!-- Active Status Card -->
+    <div class="form-group-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
+        <span class="label-title">Active Role Status</span>
+      </label>
+      <p class="checkbox-hint">Enables this role to be assigned to personnel and enforced across HRMS modules.</p>
+    </div>
 
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
-            </div>
-            }
-
-        </div>
-    </form>
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>{{ isEdit ? 'save' : 'add_moderator' }}</mat-icon>
+        <span>{{ isEdit ? 'Update Role' : 'Save Role' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

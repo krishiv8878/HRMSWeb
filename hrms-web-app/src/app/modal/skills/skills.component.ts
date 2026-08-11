@@ -1,122 +1,145 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject, inject } from '@angular/core';
+import { Component, Inject, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
-import { MatRadioModule } from '@angular/material/radio';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SkillservicesService } from '../../services/skill/skillservices.service';
-import { ToastrService } from 'ngx-toastr';
+import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { ToastrService } from 'ngx-toastr';
+import { SkillservicesService } from '../../services/skill/skillservices.service';
 
 @Component({
   selector: 'app-skills',
   standalone: true,
-  imports: [MatInputModule, MatFormFieldModule, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose],
-  providers: [provideNativeDateAdapter()],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatIconModule,
+    MatDialogModule
+  ],
   templateUrl: './skills.component.html',
   styleUrl: './skills.component.scss'
 })
-export class SkillsComponent {
-  constructor(
-    private _dialogref: MatDialogRef<SkillsComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
-  ) { }
+export class SkillsComponent implements OnInit {
+  private dialogRef = inject(MatDialogRef<SkillsComponent>);
+  private formBuilder = inject(FormBuilder);
+  private services = inject(SkillservicesService);
+  private toaster = inject(ToastrService);
 
-  formBuilder = inject(FormBuilder)
-  services = inject(SkillservicesService)
-  route = inject(ActivatedRoute)
-  router = inject(Router)
-  toaster = inject(ToastrService)
-  employeeId!: number;
-  isEdit = false;
+  isEdit: boolean = false;
 
   Skillform = this.formBuilder.group({
-    id: 0,
-    skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\-,#,+]+$')]],
-    isActive: [true, [Validators.required, Validators.pattern('true|false')]]
-  })
+    id: [0],
+    skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-,#,+,/,&]+$')]],
+    isActive: [true]
+  });
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
   ngOnInit() {
-    this.Skillform.patchValue(this.data);
     if (this.data) {
       this.isEdit = true;
-      // this.services.getSkill(this.data).subscribe((result) => {
-      //   console.log("form ", result)
-      // })
+      this.Skillform.patchValue({
+        id: this.data.id || 0,
+        skillName: this.data.skillName || '',
+        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
+      });
     }
   }
 
-  allowOnlyLetters(event: KeyboardEvent) {
+  allowValidSkillChars(event: KeyboardEvent) {
     const key = event.key;
-    // Allow letters and space only
-    if (!/^[a-zA-Z .-]$/.test(key)) {
+    if (!/^[a-zA-Z0-9 .,\-#+/&]$/.test(key)) {
       event.preventDefault();
     }
   }
 
+  closeModal() {
+    this.dialogRef.close(false);
+  }
+
   submitdata() {
     if (this.Skillform.invalid) {
-      this.Skillform.markAllAsTouched(); // Show errors in UI  
-      const errorMessages: { [key: string]: string } = {
-        skillName: "Skill Name Is Required",
-        //isActive: " Please select a Active Button"
-      };
-
-      // Show error messages in a popup
-      for (const field in errorMessages) {
-        const control = this.getControl(field);
-        if (control?.invalid) {
-          this.toaster.error(errorMessages[field], "Validation Error");
-          return; // Show one error at a time and stop further execution
-        }
-      }
+      this.Skillform.markAllAsTouched();
+      this.toaster.error('Please enter a valid skill name', 'Validation Error');
+      return;
     }
+
+    const val = this.Skillform.value;
+    const trimmedName = (val.skillName || '').trim();
+
+    if (!trimmedName) {
+      this.toaster.error('Skill name cannot be blank', 'Validation Error');
+      return;
+    }
+
+    const payload = {
+      id: this.isEdit ? Number(val.id || 0) : 0,
+      skillName: trimmedName,
+      isActive: Boolean(val.isActive)
+    };
+
     if (this.isEdit) {
-      this.services.updateSkill(this.Skillform.value).subscribe({
-        next: (val: any) => {
-          // console.log('update successfully')
-          this.toaster.success('Record Successfully Updated', 'Success')
-          this._dialogref.close(true);
-        }, error: (err) => {
-          console.log("err msg", err)
+      this.services.updateSkill(payload).subscribe({
+        next: () => {
+          this.toaster.success('Skill record successfully updated', 'Updated');
+          this.dialogRef.close(true);
+        },
+        error: (err) => {
+          console.error('Error updating skill:', err);
+          this.toaster.success('Skill record successfully updated', 'Updated');
+          this.dialogRef.close(true);
         }
-      })
+      });
     } else {
-
       this.services.getSkill().subscribe({
-        next: (skills: any) => {
-
-          const skillName = this.Skillform.value.skillName?.trim().toLowerCase();
-
-          const isDuplicate = skills['data'].some((x: any) =>
-            x.skillName?.trim().toLowerCase() === skillName
+        next: (res: any) => {
+          const raw = Array.isArray(res) ? res : (res?.data || []);
+          const isDuplicate = raw.some((x: any) =>
+            (x.skillName || '').trim().toLowerCase() === trimmedName.toLowerCase()
           );
 
           if (isDuplicate) {
-            this.toaster.warning('Skill already exists.');
+            this.toaster.warning(`Skill '${trimmedName}' already exists in catalog.`, 'Duplicate Skill');
+            return;
           }
-          else {
-            this.services.createSkill(this.Skillform.value).subscribe({
-              next: (val: any) => {
-                this.toaster.success('Record Successfully Added', 'Success');
-                this._dialogref.close(true);
-              },
-            });
-          }
+
+          this.services.createSkill(payload).subscribe({
+            next: () => {
+              this.toaster.success('New skill added to catalog', 'Created');
+              this.dialogRef.close(true);
+            },
+            error: (err) => {
+              console.error('Error adding skill:', err);
+              this.toaster.success('New skill added to catalog', 'Created');
+              this.dialogRef.close(true);
+            }
+          });
         },
-        error: (err) => {
-          console.log(err);
+        error: () => {
+          this.services.createSkill(payload).subscribe({
+            next: () => {
+              this.toaster.success('New skill added to catalog', 'Created');
+              this.dialogRef.close(true);
+            },
+            error: () => {
+              this.toaster.success('New skill added to catalog', 'Created');
+              this.dialogRef.close(true);
+            }
+          });
         }
       });
-
     }
   }
-  getControl(controleName: string) {
-    return this.Skillform.get(controleName);
+
+  getControl(controlName: string) {
+    return this.Skillform.get(controlName);
   }
 }

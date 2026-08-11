@@ -1,83 +1,115 @@
-<!-- Employee Form Container -->
-<div class="form">
-    <!-- Form for adding or editing an employee -->
-    <form action="" [formGroup]="paymentinfo" (ngSubmit)="submitdata()">
-        <!-- Conditional heading: If editing, show 'Edit Employee'; otherwise, show 'Add Employee' -->
-        @if (isEdit) {
-        <p>edit paymentInfo </p>
-        }@else {
-        <p>add paymentInfo </p>
-        }
+<div class="payment-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ isEdit ? 'account_balance' : 'add_card' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Banking Details' : 'Add Direct Deposit Account' }}</h2>
+        <p class="modal-subtitle">Configure banking institution, IFSC routing, and payroll disbursement.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <!-- Employee form fields -->
-        <div class="employee-form">
-            <!-- Row for First Name & Last Name -->
-            <div class="row">
-                <!-- First Name Field -->
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>bankName</mat-label>
-                        <input type="text" matInput name="bankName" placeholder="Enter BankName"
-                            (keypress)="allowOnlyLetters($event)" formControlName="bankName">
-                    </mat-form-field>
-                </div>
-
-                <!-- Last Name Field -->
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>ifscCode</mat-label>
-                        <input type="text" matInput name="ifscCode" placeholder="Enter IfscCode"
-                            formControlName="ifscCode" maxlength="11">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <!-- Row for Email Address -->
-            <div class="row">
-                <div class="col">
-                    <mat-form-field appearance="outline">
-                        <mat-label>accountNumber</mat-label>
-                        <input type="text" matInput name="accountNumber" placeholder="Enter Account Number"
-                            (keypress)="allowOnlyNumbers($event)" formControlName="accountNumber" maxLength="12">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <!-- Row for Permanent & Current Address -->
-            <div class="row">
-                <div class="col">
-                    <!-- Permanent Address Field -->
-                    <mat-form-field appearance="outline">
-                        <mat-label>Account Name</mat-label>
-                        <input type="text" matInput name="nameOnAccount" placeholder="Enter Account Name"
-                            (keypress)="allowOnlyLetters($event)" formControlName="nameOnAccount">
-                    </mat-form-field>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-            </div>
-
-            <!-- Buttons: Save, Update, or Cancel -->
-            @if(isEdit){
-            <!-- Edit Mode: Update and Cancel Buttons -->
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <!-- Add Mode: Add and Cancel Buttons -->
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }
-
-
+  <!-- Form Body -->
+  <form [formGroup]="paymentinfo" (ngSubmit)="submitdata()" class="payment-form-body">
+    <!-- Row 1: Bank Name & IFSC Code -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Banking Institution <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">account_balance</mat-icon>
+          <input
+            type="text"
+            formControlName="bankName"
+            placeholder="e.g. HDFC Bank, ICICI Bank, SBI"
+            class="custom-input"
+          />
         </div>
-    </form>
+        <span class="error-text" *ngIf="getControl('bankName')?.touched && getControl('bankName')?.invalid">
+          Bank name is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">IFSC Code <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">qr_code</mat-icon>
+          <input
+            type="text"
+            formControlName="ifscCode"
+            placeholder="e.g. HDFC0000128"
+            maxlength="11"
+            class="custom-input uppercase-input"
+            (input)="onIfscInput($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('ifscCode')?.touched && getControl('ifscCode')?.invalid">
+          Valid 11-character IFSC required (e.g. HDFC0000128)
+        </span>
+      </div>
+    </div>
+
+    <!-- Row 2: Account Number & Beneficiary Name -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Account Number <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">credit_card</mat-icon>
+          <input
+            type="text"
+            formControlName="accountNumber"
+            placeholder="e.g. 501004928194"
+            maxlength="18"
+            class="custom-input"
+            (keypress)="allowOnlyNumbers($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('accountNumber')?.touched && getControl('accountNumber')?.invalid">
+          Account number must be 9-18 digits
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Name on Account <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">person</mat-icon>
+          <input
+            type="text"
+            formControlName="nameOnAccount"
+            placeholder="e.g. Sarah Jenkins"
+            class="custom-input"
+            (keypress)="allowOnlyLetters($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('nameOnAccount')?.touched && getControl('nameOnAccount')?.invalid">
+          Beneficiary account holder name is required
+        </span>
+      </div>
+    </div>
+
+    <!-- Active Direct Deposit Status Checkbox Card -->
+    <div class="form-group-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
+        <span class="label-title">Primary Direct Deposit Disbursement Account</span>
+      </label>
+      <p class="checkbox-hint">Enables monthly salary credit, reimbursements, and bonus payouts directly to this bank account.</p>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>{{ isEdit ? 'save' : 'add_circle' }}</mat-icon>
+        <span>{{ isEdit ? 'Update Account' : 'Save Bank Account' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

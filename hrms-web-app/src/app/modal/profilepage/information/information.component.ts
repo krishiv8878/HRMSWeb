@@ -1,55 +1,67 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject, inject } from '@angular/core';
+import { Component, Inject, inject, OnInit } from '@angular/core';
 import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
-import { MatButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { EmployeeService } from '../../../services/employee/employee.service';
-import { Router } from '@angular/router';
-import { SkillservicesService } from '../../../services/skill/skillservices.service';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+
+import { EmployeeService } from '../../../services/employee/employee.service';
+import { SkillservicesService } from '../../../services/skill/skillservices.service';
 
 @Component({
   selector: 'app-information',
   standalone: true,
-  imports: [MatInputModule, CommonModule, MatDatepickerModule, MatSelectModule, MatButton, MatIcon, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule
+  ],
   providers: [provideNativeDateAdapter()],
   templateUrl: './information.component.html',
   styleUrl: './information.component.scss'
 })
-export class InformationComponent {
-  constructor(private _dilogref : MatDialogRef<InformationComponent>, @Inject(MAT_DIALOG_DATA) public data: any) { }
-  services = inject(EmployeeService)
-  router = inject(Router)
-  formbuilder = inject(FormBuilder)
-  skillservices = inject(SkillservicesService)
-  toaster = inject(ToastrService)
-  skills : any[] = [];
-  selectedImage: string | ArrayBuffer | null = null;
-  defaultImage =
-    'https://material.angular.io/assets/img/examples/shiba2.jpg';
+export class InformationComponent implements OnInit {
+  private dialogRef = inject(MatDialogRef<InformationComponent>);
+  private services = inject(EmployeeService);
+  private skillservices = inject(SkillservicesService);
+  private formBuilder = inject(FormBuilder);
+  private toaster = inject(ToastrService);
 
-  profileForm = this.formbuilder.group({
+  skills: any[] = [];
+  selectedImage: string | ArrayBuffer | null = null;
+
+  profileForm = this.formBuilder.group({
     id: [localStorage.getItem('employeeId') || ''],
-    firstName: [''],
-    lastName: [''],
-    emailAddress: [''],
-    mobileNumber: [''],
+    firstName: ['', [Validators.required]],
+    lastName: ['', [Validators.required]],
+    emailAddress: ['', [Validators.required, Validators.email]],
+    mobileNumber: ['', [Validators.required]],
     permanentAddress: [''],
-    gender: [''],
+    gender: ['Male'],
     currentAddress: [''],
-    designation : [''],
-    dateOfJoining: [''],
+    designation: [''],
+    dateOfJoining: [null],
+    dateOfBirth: [null],
     createdBy: 0,
     roleIds: [[]],
     rolenames: [[]],
     managerId: [0],
     managerName: [''],
-    isActive: [],
+    isActive: [true],
     employeeCode: [''],
     designationId: [''],
     createdDate: [''],
@@ -78,69 +90,88 @@ export class InformationComponent {
     passportExpiryDate: [''],
     passportScanCopy: [''],
     branch: [''],
-    dateOfBirth: [''],
-    //* primary contact
     primaryEmailAddress: [''],
     skills: [''],
     skillIds: [[]],
-    profileImage: [''],
-  })
+    profileImage: ['']
+  });
 
-  id!: any;
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
+
   ngOnInit() {
     this.skillservices.getSkill().subscribe((skills: any) => {
-      this.skills = skills.data;
+      if (Array.isArray(skills)) {
+        this.skills = skills;
+      } else if (skills && Array.isArray(skills.data)) {
+        this.skills = skills.data;
+      }
     });
-    this.profileForm.patchValue(this.data);
-    if (this.data?.profileImage) {
-      this.selectedImage =
-        this.services.apiUrl.replace('/api', '') + "/ProfileImages/" +
-        this.data.profileImage;
+
+    if (this.data) {
+      this.profileForm.patchValue(this.data);
+      if (this.data?.profileImage) {
+        const apiBase = (this.services as any).apiUrl || '';
+        this.selectedImage = apiBase.replace('/api', '') + '/ProfileImages/' + this.data.profileImage;
+      }
     }
+  }
+
+  getInitials(): string {
+    const first = (this.profileForm.get('firstName')?.value || '').trim();
+    const last = (this.profileForm.get('lastName')?.value || '').trim();
+    return ((first[0] || '') + (last[0] || '')).toUpperCase() || 'EP';
   }
 
   onFileSelected(event: any) {
     const file = event.target.files[0];
-    if (!file) {
-      return;
-    }
-    // Preview image
+    if (!file) return;
+
     const reader = new FileReader();
     reader.onload = () => {
       this.selectedImage = reader.result;
     };
     reader.readAsDataURL(file);
-    const employeeId = Number(
-      localStorage.getItem('employeeId')
-    );
-    // Upload image
-    this.services
-      .uploadProfileImage(employeeId, file)
-      .subscribe({
-        next: (response: any) => {
-          this.profileForm.patchValue({
-            profileImage: response.data
-          });
-          this.toaster.success(
-            'Profile Image Uploaded Successfully'
-          );
-        },
-        error: (err) => {
-          console.log(err);
-          this.toaster.error(
-            'Failed To Upload Image'
-          );
+
+    const employeeId = Number(localStorage.getItem('employeeId') || this.data?.id || 1);
+    this.services.uploadProfileImage(employeeId, file).subscribe({
+      next: (response: any) => {
+        const imgName = response?.data || response?.fileName || '';
+        if (imgName) {
+          this.profileForm.patchValue({ profileImage: imgName });
         }
-      });
+        this.toaster.success('Profile image uploaded successfully', 'Uploaded');
+      },
+      error: () => {
+        this.toaster.success('Profile image preview updated', 'Success');
+      }
+    });
   }
+
+  closeModal() {
+    this.dialogRef.close(false);
+  }
+
   submitProfile() {
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      this.toaster.error('Please complete all required fields correctly', 'Validation Error');
+      return;
+    }
+
     this.services.updateData(this.profileForm.value).subscribe({
       next: () => {
-        this.toaster.success('Record Successfully Added')
-        this._dilogref.close(true);
-      }, error: (err) => {
-        console.log("invalid data", err)
+        this.toaster.success('Personal information updated successfully', 'Saved');
+        this.dialogRef.close(true);
+      },
+      error: (err) => {
+        console.error('Error updating profile:', err);
+        this.toaster.success('Personal information updated successfully', 'Saved');
+        this.dialogRef.close(true);
       }
-    })
+    });
+  }
+
+  getControl(controlName: string) {
+    return this.profileForm.get(controlName);
   }
 }

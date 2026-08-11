@@ -1,14 +1,272 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Project</h2>
+<div class="projects-dashboard-container">
+  <!-- Top Header Bar -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Project Portfolio & Client Engagements</h1>
+      <p class="page-subtitle">
+        Client enterprise deliveries, regional engagements, scope descriptions, and milestone execution.
+      </p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openAddForm()" style="border-radius: 0;">add </button>
-    </div>
-</div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <div class="header-actions">
+      <!-- Export CSV Button (Outward icon) -->
+      <button type="button" class="btn-export" (click)="onExportProjects()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Portfolio</span>
+      </button>
+
+      <!-- Add Project Button -->
+      <button type="button" class="btn-add-project" (click)="openAddForm()">
+        <mat-icon class="btn-icon">add_task</mat-icon>
+        <span>Add Project</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Top 4 Metrics Cards Grid -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Total Projects -->
+    <div class="metric-card card-purple">
+      <div class="card-header">
+        <span class="card-title">TOTAL PROJECTS</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>folder_special</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalProjectsCount }} <small class="unit-text">Projects</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>{{ activeProjectsCount }} Active client engagements</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Global Reach -->
+    <div class="metric-card card-blue">
+      <div class="card-header">
+        <span class="card-title">CLIENT REGIONS</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>public</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ regionsCount }} <small class="unit-text">Territories</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-blue"></span>
+        <span>US, EU, APAC & Global accounts</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Delivery Health -->
+    <div class="metric-card card-emerald">
+      <div class="card-header">
+        <span class="card-title">DELIVERY HEALTH</span>
+        <div class="icon-box icon-emerald">
+          <mat-icon>task_alt</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ deliveryHealth }}% <small class="unit-text">On Schedule</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>Milestones on track</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Team Allocation -->
+    <div class="metric-card card-amber">
+      <div class="card-header">
+        <span class="card-title">RESOURCE SPREAD</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>hub</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">124 <small class="unit-text">Engineers</small></div>
+      <div class="card-subtitle is-neutral">
+        <span class="dot-indicator dot-amber"></span>
+        <span>Allocated across project squads</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projects Table Card Container -->
+  <div class="table-card-container">
+    <!-- Table Controls Header Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Active Engagements ({{ allProjects.length }})</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterProjects()"
+            placeholder="Search project, client, or region..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Region Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedRegion" (change)="filterProjects()" class="custom-select">
+            <option value="All">All Regions</option>
+            <option *ngFor="let r of regionList" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterProjects()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects Table -->
+    <div class="table-responsive">
+      <table class="projects-table">
+        <thead>
+          <tr>
+            <th>PROJECT INITIATIVE</th>
+            <th>CLIENT ACCOUNT</th>
+            <th>CLIENT REGION</th>
+            <th>SCOPE DESCRIPTION</th>
+            <th>TEAM SPREAD</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let proj of paginatedProjects">
+            <!-- Project Name & Icon -->
+            <td class="col-project">
+              <div class="project-name-wrapper">
+                <div class="project-icon-badge">
+                  <mat-icon>{{ proj.iconName }}</mat-icon>
+                </div>
+                <div class="project-title-group">
+                  <span class="project-title">{{ proj.projectName }}</span>
+                  <span class="project-id-tag">PRJ-00{{ proj.id }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Client Name -->
+            <td class="col-client">
+              <div class="client-wrapper">
+                <mat-icon class="client-icon">domain</mat-icon>
+                <span class="client-name">{{ proj.clientName }}</span>
+              </div>
+            </td>
+
+            <!-- Client Region -->
+            <td class="col-region">
+              <span class="region-pill">
+                <mat-icon class="globe-icon">public</mat-icon>
+                <span>{{ proj.clientRegion }}</span>
+              </span>
+            </td>
+
+            <!-- Description -->
+            <td class="col-desc">
+              <span class="desc-text" [title]="proj.description">{{ proj.description }}</span>
+            </td>
+
+            <!-- Team Spread -->
+            <td class="col-team">
+              <div class="team-wrapper">
+                <mat-icon class="team-icon">groups</mat-icon>
+                <span>{{ proj.teamSize }} Engineers</span>
+              </div>
+            </td>
+
+            <!-- Status Toggle -->
+            <td class="col-status">
+              <button
+                type="button"
+                class="status-toggle-badge"
+                [ngClass]="proj.isActive ? 'badge-active' : 'badge-inactive'"
+                (click)="onToggleActive(proj)"
+                title="Click to toggle project active status"
+              >
+                <span class="dot"></span>
+                <span>{{ proj.isActive ? 'Active' : 'Inactive' }}</span>
+              </button>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-action-icon" (click)="Edit(proj)" title="Edit Project Details">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(proj.id)" title="Delete Project">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedProjects.length === 0">
+            <td colspan="7" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">folder_off</mat-icon>
+                <p *ngIf="allProjects.length === 0">
+                  No projects registered in portfolio. Click <strong>'+ Add Project'</strong> above to create your first client initiative.
+                </p>
+                <p *ngIf="allProjects.length > 0">
+                  No projects match your search or filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredProjects.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredProjects.length) }} of {{ filteredProjects.length }} projects
+      </span>
+      <span class="entry-count" *ngIf="filteredProjects.length === 0">0 projects</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredProjects.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

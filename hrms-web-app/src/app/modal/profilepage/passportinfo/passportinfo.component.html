@@ -1,56 +1,107 @@
-<div class="form">
-    <form action="" [formGroup]="passportinfo" (ngSubmit)="submitpassportinfo()">
+<div class="passport-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>badge</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Passport & Statutory Identification</h2>
+        <p class="modal-subtitle">Document government passport details, country of citizenship, and validity schedule.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <p>Passport Information</p>
-
-        <div class="row">
-            <div class="col-xl-6">
-                <mat-form-field appearance="outline">
-                    <mat-label>Passport Number</mat-label>
-                    <input type="text" matInput name="passportNumber" placeholder="Enter Passport Number"
-                        formControlName="passportNumber">
-                </mat-form-field>
-            </div>
-
-            <div class="col-xl-6">
-                <mat-form-field appearance="outline">
-                    <mat-label>Country of Issue</mat-label>
-                    <input type="text" matInput name="countryOfIssue" placeholder="Enter Country of Issue"
-                        formControlName="nationality">
-                </mat-form-field>
-            </div>
+  <!-- Form Body -->
+  <form [formGroup]="passportForm" (ngSubmit)="submitpassportinfo()" class="passport-form-body">
+    <!-- Row 1: Passport & Country -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Passport Identification Number <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">badge</mat-icon>
+          <input
+            type="text"
+            formControlName="passportNumber"
+            placeholder="e.g. N849201948"
+            class="custom-input font-mono"
+          />
         </div>
+        <span class="error-text" *ngIf="getControl('passportNumber')?.touched && getControl('passportNumber')?.invalid">
+          Passport number is required
+        </span>
+      </div>
 
-        <div class="row">
-            <div class="col-xl-6">
-                <mat-form-field appearance="outline">
-                    <mat-label>Date of Issue</mat-label>
-                    <input type="date" matInput name="dateOfIssue" formControlName="passportIssueDate">
-                </mat-form-field>
-            </div>
-
-            <div class="col-xl-6">
-                <mat-form-field appearance="outline">
-                    <mat-label>Date of Expiry</mat-label>
-                    <input matInput [matDatepicker]="picker" formControlName="passportExpiryDate">
-                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker></mat-datepicker>
-                </mat-form-field>
-            </div>
+      <div class="form-group">
+        <label class="field-label">Country of Citizenship <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">public</mat-icon>
+          <select formControlName="nationality" class="custom-select">
+            <option *ngFor="let country of countries" [value]="country">{{ country }}</option>
+          </select>
         </div>
-        <div class="row">
-            <div class="col">
-                <!-- <mat-form-field appearance="outline"> -->
-                <!-- <mat-label>passport ScanCopy</mat-label> -->
-                <input type="file" #fileInput name="passportScanCopy" formControlName="passportScanCopy"
-                    (change)="onFileChange()" accept=".pdf,.jpg,.jpeg,.png">
-                <!-- </mat-form-field> -->
+      </div>
+    </div>
 
-            </div>
+    <!-- Row 2: Dates -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Passport Date of Issue</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">calendar_today</mat-icon>
+          <input
+            matInput
+            [matDatepicker]="issuePicker"
+            formControlName="passportIssueDate"
+            class="custom-input"
+          />
+          <mat-datepicker-toggle matSuffix [for]="issuePicker" class="picker-toggle"></mat-datepicker-toggle>
+          <mat-datepicker #issuePicker></mat-datepicker>
         </div>
-        <div class="button-btn mt-4" mat-dialog-actions>
-            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
-        </div>
+      </div>
 
-    </form>
+      <div class="form-group">
+        <label class="field-label">Passport Date of Expiration</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">event_busy</mat-icon>
+          <input
+            matInput
+            [matDatepicker]="expiryPicker"
+            formControlName="passportExpiryDate"
+            class="custom-input"
+          />
+          <mat-datepicker-toggle matSuffix [for]="expiryPicker" class="picker-toggle"></mat-datepicker-toggle>
+          <mat-datepicker #expiryPicker></mat-datepicker>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Scanned Document Upload -->
+    <div class="form-group">
+      <label class="field-label">Passport Encrypted Digital Scan Copy</label>
+      <div class="file-upload-card" (click)="fileInput.click()">
+        <mat-icon class="upload-icon">cloud_upload</mat-icon>
+        <div class="file-upload-text">
+          <span class="upload-title" *ngIf="!selectedFileName">Click to select PDF or image copy</span>
+          <span class="upload-title text-success" *ngIf="selectedFileName">{{ selectedFileName }}</span>
+          <span class="upload-hint">Accepted formats: PDF, JPG, PNG (Max size: 10MB)</span>
+        </div>
+        <input #fileInput hidden type="file" (change)="onFileChange($event)" accept=".pdf,.jpg,.jpeg,.png" />
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>save</mat-icon>
+        <span>Save Passport Info</span>
+      </button>
+    </div>
+  </form>
 </div>

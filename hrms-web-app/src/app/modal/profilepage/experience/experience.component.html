@@ -1,163 +1,179 @@
-<div class="form">
-    <form action="" [formGroup]="experienceForm" (ngSubmit)="submitExperience()">
-        <p>Experience Details</p>
+<div class="experience-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>work_history</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Career Experience & Work History</h2>
+        <p class="modal-subtitle">Document previous corporate engagements, job positions, tenure, and scope.</p>
+      </div>
+    </div>
+    <div class="header-actions-right">
+      <!-- Top Add Button -->
+      <button type="button" class="btn-top-add" (click)="addExperience()" title="Add another company / position">
+        <mat-icon>add</mat-icon>
+        <span>Add Experience</span>
+      </button>
+      <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
 
-        <mat-card>
-            <p class="contactt">Company Information 1</p>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Company Name</mat-label>
-                        <input type="text" matInput name="companyName" placeholder="Enter Company Name" formControlName="companyName">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Position</mat-label>
-                        <input type="text" matInput name="jobTitle" placeholder="Enter Position" formControlName="designation">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Location</mat-label>
-                        <input type="text" matInput name="jobLocation" placeholder="Enter Location" formControlName="experienceLocation">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Responsibilities</mat-label>
-                        <input type="text" matInput name="jobResponsibilities" placeholder="Enter Responsibilities" formControlName="responsibilities">
-                    </mat-form-field>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Start Date</mat-label>
-                        <input matInput [matDatepicker]="picker" formControlName="experienceStartDate" (dateChange)="calculateExperienceDuration()">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>End Date</mat-label>
-                        <input matInput [matDatepicker]="picker1" formControlName="experienceEndDate" (dateChange)="calculateExperienceDuration()">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-                        <mat-datepicker #picker1></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-        <mat-card>
-            <p class="contactt">Company Information 2</p>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Company Name</mat-label>
-                        <input type="text" matInput name="companyName" placeholder="Enter Company Name">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Position</mat-label>
-                        <input type="text" matInput name="jobTitle" placeholder="Enter Position">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Location</mat-label>
-                        <input type="text" matInput name="jobLocation" placeholder="Enter Location" formControlName="experienceLocation">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Responsibilities</mat-label>
-                        <input type="text" matInput name="jobResponsibilities" placeholder="Enter Responsibilities" formControlName="responsibilities">
-                    </mat-form-field>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Start Date</mat-label>
-                      <input matInput [matDatepicker]="picker2">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-                        <mat-datepicker #picker2></mat-datepicker>
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>End Date</mat-label>
-                       <input matInput [matDatepicker]="picker3">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
-                        <mat-datepicker #picker3></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-
-        <mat-card>
-            <p class="contactt">Company Information 3</p>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Company Name</mat-label>
-                        <input type="text" matInput name="companyName" placeholder="Enter Company Name">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Position</mat-label>
-                        <input type="text" matInput name="jobTitle" placeholder="Enter Position">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Location</mat-label>
-                        <input type="text" matInput name="jobLocation" placeholder="Enter Location" formControlName="experienceLocation">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Responsibilities</mat-label>
-                        <input type="text" matInput name="jobResponsibilities" placeholder="Enter Responsibilities" formControlName="responsibilities">
-                    </mat-form-field>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Start Date</mat-label>
-                        <input matInput [matDatepicker]="picker4">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
-                        <mat-datepicker #picker4></mat-datepicker>
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>End Date</mat-label>
-                        <input matInput [matDatepicker]="picker5">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker5"></mat-datepicker-toggle>
-                        <mat-datepicker #picker5></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-        <div class="button-btn mt-4" mat-dialog-actions>
-            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
+  <!-- Form Body -->
+  <form (ngSubmit)="submitExperience()" class="experience-form-body">
+    <!-- Experience Entries Loop -->
+    <div *ngFor="let exp of experienceList; let i = index" class="experience-card-block">
+      <div class="entry-header">
+        <div class="entry-badge">
+          <span class="dot"></span>
+          <span>COMPANY EXPERIENCE #{{ i + 1 }} {{ i === 0 ? '(MOST RECENT)' : '' }}</span>
         </div>
-    </form>
+        <button
+          *ngIf="experienceList.length > 1"
+          type="button"
+          class="btn-remove-entry"
+          (click)="removeExperience(i)"
+          title="Remove this experience"
+        >
+          <mat-icon>delete_outline</mat-icon>
+          <span>Remove</span>
+        </button>
+      </div>
+
+      <!-- Row 1: Company & Position -->
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Company / Employer Name <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">domain</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="exp.companyName"
+              [name]="'comp_' + i"
+              placeholder="e.g. Nexient Global Solutions"
+              class="custom-input"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Position / Job Title</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">badge</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="exp.designation"
+              [name]="'desig_' + i"
+              placeholder="e.g. Senior Cloud Architect"
+              class="custom-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Dates -->
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Tenure Start Date</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">calendar_today</mat-icon>
+            <input
+              matInput
+              [matDatepicker]="startPicker"
+              [(ngModel)]="exp.experienceStartDate"
+              [name]="'start_' + i"
+              (dateChange)="calculateDuration(exp)"
+              class="custom-input"
+            />
+            <mat-datepicker-toggle matSuffix [for]="startPicker" class="picker-toggle"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Tenure End Date</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">event</mat-icon>
+            <input
+              matInput
+              [matDatepicker]="endPicker"
+              [(ngModel)]="exp.experienceEndDate"
+              [name]="'end_' + i"
+              (dateChange)="calculateDuration(exp)"
+              class="custom-input"
+            />
+            <mat-datepicker-toggle matSuffix [for]="endPicker" class="picker-toggle"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Duration & Location -->
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Total Duration / Tenure</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">timelapse</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="exp.experienceDuration"
+              [name]="'dur_' + i"
+              placeholder="e.g. 5 Years 8 Months"
+              class="custom-input"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Office Location</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">location_on</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="exp.experienceLocation"
+              [name]="'loc_' + i"
+              placeholder="e.g. Boston, MA"
+              class="custom-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: Responsibilities -->
+      <div class="form-group">
+        <label class="field-label">Key Core Responsibilities & Impact <span class="required">*</span></label>
+        <div class="input-wrapper textarea-wrapper">
+          <textarea
+            [(ngModel)]="exp.responsibilities"
+            [name]="'resp_' + i"
+            placeholder="Summarize primary contributions, architecture projects, technologies used, and team leadership..."
+            rows="3"
+            class="custom-textarea"
+            required
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Big Add Another Experience Button -->
+    <button type="button" class="btn-add-another-block" (click)="addExperience()">
+      <mat-icon>add_circle_outline</mat-icon>
+      <span>Add Another Career Experience / Employer</span>
+    </button>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>save</mat-icon>
+        <span>Save All Experiences</span>
+      </button>
+    </div>
+  </form>
 </div>

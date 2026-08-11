@@ -1,145 +1,129 @@
-<div class="form">
-    <form action="" [formGroup]="educationDetailsForm" (ngSubmit)="submitEducationDetails()">
+<div class="education-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>school</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Academic & Educational Qualifications</h2>
+        <p class="modal-subtitle">Document degrees, university credentials, graduation years, and academic honors.</p>
+      </div>
+    </div>
+    <div class="header-actions-right">
+      <!-- Top Add Button -->
+      <button type="button" class="btn-top-add" (click)="addEducation()" title="Add another academic qualification">
+        <mat-icon>add</mat-icon>
+        <span>Add Degree</span>
+      </button>
+      <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
 
-        <p>Education Qualification</p>
-        
-        <mat-card>
-            <p class="contactt">Higher Degree</p>
+  <!-- Form Body -->
+  <form (ngSubmit)="submitEducationDetails()" class="education-form-body">
+    <!-- Education Entries Loop -->
+    <div *ngFor="let edu of educationList; let i = index" class="education-card-block">
+      <div class="entry-header">
+        <div class="entry-badge">
+          <span class="dot"></span>
+          <span>QUALIFICATION #{{ i + 1 }} {{ i === 0 ? '(HIGHEST DEGREE)' : '' }}</span>
+        </div>
+        <button
+          *ngIf="educationList.length > 1"
+          type="button"
+          class="btn-remove-entry"
+          (click)="removeEducation(i)"
+          title="Remove this qualification"
+        >
+          <mat-icon>delete_outline</mat-icon>
+          <span>Remove</span>
+        </button>
+      </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Degree</mat-label>
-                        <input type="text" matInput name="degree" placeholder="Enter Degree" formControlName="degree">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Institution Name</mat-label>
-                        <input type="text" matInput name="institution" placeholder="Enter Institution Name" formControlName="university">
-                    </mat-form-field>
-                </div>
+      <!-- Degree Title -->
+      <div class="form-group">
+        <label class="field-label">Degree Title & Major Specialization <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">school</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="edu.degree"
+            [name]="'degree_' + i"
+            placeholder="e.g. Master of Science in Computer Science, B.Tech, MBA"
+            class="custom-input"
+            required
+          />
+        </div>
+      </div>
 
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Percentage</mat-label>
-                        <input type="text" matInput name="percentage" placeholder="Enter Your Percentage" formControlName="percentage">
-                    </mat-form-field>
-                </div>
-            </div>
+      <!-- Institution Name -->
+      <div class="form-group">
+        <label class="field-label">University / College / Accredited Institution <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">account_balance</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="edu.university"
+            [name]="'university_' + i"
+            placeholder="e.g. Massachusetts Institute of Technology (MIT), Stanford University"
+            class="custom-input"
+            required
+          />
+        </div>
+      </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Start Date</mat-label>
-                        <input matInput [matDatepicker]="picker">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>End Date</mat-label>
-                       <input matInput [matDatepicker]="picker1" formControlName="yearOfPassing">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-                        <mat-datepicker #picker1></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-        <mat-card>
-            <p class="contactt">Bachelor Degree</p>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Degree</mat-label>
-                        <input type="text" matInput name="degree" placeholder="Enter Degree" formControlName="degree">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Institution Name</mat-label>
-                        <input type="text" matInput name="institution" placeholder="Enter Institution Name" formControlName="university">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Percentage</mat-label>
-                        <input type="text" matInput name="percentage" placeholder="Enter Your Percentage" formControlName="percentage">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Start Date</mat-label>
-                        <input matInput [matDatepicker]="picker2">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-                        <mat-datepicker #picker2></mat-datepicker>
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>End Date</mat-label>
-                       <input matInput [matDatepicker]="picker3">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
-                        <mat-datepicker #picker3></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-        <mat-card>
-            <p class="contactt">Secondary Education</p>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Degree</mat-label>
-                        <input type="text" matInput name="degree" placeholder="Enter Degree" formControlName="degree">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Institution Name</mat-label>
-                        <input type="text" matInput name="institution" placeholder="Enter Institution Name" formControlName="university">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Percentage</mat-label>
-                        <input type="text" matInput name="percentage" placeholder="Enter Your Percentage" formControlName="percentage">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Start Date</mat-label>
-                        <input matInput [matDatepicker]="picker4">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
-                        <mat-datepicker #picker4></mat-datepicker>
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>End Date</mat-label>
-                       <input matInput [matDatepicker]="picker5" >
-                        <mat-datepicker-toggle matIconSuffix [for]="picker5"></mat-datepicker-toggle>
-                        <mat-datepicker #picker5></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-        <div class="button-btn mt-4" mat-dialog-actions>
-            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
+      <!-- Year & GPA -->
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Graduation Year / Year of Passing <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">event</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="edu.yearOfPassing"
+              [name]="'year_' + i"
+              placeholder="e.g. 2018"
+              class="custom-input"
+              required
+            />
+          </div>
         </div>
 
-    </form>
+        <div class="form-group">
+          <label class="field-label">Aggregate Score / GPA / Grade <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">military_tech</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="edu.percentage"
+              [name]="'score_' + i"
+              placeholder="e.g. 3.92 GPA / 88.5% / First Class Honors"
+              class="custom-input"
+              required
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Big Add Another Qualification Button -->
+    <button type="button" class="btn-add-another-block" (click)="addEducation()">
+      <mat-icon>add_circle_outline</mat-icon>
+      <span>Add Another Academic Qualification</span>
+    </button>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>save</mat-icon>
+        <span>Save All Qualifications</span>
+      </button>
+    </div>
+  </form>
 </div>

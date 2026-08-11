@@ -65,6 +65,9 @@ export class HeaderComponent {
   }
 
   resignation() {
-    this.dialog.open(ResignationComponent);
+    const dialogRef = this.dialog.open(ResignationComponent, {
+      width: '640px',
+      maxWidth: '95vw'
+    });
   }
 }

@@ -1,43 +1,164 @@
-<div class="form">
-    <form action="" [formGroup]="resignationForm" (ngSubmit)="submitResignation()">
-        <p>Resignation Letter</p>
+<div class="resignation-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>history_edu</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Formal Resignation & Separation Request</h2>
+        <p class="modal-subtitle">Initiate offboarding transition, specify notice duration, and calculate official last working day.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <div class="row">
-            <div class="col-xl-6">
-                <mat-form-field appearance="outline">
-                    <mat-label>Name</mat-label>
-                    <input type="text" matInput name="name" placeholder="Enter name" formControlName="managerName">
-                </mat-form-field>
-            </div>
-            <div class="col-xl-6">
-                <mat-form-field appearance="outline">
-                    <mat-label>Resignation Date</mat-label>
-                    <input matInput [matDatepicker]="picker" formControlName="resignation_Date">
-                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker></mat-datepicker>
-                </mat-form-field>
-            </div>
-        </div>
+  <!-- Form Body -->
+  <form [formGroup]="resignationForm" (ngSubmit)="submitResignation()" class="resignation-form-body">
+    <!-- Notice & LWD Calculation Banner -->
+    <div class="lwd-summary-card">
+      <div class="lwd-icon-box">
+        <mat-icon>event_available</mat-icon>
+      </div>
+      <div class="lwd-text-group">
+        <span class="lwd-label">CALCULATED LAST WORKING DAY (LWD)</span>
+        <span class="lwd-date">{{ calculatedLastWorkingDay }}</span>
+      </div>
+      <div class="lwd-badge">
+        <span>Standard Notice Active</span>
+      </div>
+    </div>
 
-        <div class="row">
-            <div class="col-xl-12">
-                <mat-form-field appearance="outline">
-                    <mat-label> Notice Period</mat-label>
-                    <input type="text" matInput name="resignationNoticePeriod" placeholder="Notice Period"
-                        formControlName="noticePeriod">
-                </mat-form-field>
-            </div>
-            <div class="col-xl-12">
-                <mat-form-field appearance="outline">
-                    <mat-label>Reason</mat-label>
-                    <textarea matInput name="resignationReason" placeholder="Enter Resignation Reason" rows="4"
-                        formControlName="reason"></textarea>
-                </mat-form-field>
-            </div>
-        </div>
+    <!-- Section 1: Personnel & Reporting -->
+    <div class="form-section-title">
+      <mat-icon>badge</mat-icon>
+      <span>EMPLOYEE & REPORTING HIERARCHY</span>
+    </div>
 
-        <div class="button-btn mt-4" mat-dialog-actions>
-            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
+    <div class="form-row-2">
+      <!-- Employee Name -->
+      <div class="form-group">
+        <label class="field-label">Employee Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">person</mat-icon>
+          <input
+            type="text"
+            formControlName="employeeName"
+            placeholder="Enter employee full name"
+            class="custom-input"
+          />
         </div>
-    </form>
+        <span class="error-text" *ngIf="getControl('employeeName')?.touched && getControl('employeeName')?.invalid">
+          Employee name is required
+        </span>
+      </div>
+
+      <!-- Reporting Manager -->
+      <div class="form-group">
+        <label class="field-label">Reporting Manager / Dept. Head <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">supervisor_account</mat-icon>
+          <input
+            type="text"
+            formControlName="managerName"
+            placeholder="Enter manager name"
+            class="custom-input"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('managerName')?.touched && getControl('managerName')?.invalid">
+          Reporting manager is required
+        </span>
+      </div>
+    </div>
+
+    <!-- Section 2: Resignation Timeline -->
+    <div class="form-section-title">
+      <mat-icon>date_range</mat-icon>
+      <span>RESIGNATION TIMELINE & NOTICE DURATION</span>
+    </div>
+
+    <div class="form-row-2">
+      <!-- Resignation Notice Date -->
+      <div class="form-group">
+        <label class="field-label">Notice Submission Date <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">calendar_today</mat-icon>
+          <input
+            matInput
+            [matDatepicker]="resigPicker"
+            formControlName="resignation_Date"
+            class="custom-input"
+          />
+          <mat-datepicker-toggle matSuffix [for]="resigPicker" class="picker-toggle"></mat-datepicker-toggle>
+          <mat-datepicker #resigPicker></mat-datepicker>
+        </div>
+      </div>
+
+      <!-- Notice Period Duration -->
+      <div class="form-group">
+        <label class="field-label">Notice Period Duration <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">timelapse</mat-icon>
+          <select formControlName="noticePeriod" class="custom-select">
+            <option *ngFor="let opt of noticePeriodOptions" [value]="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Reason & Letter Statement -->
+    <div class="form-section-title">
+      <mat-icon>description</mat-icon>
+      <span>REASON & FORMAL RESIGNATION STATEMENT</span>
+    </div>
+
+    <!-- Primary Reason Category -->
+    <div class="form-group">
+      <label class="field-label">Primary Reason Category <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">category</mat-icon>
+        <select formControlName="reasonCategory" class="custom-select">
+          <option *ngFor="let cat of reasonCategories" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Resignation Letter / Statement -->
+    <div class="form-group">
+      <label class="field-label">Formal Letter / Transition & Handover Notes <span class="required">*</span></label>
+      <div class="input-wrapper textarea-wrapper">
+        <textarea
+          formControlName="reason"
+          placeholder="Dear Management,\n\nPlease accept this letter as formal notification of my resignation. I am committed to assisting with a smooth knowledge transfer and project handover during my notice period..."
+          rows="4"
+          class="custom-textarea"
+        ></textarea>
+      </div>
+      <span class="error-text" *ngIf="getControl('reason')?.touched && getControl('reason')?.invalid">
+        Please provide a detailed formal statement (minimum 15 characters)
+      </span>
+    </div>
+
+    <!-- Handover & Asset Acknowledgement Checkbox -->
+    <div class="form-group-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="acknowledgePolicy" class="custom-checkbox" />
+        <span class="label-title">I acknowledge the company offboarding & asset return policy</span>
+      </label>
+      <p class="checkbox-hint">I confirm that all company assets (Laptop, Access Card, ID Badge, Intellectual Property) will be surrendered on or before my Last Working Day.</p>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>send</mat-icon>
+        <span>Submit Resignation</span>
+      </button>
+    </div>
+  </form>
 </div>

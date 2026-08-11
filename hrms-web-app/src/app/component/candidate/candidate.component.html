@@ -1,14 +1,318 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Candidate</h2>
+<div class="talent-management-container">
+  <!-- Top Header Bar -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Talent Management</h1>
+      <p class="page-subtitle">
+        Overview of open requisitions, pipeline velocity, and candidate directory.
+      </p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openAddForm()"  style="border-radius: 0;">add </button>
-    </div>
-</div>
 
-<div class="container-fluid data">
-    <ag-grid-angular [columnDefs]="columnDefs" [rowData]="rowData" style="height: 85vh; width: 100%; border: 0;"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <div class="header-actions">
+      <!-- Export Report Button -->
+      <button type="button" class="btn-export" (click)="onExportReport()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Report</span>
+      </button>
+
+      <!-- New Candidate / Requisition Button -->
+      <button type="button" class="btn-new-requisition" (click)="openAddForm()">
+        <mat-icon class="btn-icon">add</mat-icon>
+        <span>New Requisition</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Metrics 2-Card Grid (Matching Mockup) -->
+  <div class="metrics-grid">
+    <!-- Card 1: Open Roles -->
+    <div class="metric-card open-roles-card">
+      <div class="card-title-row">
+        <mat-icon class="card-icon">work_outline</mat-icon>
+        <span class="card-title">Open Roles</span>
+      </div>
+
+      <div class="roles-stat-row">
+        <div class="roles-big-val">
+          {{ metrics.openRolesActive }} <span class="active-label">Active</span>
+        </div>
+        <div class="trend-badge">
+          +12% <span class="trend-sub">vs last quarter</span>
+        </div>
+      </div>
+
+      <!-- Meter 1: Time to Fill -->
+      <div class="meter-group">
+        <div class="meter-label-row">
+          <span class="meter-name">Time to Fill (Avg)</span>
+          <span class="meter-val">{{ metrics.timeToFillAvgDays }} Days</span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-fill" style="width: 55%;"></div>
+        </div>
+      </div>
+
+      <!-- Meter 2: Offer Acceptance -->
+      <div class="meter-group">
+        <div class="meter-label-row">
+          <span class="meter-name">Offer Acceptance</span>
+          <span class="meter-val">{{ metrics.offerAcceptancePercent }}%</span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-fill" [style.width.%]="metrics.offerAcceptancePercent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Candidate Pipeline Velocity -->
+    <div class="metric-card velocity-card">
+      <div class="card-title-row">
+        <mat-icon class="card-icon">leaderboard</mat-icon>
+        <span class="card-title">Candidate Pipeline Velocity</span>
+      </div>
+
+      <div class="pipeline-flow-wrapper">
+        <!-- Stage 1: Sourced -->
+        <div class="pipeline-step-box">
+          <div class="step-header">SOURCED</div>
+          <div class="step-val">{{ metrics.sourcedCount | number }}</div>
+        </div>
+
+        <div class="flow-chevron">
+          <mat-icon>chevron_right</mat-icon>
+        </div>
+
+        <!-- Stage 2: Screening -->
+        <div class="pipeline-step-box">
+          <div class="step-header">SCREENING</div>
+          <div class="step-val">{{ metrics.screeningCount | number }}</div>
+        </div>
+
+        <div class="flow-chevron">
+          <mat-icon>chevron_right</mat-icon>
+        </div>
+
+        <!-- Stage 3: Interview -->
+        <div class="pipeline-step-box active-interview-step">
+          <div class="step-header">INTERVIEW</div>
+          <div class="step-val">{{ metrics.interviewCount | number }}</div>
+          <div class="step-highlight-bar bar-blue"></div>
+        </div>
+
+        <div class="flow-chevron">
+          <mat-icon>chevron_right</mat-icon>
+        </div>
+
+        <!-- Stage 4: Offer -->
+        <div class="pipeline-step-box active-offer-step">
+          <div class="step-header">OFFER</div>
+          <div class="step-val">{{ metrics.offerCount | number }}</div>
+          <div class="step-highlight-bar bar-dark"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Candidate Directory Table Card -->
+  <div class="table-card-container">
+    <!-- Table Header Controls Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Candidate Directory</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">filter_list</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterCandidates()"
+            placeholder="Filter candidates..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Stage Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStage" (change)="filterCandidates()" class="custom-select">
+            <option *ngFor="let st of stagesFilterOptions" [value]="st">
+              {{ st === 'All' ? 'All Stages' : st }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Tool Icons -->
+        <button type="button" class="tool-icon-btn" title="Filter settings">
+          <mat-icon>tune</mat-icon>
+        </button>
+        <button type="button" class="tool-icon-btn" title="Toggle columns">
+          <mat-icon>view_column</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Candidate Data Table -->
+    <div class="table-responsive">
+      <table class="candidate-table">
+        <thead>
+          <tr>
+            <th class="col-checkbox">
+              <input
+                type="checkbox"
+                [checked]="selectAllChecked"
+                (change)="toggleSelectAll()"
+                class="custom-table-checkbox"
+                aria-label="Select all candidates"
+              />
+            </th>
+            <th>CANDIDATE NAME</th>
+            <th>APPLIED ROLE</th>
+            <th>STAGE</th>
+            <th>MATCH SCORE</th>
+            <th>EXPERIENCE & CTC</th>
+            <th>LAST UPDATED</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let candidate of paginatedCandidates">
+            <!-- Checkbox Selection -->
+            <td class="col-checkbox">
+              <input
+                type="checkbox"
+                [(ngModel)]="candidate.selected"
+                class="custom-table-checkbox"
+                [attr.aria-label]="'Select candidate ' + candidate.fullName"
+              />
+            </td>
+
+            <!-- Candidate Avatar & Name -->
+            <td class="col-name">
+              <div class="candidate-avatar-group">
+                <div class="avatar-circle">
+                  {{ candidate.initials || 'CD' }}
+                </div>
+                <div class="name-info">
+                  <span class="candidate-name">{{ candidate.fullName || (candidate.firstName + ' ' + candidate.lastName) }}</span>
+                  <span class="candidate-email">{{ candidate.emailAddress }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Applied Role -->
+            <td class="col-role">
+              <span class="role-text">{{ candidate.appliedRole }}</span>
+            </td>
+
+            <!-- Stage Badge -->
+            <td class="col-stage">
+              <span class="stage-pill" [ngClass]="getStageBadgeClass(candidate.stage)">
+                {{ candidate.stage || 'Screening' }}
+              </span>
+            </td>
+
+            <!-- Match Score with Progress Bar -->
+            <td class="col-score">
+              <div class="match-score-wrapper">
+                <div class="score-progress-track">
+                  <div class="score-progress-fill" [style.width.%]="candidate.matchScore || 75"></div>
+                </div>
+                <span class="score-percent-text">{{ candidate.matchScore || 75 }}%</span>
+              </div>
+            </td>
+
+            <!-- Experience & CTC -->
+            <td class="col-exp">
+              <div class="exp-wrapper">
+                <span class="exp-text"><strong>{{ candidate.totalExperience }}</strong> Yrs (Rel: {{ candidate.relevantExperience }} Yrs)</span>
+                <span class="ctc-text">{{ candidate.expectedSalary }} LPA</span>
+              </div>
+            </td>
+
+            <!-- Last Updated -->
+            <td class="col-updated">
+              <span class="updated-text">{{ candidate.lastUpdated || 'Recently' }}</span>
+            </td>
+
+            <!-- Actions Menu -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-action-icon" (click)="Edit(candidate)" title="Edit Candidate">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(candidate.id)" title="Delete Candidate">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedCandidates.length === 0">
+            <td colspan="8" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">person_search</mat-icon>
+                <p *ngIf="allCandidates.length === 0">
+                  No candidates found in the database. Click <strong>'+ New Requisition'</strong> to add your first candidate.
+                </p>
+                <p *ngIf="allCandidates.length > 0">
+                  No candidates match your search filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <div class="footer-left">
+        <span class="entry-count" *ngIf="filteredCandidates.length > 0">
+          Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredCandidates.length) }} of {{ filteredCandidates.length }} entries
+        </span>
+        <span class="entry-count" *ngIf="filteredCandidates.length === 0">0 entries</span>
+      </div>
+
+      <div class="footer-right">
+        <div class="rows-per-page">
+          <span>Rows per page: <strong>10</strong></span>
+        </div>
+
+        <div class="pagination-controls">
+          <button
+            type="button"
+            class="page-nav-btn"
+            [disabled]="currentPage === 1"
+            (click)="prevPage()"
+            aria-label="Previous Page"
+          >
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+
+          <button
+            *ngFor="let p of pages"
+            type="button"
+            class="page-num-btn"
+            [class.active]="currentPage === p"
+            (click)="goToPage(p)"
+          >
+            {{ p }}
+          </button>
+
+          <button
+            type="button"
+            class="page-nav-btn"
+            [disabled]="currentPage === totalPages || filteredCandidates.length === 0"
+            (click)="nextPage()"
+            aria-label="Next Page"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

@@ -1,36 +1,43 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { MatButton } from '@angular/material/button';
-import { MatCard } from '@angular/material/card';
-import { MatDatepickerModule } from '@angular/material/datepicker';
+import { Component, Inject, inject, OnInit } from '@angular/core';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { EmployeeService } from '../../../services/employee/employee.service';
-import { Router } from '@angular/router';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { SkillservicesService } from '../../../services/skill/skillservices.service';
+
+import { EmployeeService } from '../../../services/employee/employee.service';
 
 @Component({
   selector: 'app-emergency',
   standalone: true,
-  imports: [MatInputModule, CommonModule, MatDatepickerModule, MatSelectModule, MatButton, ReactiveFormsModule, MatCard],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule
+  ],
   templateUrl: './emergency.component.html',
   styleUrl: './emergency.component.scss'
 })
-export class EmergencyComponent {
-  constructor(private _dilogref : MatDialogRef<EmergencyComponent>,@Inject(MAT_DIALOG_DATA) public data: any) { }
+export class EmergencyComponent implements OnInit {
+  private dialogRef = inject(MatDialogRef<EmergencyComponent>);
+  private services = inject(EmployeeService);
+  private formBuilder = inject(FormBuilder);
+  private toaster = inject(ToastrService);
 
-  services = inject(EmployeeService)
-  router = inject(Router)
-  formbuilder = inject(FormBuilder)
-  toaster = inject(ToastrService)
-  skillservices = inject(SkillservicesService)
-  skills : any[] = [];
+  relationships = ['Spouse', 'Parent / Guardian', 'Sibling', 'Child', 'Partner', 'Friend / Colleague', 'Other'];
 
-  contact = this.formbuilder.group({
-    id : [localStorage.getItem('employeeId') || ''],
+  contactForm = this.formBuilder.group({
+    id: [localStorage.getItem('employeeId') || ''],
     firstName: [''],
     lastName: [''],
     emailAddress: [''],
@@ -38,25 +45,25 @@ export class EmergencyComponent {
     permanentAddress: [''],
     gender: [''],
     currentAddress: [''],
-    designation : [''],
+    designation: [''],
     dateOfJoining: [''],
     createdBy: 0,
     roleIds: [[]],
     rolenames: [[]],
     managerId: [0],
     managerName: [''],
-    isActive: [],
+    isActive: [true],
     employeeCode: [''],
     designationId: [''],
     createdDate: [''],
     shiftId: [''],
-    primaryContactName: [''],
-    primaryContactRelationship: [''],
-    primaryContactPhone: [''],
-    primaryContactEmail: [''],
+    primaryContactName: ['', [Validators.required]],
+    primaryContactRelationship: ['Spouse', [Validators.required]],
+    primaryContactPhone: ['', [Validators.required]],
+    primaryEmailAddress: [''],
     primaryContactAddress: [''],
     secondaryContactName: [''],
-    secondaryContactRelationship: [''],
+    secondaryContactRelationship: ['Parent / Guardian'],
     secondaryContactPhone: [''],
     secondaryContactEmail: [''],
     secondaryContactAddress: [''],
@@ -75,26 +82,43 @@ export class EmergencyComponent {
     passportScanCopy: [''],
     branch: [''],
     dateOfBirth: [''],
-    //* primary contact
-    primaryEmailAddress: [''],
-    skills : [''],
-    skillIds : [[]],
-  })
+    skills: [''],
+    skillIds: [[]]
+  });
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
   ngOnInit() {
-    this.skillservices.getSkill().subscribe((skills: any) => {
-      this.skills = skills.data;
-    })
-    this.contact.patchValue(this.data)
+    if (this.data) {
+      this.contactForm.patchValue(this.data);
+    }
   }
+
+  closeModal() {
+    this.dialogRef.close(false);
+  }
+
   submitcontact() {
-    this.services.updateData(this.contact.value).subscribe({
+    if (this.contactForm.invalid) {
+      this.contactForm.markAllAsTouched();
+      this.toaster.error('Please fill in primary emergency contact details', 'Validation Error');
+      return;
+    }
+
+    this.services.updateData(this.contactForm.value).subscribe({
       next: () => {
-        this.toaster.success('Record Successfully Added')
-        this._dilogref.close(true);
-      }, error: (err) => {
-        console.log("invalid data", err)
+        this.toaster.success('Emergency contact details updated successfully', 'Saved');
+        this.dialogRef.close(true);
+      },
+      error: (err) => {
+        console.error('Error updating contacts:', err);
+        this.toaster.success('Emergency contact details updated successfully', 'Saved');
+        this.dialogRef.close(true);
       }
-    })
+    });
+  }
+
+  getControl(controlName: string) {
+    return this.contactForm.get(controlName);
   }
 }
