@@ -1,0 +1,19 @@
+<div class="metric-card" [ngClass]="getCardThemeClass()">
+  <!-- Top Header with Label & Icon -->
+  <div class="card-header">
+    <span class="card-title">{{ card.title }}</span>
+    <div class="icon-box">
+      <mat-icon>{{ card.iconName }}</mat-icon>
+    </div>
+  </div>
+
+  <!-- Big Value Number -->
+  <div class="card-value">
+    {{ card.value | number }}
+  </div>
+
+  <!-- Subtitle Line -->
+  <div class="card-subtitle" [class.is-warning]="card.isWarning" [class.is-positive]="card.isPositive">
+    <span>{{ card.subtitle }}</span>
+  </div>
+</div>

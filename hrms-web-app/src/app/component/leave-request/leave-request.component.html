@@ -1,27 +1,265 @@
-<div class="container-flued">
-    <div class="row">
-        <div class="col">
-            <div class="table-menu">
-                <div class="table-title">
-                    <h2>Leave Request</h2>
-                </div>
-                <div class="table-btn">
-                    <button mat-flat-button (click)="openAddForm()" style="border-radius: 0;">Apply Leave</button>
-                </div>
-            </div>
-        </div>
+<div class="leave-dashboard-container">
+  <!-- Top Header Title & Actions Area -->
+  <div class="dashboard-header">
+    <div class="title-group">
+      <h1 class="page-title">Leave Request</h1>
+      <p class="page-subtitle">Track, request, and manage employee time off.</p>
     </div>
 
-    <div class="row">
-        <div class="col">
-            <div class="hero-img">
-                <div class="container-fluid data">
-                    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData"
-                        [columnDefs]="columnDefs" class="ag-theme-quartz" [defaultColDef]="defaultColDef"
-                        [pagination]="pagination" [paginationPageSize]="paginationPageSize"
-                        [paginationPageSizeSelector]="paginationPageSizeSelector" />
-                </div>
-            </div>
-        </div>
+    <!-- Header Action Buttons: Export & + Apply Leave -->
+    <div class="action-buttons">
+      <!-- Export Button with Upward Reversed Arrow -->
+      <button type="button" class="btn-export" (click)="onExport()">
+        <mat-icon class="btn-icon">upload</mat-icon>
+        <span>Export</span>
+      </button>
+
+      <button type="button" class="btn-apply-leave" (click)="openApplyLeaveModal()">
+        <mat-icon class="btn-icon">add</mat-icon>
+        <span>Apply Leave</span>
+      </button>
     </div>
+  </div>
+
+  <!-- Metric Category Cards Grid (4 Column Layout) -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Total Requests -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">TOTAL REQUESTS</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>event_note</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalCount }}</div>
+      <div class="card-subtitle">
+        <span>Submitted this year</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Annual Leave Balance -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">ANNUAL LEAVE</span>
+        <div class="icon-box icon-indigo">
+          <mat-icon>beach_access</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ annualBalance }} <small class="unit-text">days</small></div>
+      <div class="card-subtitle is-positive">
+        <span>Available balance</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Sick Leave Balance -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">SICK LEAVE</span>
+        <div class="icon-box icon-rose">
+          <mat-icon>medical_services</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ sickBalance }} <small class="unit-text">days</small></div>
+      <div class="card-subtitle">
+        <span>Available balance</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Pending Approval -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">PENDING APPROVAL</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>pending_actions</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ pendingCount }}</div>
+      <div class="card-subtitle" [class.is-warning]="pendingCount > 0">
+        <span>{{ pendingCount > 0 ? 'Awaiting manager review' : 'No pending approvals' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Boxed Container -->
+  <div class="table-card-container">
+    <!-- Table Header Controls Bar -->
+    <div class="table-header">
+      <!-- Left Search Input -->
+      <div class="table-search-box">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="filterRequests()"
+          placeholder="Search requests by reason..."
+          class="search-input"
+          aria-label="Search requests by reason"
+        />
+      </div>
+
+      <!-- Right Filters Group -->
+      <div class="header-filters-group">
+        <!-- Status Filter -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterRequests()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Approved">Approved</option>
+            <option value="Pending">Pending</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+
+        <!-- Leave Type Filter (Dynamic) -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedType" (change)="filterRequests()" class="custom-select">
+            <option value="All">Type: All</option>
+            <option *ngFor="let type of leaveTypes" [value]="type.leaveTypeName">
+              {{ type.leaveTypeName }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requests Data Table -->
+    <div class="table-responsive">
+      <table class="requests-table">
+        <thead>
+          <tr>
+            <th>FROM</th>
+            <th>TO</th>
+            <th>LEAVE TYPE</th>
+            <th>REASON</th>
+            <th>APPROVAL</th>
+            <th>ACTIVE STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of paginatedRequests" [class.is-inactive-row]="req.isActive === false">
+            <!-- From Date -->
+            <td class="col-date">
+              <span class="date-text">{{ req.startDate | date:'dd MMM yyyy' }}</span>
+            </td>
+
+            <!-- To Date -->
+            <td class="col-date">
+              <span class="date-text">{{ req.endDate | date:'dd MMM yyyy' }}</span>
+            </td>
+
+            <!-- Leave Type -->
+            <td class="col-type">
+              <span class="type-text">{{ req.leaveTypeName || 'Annual Leave' }}</span>
+            </td>
+
+            <!-- Reason -->
+            <td class="col-reason">
+              <span class="reason-text">{{ req.leaveReason || 'Time off request' }}</span>
+            </td>
+
+            <!-- Approval Status Badge -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="getStatusBadgeClass(req)">
+                {{ getStatusText(req) }}
+              </span>
+            </td>
+
+            <!-- Active Status Badge -->
+            <td class="col-active">
+              <span class="active-badge" [ngClass]="req.isActive !== false ? 'badge-active' : 'badge-inactive'">
+                {{ req.isActive !== false ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <!-- Edit Button -->
+              <button type="button" class="btn-action-icon" (click)="openApplyLeaveModal(req)" title="Edit Request">
+                <mat-icon>edit</mat-icon>
+              </button>
+
+              <!-- Soft Toggle Active Status Button (Don't Delete) -->
+              <button
+                type="button"
+                class="btn-action-icon"
+                [class.btn-toggle-off]="req.isActive !== false"
+                [class.btn-toggle-on]="req.isActive === false"
+                (click)="onToggleActiveStatus(req)"
+                [title]="req.isActive !== false ? 'Active (Click to set Inactive)' : 'Inactive (Click to set Active)'"
+              >
+                <mat-icon>{{ req.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+              </button>
+
+              <!-- Delete / Restore Soft Toggle Button -->
+              <button
+                type="button"
+                class="btn-action-icon"
+                [class.btn-delete-active]="req.isDeleted"
+                (click)="onToggleDeletedStatus(req)"
+                [title]="req.isDeleted ? 'Deleted (Click to Restore)' : 'Delete (Click to Mark Deleted)'"
+              >
+                <mat-icon>{{ req.isDeleted ? 'restore_from_trash' : 'delete_outline' }}</mat-icon>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRequests.length === 0">
+            <td colspan="7" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">event_busy</mat-icon>
+                <p *ngIf="allRequests.length === 0">
+                  No leave requests found. Click <strong>'+ Apply Leave'</strong> above to submit a new time-off request.
+                </p>
+                <p *ngIf="allRequests.length > 0">
+                  No matching requests found for your search filters.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredRequests.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredRequests.length) }} of {{ filteredRequests.length }} requests
+      </span>
+      <span class="entry-count" *ngIf="filteredRequests.length === 0">0 requests</span>
+
+      <!-- Pagination Buttons -->
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredRequests.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

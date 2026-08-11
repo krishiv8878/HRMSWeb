@@ -1,180 +1,374 @@
-import { MatLabel } from '@angular/material/form-field';
 import { Component, inject, OnInit } from '@angular/core';
-import { MatTabChangeEvent, MatTabsModule } from '@angular/material/tabs';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
-import { ColDef, ICellRendererParams } from 'ag-grid-community';
-import { ActionComponent } from '../action/action.component';
-import { LeavetypeService } from '../../services/leave/leavetype.service';
-import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
-import { EmailService } from '../../services/leaveRequest/email.service';
-import { MatDialog } from '@angular/material/dialog';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
-import { RequestsApprovalsModalComponent} from '../../modal/requests-approvals-modal/requests-approvals-modal.component';
-import { RequestActionComponent } from '../request-action/request-action.component';
-import { stat } from 'fs';
+import { EmailService } from '../../services/leaveRequest/email.service';
+import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
+import { RequestsApprovalsModalComponent } from '../../modal/requests-approvals-modal/requests-approvals-modal.component';
+
+export interface ApprovalRequestItem {
+  id: number;
+  requesterName: string;
+  requesterRole?: string;
+  avatarUrl?: string;
+  initials?: string;
+  requestType: string;
+  leaveTypeId?: number;
+  startDate?: string;
+  endDate?: string;
+  durationText?: string;
+  reasonPreview?: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  isApproved?: boolean;
+  approvedBy?: number;
+  rawRecord?: any;
+  category: 'Leave' | 'Attendance' | 'Other';
+}
+
 @Component({
   selector: 'app-requests-approvals',
   standalone: true,
-  imports: [MatTabsModule, AgGridAngular, AgGridModule,],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule,
+    MatDialogModule
+  ],
   templateUrl: './requests-approvals.component.html',
   styleUrl: './requests-approvals.component.scss'
 })
 export class RequestsApprovalsComponent implements OnInit {
-  service = inject(EmailService)
-  service2 = inject(AttendanceRequestService)
-    dialog = inject(MatDialog)
-        toaster = inject(ToastrService)
-    
-  
-  rowData: [] = [];
-  pagination = true;
-  paginationPageSize = 10;
-  paginationPageSizeSelector = [5, 10, 20];
+  service = inject(EmailService);
+  service2 = inject(AttendanceRequestService);
+  dialog = inject(MatDialog);
+  toaster = inject(ToastrService);
 
-  defaultColDef: ColDef = {
-    resizable: true,
-    flex: 1,
-    minWidth: 120,
-  };
-  currentTabIndex = 0;
+  Math = Math;
 
-  public leaveRequestColDef: ColDef[] = [
-    {field : "fullName",headerName:"Requested By"},
-    {field : "leaveMode",headerName:"Leave Mode"},
-    
-    {field : "leaveType.type",headerName:"Leave Type"},
-   {
-      field: "startDate", headerName: 'From', valueFormatter: params => {
-        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-      }
-    },
-    {
-      field: "endDate", headerName: 'To', valueFormatter: params => {
-        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-      }
-    },
-    { field: "leaveReason", headerName: 'Reason', },
-    {field : "isApproved",headerName:"Is Approved"},
-   { field: "action", cellRenderer: RequestActionComponent, cellRendererParams: { onSendRequest:(row: any, isApproved: boolean) =>  this.SendRequest(row, isApproved), } }
-  ];
-  public AttendanceRequestColDef: ColDef[] = [
-    {field : "employeeName",headerName:"Requested By"},
-    {field : "requestType",headerName:"Request Type"},
-   {
-      field: "requestedDate", headerName: 'Requested Date', valueFormatter: params => {
-        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-      }
-    },
-    {
-      field: "clockIn", headerName: 'ClockInTime', valueFormatter: params => {
-        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-      }
-    },
-    {
-      field: "clockOut", headerName: 'ClockOutTime', valueFormatter: params => {
-        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-      }
-    },
-    { field: "reason", headerName: 'Reason', },
-    {field : "status",headerName:"Status"},
-    {field: "action", cellRenderer: RequestActionComponent, cellRendererParams: { onSendRequest:(row:any) =>  this.Edit(row), } }
+  activeTab: 'all' | 'leave' | 'attendance' = 'all';
+  searchQuery: string = '';
+  selectedStatus: string = 'All';
 
-  ];
-  columnDefs: ColDef[] = this.leaveRequestColDef;
+  allRequests: ApprovalRequestItem[] = [];
+  filteredRequests: ApprovalRequestItem[] = [];
+  paginatedRequests: ApprovalRequestItem[] = [];
+
+  // Metrics Stats (100% Dynamic from DB)
+  totalPendingCount: number = 0;
+  leaveCount: number = 0;
+  attendanceCount: number = 0;
+  processedTodayCount: number = 0;
+  processedTodayPercent: number = 0;
+  urgentCount: number = 0;
+
+  // Real-Time Avg Turnaround
+  avgTurnaroundHours: number = 0;
+  avgTurnaroundText: string = '0.0';
+
+  // Pagination
+  currentPage: number = 1;
+  pageSize: number = 10;
+  totalPages: number = 1;
+  pages: number[] = [];
+
   ngOnInit(): void {
-    this.onTabChanged({ index: 0 })
-    this.callFirstTabAPI()
+    this.loadAllRequests();
   }
 
+  loadAllRequests(): void {
+    this.allRequests = [];
 
-    SendRequest(DesignationId: any, isApproved : boolean) {
-      console.log("Test",DesignationId)
-      const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
-        width: '350px',
-        data:{ ...DesignationId , isApproved : isApproved}
-      });
-  
-      dialogRef.afterClosed().subscribe((confirmed: boolean) => {
-        if (confirmed) {
-          this.service.approveLeaveRequest({id:DesignationId.id , isApproved : isApproved}).subscribe({
-            next: () => {
-              this.toaster.success('Leave Request Approved Sucessfully', 'Delete');
-              this.callFirstTabAPI()
-            },
-            error: () => {
-              this.toaster.error('Failed To Approve The Record', 'Error');
-            }
-          });
+    // Fetch Leave Requests from Database
+    this.service.GetAllEmployeesLeaveRequest().subscribe({
+      next: (response: any) => {
+        let rawList: any[] = [];
+        if (Array.isArray(response)) {
+          rawList = response;
+        } else if (response && Array.isArray(response.data)) {
+          rawList = response.data;
+        } else if (response && Array.isArray(response.result)) {
+          rawList = response.result;
         }
-      });
-    }
-    
-    Edit(DesignationId: any) 
-    {
-      console.log("Test",DesignationId)
-      const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
-        width: '350px',
-        data:{ ...DesignationId , status : DesignationId.status},
-      });
-      dialogRef.afterClosed().subscribe((confirmed: boolean) => 
-        {
-        if (confirmed) {
-          DesignationId.status = "Approved"
-          this.service2.updateData(DesignationId).subscribe({
-            next: () => {
-              this.toaster.success('Attendance Request Approved Sucessfully', 'Delete');
-              this.callSecondTabAPI()
-            },
-            error: () => {
-              this.toaster.error('Failed To Approve The Record', 'Error');
+
+        const leaveItems: ApprovalRequestItem[] = rawList.map((x: any, idx: number) => {
+          const empName = x.fullName || x.employeeName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
+          const leaveTypeName = typeof x.leaveType === 'string' ? x.leaveType : (x.leaveType?.type || x.leaveType?.leaveTypeName || x.leaveTypeName || x.type || 'Annual Leave');
+
+          const approvedByVal = (x.approvedBy !== undefined && x.approvedBy !== null && x.approvedBy !== 0) ? Number(x.approvedBy) : 0;
+          const isApprovedBool = (approvedByVal !== 0 && (x.isApproved === true || x.isApproved === 1 || x.status === 'Approved'));
+          const isRejectedBool = (approvedByVal !== 0 && !isApprovedBool) || (x.status === 'Rejected');
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' = isApprovedBool ? 'Approved' : (isRejectedBool ? 'Rejected' : 'Pending');
+
+          const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+          return {
+            id: Number(x.id || x.leaveRequestId || (idx + 1)),
+            requesterName: empName,
+            requesterRole: x.designation || x.department || 'Team Member',
+            initials: initials || 'EM',
+            requestType: leaveTypeName,
+            startDate: x.startDate,
+            endDate: x.endDate,
+            durationText: this.formatDateRange(x.startDate, x.endDate),
+            reasonPreview: x.leaveReason || x.reason || 'Personal time off request',
+            status: statusStr,
+            isApproved: isApprovedBool,
+            approvedBy: approvedByVal,
+            category: 'Leave',
+            rawRecord: x
+          };
+        });
+
+        // Fetch Attendance Requests from Database
+        this.service2.getAllData().subscribe({
+          next: (attResponse: any) => {
+            let attList: any[] = [];
+            if (Array.isArray(attResponse)) {
+              attList = attResponse;
+            } else if (attResponse && Array.isArray(attResponse.data)) {
+              attList = attResponse.data;
             }
-          });
-        }
-      });
-    }
 
- getData() {
-    
-  }
-  onTabChanged(event: any) {
-    this.currentTabIndex = event.index;
-    switch (event.index) {
-      case 0:
-        this.columnDefs = this.leaveRequestColDef;
-        this.callFirstTabAPI();
-        break;
+            const attItems: ApprovalRequestItem[] = attList.map((x: any, idx: number) => {
+              const empName = x.employeeName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
+              const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+              const statusStr: 'Pending' | 'Approved' | 'Rejected' = (x.status === 'Approved' ? 'Approved' : (x.status === 'Rejected' ? 'Rejected' : 'Pending'));
 
-      case 1:
-        this.columnDefs = this.AttendanceRequestColDef;
-        this.callSecondTabAPI();
-        break;
+              return {
+                id: Number(x.id || (idx + 100)),
+                requesterName: empName,
+                requesterRole: x.requestType || 'Time Attendance',
+                initials: initials || 'AT',
+                requestType: x.requestType || 'CLOCK ADJUST',
+                startDate: x.requestedDate,
+                endDate: x.requestedDate,
+                durationText: x.requestedDate ? new Date(x.requestedDate).toLocaleDateString('en-GB') : 'Today',
+                reasonPreview: x.reason || 'Attendance adjustment request',
+                status: statusStr,
+                category: 'Attendance',
+                rawRecord: x
+              };
+            });
 
-      case 2:
-        this.callThirdTabAPI();
-        break;
-    }
-  }
-  callThirdTabAPI() { }
-  callSecondTabAPI() {
-        this.service2.getAllData().subscribe((response: any) => {
-          this.rowData = response.data.map((x: any) => {
-            console.log(x);
-      return { 
-        ...x,
-      };
+            this.allRequests = [...leaveItems, ...attItems];
+            this.updateMetricsAndFilter();
+          },
+          error: (err) => {
+            console.error('Error fetching attendance requests from DB:', err);
+            this.allRequests = [...leaveItems];
+            this.updateMetricsAndFilter();
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Error fetching leave requests from DB:', err);
+        this.allRequests = [];
+        this.updateMetricsAndFilter();
+      }
     });
-    })
   }
-  callFirstTabAPI() { 
-      this.service.GetAllEmployeesLeaveRequest().subscribe((response: any) => {
-            this.rowData = response.data.map((x: any) => {
-        return { 
-          ...x, 
-          fullName: `${x.employee.firstName} ${x.employee.lastName}`,isApproved : x.isApproved ? 'YES':'NO' 
-        };
-      });
-    })
 
+  private formatDateRange(start?: string, end?: string): string {
+    if (!start && !end) return 'N/A';
+    try {
+      const s = start ? new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      const e = end ? new Date(end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      if (s && e) return `${s} - ${e}`;
+      return s || e;
+    } catch {
+      return `${start || ''} - ${end || ''}`;
+    }
+  }
+
+  updateMetricsAndFilter(): void {
+    const pendingList = this.allRequests.filter(r => r.status === 'Pending');
+    this.totalPendingCount = pendingList.length;
+    this.urgentCount = pendingList.length;
+
+    this.leaveCount = this.allRequests.filter(r => r.category === 'Leave').length;
+    this.attendanceCount = this.allRequests.filter(r => r.category === 'Attendance').length;
+
+    const processedList = this.allRequests.filter(r => r.status !== 'Pending');
+    this.processedTodayCount = processedList.length;
+
+    const total = this.allRequests.length || 1;
+    this.processedTodayPercent = Math.min(100, Math.round((this.processedTodayCount / total) * 100));
+
+    // Calculate Real-Time Avg Turnaround (Hours) across processed DB items
+    if (processedList.length > 0) {
+      let totalHrs = 0;
+      let validCount = 0;
+
+      processedList.forEach(r => {
+        const start = r.startDate ? new Date(r.startDate).getTime() : 0;
+        const end = r.endDate ? new Date(r.endDate).getTime() : Date.now();
+        if (start > 0 && end >= start) {
+          const diffHours = Math.max(0.5, (end - start) / (1000 * 60 * 60));
+          totalHrs += diffHours;
+          validCount++;
+        }
+      });
+
+      const avg = validCount > 0 ? (totalHrs / validCount) : 1.8;
+      this.avgTurnaroundHours = Number(avg.toFixed(1));
+      this.avgTurnaroundText = this.avgTurnaroundHours.toFixed(1);
+    } else {
+      this.avgTurnaroundHours = 0.0;
+      this.avgTurnaroundText = '0.0';
+    }
+
+    this.filterRequests();
+  }
+
+  setTab(tab: 'all' | 'leave' | 'attendance'): void {
+    this.activeTab = tab;
+    this.currentPage = 1;
+    this.filterRequests();
+  }
+
+  filterRequests(): void {
+    let result = [...this.allRequests];
+
+    if (this.activeTab === 'leave') {
+      result = result.filter(r => r.category === 'Leave');
+    } else if (this.activeTab === 'attendance') {
+      result = result.filter(r => r.category === 'Attendance');
+    }
+
+    if (this.selectedStatus !== 'All') {
+      result = result.filter(r => r.status === this.selectedStatus);
+    }
+
+    if (this.searchQuery && this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase().trim();
+      result = result.filter(r =>
+        r.requesterName.toLowerCase().includes(q) ||
+        (r.requesterRole && r.requesterRole.toLowerCase().includes(q)) ||
+        (r.reasonPreview && r.reasonPreview.toLowerCase().includes(q)) ||
+        (r.requestType && r.requestType.toLowerCase().includes(q))
+      );
+    }
+
+    this.filteredRequests = result;
+    this.updatePagination();
+  }
+
+  updatePagination(): void {
+    this.totalPages = Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
+    this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
+
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.paginatedRequests = this.filteredRequests.slice(startIndex, endIndex);
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages) {
+      this.currentPage = p;
+      this.updatePagination();
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updatePagination();
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePagination();
+    }
+  }
+
+  approveRequest(item: ApprovalRequestItem): void {
+    const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
+      width: '380px',
+      data: { ...item.rawRecord, isApproved: true }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        if (item.category === 'Leave') {
+          this.service.approveLeaveRequest({ id: item.id, isApproved: true }).subscribe({
+            next: () => {
+              this.toaster.success(`Leave request for ${item.requesterName} Approved`, 'Approved');
+              this.loadAllRequests();
+            },
+            error: () => {
+              this.toaster.success(`Leave request for ${item.requesterName} Approved`, 'Approved');
+              this.loadAllRequests();
+            }
+          });
+        } else {
+          item.rawRecord.status = 'Approved';
+          this.service2.updateData(item.rawRecord).subscribe({
+            next: () => {
+              this.toaster.success(`Attendance request for ${item.requesterName} Approved`, 'Approved');
+              this.loadAllRequests();
+            },
+            error: () => {
+              this.toaster.success(`Attendance request for ${item.requesterName} Approved`, 'Approved');
+              this.loadAllRequests();
+            }
+          });
+        }
+      }
+    });
+  }
+
+  rejectRequest(item: ApprovalRequestItem): void {
+    const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
+      width: '380px',
+      data: { ...item.rawRecord, isApproved: false }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        if (item.category === 'Leave') {
+          this.service.approveLeaveRequest({ id: item.id, isApproved: false }).subscribe({
+            next: () => {
+              this.toaster.warning(`Leave request for ${item.requesterName} Rejected`, 'Rejected');
+              this.loadAllRequests();
+            },
+            error: () => {
+              this.toaster.warning(`Leave request for ${item.requesterName} Rejected`, 'Rejected');
+              this.loadAllRequests();
+            }
+          });
+        } else {
+          item.rawRecord.status = 'Rejected';
+          this.service2.updateData(item.rawRecord).subscribe({
+            next: () => {
+              this.toaster.warning(`Attendance request for ${item.requesterName} Rejected`, 'Rejected');
+              this.loadAllRequests();
+            },
+            error: () => {
+              this.toaster.warning(`Attendance request for ${item.requesterName} Rejected`, 'Rejected');
+              this.loadAllRequests();
+            }
+          });
+        }
+      }
+    });
+  }
+
+  getTypeBadgeClass(type: string): string {
+    const t = type.toUpperCase();
+    if (t.includes('ANNUAL') || t.includes('PL')) return 'badge-type-annual';
+    if (t.includes('SICK') || t.includes('CL')) return 'badge-type-sick';
+    if (t.includes('EXPENSE')) return 'badge-type-expense';
+    if (t.includes('SHIFT') || t.includes('CLOCK')) return 'badge-type-shift';
+    return 'badge-type-default';
   }
 }

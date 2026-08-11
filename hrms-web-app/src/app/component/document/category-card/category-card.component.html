@@ -1,0 +1,16 @@
+<div class="category-card" [ngClass]="'theme-' + category.theme">
+  <div class="card-body">
+    <div class="icon-container">
+      <mat-icon>{{ category.iconName }}</mat-icon>
+    </div>
+    <h3 class="card-title">{{ category.title }}</h3>
+    <p class="card-description">{{ category.description }}</p>
+  </div>
+
+  <div class="card-footer">
+    <span class="file-count">{{ formattedCount }}</span>
+    <span class="arrow-btn" aria-label="View category">
+      <mat-icon>east</mat-icon>
+    </span>
+  </div>
+</div>

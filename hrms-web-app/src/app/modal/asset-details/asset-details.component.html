@@ -1,0 +1,75 @@
+<div class="asset-details-card">
+  <!-- Top Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>inventory_2</mat-icon>
+      </div>
+      <div>
+        <h2>Asset Details</h2>
+        <span class="asset-id-code">{{ asset.id }}</span>
+      </div>
+    </div>
+    <button type="button" class="close-top-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Asset Info Content -->
+  <div class="details-body">
+    <!-- Model & Status Summary Box -->
+    <div class="summary-banner">
+      <div class="model-info">
+        <h3>{{ asset.modelName }}</h3>
+        <p class="specs">{{ asset.specifications }}</p>
+      </div>
+      <span class="status-pill" [ngClass]="getStatusPillClass(asset.status)">
+        {{ asset.status }}
+      </span>
+    </div>
+
+    <!-- Metadata Grid -->
+    <div class="info-grid">
+      <!-- Category -->
+      <div class="info-item">
+        <span class="label">Asset Category</span>
+        <span class="value">{{ asset.assetType }}</span>
+      </div>
+
+      <!-- Location -->
+      <div class="info-item">
+        <span class="label">Office Location</span>
+        <span class="value">{{ asset.location }}</span>
+      </div>
+
+      <!-- Assigned Employee -->
+      <div class="info-item span-2">
+        <span class="label">Assigned Employee</span>
+        <div class="assigned-user-row">
+          <img *ngIf="asset.assignedAvatar" [src]="asset.assignedAvatar" [alt]="asset.assignedTo" class="user-avatar" />
+          <div *ngIf="!asset.assignedAvatar" class="user-initials">
+            {{ asset.assignedInitials || 'UN' }}
+          </div>
+          <span class="user-name">{{ asset.assignedTo || 'Unassigned' }}</span>
+        </div>
+      </div>
+
+      <!-- Last Audit Date -->
+      <div class="info-item">
+        <span class="label">Last Audit Date</span>
+        <span class="value" [class.is-overdue]="asset.isOverdue">{{ asset.lastAudit }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer Actions -->
+  <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+    <button type="button" class="btn-deploy-action" (click)="sendForDeployment()" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 4px; padding: 6px 14px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">rocket_launch</mat-icon>
+      Send for Deployment
+    </button>
+    <button type="button" class="btn-secondary-close" (click)="closeModal()">
+      Close
+    </button>
+  </div>
+</div>

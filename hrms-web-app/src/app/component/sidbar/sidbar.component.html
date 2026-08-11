@@ -1,67 +1,49 @@
-<div class="side-bar">
-    <div class="side-itme">
-        <div class="logo">
-            <img src="assets/images/image.png" alt="" />
-        </div>
-        <mat-nav-list>
-
-            <!-- <div class="side-menu">
-                <a class="item" [routerLink]="['/index/home']"><mat-icon [matMenuTriggerFor]="menu">groups</mat-icon>
-                    <mat-menu #menu="matMenu" class="custom-menu">
-                        <button mat-menu-item
-                            [routerLink]="['/index/services']"><mat-icon>build</mat-icon>services</button>
-                        <button mat-menu-item [routerLink]="['/index/skill']"><mat-icon>psychology</mat-icon>skill
-                        </button>
-                        <button mat-menu-item
-                            [routerLink]="['/index/candidate']"><mat-icon>person_search</mat-icon>candidate</button>
-                    </mat-menu></a>
-            </div> 
-
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/designation']"><mat-icon>badge</mat-icon></a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/holiday']"><mat-icon>beach_access</mat-icon></a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/leavetype']"><mat-icon>event_busy</mat-icon></a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/assets']"><mat-icon>inventory</mat-icon> </a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/project']"><mat-icon>assignment</mat-icon></a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/rolemaster']"><mat-icon>supervisor_account</mat-icon> </a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/attendance']"><mat-icon>event_available</mat-icon> </a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/shift']"><mat-icon>schedule</mat-icon></a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/paymentinfo']"><mat-icon>account_balance_wallet</mat-icon> </a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/document']"><mat-icon>description</mat-icon></a>
-            </div>
-            <div class="side-menu">
-                <a class="item" [routerLink]="['/index/leaveRequest']"><mat-icon>description</mat-icon> </a>
-            </div> -->
-            <!-- <div class="side-menu">
-                <a class="item" href="/index/contact"><mat-icon>call</mat-icon>contact</a>
-            </div> -->
-            <ng-container *ngFor="let item of menuItems">
-                <div class="side-menu" [routerLink]='[item.route]' routerLinkActive="active">
-                    <a class="item">
-                        <mat-icon>{{item.icon}}</mat-icon>
-                        <span class="menu-text">{{item.label}}</span>
-                    </a>
-                </div>
-            </ng-container>
-
-        </mat-nav-list>
+<aside class="sidebar-container">
+  <!-- Brand Logo & Header -->
+  <div class="brand-header">
+    <div class="logo-box">
+      <img src="assets/images/ki-logo.jpg" alt="KHRMS Logo" class="brand-logo-img" />
     </div>
-</div>
+    <div class="brand-info">
+      <h1 class="brand-name">KHRMS</h1>
+      <span class="brand-subtitle">Management Suite</span>
+    </div>
+  </div>
+
+  <!-- Navigation Menu List -->
+  <div class="nav-wrapper">
+    <div *ngFor="let section of sections" class="nav-section">
+      <div *ngIf="section.title" class="section-title">{{ section.title }}</div>
+      <nav class="nav-list">
+        <a
+          *ngFor="let item of section.items"
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="nav-item"
+        >
+          <span class="active-indicator"></span>
+          <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Sidebar Footer (Hidden Quick Action, Settings, and Info buttons) -->
+  <div class="sidebar-footer" style="display: none;">
+    <button type="button" class="quick-action-btn" (click)="onQuickAction()">
+      <mat-icon class="quick-icon">add</mat-icon>
+      <span>Quick Action</span>
+    </button>
+
+    <div class="footer-icons-row">
+      <button type="button" class="footer-btn" aria-label="Settings">
+        <mat-icon>settings</mat-icon>
+      </button>
+      <button type="button" class="footer-btn" aria-label="Help">
+        <mat-icon>help_outline</mat-icon>
+      </button>
+    </div>
+  </div>
+</aside>

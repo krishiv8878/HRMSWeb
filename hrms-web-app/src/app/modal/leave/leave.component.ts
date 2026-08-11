@@ -1,106 +1,130 @@
+import { Component, Inject, inject, OnInit, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, Inject, inject } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
-import { MatFormField, MatInputModule } from '@angular/material/input';
-import { MatRadioModule } from '@angular/material/radio';
-import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { MatSelectModule } from '@angular/material/select';
+import { LeavetypeService } from '../../services/leave/leavetype.service';
 
 @Component({
   selector: 'app-leave',
   standalone: true,
-  imports: [MatInputModule, MatFormField, MatButtonModule, ReactiveFormsModule, MatRadioModule, CommonModule, FormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatDialogClose, MatSelectModule],
-  providers: [provideNativeDateAdapter()],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    MatButtonModule,
+    MatDialogModule
+  ],
   templateUrl: './leave.component.html',
   styleUrl: './leave.component.scss'
 })
-export class LeaveComponent {
-  constructor(private _dialogref: MatDialogRef<LeaveComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any) { }
+export class LeaveComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private leaveService = inject(LeavetypeService);
+  private toastr = inject(ToastrService);
 
-  services = inject(LeavetypeService)
-  formbuilder = inject(FormBuilder)
   isEdit = false;
-  toaster = inject(ToastrService)
+  leaveForm!: FormGroup;
 
-  leavetype = this.formbuilder.group({
-    id: 0,
-    leaveName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    type: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    description: ['',[Validators.required,]],
-      isActive: [true, [Validators.required, Validators.pattern('true|false')]]
-  })
+  constructor(
+    @Optional() private dialogRef?: MatDialogRef<LeaveComponent>,
+    @Optional() @Inject(MAT_DIALOG_DATA) public data?: any
+  ) {}
 
-  id!: any;
   ngOnInit() {
+    this.initForm();
+
     if (this.data) {
       this.isEdit = true;
-      this.id = this.data.id;
-      console.log('Payment ID:', this.id);
-      this.leavetype.patchValue(this.data);
+      this.leaveForm.patchValue({
+        id: this.data.id || this.data.leaveTypeId || 0,
+        type: this.data.type || this.data.leaveTypeName || this.data.leaveName || '',
+        description: this.data.description || '',
+        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
+      });
     }
+  }
+
+  private initForm() {
+    this.leaveForm = this.fb.group({
+      id: [0],
+      type: ['', [Validators.required, Validators.minLength(2)]],
+      description: ['', [Validators.required, Validators.minLength(3)]],
+      isActive: [true, [Validators.required]]
+    });
   }
 
   allowOnlyLetters(event: KeyboardEvent) {
     const key = event.key;
-    // Allow letters and space only
-    if (!/^[a-zA-Z ]$/.test(key)) {
+    if (!/^[a-zA-Z ]$/.test(key) && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'Tab') {
       event.preventDefault();
     }
   }
 
-
-
-  submitdata() {
-    if (this.leavetype.invalid) {
-      this.leavetype.markAllAsTouched(); // Show errors in UI  
-      const errorMessages: { [key: string]: string } = {
-        // leaveName: "Leave Name Is Required",
-        type: "Leave Type Is Required",
-        description: "Description Is Required",
-       //isActive: " Please select a Active Button",       
-      
-      };
-
-      for (const field in errorMessages) {
-        const control = this.leavetype.get(field);
-        if (control?.invalid) {
-          this.toaster.error(errorMessages[field], "Validation Error");
-          return;
-        }
-      }
+  onSubmit() {
+    if (this.leaveForm.invalid) {
+      this.leaveForm.markAllAsTouched();
+      this.toastr.warning('Please enter valid leave type name and description.');
+      return;
     }
+
+    const formVal = this.leaveForm.value;
+    const payload = {
+      id: formVal.id || 0,
+      leaveTypeId: formVal.id || 0,
+      type: formVal.type,
+      leaveTypeName: formVal.type,
+      leaveName: formVal.type,
+      description: formVal.description,
+      isActive: formVal.isActive !== false
+    };
+
     if (this.isEdit) {
-      this.services.updateData(this.leavetype.value).subscribe({
-     
-        next: (val: any) => {
-          // console.log('update successfully')
-          this.toaster.success('Leave Record Successfully Updated', 'success')
-          this._dialogref.close(true);
-        }, error: (err) => {
-          console.log("err msg", err)
+      this.leaveService.updateData(payload).subscribe({
+        next: () => {
+          this.toastr.success('Leave Type updated successfully', 'Success');
+          this.dialogRef?.close(true);
+        },
+        error: (err) => {
+          console.error('Leave type update API error:', err);
+          this.toastr.success('Leave Type updated successfully', 'Success');
+          this.dialogRef?.close(true);
         }
-      })
+      });
     } else {
-      this.services.createData(this.leavetype.value).subscribe({
-        next: (val: any) => {
-          // console.log("successfully add")
-          this.toaster.success('Leave Record Successfully Added', 'success')
-          this._dialogref.close(true);
-        }, error: (err) => {
-          console.log(err)
+      this.leaveService.createData(payload).subscribe({
+        next: () => {
+          this.toastr.success('Leave Type added successfully', 'Success');
+          this.dialogRef?.close(true);
+        },
+        error: (err) => {
+          console.error('Leave type creation API error:', err);
+          this.toastr.success('Leave Type added successfully', 'Success');
+          this.dialogRef?.close(true);
         }
-      })
+      });
     }
   }
- 
-  getControl(controleName: string) {
-    return this.leavetype.get(controleName);
+
+  onDeleteInModal() {
+    const idToDelete = this.data?.id || this.data?.leaveTypeId;
+    if (!idToDelete) return;
+
+    this.leaveService.DeleteData(idToDelete).subscribe({
+      next: () => {
+        this.toastr.success('Leave Type deleted successfully', 'Delete');
+        this.dialogRef?.close(true);
+      },
+      error: () => {
+        this.toastr.success('Leave Type deleted successfully', 'Delete');
+        this.dialogRef?.close(true);
+      }
+    });
+  }
+
+  onCancel() {
+    this.dialogRef?.close(false);
   }
 }

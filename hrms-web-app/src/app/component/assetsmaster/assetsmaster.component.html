@@ -1,14 +1,37 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Assets</h2>
+<div class="asset-dashboard-container">
+  <!-- Top Header Title & Actions Area -->
+  <div class="dashboard-header">
+    <div class="title-group">
+      <h1 class="page-title">Asset Management</h1>
+      <p class="page-subtitle">Track, manage, and audit corporate hardware and software assets.</p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openAddForm()"  style="border-radius: 0;">add</button>
-    </div>
-</div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [columnDefs]="columnDefs" [rowData]="rowData"
-        class="ag-theme-quartz" [pagination]="pagination" [defaultColDef]="defaultColDef" [paginationPageSize]="paginationPageSize"
-        [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <!-- Header Action Buttons -->
+    <div class="action-buttons">
+      <!-- Export Button with Upward Reversed Arrow Icon -->
+      <button type="button" class="btn-export" (click)="onExport()">
+        <mat-icon class="btn-icon">upload</mat-icon>
+        <span>Export</span>
+      </button>
+
+      <!-- Add Asset Button -->
+      <button type="button" class="btn-add-asset" (click)="openAddAssetModal()">
+        <mat-icon class="btn-icon">add</mat-icon>
+        <span>Add Asset</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Metric Category Cards Grid (4 Column Layout) -->
+  <div class="metrics-cards-grid">
+    <app-asset-card
+      *ngFor="let card of (metrics$ | async)"
+      [card]="card"
+    ></app-asset-card>
+  </div>
+
+  <!-- Assets Data Table Component -->
+  <div class="table-section mt-4">
+    <app-asset-table [assets]="(assets$ | async) || []"></app-asset-table>
+  </div>
 </div>

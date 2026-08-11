@@ -1,0 +1,336 @@
+.details-modal-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  .title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .file-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background-color: #eff6ff;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      mat-icon {
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
+      }
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .file-subtitle {
+      font-size: 13px;
+      color: #64748b;
+    }
+  }
+
+  .close-icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      background-color: #f1f5f9;
+      color: #ef4444;
+    }
+  }
+}
+
+/* Embedded Document Viewer Panel */
+.preview-section-container {
+  margin-bottom: 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background-color: #f8fafc;
+  overflow: hidden;
+
+  .preview-loading-box {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: #64748b;
+    font-size: 0.9rem;
+
+    .loading-spin-icon {
+      animation: spin 1.2s linear infinite;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+      color: #2563eb;
+    }
+  }
+
+  .document-preview-box {
+    width: 100%;
+
+    .preview-iframe {
+      width: 100%;
+      height: 380px;
+      border: none;
+      background-color: #ffffff;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .text-preview-card {
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      color: #475569;
+
+      .preview-doc-icon {
+        font-size: 44px;
+        width: 44px;
+        height: 44px;
+        color: #2563eb;
+      }
+
+      .preview-doc-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 0;
+        color: #1e293b;
+      }
+
+      .btn-open-tab {
+        padding: 0.5rem 1.2rem;
+        background-color: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: background-color 0.2s ease;
+
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+
+        &:hover {
+          background-color: #1d4ed8;
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.modal-body {
+  padding: 8px 0 20px 0;
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 24px;
+
+    .full-row {
+      grid-column: span 2;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .info-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #94a3b8;
+        letter-spacing: 0.04em;
+      }
+
+      .info-value {
+        font-size: 14px;
+        color: #1e293b;
+
+        &.text-bold {
+          font-weight: 600;
+          color: #0f172a;
+        }
+
+        &.uppercase {
+          text-transform: uppercase;
+        }
+      }
+
+      .owner-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .owner-avatar {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .owner-initials {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background-color: #e2e8f0;
+          color: #334155;
+          font-size: 11px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .owner-name {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+      }
+
+      .access-pill {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        width: fit-content;
+
+        &.pill-restricted {
+          background-color: #fef2f2;
+          color: #dc2626;
+        }
+
+        &.pill-public {
+          background-color: #ecfdf5;
+          color: #059669;
+        }
+
+        &.pill-private {
+          background-color: #f1f5f9;
+          color: #475569;
+        }
+      }
+    }
+  }
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+
+  .btn-action {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .btn-view-tab {
+    background-color: #2563eb;
+    border: 1px solid #2563eb;
+    color: #ffffff;
+
+    &:hover {
+      background-color: #1d4ed8;
+    }
+  }
+
+  .btn-share {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #475569;
+
+    &:hover {
+      background-color: #f8fafc;
+      border-color: #9ca3af;
+    }
+  }
+
+  .btn-close-modal {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+
+    &:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+  }
+}

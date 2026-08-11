@@ -1,39 +1,228 @@
-.form {
-    padding: 2vw;
-
-    p {
-        text-transform: capitalize;
-        font-size: 24px;
-        font-weight: 500;
-        text-align: center;
-    }
+.holiday-modal-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-.row {
-    mat-form-field {
-        width: 100%;
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
 
-        mat-label {
-            text-transform: capitalize;
-        }
-    }
-}
-
-.holiday-form {
-    display: inline-grid;
-}
-
-.button-btn {
+  .header-title {
     display: flex;
-    gap: 10PX;
-    padding-top: 10px;
+    align-items: center;
+    gap: 12px;
+
+    .icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background-color: #eff6ff;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: #6b7280;
+    }
+  }
+
+  .close-top-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
     justify-content: center;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background-color: #f3f4f6;
+      color: #dc2626;
+    }
+  }
 }
 
-button {
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+
+    .required {
+      color: #dc2626;
+    }
+  }
+
+  .form-input,
+  .form-textarea {
     width: 100%;
-    padding: 10px;
-    text-transform: capitalize;
-    font-size: 15px;
-    font-weight: 500;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 0 12px;
+    font-size: 13px;
+    color: #111827;
+    outline: none;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+
+    &:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+  }
+
+  .form-input {
+    height: 38px;
+  }
+
+  .date-picker-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .date-input {
+      padding-right: 40px;
+    }
+
+    .picker-toggle {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+
+  .form-textarea {
+    padding: 10px 12px;
+    resize: vertical;
+    font-family: inherit;
+    min-height: 80px;
+  }
+}
+
+.status-checkbox-group {
+  padding: 4px 0;
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    .form-checkbox {
+      width: 16px;
+      height: 16px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    .checkbox-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+    }
+  }
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+
+  .btn-cancel {
+    width: auto !important;
+    height: 36px;
+    padding: 0 16px !important;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #f3f4f6;
+      border-color: #9ca3af;
+    }
+  }
+
+  .btn-submit {
+    width: auto !important;
+    height: 36px;
+    padding: 0 18px !important;
+    background-color: #2563eb;
+    border: 1px solid #2563eb;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .btn-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background-color: #1d4ed8;
+      border-color: #1d4ed8;
+    }
+  }
 }

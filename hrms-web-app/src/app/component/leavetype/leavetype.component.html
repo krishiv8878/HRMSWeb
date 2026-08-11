@@ -1,14 +1,221 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Leave Type</h2>
+<div class="leavetype-dashboard-container">
+  <!-- Top Header Title & Actions Area -->
+  <div class="dashboard-header">
+    <div class="title-group">
+      <h1 class="page-title">Leave Types & Policies</h1>
+      <p class="page-subtitle">Configure employee leave categories, quotas, and accrual policies.</p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openAddForm()"  style="border-radius: 0;">add </button>
-    </div>
-</div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <!-- Header Action Button: + Add Leave Type -->
+    <div class="action-buttons">
+      <button type="button" class="btn-add-leavetype" (click)="openAddForm()">
+        <mat-icon class="btn-icon">add</mat-icon>
+        <span>Add Leave Type</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Metric Category Cards Grid (4 Column Layout) -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Total Leave Types -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">TOTAL LEAVE TYPES</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>category</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalCount }}</div>
+      <div class="card-subtitle">
+        <span>Configured in system</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Active Policies -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">ACTIVE POLICIES</span>
+        <div class="icon-box icon-emerald">
+          <mat-icon>check_circle_outline</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ activeCount }}</div>
+      <div class="card-subtitle is-positive">
+        <span>Enabled for employees</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Paid Categories -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">PAID CATEGORIES</span>
+        <div class="icon-box icon-indigo">
+          <mat-icon>payments</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ paidCount }}</div>
+      <div class="card-subtitle">
+        <span>Full/partial compensation</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Unpaid / Special -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">UNPAID / SPECIAL</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>stars</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ unpaidCount }}</div>
+      <div class="card-subtitle">
+        <span>Non-compensated or special</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Boxed Container -->
+  <div class="table-card-container">
+    <!-- Table Header Controls Bar -->
+    <div class="table-header">
+      <!-- Left Search Input -->
+      <div class="table-search-box">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="filterRecords()"
+          placeholder="Search leave type or description..."
+          class="search-input"
+          aria-label="Search leave type or description"
+        />
+      </div>
+
+      <!-- Right Filters Group -->
+      <div class="header-filters-group">
+        <!-- Status Filter -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterRecords()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leave Types Data Table -->
+    <div class="table-responsive">
+      <table class="leavetype-table">
+        <thead>
+          <tr>
+            <th>LEAVE TYPE</th>
+            <th>DESCRIPTION</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let record of paginatedRecords" [class.is-inactive-row]="record.isActive === false">
+            <!-- Leave Type Name with Icon Badge -->
+            <td class="col-type">
+              <div class="type-cell">
+                <div class="type-icon-badge">
+                  <mat-icon>{{ getLeaveIcon(record.type) }}</mat-icon>
+                </div>
+                <span class="type-name">{{ record.type }}</span>
+              </div>
+            </td>
+
+            <!-- Description -->
+            <td class="col-desc">
+              <span class="desc-text">{{ record.description }}</span>
+            </td>
+
+            <!-- Status Badge -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="record.isActive !== false ? 'badge-active' : 'badge-inactive'">
+                {{ record.isActive !== false ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <button type="button" class="btn-action-icon" (click)="Edit(record)" title="Edit Policy">
+                <mat-icon>edit</mat-icon>
+              </button>
+
+              <!-- Soft Active/Inactive Status Toggle Button -->
+              <button
+                type="button"
+                class="btn-action-icon"
+                [class.btn-toggle-off]="record.isActive !== false"
+                [class.btn-toggle-on]="record.isActive === false"
+                (click)="onToggleActiveStatus(record)"
+                [title]="record.isActive !== false ? 'Set Inactive' : 'Set Active'"
+              >
+                <mat-icon>{{ record.isActive !== false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRecords.length === 0">
+            <td colspan="4" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">search_off</mat-icon>
+                <p *ngIf="allLeaveTypes.length === 0">
+                  No leave types configured. Click <strong>'+ Add Leave Type'</strong> above to create a new category.
+                </p>
+                <p *ngIf="allLeaveTypes.length > 0">
+                  No matching leave types found for your search filters.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredLeaveTypes.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredLeaveTypes.length) }} of {{ filteredLeaveTypes.length }} categories
+      </span>
+      <span class="entry-count" *ngIf="filteredLeaveTypes.length === 0">0 categories</span>
+
+      <!-- Pagination Controls -->
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredLeaveTypes.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

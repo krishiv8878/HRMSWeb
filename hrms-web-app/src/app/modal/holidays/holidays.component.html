@@ -1,61 +1,77 @@
-<div class="form">
-    <form action="" [formGroup]="Holidayform" (ngSubmit)="submitdata()">
-        @if (isEdit) {
-        <p>Edit Holiday</p>
-        }@else {
-        <p>Add Holiday </p>
-        }
-        <div class="holiday-form">
-            <div class="row">
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Holiday Name</mat-label>
-                        <input type="text" matInput name="holidayName" placeholder="Enter HolidayName"
-                            formControlName="holidayName">
-                    </mat-form-field>
-                </div>
-                <div class="col">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Holiday Date</mat-label>
-                            <input matInput [matDatepicker]="picker" formControlName="holidayDate">
-                            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                            <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Description</mat-label>
-                        <!-- <input type="text" matInput name="holidayName" placeholder="Enter Description" 
-                        formControlName="description">     -->
-                        <textarea matInput name="description" placeholder="Enter Holiday Description"
-                            formControlName="description" rows="2"></textarea>
-                    </mat-form-field>
-                </div>
-            </div>
+<div class="holiday-modal-card">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-title">
+      <div class="icon-box">
+        <mat-icon>calendar_today</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEdit ? 'Edit Holiday' : 'Add New Holiday' }}</h2>
+        <span class="subtitle">Configure official company holiday date and guidelines.</span>
+      </div>
+    </div>
+    <button type="button" class="close-top-btn" mat-dialog-close="false" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
+  <!-- Form Body -->
+  <form [formGroup]="Holidayform" (ngSubmit)="submitdata()" class="form-body">
+    <!-- Holiday Name -->
+    <div class="form-group">
+      <label class="form-label">Holiday Name <span class="required">*</span></label>
+      <input
+        type="text"
+        formControlName="holidayName"
+        placeholder="e.g., Independence Day, New Year's Day"
+        class="form-input"
+      />
+    </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-            </div>
+    <!-- Holiday Date -->
+    <div class="form-group">
+      <label class="form-label">Holiday Date <span class="required">*</span></label>
+      <div class="date-picker-wrap">
+        <input
+          matInput
+          [matDatepicker]="picker"
+          formControlName="holidayDate"
+          placeholder="Select holiday date"
+          class="form-input date-input"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="picker" class="picker-toggle"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </div>
+    </div>
 
+    <!-- Description -->
+    <div class="form-group">
+      <label class="form-label">Description <span class="required">*</span></label>
+      <textarea
+        formControlName="description"
+        rows="3"
+        placeholder="Enter holiday description, eligibility, or holiday schedule details..."
+        class="form-textarea"
+      ></textarea>
+    </div>
 
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">Update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">Cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">Add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">Cancel</button>
-            </div>
-            }
+    <!-- Status Checkbox -->
+    <div class="form-group status-checkbox-group">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" class="form-checkbox" />
+        <span class="checkbox-text">Set Holiday as Active</span>
+      </label>
+    </div>
 
-
-        </div>
-    </form>
+    <!-- Actions Bar -->
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" mat-dialog-close="false">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon class="btn-icon">save</mat-icon>
+        <span>{{ isEdit ? 'Update Holiday' : 'Add Holiday' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

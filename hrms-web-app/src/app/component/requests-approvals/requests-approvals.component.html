@@ -1,12 +1,268 @@
-<mat-tab-group [selectedIndex]="0" (selectedTabChange)="onTabChanged($event)">
-  <mat-tab label="Leave Request"> 
-     <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" /> 
-     </mat-tab>
-  <mat-tab label="Time Attend Request">  
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
-    </mat-tab>
-</mat-tab-group>
+<div class="approvals-dashboard-container">
+  <!-- Top Title Header Area -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Request Approvals</h1>
+      <p class="page-subtitle">
+        Review and manage pending employee requests requiring your authorization. Prioritize items marked as urgent to maintain SLA compliance.
+      </p>
+    </div>
+  </div>
+
+  <!-- Metric Category Cards Grid (3 Columns Layout matching mockup) -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: TOTAL PENDING -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">TOTAL PENDING</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>inbox</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalPendingCount }}</div>
+      <div class="card-subtitle is-urgent">
+        <span class="dot-urgent"></span>
+        <span>{{ urgentCount }} require immediate attention</span>
+      </div>
+    </div>
+
+    <!-- Card 2: AVG. TURNAROUND (100% Dynamic Real-Time) -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">AVG. TURNAROUND</span>
+        <div class="icon-box icon-green">
+          <mat-icon>schedule</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ avgTurnaroundText }} <small class="unit-text">hrs</small></div>
+      <div class="card-subtitle is-trend-up">
+        <mat-icon class="trend-icon">trending_down</mat-icon>
+        <span>{{ processedTodayCount > 0 ? 'Live average turnaround time' : 'Awaiting request actions' }}</span>
+      </div>
+    </div>
+
+    <!-- Card 3: PROCESSED TODAY -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">PROCESSED TODAY</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>check_circle_outline</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ processedTodayCount }}</div>
+      <div class="card-progress-bar">
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="processedTodayPercent"></div>
+        </div>
+        <span class="progress-percent">{{ processedTodayPercent }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Requests Card Box Container -->
+  <div class="table-card-container">
+    <!-- Filter Pills & Search Controls Bar -->
+    <div class="table-header-bar">
+      <!-- Left Filter Pills -->
+      <div class="filter-pills-group">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'all'"
+          (click)="setTab('all')"
+        >
+          All Requests ({{ allRequests.length }})
+        </button>
+
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'leave'"
+          (click)="setTab('leave')"
+        >
+          Leave ({{ leaveCount }})
+        </button>
+
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'attendance'"
+          (click)="setTab('attendance')"
+        >
+          Attendance ({{ attendanceCount }})
+        </button>
+      </div>
+
+      <!-- Right Search & Dropdown Filter -->
+      <div class="controls-right-group">
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterRequests()"
+            placeholder="Search requester or details..."
+            class="search-input"
+          />
+        </div>
+
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterRequests()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requests Data Table -->
+    <div class="table-responsive">
+      <table class="approvals-table">
+        <thead>
+          <tr>
+            <th>REQUESTER</th>
+            <th>TYPE</th>
+            <th>DETAILS & DURATION</th>
+            <th>REASON PREVIEW</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedRequests">
+            <!-- Requester Avatar & Name -->
+            <td class="col-requester">
+              <div class="user-avatar-group">
+                <div class="avatar-circle">
+                  {{ item.initials || 'EM' }}
+                </div>
+                <div class="user-info">
+                  <span class="user-name">{{ item.requesterName }}</span>
+                  <span class="user-role">{{ item.requesterRole || 'Employee' }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Type Badge -->
+            <td class="col-type">
+              <span class="type-badge" [ngClass]="getTypeBadgeClass(item.requestType)">
+                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('ANNUAL') || item.requestType.includes('LEAVE') || item.requestType.includes('PL')">flight_takeoff</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('SICK') || item.requestType.includes('CL')">medical_services</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('EXPENSE')">receipt_long</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('SHIFT') || item.requestType.includes('CLOCK')">sync_alt</mat-icon>
+                <span>{{ item.requestType }}</span>
+              </span>
+            </td>
+
+            <!-- Details & Duration -->
+            <td class="col-details">
+              <span class="duration-text">{{ item.durationText || 'N/A' }}</span>
+            </td>
+
+            <!-- Reason Preview -->
+            <td class="col-reason">
+              <span class="reason-text" [title]="item.reasonPreview">
+                {{ item.reasonPreview }}
+              </span>
+            </td>
+
+            <!-- Status Badge -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="{
+                'badge-approved': item.status === 'Approved',
+                'badge-pending': item.status === 'Pending',
+                'badge-rejected': item.status === 'Rejected'
+              }">
+                {{ item.status }}
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <!-- Approve Button -->
+                <button
+                  type="button"
+                  class="btn-approve"
+                  (click)="approveRequest(item)"
+                  title="Approve Request"
+                >
+                  <mat-icon>check</mat-icon>
+                  <span>Approve</span>
+                </button>
+
+                <!-- Reject Button -->
+                <button
+                  type="button"
+                  class="btn-reject"
+                  (click)="rejectRequest(item)"
+                  title="Reject Request"
+                >
+                  <mat-icon>close</mat-icon>
+                  <span>Reject</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRequests.length === 0">
+            <td colspan="6" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">inbox</mat-icon>
+                <p *ngIf="allRequests.length === 0">
+                  No approval requests found in the database.
+                </p>
+                <p *ngIf="allRequests.length > 0">
+                  No approval requests match your search and filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredRequests.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredRequests.length) }} of {{ filteredRequests.length }} requests
+      </span>
+      <span class="entry-count" *ngIf="filteredRequests.length === 0">0 requests</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredRequests.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
