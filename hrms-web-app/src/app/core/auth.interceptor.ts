@@ -12,37 +12,40 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = isBrowser ? localStorage.getItem('LoginTokan') : null;
   const excludeUrls = environment.excludeUrls;
 
-  // Check if request should skip interceptor
+  // Check if request should skip interceptor (login, forgot-password, etc.)
   const shouldSkip = excludeUrls ? excludeUrls.some(url => req.url.includes(url)) : false;
 
   if (shouldSkip) {
-    console.log("⛔ Interceptor skipped for:", req.url);
     return next(req);
   }
 
-  // ------------------------------
-  // Check token expiration BEFORE sending request
-  // ------------------------------
-  if (token) {
+  // ----------------------------------------------------
+  // 1. Check token expiration BEFORE sending HTTP request
+  // ----------------------------------------------------
+  if (token && isBrowser) {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const exp = payload.exp * 1000;
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload && payload.exp) {
+          const exp = payload.exp * 1000;
 
-      if (Date.now() > exp) {
-        console.log("⚠ Token Expired — Auto Logout");
-
-        if (isBrowser) {
-          localStorage.clear();
+          if (Date.now() > exp) {
+            console.log("⚠ Token Expired — Auto Logout");
+            localStorage.clear();
+            if (window.location.pathname !== '/login') {
+              toster.error('Session is expired !', 'Session Expired');
+              router.navigate(['/login']);
+            }
+            return throwError(() => new Error("Session is expired !"));
+          }
         }
-        router.navigate(['/login']);
-        toster.error('Session is expired !');
-        return throwError(() => new Error("Token expired"));
       }
     } catch (e) {
-      console.log("⚠ Invalid token format");
+      console.log("⚠ Token format verification error");
     }
 
-    // Add token to headers
+    // Attach Bearer token to request headers
     req = req.clone({
       withCredentials: true,
       setHeaders: {
@@ -51,19 +54,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     });
   }
 
-  // ------------------------------
-  // Handle 401 responses → Auto logout
-  // ------------------------------
+  // ----------------------------------------------------
+  // 2. Handle 401 & 403 HTTP Error Responses → Auto Logout
+  // ----------------------------------------------------
   return next(req).pipe(
     catchError((error) => {
-      if (error.status === 401) {
-        console.log("❌ 401 Unauthorized — Auto Logout");
-
-        if (isBrowser) {
+      if (error.status === 401 || error.status === 403) {
+        if (isBrowser && window.location.pathname !== '/login') {
+          console.log("❌ 401/403 Unauthorized — Session Expired Auto Logout");
           localStorage.clear();
+          toster.error('Session is expired !', 'Session Expired');
+          router.navigate(['/login']);
         }
-        router.navigate(['/login']);
-        toster.error('Session is expired !');
       }
 
       return throwError(() => error);
