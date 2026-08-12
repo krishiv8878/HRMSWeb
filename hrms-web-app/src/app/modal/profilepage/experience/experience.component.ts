@@ -49,8 +49,27 @@ export class ExperienceComponent implements OnInit {
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
+  private getStorage(key: string): string | null {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  private setStorage(key: string, value: string): void {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {}
+    }
+  }
+
   ngOnInit() {
-    const savedExperienceStr = localStorage.getItem('profile_experiences_' + (this.data?.id || 'default'));
+    const savedExperienceStr = this.getStorage('profile_experiences_' + (this.data?.id || 'default'));
     if (savedExperienceStr) {
       try {
         this.experienceList = JSON.parse(savedExperienceStr);
@@ -155,7 +174,7 @@ export class ExperienceComponent implements OnInit {
 
     const primary = validEntries[0];
     const key = 'profile_experiences_' + (this.data?.id || 'default');
-    localStorage.setItem(key, JSON.stringify(validEntries));
+    this.setStorage(key, JSON.stringify(validEntries));
 
     const payload = {
       ...this.data,

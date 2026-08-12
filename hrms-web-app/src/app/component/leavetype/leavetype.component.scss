@@ -34,11 +34,11 @@
     gap: 12px;
 
     .btn-add-leavetype {
-      height: 36px;
-      background-color: #2563eb;
-      border: 1px solid #2563eb;
-      border-radius: 4px;
-      padding: 0 16px;
+      height: 38px;
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      border: 1px solid #1e40af;
+      border-radius: 6px;
+      padding: 0 18px;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -46,8 +46,8 @@
       font-weight: 600;
       color: #ffffff;
       cursor: pointer;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      transition: background-color 0.15s ease;
+      box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2);
+      transition: all 0.15s ease;
 
       .btn-icon {
         font-size: 18px;
@@ -56,8 +56,8 @@
       }
 
       &:hover {
-        background-color: #1d4ed8;
-        border-color: #1d4ed8;
+        background: linear-gradient(135deg, #1e40af, #172554);
+        box-shadow: 0 4px 6px rgba(29, 78, 216, 0.3);
       }
     }
   }

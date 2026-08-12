@@ -18,17 +18,12 @@
       <mat-icon>notifications</mat-icon>
     </button>
 
-    <!-- Info/Help button hidden per request -->
-    <!-- <button type="button" class="action-btn" aria-label="Help Center">
-      <mat-icon>help_outline</mat-icon>
-    </button> -->
-
     <button type="button" class="action-btn" aria-label="App Menu">
       <mat-icon>apps</mat-icon>
     </button>
 
-    <!-- User Profile Avatar Container -->
-    <div class="user-avatar-container" [matMenuTriggerFor]="userMenu">
+    <!-- Single User Profile Trigger -->
+    <div class="user-profile-trigger" [matMenuTriggerFor]="userMenu" role="button" tabindex="0">
       <img
         *ngIf="getUserAvatar()"
         [src]="getUserAvatar()"
@@ -38,38 +33,31 @@
       <div *ngIf="!getUserAvatar()" class="user-initials-badge">
         {{ getUserInitials() }}
       </div>
-      {{getUserName()}}
-      <mat-icon [matMenuTriggerFor]="menu">keyboard_arrow_down</mat-icon>
-      <mat-menu #menu="matMenu" class="custom-menu">
-        <div class="text-center bg-warning-subtle px-3">
-        <h5 >Role: {{getUserRole()}}</h5>
-        
-        </div>
-        <div>
-          <button mat-menu-item [routerLink]="['/index/user-profile']"><mat-icon>account_circle</mat-icon>My Profile</button> 
-          <button mat-menu-item (click)="resignation()"><mat-icon>exit_to_app</mat-icon>Resignation</button>        
-          <button (click)="logout()" mat-menu-item><mat-icon>power_settings_new</mat-icon>Log Out</button>
-        </div>
-        
-      </mat-menu>
-      <!-- <button routerLink="login"><mat-icon>person</mat-icon>logout</button> -->
+      <div class="user-meta-name">
+        <span class="user-name">{{ getUserName() }}</span>
+      </div>
+      <mat-icon class="chevron-icon">keyboard_arrow_down</mat-icon>
     </div>
 
+    <!-- Clean Executive User Menu -->
     <mat-menu #userMenu="matMenu" xPosition="before" class="custom-user-menu">
       <div class="menu-header">
-        <strong>{{ getUserName() }}</strong>
+        <strong class="menu-name">{{ getUserName() }}</strong>
         <span class="menu-role">{{ getUserRole() }}</span>
       </div>
       <mat-divider></mat-divider>
       <button mat-menu-item [routerLink]="['/index/user-profile']">
-        <mat-icon>person</mat-icon> My Profile
+        <mat-icon>account_circle</mat-icon>
+        <span>My Profile</span>
       </button>
       <button mat-menu-item (click)="resignation()">
-        <mat-icon>exit_to_app</mat-icon> Resignation
+        <mat-icon>exit_to_app</mat-icon>
+        <span>Resignation</span>
       </button>
       <mat-divider></mat-divider>
       <button mat-menu-item (click)="logout()" class="logout-item">
-        <mat-icon>power_settings_new</mat-icon> Log Out
+        <mat-icon>power_settings_new</mat-icon>
+        <span>Log Out</span>
       </button>
     </mat-menu>
   </div>

@@ -1,13 +1,13 @@
-<div class="dialog-card">
-  <!-- Dialog Header -->
-  <div class="dialog-header">
-    <div class="header-title">
-      <div class="header-icon">
+<div class="document-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
         <mat-icon>cloud_upload</mat-icon>
       </div>
-      <div>
-        <h2>Upload Document</h2>
-        <p>Add new enterprise documentation to the repository</p>
+      <div class="header-text">
+        <h2 class="modal-title">Upload Corporate Document</h2>
+        <p class="modal-subtitle">Add new enterprise documentation, agreements, or policy files to repository.</p>
       </div>
     </div>
     <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
@@ -15,51 +15,50 @@
     </button>
   </div>
 
-  <form [formGroup]="documentForm" (ngSubmit)="onSubmit()" class="dialog-form">
+  <!-- Modal Form Body -->
+  <form [formGroup]="documentForm" (ngSubmit)="onSubmit()" class="document-form-body">
     <!-- Document Name -->
     <div class="form-group">
-      <label class="field-label" for="docName">Document Name *</label>
-      <mat-form-field appearance="outline" class="full-width">
+      <label class="field-label">Document Title / File Name <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">description</mat-icon>
         <input
-          id="docName"
-          matInput
+          type="text"
           formControlName="documentName"
-          placeholder="e.g. Q4_Strategy_Plan"
+          placeholder="e.g. Q4_Executive_Roadmap_2026, Employee_Handbook"
+          class="custom-input"
         />
-        <mat-error *ngIf="documentForm.get('documentName')?.hasError('required')">
-          Document name is required
-        </mat-error>
-      </mat-form-field>
+      </div>
     </div>
 
-    <!-- Category & Access Level Row -->
-    <div class="form-row">
-      <div class="form-group half-width">
-        <label class="field-label" for="categorySelect">Category *</label>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-select id="categorySelect" formControlName="category">
-            <mat-option *ngFor="let cat of categories" [value]="cat">
-              {{ cat }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
+    <!-- Category & Access Level Grid -->
+    <div class="form-row-2">
+      <!-- Category -->
+      <div class="form-group">
+        <label class="field-label">Document Category <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">folder_open</mat-icon>
+          <select formControlName="category" class="custom-select">
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
       </div>
 
-      <div class="form-group half-width">
-        <label class="field-label" for="accessSelect">Access Level *</label>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-select id="accessSelect" formControlName="accessLevel">
-            <mat-option *ngFor="let lvl of accessLevels" [value]="lvl">
-              {{ lvl }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
+      <!-- Access Level -->
+      <div class="form-group">
+        <label class="field-label">Access Permissions <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">lock_outline</mat-icon>
+          <select formControlName="accessLevel" class="custom-select">
+            <option *ngFor="let lvl of accessLevels" [value]="lvl">{{ lvl }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <!-- File Drop Zone -->
     <div class="form-group">
-      <label class="field-label">File Attachment *</label>
+      <label class="field-label">File Attachment <span class="required">*</span></label>
       <div
         class="upload-dropzone"
         [class.dragging]="isDragging"
@@ -78,15 +77,19 @@
         />
 
         <div *ngIf="!selectedFile" class="dropzone-empty">
-          <mat-icon class="drop-icon">cloud_upload</mat-icon>
+          <div class="drop-icon-box">
+            <mat-icon>cloud_upload</mat-icon>
+          </div>
           <div class="drop-text">
-            <strong>Upload Document</strong> or drag & drop file here
+            <strong>Click to browse</strong> or drag and drop file here
           </div>
           <span class="drop-hint">PDF, DOCX, XLSX, PPTX, or ZIP (Max 25MB)</span>
         </div>
 
         <div *ngIf="selectedFile" class="file-preview">
-          <mat-icon class="file-icon">insert_drive_file</mat-icon>
+          <div class="file-icon-box">
+            <mat-icon>insert_drive_file</mat-icon>
+          </div>
           <div class="file-info">
             <span class="file-name">{{ selectedFileName }}</span>
             <span class="file-size">{{ selectedFileSize }}</span>
@@ -96,17 +99,16 @@
       </div>
     </div>
 
-    <!-- Dialog Footer Actions -->
-    <div class="dialog-footer">
-      <button type="button" class="btn-cancel" (click)="onCancel()">
-        Cancel
-      </button>
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
       <button
         type="submit"
         class="btn-submit"
         [disabled]="documentForm.invalid || !selectedFile"
       >
-        <mat-icon>cloud_upload</mat-icon> Upload Document
+        <mat-icon>cloud_upload</mat-icon>
+        <span>Upload Document</span>
       </button>
     </div>
   </form>

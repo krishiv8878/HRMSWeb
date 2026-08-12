@@ -1,75 +1,87 @@
-<div class="holiday-modal-card">
-  <!-- Modal Header -->
+<div class="holiday-modal-container">
+  <!-- Modal Header Bar -->
   <div class="modal-header">
-    <div class="header-title">
-      <div class="icon-box">
-        <mat-icon>calendar_today</mat-icon>
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>celebration</mat-icon>
       </div>
-      <div>
-        <h2>{{ isEdit ? 'Edit Holiday' : 'Add New Holiday' }}</h2>
-        <span class="subtitle">Configure official company holiday date and guidelines.</span>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Corporate Holiday' : 'Add Corporate Holiday' }}</h2>
+        <p class="modal-subtitle">Configure official company holiday schedule, date, and calendar observance.</p>
       </div>
     </div>
-    <button type="button" class="close-top-btn" mat-dialog-close="false" aria-label="Close modal">
+    <button type="button" class="close-btn" mat-dialog-close="false" aria-label="Close dialog">
       <mat-icon>close</mat-icon>
     </button>
   </div>
 
-  <!-- Form Body -->
-  <form [formGroup]="Holidayform" (ngSubmit)="submitdata()" class="form-body">
+  <!-- Modal Form Body -->
+  <form [formGroup]="Holidayform" (ngSubmit)="submitdata()" class="holiday-form-body">
     <!-- Holiday Name -->
     <div class="form-group">
-      <label class="form-label">Holiday Name <span class="required">*</span></label>
-      <input
-        type="text"
-        formControlName="holidayName"
-        placeholder="e.g., Independence Day, New Year's Day"
-        class="form-input"
-      />
+      <label class="field-label">Holiday Title / Occasion <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">celebration</mat-icon>
+        <input
+          type="text"
+          formControlName="holidayName"
+          placeholder="e.g. Independence Day, New Year's Day, Diwali"
+          class="custom-input"
+        />
+      </div>
     </div>
 
     <!-- Holiday Date -->
     <div class="form-group">
-      <label class="form-label">Holiday Date <span class="required">*</span></label>
-      <div class="date-picker-wrap">
+      <label class="field-label">Observance Date <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">event</mat-icon>
         <input
           matInput
           [matDatepicker]="picker"
           formControlName="holidayDate"
           placeholder="Select holiday date"
-          class="form-input date-input"
+          class="custom-input custom-date-input"
         />
-        <mat-datepicker-toggle matIconSuffix [for]="picker" class="picker-toggle"></mat-datepicker-toggle>
+        <mat-datepicker-toggle matIconSuffix [for]="picker" class="picker-toggle-btn"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
       </div>
     </div>
 
     <!-- Description -->
     <div class="form-group">
-      <label class="form-label">Description <span class="required">*</span></label>
-      <textarea
-        formControlName="description"
-        rows="3"
-        placeholder="Enter holiday description, eligibility, or holiday schedule details..."
-        class="form-textarea"
-      ></textarea>
+      <label class="field-label">Description & Observance Guidelines <span class="required">*</span></label>
+      <div class="input-wrapper-textarea">
+        <mat-icon class="input-icon-textarea">notes</mat-icon>
+        <textarea
+          formControlName="description"
+          rows="3"
+          placeholder="Enter holiday details, office closure schedule, and eligibility guidelines..."
+          class="custom-textarea"
+        ></textarea>
+      </div>
     </div>
 
-    <!-- Status Checkbox -->
-    <div class="form-group status-checkbox-group">
-      <label class="checkbox-label">
-        <input type="checkbox" formControlName="isActive" class="form-checkbox" />
-        <span class="checkbox-text">Set Holiday as Active</span>
+    <!-- Active Holiday Switch Card -->
+    <div class="status-card-group">
+      <div class="status-text-left">
+        <label class="status-title">Active Calendar Observance</label>
+        <p class="status-desc">Display this holiday on the workforce attendance roster and company calendar.</p>
+      </div>
+
+      <label class="switch-control">
+        <input type="checkbox" formControlName="isActive" />
+        <span class="slider-round"></span>
       </label>
     </div>
 
-    <!-- Actions Bar -->
-    <div class="form-actions">
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
       <button type="button" class="btn-cancel" mat-dialog-close="false">
         Cancel
       </button>
       <button type="submit" class="btn-submit">
-        <mat-icon class="btn-icon">save</mat-icon>
+        <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
         <span>{{ isEdit ? 'Update Holiday' : 'Add Holiday' }}</span>
       </button>
     </div>

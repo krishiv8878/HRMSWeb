@@ -1,6 +1,72 @@
+<div class="approval-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header" [ngClass]="data?.isApproved ? 'header-approve' : 'header-reject'">
+    <div class="header-left">
+      <div class="icon-badge" [ngClass]="data?.isApproved ? 'badge-approve' : 'badge-reject'">
+        <mat-icon>{{ data?.isApproved ? 'fact_check' : 'highlight_off' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ data?.isApproved ? 'Approve Workforce Request' : 'Reject Workforce Request' }}</h2>
+        <p class="modal-subtitle">
+          {{ data?.isApproved ? 'Review and grant managerial approval for this employee submission.' : 'Review and submit decision to reject this employee request.' }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="cancel()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-<mat-dialog-content style="font-size: 1rem; text-align: center; font-weight: 500;">Are you sure you want to {{data.isApproved ? 'approve' : 'reject'}} this leave request ?</mat-dialog-content>
-<mat-dialog-actions>
-    <button mat-button (click)="cancel()" style="border-radius: 0;">Cancel</button>
-    <button mat-flat-button color="warn" (click)="confirmSend()" style="border-radius: 0;">{{data.isApproved ? 'Approve' : 'Reject'}}</button>
-</mat-dialog-actions>
+  <!-- Modal Body Content -->
+  <div class="approval-modal-body">
+    <!-- Request Detail Card -->
+    <div class="request-summary-card">
+      <div class="card-row">
+        <span class="label">Requester:</span>
+        <span class="value font-bold">{{ data?.fullName || data?.employeeName || data?.employee?.firstName || 'Employee' }}</span>
+      </div>
+
+      <div class="card-row" *ngIf="data?.leaveType || data?.requestType">
+        <span class="label">Request Type:</span>
+        <span class="type-pill">{{ data?.leaveType || data?.requestType }}</span>
+      </div>
+
+      <div class="card-row" *ngIf="data?.startDate || data?.requestedDate">
+        <span class="label">Period:</span>
+        <span class="value font-mono">
+          {{ data?.startDate ? (data.startDate | date:'dd MMM yyyy') : (data?.requestedDate | date:'dd MMM yyyy') }}
+          <span *ngIf="data?.endDate && data?.endDate !== data?.startDate"> to {{ data.endDate | date:'dd MMM yyyy' }}</span>
+        </span>
+      </div>
+
+      <div class="card-row" *ngIf="data?.leaveReason || data?.reason">
+        <span class="label">Reason:</span>
+        <span class="value reason-text">"{{ data?.leaveReason || data?.reason }}"</span>
+      </div>
+    </div>
+
+    <div class="confirmation-notice" [ngClass]="data?.isApproved ? 'notice-approve' : 'notice-reject'">
+      <mat-icon class="notice-icon">{{ data?.isApproved ? 'verified' : 'info' }}</mat-icon>
+      <p class="notice-text">
+        Are you sure you want to <strong>{{ data?.isApproved ? 'APPROVE' : 'REJECT' }}</strong> this request? An automated notification will be updated for the employee.
+      </p>
+    </div>
+  </div>
+
+  <!-- Modal Footer Actions -->
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="cancel()">
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      class="btn-decision"
+      [ngClass]="data?.isApproved ? 'btn-approve' : 'btn-reject'"
+      (click)="confirmSend()"
+    >
+      <mat-icon>{{ data?.isApproved ? 'check' : 'close' }}</mat-icon>
+      <span>{{ data?.isApproved ? 'Confirm Approval' : 'Reject Request' }}</span>
+    </button>
+  </div>
+</div>

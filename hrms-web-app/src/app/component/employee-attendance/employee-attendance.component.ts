@@ -86,11 +86,17 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   pages: number[] = [];
 
   ngOnInit() {
-    this.initClock();
-
-    const storedId = localStorage.getItem('employeeId');
-    if (storedId) {
-      this.employeeId = storedId;
+    if (typeof window !== 'undefined') {
+      this.initClock();
+      if (typeof localStorage !== 'undefined') {
+        const storedId = localStorage.getItem('employeeId');
+        if (storedId) {
+          this.employeeId = storedId;
+        }
+      }
+    } else {
+      this.currentTimeDisplay = '09:00:00 AM';
+      this.currentDateDisplay = 'Monday, 12 August 2026';
     }
 
     this.getAllData();
@@ -102,6 +108,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   }
 
   private initClock() {
+    if (typeof window === 'undefined') return;
     this.updateClock();
     this.timerInterval = setInterval(() => this.updateClock(), 1000);
   }

@@ -48,9 +48,20 @@ export class UserprofileComponent implements OnInit {
     this.getData();
   }
 
+  private getStorage(key: string): string | null {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   getData() {
-    const userId = localStorage.getItem('employeeId');
-    const storedName = localStorage.getItem('UserName') || 'Sarah Jenkins';
+    const userId = this.getStorage('employeeId');
+    const storedName = this.getStorage('UserName') || 'Sarah Jenkins';
 
     this.services.getData().subscribe({
       next: (response: any) => {
@@ -90,7 +101,7 @@ export class UserprofileComponent implements OnInit {
   }
 
   private loadBankInfo() {
-    const userId = localStorage.getItem('employeeId');
+    const userId = this.getStorage('employeeId');
 
     this.paymentservices.getAllData().subscribe({
       next: (response: any) => {
@@ -216,7 +227,7 @@ export class UserprofileComponent implements OnInit {
 
   getEducationsList(): EducationEntry[] {
     const id = this.employedata?.id || 'default';
-    const saved = localStorage.getItem('profile_educations_' + id);
+    const saved = this.getStorage('profile_educations_' + id);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -259,7 +270,7 @@ export class UserprofileComponent implements OnInit {
 
   getExperiencesList(): ExperienceEntry[] {
     const id = this.employedata?.id || 'default';
-    const saved = localStorage.getItem('profile_experiences_' + id);
+    const saved = this.getStorage('profile_experiences_' + id);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);

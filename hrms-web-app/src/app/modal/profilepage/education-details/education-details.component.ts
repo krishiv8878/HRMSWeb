@@ -46,9 +46,27 @@ export class EducationDetailsComponent implements OnInit {
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
+  private getStorage(key: string): string | null {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  private setStorage(key: string, value: string): void {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {}
+    }
+  }
+
   ngOnInit() {
-    // Try to load multiple educations from saved data or localStorage
-    const savedEducationsStr = localStorage.getItem('profile_educations_' + (this.data?.id || 'default'));
+    const savedEducationsStr = this.getStorage('profile_educations_' + (this.data?.id || 'default'));
     if (savedEducationsStr) {
       try {
         this.educationList = JSON.parse(savedEducationsStr);
@@ -124,7 +142,7 @@ export class EducationDetailsComponent implements OnInit {
 
     const primary = validEntries[0];
     const key = 'profile_educations_' + (this.data?.id || 'default');
-    localStorage.setItem(key, JSON.stringify(validEntries));
+    this.setStorage(key, JSON.stringify(validEntries));
 
     const payload = {
       ...this.data,

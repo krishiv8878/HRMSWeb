@@ -1,14 +1,298 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Shift</h2>
+<div class="shift-master-container">
+  <!-- Top Header Section -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Workforce Shift & Schedule Master</h1>
+      <p class="page-subtitle">
+        Configure enterprise working rosters, operating shift hours, day/night schedules, and coverage slots.
+      </p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openAddForm()"  style="border-radius: 0;">add</button>
-    </div>
-</div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [columnDefs]="columnDefs" [rowData]="rowData"
-        class="ag-theme-quartz" [pagination]="pagination" [defaultColDef]="defaultColDef" [paginationPageSize]="paginationPageSize"
-        [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <div class="header-actions">
+      <!-- Outward CSV Export Icon -->
+      <button type="button" class="btn-export" (click)="exportShiftsCSV()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Roster (CSV)</span>
+      </button>
+
+      <!-- Primary Add Button -->
+      <button type="button" class="btn-primary-add" (click)="openAddForm()">
+        <mat-icon class="btn-icon">more_time</mat-icon>
+        <span>Add Shift</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Analytics Metrics Grid -->
+  <div class="metrics-grid">
+    <!-- Metric 1: Total Shift Profiles -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">TOTAL SHIFTS</span>
+        <div class="metric-number-group">
+          <span class="metric-number">{{ totalShiftsCount }}</span>
+          <span class="trend-badge trend-up">Standardized</span>
+        </div>
+        <span class="metric-subtext">Configured Enterprise Slots</span>
+      </div>
+      <div class="metric-icon-box icon-purple">
+        <mat-icon>calendar_month</mat-icon>
+      </div>
+    </div>
+
+    <!-- Metric 2: Day Shifts Windows -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">DAYTIME OPERATIONS</span>
+        <div class="metric-number-group">
+          <span class="metric-number">{{ dayShiftsCount }}</span>
+          <span class="metric-unit">Windows</span>
+        </div>
+        <span class="metric-subtext">Morning & General Shifts</span>
+      </div>
+      <div class="metric-icon-box icon-amber">
+        <mat-icon>wb_sunny</mat-icon>
+      </div>
+    </div>
+
+    <!-- Metric 3: Night & Overlap Shifts -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">OVERNIGHT & OVERLAP</span>
+        <div class="metric-number-group">
+          <span class="metric-number">{{ nightShiftsCount }}</span>
+          <span class="metric-unit">Slots</span>
+        </div>
+        <span class="metric-subtext">24/7 Global Client Support</span>
+      </div>
+      <div class="metric-icon-box icon-indigo">
+        <mat-icon>dark_mode</mat-icon>
+      </div>
+    </div>
+
+    <!-- Metric 4: Active Roster Status -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">ACTIVE ROSTER STATUS</span>
+        <div class="metric-number-group">
+          <span class="metric-number">{{ activeRosterRate }}%</span>
+          <span class="trend-badge trend-success">Live Ready</span>
+        </div>
+        <span class="metric-subtext">Shift Slots in Active Rotation</span>
+      </div>
+      <div class="metric-icon-box icon-emerald">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Table Section Card -->
+  <div class="main-table-card">
+    <!-- Toolbar with Search and Filters -->
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="applyFilter()"
+            placeholder="Search by shift name, start/end time..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Shift Timing Category Filter -->
+        <div class="filter-dropdown-wrapper">
+          <mat-icon class="filter-icon">schedule</mat-icon>
+          <select
+            [(ngModel)]="selectedCategory"
+            (ngModelChange)="applyFilter()"
+            class="filter-select"
+          >
+            <option value="All">All Timing Windows</option>
+            <option value="Day / Morning">Day / Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Evening Shift">Evening Shift</option>
+            <option value="Night Shift">Night Shift</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="filter-dropdown-wrapper">
+          <mat-icon class="filter-icon">filter_alt</mat-icon>
+          <select
+            [(ngModel)]="selectedStatus"
+            (ngModelChange)="applyFilter()"
+            class="filter-select"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">Active Only</option>
+            <option value="Inactive">Inactive Only</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <span class="results-count">
+          Showing <strong>{{ paginatedShifts.length }}</strong> of <strong>{{ filteredShifts.length }}</strong> shifts
+        </span>
+      </div>
+    </div>
+
+    <!-- Shifts Data Table -->
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th class="th-shift-name">SHIFT INITIATIVE / TITLE</th>
+            <th class="th-time">START TIME</th>
+            <th class="th-time">END TIME</th>
+            <th class="th-duration">OPERATING SPAN</th>
+            <th class="th-category">TIMING WINDOW</th>
+            <th class="th-status">ACTIVE STATUS</th>
+            <th class="th-actions text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamic Row Loop -->
+          <tr *ngFor="let shift of paginatedShifts">
+            <!-- Shift Title with Icon Badge -->
+            <td>
+              <div class="shift-name-cell">
+                <div class="shift-icon-avatar" [ngClass]="'icon-' + (getShiftCategory(shift.startTime, shift.endTime) === 'Night Shift' ? 'night' : 'day')">
+                  <mat-icon>{{ getShiftIcon(shift.startTime) }}</mat-icon>
+                </div>
+                <div class="shift-text-group">
+                  <span class="shift-title">{{ shift.shiftName }}</span>
+                  <span class="shift-code">SFT-00{{ shift.id }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Start Time -->
+            <td>
+              <div class="time-chip chip-start">
+                <mat-icon class="time-icon">login</mat-icon>
+                <span>{{ formatTime(shift.startTime) }}</span>
+              </div>
+            </td>
+
+            <!-- End Time -->
+            <td>
+              <div class="time-chip chip-end">
+                <mat-icon class="time-icon">logout</mat-icon>
+                <span>{{ formatTime(shift.endTime) }}</span>
+              </div>
+            </td>
+
+            <!-- Operating Span -->
+            <td>
+              <span class="duration-badge">
+                <mat-icon class="dur-icon">timelapse</mat-icon>
+                <span>{{ getShiftDuration(shift.startTime, shift.endTime) }}</span>
+              </span>
+            </td>
+
+            <!-- Category Window Tag -->
+            <td>
+              <span class="category-tag" [ngClass]="'cat-' + (getShiftCategory(shift.startTime, shift.endTime) === 'Night Shift' ? 'night' : 'day')">
+                <span class="cat-dot"></span>
+                <span>{{ getShiftCategory(shift.startTime, shift.endTime) }}</span>
+              </span>
+            </td>
+
+            <!-- Active Status Toggle -->
+            <td>
+              <button
+                type="button"
+                class="status-toggle-pill"
+                [ngClass]="shift.isActive ? 'status-active' : 'status-inactive'"
+                (click)="toggleShiftStatus(shift)"
+                title="Click to toggle active roster status"
+              >
+                <span class="status-dot"></span>
+                <span>{{ shift.isActive ? 'Active' : 'Inactive' }}</span>
+              </button>
+            </td>
+
+            <!-- Actions (Edit & Delete) -->
+            <td class="text-right">
+              <div class="action-buttons-group">
+                <button
+                  type="button"
+                  class="action-icon-btn edit-btn"
+                  (click)="openEditForm(shift)"
+                  title="Edit Shift Details"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="action-icon-btn delete-btn"
+                  (click)="openDeleteModal(shift)"
+                  title="Delete Shift Record"
+                >
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedShifts.length === 0">
+            <td colspan="7" class="empty-state-cell">
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon">schedule</mat-icon>
+                <h3>No Shift Schedules Found</h3>
+                <p>No shift records match your search or filter criteria.</p>
+                <button type="button" class="btn-primary-add" (click)="openAddForm()">
+                  <mat-icon>more_time</mat-icon>
+                  <span>Add New Shift</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="pagination-footer" *ngIf="filteredShifts.length > 0">
+      <div class="pagination-info">
+        Showing {{ ((currentPage - 1) * pageSize) + 1 }} to {{ ((currentPage * pageSize) < filteredShifts.length) ? (currentPage * pageSize) : filteredShifts.length }} of {{ filteredShifts.length }} entries
+      </div>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-btn page-nav"
+          (click)="prevPage()"
+          [disabled]="currentPage === 1"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <ng-container *ngFor="let page of pages">
+          <button
+            type="button"
+            class="page-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+        </ng-container>
+
+        <button
+          type="button"
+          class="page-btn page-nav"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
