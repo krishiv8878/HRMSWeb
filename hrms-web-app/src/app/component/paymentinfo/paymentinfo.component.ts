@@ -4,10 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { PaymentinfoService } from '../../services/employeePayment/paymentinfo.service';
 import { PaymeenInfoComponent } from '../../modal/paymeen-info/paymeen-info.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { EmployeeService } from '../../services/employee/employee.service';
 
 export interface PaymentItem {
   id: number;
@@ -17,6 +19,7 @@ export interface PaymentItem {
   accountNumber: string;
   maskedAccount: string;
   nameOnAccount: string;
+  avatarUrl?: string;
   accountType: string;
   disbursementMethod: string;
   isActive: boolean;
@@ -38,9 +41,11 @@ export interface PaymentItem {
   styleUrl: './paymentinfo.component.scss'
 })
 export class PaymentinfoComponent implements OnInit {
-  private services = inject(PaymentinfoService);
-  private dialog = inject(MatDialog);
-  private toaster = inject(ToastrService);
+  services = inject(PaymentinfoService);
+  employeeService = inject(EmployeeService);
+  router = inject(Router);
+  dialog = inject(MatDialog);
+  toaster = inject(ToastrService);
 
   Math = Math;
 
@@ -70,9 +75,11 @@ export class PaymentinfoComponent implements OnInit {
   employeeId: any;
 
   ngOnInit() {
-    const storeID = localStorage.getItem('employeeId');
-    if (storeID) {
-      this.employeeId = storeID;
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const storeID = localStorage.getItem('employeeId');
+      if (storeID) {
+        this.employeeId = storeID;
+      }
     }
     this.getData();
   }
@@ -118,6 +125,19 @@ export class PaymentinfoComponent implements OnInit {
     const ifsc = (item.ifscCode || 'HDFC0001234').toUpperCase();
     const name = item.nameOnAccount || 'Primary Account Holder';
 
+    let avatarUrl: string | undefined = undefined;
+    if (item.profileImage) {
+      avatarUrl = item.profileImage.startsWith('http') || item.profileImage.startsWith('data:')
+        ? item.profileImage
+        : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${item.profileImage}`;
+    } else {
+      const globalAvatar = this.employeeService.getProfileAvatar();
+      const loggedUserId = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
+      if (globalAvatar && (item.employeeId == loggedUserId || idx === 0)) {
+        avatarUrl = globalAvatar;
+      }
+    }
+
     return {
       id: Number(item.id || (idx + 1)),
       employeeId: Number(item.employeeId || this.employeeId || (idx + 101)),
@@ -126,6 +146,7 @@ export class PaymentinfoComponent implements OnInit {
       accountNumber: acc,
       maskedAccount: masked,
       nameOnAccount: name,
+      avatarUrl: avatarUrl,
       accountType: 'Salary Account',
       disbursementMethod: 'Direct Deposit (NEFT/IMPS)',
       isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false',

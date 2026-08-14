@@ -45,6 +45,17 @@ export class UserprofileComponent implements OnInit {
   activeTab: string = 'overview';
 
   ngOnInit() {
+    this.services.avatar$.subscribe(av => {
+      if (av) {
+        this.profileImageUrl = av;
+      }
+    });
+
+    const initial = this.services.getProfileAvatar();
+    if (initial) {
+      this.profileImageUrl = initial;
+    }
+
     this.getData();
   }
 
@@ -86,7 +97,15 @@ export class UserprofileComponent implements OnInit {
 
         if (this.employedata?.profileImage) {
           const apiBase = (this.services as any).apiUrl || '';
-          this.profileImageUrl = apiBase.replace('/api', '') + '/ProfileImages/' + this.employedata.profileImage;
+          this.profileImageUrl = this.employedata.profileImage.startsWith('http') || this.employedata.profileImage.startsWith('data:')
+            ? this.employedata.profileImage
+            : apiBase.replace('/api', '') + '/ProfileImages/' + this.employedata.profileImage;
+          this.services.setProfileAvatar(this.profileImageUrl);
+        } else if (!this.profileImageUrl) {
+          const globalAv = this.services.getProfileAvatar();
+          if (globalAv) {
+            this.profileImageUrl = globalAv;
+          }
         }
 
         this.loadSkills();

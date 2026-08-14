@@ -146,7 +146,13 @@
             <!-- Employee Avatar & Name -->
             <td class="col-employee">
               <div class="employee-avatar-group">
-                <div class="avatar-circle">
+                <img
+                  *ngIf="emp.avatarUrl"
+                  [src]="emp.avatarUrl"
+                  [alt]="emp.fullName"
+                  class="avatar-img"
+                />
+                <div *ngIf="!emp.avatarUrl" class="avatar-circle">
                   {{ emp.initials || 'EM' }}
                 </div>
                 <div class="name-info">
@@ -190,28 +196,29 @@
               </div>
             </td>
 
-            <!-- Active Status Toggle -->
+            <!-- Active Status (Display Only Badge) -->
             <td class="col-status">
-              <button
-                type="button"
-                class="status-toggle-badge"
-                [ngClass]="emp.isActive ? 'badge-active' : 'badge-inactive'"
-                (click)="onToggleActive(emp)"
-                title="Click to toggle status"
-              >
+              <span class="status-badge" [ngClass]="emp.isActive ? 'badge-active' : 'badge-inactive'">
                 <span class="dot"></span>
                 <span>{{ emp.isActive ? 'Active' : 'Inactive' }}</span>
-              </button>
+              </span>
             </td>
 
             <!-- Actions -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <button type="button" class="btn-action-icon" (click)="Edit(emp)" title="Edit Employee Profile">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(emp)" title="Edit Employee Profile">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(emp.id)" title="Delete Employee Record">
-                  <mat-icon>delete_outline</mat-icon>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="emp.isActive !== false"
+                  [class.btn-toggle-on]="emp.isActive === false"
+                  (click)="onToggleActive(emp)"
+                  [title]="emp.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ emp.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
               </div>
             </td>

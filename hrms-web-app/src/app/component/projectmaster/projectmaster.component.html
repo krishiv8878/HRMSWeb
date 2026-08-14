@@ -184,28 +184,29 @@
               </div>
             </td>
 
-            <!-- Status Toggle -->
+            <!-- Status (Display Only Badge) -->
             <td class="col-status">
-              <button
-                type="button"
-                class="status-toggle-badge"
-                [ngClass]="proj.isActive ? 'badge-active' : 'badge-inactive'"
-                (click)="onToggleActive(proj)"
-                title="Click to toggle project active status"
-              >
+              <span class="status-badge" [ngClass]="proj.isActive ? 'badge-active' : 'badge-inactive'">
                 <span class="dot"></span>
                 <span>{{ proj.isActive ? 'Active' : 'Inactive' }}</span>
-              </button>
+              </span>
             </td>
 
             <!-- Actions -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <button type="button" class="btn-action-icon" (click)="Edit(proj)" title="Edit Project Details">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(proj)" title="Edit Project Details">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(proj.id)" title="Delete Project">
-                  <mat-icon>delete_outline</mat-icon>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="proj.isActive !== false"
+                  [class.btn-toggle-on]="proj.isActive === false"
+                  (click)="onToggleActive(proj)"
+                  [title]="proj.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ proj.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
               </div>
             </td>

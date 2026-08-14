@@ -164,41 +164,30 @@
               </span>
             </td>
 
-            <!-- Active Status Badge -->
+            <!-- Active Status (Display Only Badge) -->
             <td class="col-active">
               <span class="active-badge" [ngClass]="req.isActive !== false ? 'badge-active' : 'badge-inactive'">
                 {{ req.isActive !== false ? 'Active' : 'Inactive' }}
               </span>
             </td>
 
-            <!-- Actions -->
+            <!-- Actions (Edit & Inactivate Toggle) -->
             <td class="col-actions text-right">
               <!-- Edit Button -->
-              <button type="button" class="btn-action-icon" (click)="openApplyLeaveModal(req)" title="Edit Request">
+              <button type="button" class="btn-action-icon edit-btn" (click)="openApplyLeaveModal(req)" title="Edit Request">
                 <mat-icon>edit</mat-icon>
               </button>
 
-              <!-- Soft Toggle Active Status Button (Don't Delete) -->
+              <!-- Inactivate / Activate Toggle Button -->
               <button
                 type="button"
                 class="btn-action-icon"
                 [class.btn-toggle-off]="req.isActive !== false"
                 [class.btn-toggle-on]="req.isActive === false"
                 (click)="onToggleActiveStatus(req)"
-                [title]="req.isActive !== false ? 'Active (Click to set Inactive)' : 'Inactive (Click to set Active)'"
+                [title]="req.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
               >
                 <mat-icon>{{ req.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-              </button>
-
-              <!-- Delete / Restore Soft Toggle Button -->
-              <button
-                type="button"
-                class="btn-action-icon"
-                [class.btn-delete-active]="req.isDeleted"
-                (click)="onToggleDeletedStatus(req)"
-                [title]="req.isDeleted ? 'Deleted (Click to Restore)' : 'Delete (Click to Mark Deleted)'"
-              >
-                <mat-icon>{{ req.isDeleted ? 'restore_from_trash' : 'delete_outline' }}</mat-icon>
               </button>
             </td>
           </tr>

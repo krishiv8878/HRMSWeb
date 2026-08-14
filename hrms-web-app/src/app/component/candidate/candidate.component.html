@@ -172,12 +172,13 @@
             <th>STAGE</th>
             <th>MATCH SCORE</th>
             <th>EXPERIENCE & CTC</th>
+            <th>STATUS</th>
             <th>LAST UPDATED</th>
             <th class="text-right">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let candidate of paginatedCandidates">
+          <tr *ngFor="let candidate of paginatedCandidates" [class.is-inactive-row]="candidate.isActive === false">
             <!-- Checkbox Selection -->
             <td class="col-checkbox">
               <input
@@ -191,7 +192,13 @@
             <!-- Candidate Avatar & Name -->
             <td class="col-name">
               <div class="candidate-avatar-group">
-                <div class="avatar-circle">
+                <img
+                  *ngIf="candidate.avatarUrl"
+                  [src]="candidate.avatarUrl"
+                  [alt]="candidate.fullName"
+                  class="candidate-avatar-img"
+                />
+                <div *ngIf="!candidate.avatarUrl" class="avatar-circle">
                   {{ candidate.initials || 'CD' }}
                 </div>
                 <div class="name-info">
@@ -231,6 +238,14 @@
               </div>
             </td>
 
+            <!-- Status (Display Only Badge) -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="candidate.isActive ? 'badge-active' : 'badge-inactive'">
+                <span class="dot"></span>
+                <span>{{ candidate.isActive ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </td>
+
             <!-- Last Updated -->
             <td class="col-updated">
               <span class="updated-text">{{ candidate.lastUpdated || 'Recently' }}</span>
@@ -239,11 +254,18 @@
             <!-- Actions Menu -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <button type="button" class="btn-action-icon" (click)="Edit(candidate)" title="Edit Candidate">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(candidate)" title="Edit Candidate">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(candidate.id)" title="Delete Candidate">
-                  <mat-icon>delete_outline</mat-icon>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="candidate.isActive !== false"
+                  [class.btn-toggle-on]="candidate.isActive === false"
+                  (click)="onToggleActive(candidate)"
+                  [title]="candidate.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ candidate.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
               </div>
             </td>

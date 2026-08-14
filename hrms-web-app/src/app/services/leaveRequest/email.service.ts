@@ -68,6 +68,10 @@ export class EmailService {
     return this.http.get<any[]>(this.apiUrl + `/LeaveRequest/GetAllEmployeesLeaveRequest`);
   }
 
+  getAllData() {
+    return this.GetAllEmployeesLeaveRequest();
+  }
+
   DeleteData(ProjectMasterId: any) {
     const numericId = Number(ProjectMasterId || 0);
     const body = {

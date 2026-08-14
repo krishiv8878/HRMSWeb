@@ -510,11 +510,9 @@
   }
 }
 
-/* Status Toggle Badge */
+/* Status Badge (Display Only) */
 .col-status {
-  .status-toggle-badge {
-    border: none;
-    cursor: pointer;
+  .status-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -522,7 +520,6 @@
     border-radius: 12px;
     font-size: 11.5px;
     font-weight: 700;
-    transition: all 0.15s ease;
 
     .dot {
       width: 6px;
@@ -549,11 +546,6 @@
         background-color: #9ca3af;
       }
     }
-
-    &:hover {
-      opacity: 0.85;
-      transform: scale(0.98);
-    }
   }
 }
 
@@ -563,18 +555,19 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 4px;
+    gap: 6px;
 
     .btn-action-icon {
-      background: transparent;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
       border: 1px solid transparent;
+      background: transparent;
       cursor: pointer;
-      padding: 4px;
-      border-radius: 4px;
-      color: #64748b;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
+      color: #64748b;
       transition: all 0.15s ease;
 
       mat-icon {
@@ -583,16 +576,22 @@
         height: 18px;
       }
 
-      &:hover {
-        background-color: #f1f5f9;
-        border-color: #cbd5e1;
-        color: #0f172a;
+      &.edit-btn:hover {
+        background-color: #eff6ff;
+        border-color: #bfdbfe;
+        color: #2563eb;
       }
 
-      &.btn-delete:hover {
-        background-color: #fef2f2;
-        border-color: #fecaca;
-        color: #dc2626;
+      &.btn-toggle-off:hover {
+        background-color: #fff7ed;
+        border-color: #ffedd5;
+        color: #c2410c;
+      }
+
+      &.btn-toggle-on:hover {
+        background-color: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #047857;
       }
     }
   }

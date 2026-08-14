@@ -36,6 +36,10 @@ export class CandidateService {
     );
   }
 
+  UpdateData(data: any, id?: any): Observable<any> {
+    return this.updateData(data);
+  }
+
   DeleteData(candidateId: any): Observable<any> {
     return this.http.delete<any>(this.apiUrl + `/Candidate/DeleteCandidate?candidateId=` + candidateId);
   }

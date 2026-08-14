@@ -146,7 +146,8 @@
             <td class="col-beneficiary">
               <div class="beneficiary-wrapper">
                 <div class="avatar-circle">
-                  <mat-icon>person</mat-icon>
+                  <img *ngIf="pay.avatarUrl" [src]="pay.avatarUrl" [alt]="pay.nameOnAccount" class="pay-avatar-img" />
+                  <mat-icon *ngIf="!pay.avatarUrl">person</mat-icon>
                 </div>
                 <div class="info-group">
                   <span class="beneficiary-name">{{ pay.nameOnAccount }}</span>
@@ -198,28 +199,29 @@
               </div>
             </td>
 
-            <!-- Status Toggle -->
+            <!-- Status (Display Only Badge) -->
             <td class="col-status">
-              <button
-                type="button"
-                class="status-toggle-badge"
-                [ngClass]="pay.isActive ? 'badge-active' : 'badge-inactive'"
-                (click)="onToggleActive(pay)"
-                title="Click to toggle account verification status"
-              >
+              <span class="status-badge" [ngClass]="pay.isActive ? 'badge-active' : 'badge-inactive'">
                 <span class="dot"></span>
                 <span>{{ pay.isActive ? 'Verified / Active' : 'Inactive' }}</span>
-              </button>
+              </span>
             </td>
 
             <!-- Actions -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <button type="button" class="btn-action-icon" (click)="Edit(pay)" title="Edit Banking Details">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(pay)" title="Edit Banking Details">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(pay.id)" title="Delete Bank Account">
-                  <mat-icon>delete_outline</mat-icon>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="pay.isActive !== false"
+                  [class.btn-toggle-on]="pay.isActive === false"
+                  (click)="onToggleActive(pay)"
+                  [title]="pay.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ pay.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
               </div>
             </td>

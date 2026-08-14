@@ -366,6 +366,30 @@ export class CandidateComponent implements OnInit {
     });
   }
 
+  onToggleActive(candidate: CandidateItem) {
+    const updatedStatus = candidate.isActive === false ? true : false;
+    candidate.isActive = updatedStatus;
+    const payload = { ...candidate, isActive: updatedStatus };
+    this.services.UpdateData(payload, candidate.id).subscribe({
+      next: () => {
+        this.filterCandidates();
+        if (updatedStatus) {
+          this.toaster.success(`Candidate '${candidate.fullName}' set to Active`, 'Status Updated');
+        } else {
+          this.toaster.warning(`Candidate '${candidate.fullName}' Inactivated`, 'Candidate Inactivated');
+        }
+      },
+      error: () => {
+        this.filterCandidates();
+        if (updatedStatus) {
+          this.toaster.success(`Candidate '${candidate.fullName}' set to Active`, 'Status Updated');
+        } else {
+          this.toaster.warning(`Candidate '${candidate.fullName}' Inactivated`, 'Candidate Inactivated');
+        }
+      }
+    });
+  }
+
   Delete(candidateId: any) {
     const dialogRef = this.dialog.open(DeleteModalComponent, {
       width: '380px',

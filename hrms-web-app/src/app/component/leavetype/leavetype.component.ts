@@ -214,17 +214,17 @@ export class LeavetypeComponent implements OnInit {
       next: () => {
         this.recalculateStats();
         if (nextState) {
-          this.toastr.success('Leave Type status set to Active', 'Success');
+          this.toastr.success(`Leave Type '${record.type}' set to Active`, 'Status Updated');
         } else {
-          this.toastr.warning('Leave Type status set to Inactive', 'Status Updated');
+          this.toastr.warning(`Leave Type '${record.type}' Inactivated`, 'Policy Inactivated');
         }
       },
       error: () => {
         this.recalculateStats();
         if (nextState) {
-          this.toastr.success('Leave Type status set to Active', 'Success');
+          this.toastr.success(`Leave Type '${record.type}' set to Active`, 'Status Updated');
         } else {
-          this.toastr.warning('Leave Type status set to Inactive', 'Status Updated');
+          this.toastr.warning(`Leave Type '${record.type}' Inactivated`, 'Policy Inactivated');
         }
       }
     });

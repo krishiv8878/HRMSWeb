@@ -346,6 +346,53 @@
   }
 }
 
+.status-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 16px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  &.status-active {
+    background-color: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+
+    .status-dot {
+      background-color: #10b981;
+    }
+
+    &:hover {
+      background-color: #d1fae5;
+    }
+  }
+
+  &.status-inactive {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border-color: #cbd5e1;
+
+    .status-dot {
+      background-color: #94a3b8;
+    }
+
+    &:hover {
+      background-color: #e2e8f0;
+    }
+  }
+}
+
 .btn-action-icon {
   background: transparent;
   border: 1px solid transparent;
@@ -368,6 +415,12 @@
     background-color: #f3f4f6;
     border-color: #d1d5db;
     color: #111827;
+  }
+
+  &.edit-btn:hover {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
   }
 
   &.btn-toggle-off:hover {

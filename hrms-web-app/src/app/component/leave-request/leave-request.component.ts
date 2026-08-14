@@ -328,18 +328,18 @@ export class LeaveRequestComponent implements OnInit {
         this.recalculateStats();
         this.filterRequests();
         if (nextState) {
-          this.toastr.success('Leave Request set to Active', 'Success');
+          this.toastr.success('Leave Request set to Active', 'Status Updated');
         } else {
-          this.toastr.warning('Leave Request set to Inactive', 'Status Updated');
+          this.toastr.warning('Leave Request Inactivated', 'Request Inactivated');
         }
       },
       error: () => {
         this.recalculateStats();
         this.filterRequests();
         if (nextState) {
-          this.toastr.success('Leave Request set to Active', 'Success');
+          this.toastr.success('Leave Request set to Active', 'Status Updated');
         } else {
-          this.toastr.warning('Leave Request set to Inactive', 'Status Updated');
+          this.toastr.warning('Leave Request Inactivated', 'Request Inactivated');
         }
       }
     });

@@ -173,28 +173,29 @@
               </div>
             </td>
 
-            <!-- Status Toggle -->
+            <!-- Status (Display Only Badge) -->
             <td class="col-status">
-              <button
-                type="button"
-                class="status-toggle-badge"
-                [ngClass]="desig.isActive ? 'badge-active' : 'badge-inactive'"
-                (click)="onToggleActive(desig)"
-                title="Click to toggle active status"
-              >
+              <span class="status-badge" [ngClass]="desig.isActive ? 'badge-active' : 'badge-inactive'">
                 <span class="dot"></span>
                 <span>{{ desig.isActive ? 'Active' : 'Inactive' }}</span>
-              </button>
+              </span>
             </td>
 
             <!-- Actions -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <button type="button" class="btn-action-icon" (click)="Edit(desig)" title="Edit Designation">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(desig)" title="Edit Designation">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(desig.id)" title="Delete Designation">
-                  <mat-icon>delete_outline</mat-icon>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="desig.isActive !== false"
+                  [class.btn-toggle-on]="desig.isActive === false"
+                  (click)="onToggleActive(desig)"
+                  [title]="desig.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ desig.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
               </div>
             </td>

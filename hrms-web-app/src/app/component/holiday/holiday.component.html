@@ -144,41 +144,30 @@
               </span>
             </td>
 
-            <!-- Status Soft Badge -->
+            <!-- Status (Display Only Badge) -->
             <td class="col-status">
               <span class="status-badge" [ngClass]="h.isActive !== false ? 'badge-active' : 'badge-inactive'">
                 {{ h.isActive !== false ? 'Active' : 'Inactive' }}
               </span>
             </td>
 
-            <!-- Actions -->
+            <!-- Actions (Edit & Inactivate Toggle) -->
             <td class="col-actions text-right">
               <!-- Edit Button -->
-              <button type="button" class="btn-action-icon" (click)="openHolidayForm(h)" title="Edit Holiday">
+              <button type="button" class="btn-action-icon edit-btn" (click)="openHolidayForm(h)" title="Edit Holiday">
                 <mat-icon>edit</mat-icon>
               </button>
 
-              <!-- Active/Inactive Toggle Button -->
+              <!-- Inactivate / Activate Toggle Button -->
               <button
                 type="button"
                 class="btn-action-icon"
                 [class.btn-toggle-off]="h.isActive !== false"
                 [class.btn-toggle-on]="h.isActive === false"
                 (click)="onToggleActiveStatus(h)"
-                [title]="h.isActive !== false ? 'Set Inactive' : 'Set Active'"
+                [title]="h.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
               >
-                <mat-icon>{{ h.isActive !== false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-              </button>
-
-              <!-- Delete/Restore Soft Toggle Button -->
-              <button
-                type="button"
-                class="btn-action-icon"
-                [class.btn-delete-active]="h.isDeleted"
-                (click)="onToggleDeletedStatus(h)"
-                [title]="h.isDeleted ? 'Deleted (Click to Restore)' : 'Delete (Click to Mark Deleted)'"
-              >
-                <mat-icon>{{ h.isDeleted ? 'restore_from_trash' : 'delete_outline' }}</mat-icon>
+                <mat-icon>{{ h.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
               </button>
             </td>
           </tr>

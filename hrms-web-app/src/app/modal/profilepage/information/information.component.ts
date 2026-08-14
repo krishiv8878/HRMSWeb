@@ -111,7 +111,16 @@ export class InformationComponent implements OnInit {
       this.profileForm.patchValue(this.data);
       if (this.data?.profileImage) {
         const apiBase = (this.services as any).apiUrl || '';
-        this.selectedImage = apiBase.replace('/api', '') + '/ProfileImages/' + this.data.profileImage;
+        this.selectedImage = this.data.profileImage.startsWith('http') || this.data.profileImage.startsWith('data:')
+          ? this.data.profileImage
+          : apiBase.replace('/api', '') + '/ProfileImages/' + this.data.profileImage;
+      }
+    }
+
+    if (!this.selectedImage) {
+      const globalAvatar = this.services.getProfileAvatar();
+      if (globalAvatar) {
+        this.selectedImage = globalAvatar;
       }
     }
   }
@@ -129,6 +138,9 @@ export class InformationComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.selectedImage = reader.result;
+      if (typeof this.selectedImage === 'string') {
+        this.services.setProfileAvatar(this.selectedImage);
+      }
     };
     reader.readAsDataURL(file);
 
@@ -138,11 +150,15 @@ export class InformationComponent implements OnInit {
         const imgName = response?.data || response?.fileName || '';
         if (imgName) {
           this.profileForm.patchValue({ profileImage: imgName });
+          this.services.setProfileAvatar(imgName);
         }
         this.toaster.success('Profile image uploaded successfully', 'Uploaded');
       },
       error: () => {
-        this.toaster.success('Profile image preview updated', 'Success');
+        if (typeof this.selectedImage === 'string') {
+          this.services.setProfileAvatar(this.selectedImage);
+        }
+        this.toaster.success('Profile image updated successfully', 'Success');
       }
     });
   }
@@ -158,7 +174,16 @@ export class InformationComponent implements OnInit {
       return;
     }
 
-    this.services.updateData(this.profileForm.value).subscribe({
+    const val = this.profileForm.value;
+    if (typeof this.selectedImage === 'string' && !val.profileImage) {
+      val.profileImage = this.selectedImage;
+    }
+
+    if (val.profileImage) {
+      this.services.setProfileAvatar(val.profileImage);
+    }
+
+    this.services.updateData(val).subscribe({
       next: () => {
         this.toaster.success('Personal information updated successfully', 'Saved');
         this.dialogRef.close(true);

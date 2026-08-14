@@ -142,8 +142,21 @@ export class HomeComponent implements OnInit {
           year: 'numeric'
         });
       } catch {
-        joinDateFormatted = item.dateOfJoining;
+        joinDateFormatted = String(item.dateOfJoining);
       }
+    }
+
+    let avatarUrl: string | undefined = undefined;
+    if (item.profileImage) {
+      avatarUrl = item.profileImage.startsWith('http') || item.profileImage.startsWith('data:')
+        ? item.profileImage
+        : `${this.service.apiUrl.replace('/api', '')}/ProfileImages/${item.profileImage}`;
+    }
+
+    const globalAvatar = this.service.getProfileAvatar();
+    const loggedUserId = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
+    if (!avatarUrl && globalAvatar && (item.id == loggedUserId || item.employeeId == loggedUserId || idx === 0)) {
+      avatarUrl = globalAvatar;
     }
 
     return {
@@ -165,6 +178,7 @@ export class HomeComponent implements OnInit {
       managerName: item.managerName || (idx % 2 === 0 ? 'Alex Mercer' : 'Sarah Connor'),
       gender: item.gender || (idx % 2 === 0 ? 'Male' : 'Female'),
       isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false',
+      avatarUrl: avatarUrl,
       initials: initials.toUpperCase(),
       department: roleStr.includes('HR') ? 'Human Resources' : (roleStr.includes('Manager') ? 'Management' : 'Engineering'),
       rawRecord: item

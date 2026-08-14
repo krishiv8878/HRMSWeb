@@ -132,16 +132,16 @@
               <span class="desc-text">{{ record.description }}</span>
             </td>
 
-            <!-- Status Badge -->
+            <!-- Status (Display Only Badge) -->
             <td class="col-status">
               <span class="status-badge" [ngClass]="record.isActive !== false ? 'badge-active' : 'badge-inactive'">
                 {{ record.isActive !== false ? 'Active' : 'Inactive' }}
               </span>
             </td>
 
-            <!-- Actions -->
+            <!-- Actions (Edit & Inactivate Toggle) -->
             <td class="col-actions text-right">
-              <button type="button" class="btn-action-icon" (click)="Edit(record)" title="Edit Policy">
+              <button type="button" class="btn-action-icon edit-btn" (click)="Edit(record)" title="Edit Policy">
                 <mat-icon>edit</mat-icon>
               </button>
 
@@ -152,9 +152,9 @@
                 [class.btn-toggle-off]="record.isActive !== false"
                 [class.btn-toggle-on]="record.isActive === false"
                 (click)="onToggleActiveStatus(record)"
-                [title]="record.isActive !== false ? 'Set Inactive' : 'Set Active'"
+                [title]="record.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
               >
-                <mat-icon>{{ record.isActive !== false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+                <mat-icon>{{ record.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
               </button>
             </td>
           </tr>

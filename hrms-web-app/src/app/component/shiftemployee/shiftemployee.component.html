@@ -156,7 +156,7 @@
         </thead>
         <tbody>
           <!-- Dynamic Row Loop -->
-          <tr *ngFor="let shift of paginatedShifts">
+          <tr *ngFor="let shift of paginatedShifts" [class.is-inactive-row]="shift.isActive === false">
             <!-- Shift Title with Icon Badge -->
             <td>
               <div class="shift-name-cell">
@@ -202,21 +202,14 @@
               </span>
             </td>
 
-            <!-- Active Status Toggle -->
+            <!-- Active Status (Display Only Badge) -->
             <td>
-              <button
-                type="button"
-                class="status-toggle-pill"
-                [ngClass]="shift.isActive ? 'status-active' : 'status-inactive'"
-                (click)="toggleShiftStatus(shift)"
-                title="Click to toggle active roster status"
-              >
-                <span class="status-dot"></span>
-                <span>{{ shift.isActive ? 'Active' : 'Inactive' }}</span>
-              </button>
+              <span class="status-badge" [ngClass]="shift.isActive ? 'badge-active' : 'badge-inactive'">
+                {{ shift.isActive ? 'Active' : 'Inactive' }}
+              </span>
             </td>
 
-            <!-- Actions (Edit & Delete) -->
+            <!-- Actions (Edit & Inactivate Toggle) -->
             <td class="text-right">
               <div class="action-buttons-group">
                 <button
@@ -229,11 +222,13 @@
                 </button>
                 <button
                   type="button"
-                  class="action-icon-btn delete-btn"
-                  (click)="openDeleteModal(shift)"
-                  title="Delete Shift Record"
+                  class="action-icon-btn"
+                  [class.btn-toggle-off]="shift.isActive !== false"
+                  [class.btn-toggle-on]="shift.isActive === false"
+                  (click)="toggleShiftStatus(shift)"
+                  [title]="shift.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
                 >
-                  <mat-icon>delete_outline</mat-icon>
+                  <mat-icon>{{ shift.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
               </div>
             </td>

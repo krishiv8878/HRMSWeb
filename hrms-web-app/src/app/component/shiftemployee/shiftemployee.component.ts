@@ -212,12 +212,22 @@ export class ShiftemployeeComponent implements OnInit {
       next: () => {
         shift.isActive = updatedStatus;
         this.computeMetrics();
-        this.toaster.success(`Shift marked as ${updatedStatus ? 'Active' : 'Inactive'}`, 'Status Updated');
+        this.applyFilter();
+        if (updatedStatus) {
+          this.toaster.success(`Shift '${shift.shiftName}' set to Active`, 'Status Updated');
+        } else {
+          this.toaster.warning(`Shift '${shift.shiftName}' Inactivated`, 'Shift Inactivated');
+        }
       },
       error: () => {
         shift.isActive = updatedStatus;
         this.computeMetrics();
-        this.toaster.success(`Shift status toggled`, 'Status Updated');
+        this.applyFilter();
+        if (updatedStatus) {
+          this.toaster.success(`Shift '${shift.shiftName}' set to Active`, 'Status Updated');
+        } else {
+          this.toaster.warning(`Shift '${shift.shiftName}' Inactivated`, 'Shift Inactivated');
+        }
       }
     });
   }
