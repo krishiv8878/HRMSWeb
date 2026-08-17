@@ -1,111 +1,135 @@
-<div class="asset-modal-card">
-  <!-- Modal Header -->
+<div class="asset-modal-container">
+  <!-- Modal Header Bar -->
   <div class="modal-header">
-    <div class="header-title">
-      <div class="icon-box">
+    <div class="header-left">
+      <div class="icon-badge">
         <mat-icon>inventory_2</mat-icon>
       </div>
-      <div>
-        <h2>{{ isEdit ? 'Edit Corporate Asset' : 'Add New Asset' }}</h2>
-        <span class="subtitle">Enter equipment hardware details and assignment location.</span>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Corporate Asset' : 'Add Corporate Asset' }}</h2>
+        <p class="modal-subtitle">Enter equipment hardware details, serial number, and assignment location.</p>
       </div>
     </div>
-    <button type="button" class="close-icon-btn" (click)="onCancel()" aria-label="Close dialog">
+    <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
       <mat-icon>close</mat-icon>
     </button>
   </div>
 
   <!-- Modal Form Body -->
-  <form [formGroup]="assetForm" (ngSubmit)="submitdata()" class="modal-form-body">
+  <form [formGroup]="assetForm" (ngSubmit)="submitdata()" class="asset-form-body">
     <!-- Model Name -->
-    <div class="form-field-group">
-      <label class="form-label">Asset / Model Name <span class="required">*</span></label>
-      <input
-        type="text"
-        formControlName="modelName"
-        placeholder="e.g. MacBook Pro 16&quot;"
-        class="form-input"
-      />
+    <div class="form-group">
+      <label class="field-label">Asset / Model Name <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">laptop_mac</mat-icon>
+        <input
+          type="text"
+          formControlName="modelName"
+          placeholder="e.g. MacBook Pro 16&quot;, Dell UltraSharp 27&quot;"
+          class="custom-input"
+        />
+      </div>
     </div>
 
     <!-- Category & Specifications Grid -->
-    <div class="form-row">
+    <div class="form-row-2">
       <!-- Asset Type / Category -->
-      <div class="form-field-group">
-        <label class="form-label">Asset Type <span class="required">*</span></label>
-        <select formControlName="assetType" class="form-select">
-          <option *ngFor="let type of assetTypes" [value]="type">{{ type }}</option>
-        </select>
+      <div class="form-group">
+        <label class="field-label">Asset Type <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">category</mat-icon>
+          <select formControlName="assetType" class="custom-select">
+            <option *ngFor="let type of assetTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
       </div>
 
       <!-- Specifications -->
-      <div class="form-field-group">
-        <label class="form-label">Specifications / Description <span class="required">*</span></label>
-        <input
-          type="text"
-          formControlName="specifications"
-          placeholder="e.g. Laptop • 2023 M2 Max"
-          class="form-input"
-        />
+      <div class="form-group">
+        <label class="field-label">Specifications / Hardware <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">description</mat-icon>
+          <input
+            type="text"
+            formControlName="specifications"
+            placeholder="e.g. 32GB RAM • M2 Max • 1TB SSD"
+            class="custom-input"
+          />
+        </div>
       </div>
     </div>
 
     <!-- Serial Number & Purchase Date Grid -->
-    <div class="form-row">
+    <div class="form-row-2">
       <!-- Serial Number -->
-      <div class="form-field-group">
-        <label class="form-label">Serial Number <span class="required">*</span></label>
-        <input
-          type="text"
-          formControlName="serialNumber"
-          placeholder="e.g. SN-982341"
-          class="form-input"
-        />
+      <div class="form-group">
+        <label class="field-label">Serial Number <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">qr_code</mat-icon>
+          <input
+            type="text"
+            formControlName="serialNumber"
+            placeholder="e.g. SN-982341"
+            class="custom-input font-mono"
+          />
+        </div>
       </div>
 
       <!-- Date of Purchase -->
-      <div class="form-field-group">
-        <label class="form-label">Date of Purchase <span class="required">*</span></label>
-        <input
-          type="date"
-          formControlName="dateOfPurchase"
-          class="form-input"
-        />
+      <div class="form-group">
+        <label class="field-label">Date of Purchase <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">event</mat-icon>
+          <input
+            type="date"
+            formControlName="dateOfPurchase"
+            class="custom-input"
+          />
+        </div>
       </div>
     </div>
 
     <!-- Assigned Employee & Status Grid -->
-    <div class="form-row">
+    <div class="form-row-2">
       <!-- Assigned To -->
-      <div class="form-field-group">
-        <label class="form-label">Assigned Employee <span class="required">*</span></label>
-        <select formControlName="assignedTo" class="form-select">
-          <option *ngFor="let emp of employees" [value]="emp">{{ emp }}</option>
-        </select>
+      <div class="form-group">
+        <label class="field-label">Assigned Employee <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">person</mat-icon>
+          <select formControlName="assignedTo" class="custom-select">
+            <option *ngFor="let emp of employees" [value]="emp">{{ emp }}</option>
+          </select>
+        </div>
       </div>
 
       <!-- Status -->
-      <div class="form-field-group">
-        <label class="form-label">Status <span class="required">*</span></label>
-        <select formControlName="status" class="form-select">
-          <option *ngFor="let st of statusList" [value]="st">{{ st }}</option>
-        </select>
+      <div class="form-group">
+        <label class="field-label">Asset Lifecycle Status <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">tune</mat-icon>
+          <select formControlName="status" class="custom-select">
+            <option *ngFor="let st of statusList" [value]="st">{{ st }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <!-- Location -->
-    <div class="form-field-group">
-      <label class="form-label">Office Location / Desk <span class="required">*</span></label>
-      <select formControlName="location" class="form-select">
-        <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
-      </select>
+    <div class="form-group">
+      <label class="field-label">Office Location / Desk <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">location_on</mat-icon>
+        <select formControlName="location" class="custom-select">
+          <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+        </select>
+      </div>
     </div>
 
     <!-- Form Footer Actions -->
     <div class="modal-footer">
       <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
       <button type="submit" class="btn-submit">
-        <mat-icon>check</mat-icon>
+        <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
         <span>{{ isEdit ? 'Save Changes' : 'Add Asset' }}</span>
       </button>
     </div>

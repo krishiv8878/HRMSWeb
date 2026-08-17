@@ -1,42 +1,58 @@
-<div class="form">
-    <form action="" [formGroup]="Skillform" (ngSubmit)="submitdata()">
-        @if (isEdit) {
-        <p>edit Skill </p>
-        }@else {
-        <p>add Skill </p>
-        }
-        <div class="employee-form">
-            <div class="row">
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Skill</mat-label>
-                        <input type="text" matInput name="skill" placeholder="Enter Skill" (keypress)="allowOnlyLetters($event)"
-                            formControlName="skillName">                           
-                    </mat-form-field>
-                </div>
-            </div>            
-            
+<div class="skill-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ isEdit ? 'edit_note' : 'psychology' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Skill Competency' : 'Add New Skill' }}</h2>
+        <p class="modal-subtitle">Define technical proficiency standards and organizational mapping tags.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-            </div>
+  <!-- Form Body -->
+  <form [formGroup]="Skillform" (ngSubmit)="submitdata()" class="skill-form-body">
+    <!-- Skill Name Field -->
+    <div class="form-group">
+      <label class="field-label">Skill / Competency Name <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">code</mat-icon>
+        <input
+          type="text"
+          formControlName="skillName"
+          placeholder="e.g. Angular, ASP.NET Core, Azure DevOps, Figma"
+          class="custom-input"
+          (keypress)="allowValidSkillChars($event)"
+        />
+      </div>
+      <span class="error-text" *ngIf="getControl('skillName')?.touched && getControl('skillName')?.invalid">
+        Skill name is required (alphanumeric and valid symbols only)
+      </span>
+    </div>
 
+    <!-- Active Status Card -->
+    <div class="form-group-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
+        <span class="label-title">Active Skill In Catalog</span>
+      </label>
+      <p class="checkbox-hint">Enables this skill to be selected in employee profiles, job openings, and candidate evaluations.</p>
+    </div>
 
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
-            </div>
-            }
-
-
-        </div>
-    </form>
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>{{ isEdit ? 'save' : 'add' }}</mat-icon>
+        <span>{{ isEdit ? 'Update Skill' : 'Save Skill' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

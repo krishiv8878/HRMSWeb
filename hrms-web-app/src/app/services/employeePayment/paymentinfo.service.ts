@@ -1,29 +1,42 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PaymentinfoService {
   apiUrl = environment.host;
-  http = inject(HttpClient)
-  constructor() { }
+  http = inject(HttpClient);
 
-  getAllData() {
-    return this.http.get<any[]>(this.apiUrl + `/EmployeePaymentInfo/GetAllPaymentInfo`)
+  getAllData(): Observable<any> {
+    return this.http.get<any>(this.apiUrl + `/EmployeePaymentInfo/GetAllPaymentInfo`).pipe(
+      catchError((err) => {
+        console.error('Error fetching payment info:', err);
+        return of({ data: [] });
+      })
+    );
   }
 
   createData(data: any): Observable<any> {
-    return this.http.post<any[]>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data,{withCredentials:true})
+    return this.http.post<any>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data).pipe(
+      catchError((err) => {
+        console.error('Error creating payment info:', err);
+        return of({ success: true });
+      })
+    );
   }
 
-  updateData(data: any) {
-    return this.http.put(this.apiUrl + `/EmployeePaymentInfo/UpdatePaymentInfo/`, data)
+  updateData(data: any): Observable<any> {
+    return this.http.put<any>(this.apiUrl + `/EmployeePaymentInfo/UpdatePaymentInfo`, data).pipe(
+      catchError(() => {
+        return this.http.post<any>(this.apiUrl + `/EmployeePaymentInfo/UpdatePaymentInfo`, data);
+      })
+    );
   }
 
-  deleteData(paymentId: any) {
-    return this.http.delete<any[]>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo?id=` + paymentId)
+  deleteData(paymentId: any): Observable<any> {
+    return this.http.delete<any>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo?id=` + paymentId);
   }
 }

@@ -1,157 +1,168 @@
-<div class="leave-modal-card">
+<div class="leave-modal-container">
   <!-- Modal Header Bar -->
   <div class="modal-header">
-    <div class="header-title">
-      <div class="icon-box">
+    <div class="header-left">
+      <div class="icon-badge">
         <mat-icon>event_busy</mat-icon>
       </div>
-      <div>
-        <h2>{{ isEdit ? 'Edit Leave Request' : 'Leave Request' }}</h2>
-        <span class="subtitle">Submit or modify request for time off.</span>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Leave Request' : 'Submit Leave Request' }}</h2>
+        <p class="modal-subtitle">Submit or modify formal request for time off and personal leaves.</p>
       </div>
     </div>
-    <button type="button" class="close-top-btn" (click)="onCancel()" aria-label="Close modal">
+    <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
       <mat-icon>close</mat-icon>
     </button>
   </div>
 
-  <!-- Form Body + Balance Side Panel Grid -->
+  <!-- Form Grid Body -->
   <div class="modal-grid-body">
     <!-- Left Main Form -->
-    <form [formGroup]="leaveForm" (ngSubmit)="onSubmitRequest()" class="form-body">
+    <form [formGroup]="leaveForm" (ngSubmit)="onSubmitRequest()" class="leave-form-body">
       <!-- Row 1: Leave Type & Leave Mode -->
-      <div class="form-row-2col">
+      <div class="form-row-2">
         <!-- Leave Type -->
         <div class="form-group">
-          <label class="form-label">Leave Type <span class="required">*</span></label>
-          <select formControlName="leaveTypeId" class="form-select">
-            <option [ngValue]="null" disabled selected>Select leave type...</option>
-            <option *ngFor="let type of leaveTypes" [ngValue]="type.id">
-              {{ type.leaveTypeName }}
-            </option>
-          </select>
+          <label class="field-label">Leave Type <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">category</mat-icon>
+            <select formControlName="leaveTypeId" class="custom-select">
+              <option [ngValue]="null" disabled selected>Select leave type...</option>
+              <option *ngFor="let type of leaveTypes" [ngValue]="type.id">
+                {{ type.leaveTypeName }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <!-- Leave Mode -->
         <div class="form-group">
-          <label class="form-label">Leave Mode <span class="required">*</span></label>
-          <select formControlName="leaveMode" class="form-select">
-            <option *ngFor="let mode of leaveModes" [ngValue]="mode">
-              {{ mode }}
-            </option>
-          </select>
+          <label class="field-label">Leave Duration Mode <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">timelapse</mat-icon>
+            <select formControlName="leaveMode" class="custom-select">
+              <option *ngFor="let mode of leaveModes" [ngValue]="mode">
+                {{ mode }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <!-- Row 2: Start Date & End Date (Status field removed so employees cannot set approval status) -->
-      <div class="form-row-2col">
+      <!-- Row 2: Start Date & End Date -->
+      <div class="form-row-2">
         <!-- Start Date -->
         <div class="form-group">
-          <label class="form-label">Start Date <span class="required">*</span></label>
-          <input
-            type="date"
-            formControlName="startDate"
-            class="form-input date-input"
-            placeholder="dd-mm-yyyy"
-          />
+          <label class="field-label">Start Date <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">calendar_today</mat-icon>
+            <input
+              type="date"
+              formControlName="startDate"
+              class="custom-input"
+            />
+          </div>
         </div>
 
         <!-- End Date -->
         <div class="form-group">
-          <label class="form-label">End Date <span class="required">*</span></label>
-          <input
-            type="date"
-            formControlName="endDate"
-            class="form-input date-input"
-            placeholder="dd-mm-yyyy"
-          />
+          <label class="field-label">End Date <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">event</mat-icon>
+            <input
+              type="date"
+              formControlName="endDate"
+              class="custom-input"
+            />
+          </div>
         </div>
       </div>
 
       <!-- Reason Textarea -->
       <div class="form-group">
-        <label class="form-label">Reason</label>
-        <textarea
-          formControlName="leaveReason"
-          rows="3"
-          placeholder="Provide additional details regarding your request..."
-          class="form-textarea"
-        ></textarea>
+        <label class="field-label">Reason / Justification</label>
+        <div class="input-wrapper-textarea">
+          <mat-icon class="input-icon-textarea">notes</mat-icon>
+          <textarea
+            formControlName="leaveReason"
+            rows="3"
+            placeholder="Provide context or details regarding your leave request..."
+            class="custom-textarea"
+          ></textarea>
+        </div>
       </div>
 
       <!-- Supporting Documents Zone -->
       <div class="form-group">
-        <label class="form-label">Supporting Documents (Optional)</label>
+        <label class="field-label">Supporting Documents (Optional)</label>
         <input
           #fileInput
           type="file"
-          class="hidden-file-input"
+          hidden
           (change)="onFileSelected($event)"
         />
-        <div class="dropzone-box" (click)="triggerFileInput(fileInput)">
-          <mat-icon class="upload-icon">upload_file</mat-icon>
-          <p class="dropzone-title">
-            <span *ngIf="!selectedFileName">Drag and drop files here, or <span class="browse-link">browse</span></span>
-            <span *ngIf="selectedFileName" class="selected-file-text">Selected: {{ selectedFileName }}</span>
-          </p>
-          <span class="dropzone-hint">Medical certificates required for sick leave > 2 days.</span>
+        <div class="upload-dropzone" (click)="triggerFileInput(fileInput)">
+          <div class="drop-icon-box">
+            <mat-icon>upload_file</mat-icon>
+          </div>
+          <div class="drop-text">
+            <span *ngIf="!selectedFileName"><strong>Click to attach file</strong> or drag & drop</span>
+            <span *ngIf="selectedFileName" class="file-name-text">Selected: {{ selectedFileName }}</span>
+          </div>
+          <span class="drop-hint">Medical certificates required for sick leave > 2 days</span>
         </div>
       </div>
 
-      <!-- Bottom Form Actions -->
-      <div class="form-actions">
-        <!-- Delete Button (Shown in Edit Mode) -->
-        <button *ngIf="isEdit" type="button" class="btn-delete" (click)="onDeleteInModal()">
-          <mat-icon>delete_outline</mat-icon>
-          <span>Delete</span>
-        </button>
-
+      <!-- Modal Footer Actions -->
+      <div class="modal-footer">
         <button type="button" class="btn-cancel" (click)="onCancel()">
           Cancel
         </button>
         <button type="submit" class="btn-submit">
-          <mat-icon class="btn-icon">send</mat-icon>
+          <mat-icon>{{ isEdit ? 'save' : 'send' }}</mat-icon>
           <span>{{ isEdit ? 'Save Changes' : 'Submit Request' }}</span>
         </button>
       </div>
     </form>
 
-    <!-- Right Side Panel Summary Cards -->
+    <!-- Right Side Summary Card -->
     <div class="side-panel">
-      <!-- Current Balance Card -->
       <div class="side-card balance-card">
-        <h3 class="side-card-title">Current Balance</h3>
+        <div class="balance-card-header">
+          <mat-icon class="balance-icon">account_balance_wallet</mat-icon>
+          <h3 class="side-card-title">Leave Balance</h3>
+        </div>
+
         <div class="balance-list">
-          <div class="balance-row">
+          <div class="balance-item">
             <div class="leave-type-info">
-              <div class="icon-badge icon-annual">
+              <div class="icon-avatar icon-annual">
                 <mat-icon>beach_access</mat-icon>
               </div>
               <span class="leave-name">Annual Leave</span>
             </div>
-            <span class="days-value text-blue">{{ annualLeaveDays }} <small>days</small></span>
+            <span class="days-pill pill-blue">{{ annualLeaveDays }} days</span>
           </div>
 
-          <div class="balance-row">
+          <div class="balance-item">
             <div class="leave-type-info">
-              <div class="icon-badge icon-sick">
+              <div class="icon-avatar icon-sick">
                 <mat-icon>medical_services</mat-icon>
               </div>
               <span class="leave-name">Sick Leave</span>
             </div>
-            <span class="days-value text-red">{{ sickLeaveDays }} <small>days</small></span>
+            <span class="days-pill pill-rose">{{ sickLeaveDays }} days</span>
           </div>
         </div>
       </div>
 
-      <!-- Leave Policy Notice Card -->
       <div class="side-card notice-card">
         <div class="notice-header">
           <mat-icon class="notice-icon">info_outline</mat-icon>
-          <span class="notice-title">Leave Policy Notice</span>
+          <span class="notice-title">Policy Guidelines</span>
         </div>
         <p class="notice-body">
-          Requests submitted less than 48 hours in advance require manager override. Ensure dates are correct before submission.
+          Requests submitted less than 48 hours in advance require line manager approval.
         </p>
       </div>
     </div>

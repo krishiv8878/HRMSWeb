@@ -8,6 +8,7 @@ import { ToastrService } from 'ngx-toastr';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
 import { RequestsApprovalsModalComponent } from '../../modal/requests-approvals-modal/requests-approvals-modal.component';
+import { EmployeeService } from '../../services/employee/employee.service';
 
 export interface ApprovalRequestItem {
   id: number;
@@ -44,6 +45,7 @@ export interface ApprovalRequestItem {
 export class RequestsApprovalsComponent implements OnInit {
   service = inject(EmailService);
   service2 = inject(AttendanceRequestService);
+  employeeService = inject(EmployeeService);
   dialog = inject(MatDialog);
   toaster = inject(ToastrService);
 
@@ -69,7 +71,7 @@ export class RequestsApprovalsComponent implements OnInit {
   avgTurnaroundHours: number = 0;
   avgTurnaroundText: string = '0.0';
 
-  // Pagination
+  // Pagination State
   currentPage: number = 1;
   pageSize: number = 10;
   totalPages: number = 1;
@@ -83,7 +85,7 @@ export class RequestsApprovalsComponent implements OnInit {
     this.allRequests = [];
 
     // Fetch Leave Requests from Database
-    this.service.GetAllEmployeesLeaveRequest().subscribe({
+    this.service.getAllData().subscribe({
       next: (response: any) => {
         let rawList: any[] = [];
         if (Array.isArray(response)) {
@@ -93,6 +95,9 @@ export class RequestsApprovalsComponent implements OnInit {
         } else if (response && Array.isArray(response.result)) {
           rawList = response.result;
         }
+
+        const globalAvatar = this.employeeService.getProfileAvatar();
+        const loggedUserId = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
 
         const leaveItems: ApprovalRequestItem[] = rawList.map((x: any, idx: number) => {
           const empName = x.fullName || x.employeeName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
@@ -105,10 +110,20 @@ export class RequestsApprovalsComponent implements OnInit {
 
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
+          let avatarUrl: string | undefined = undefined;
+          if (x.profileImage) {
+            avatarUrl = x.profileImage.startsWith('http') || x.profileImage.startsWith('data:')
+              ? x.profileImage
+              : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${x.profileImage}`;
+          } else if (globalAvatar && (x.employeeId == loggedUserId || idx === 0)) {
+            avatarUrl = globalAvatar;
+          }
+
           return {
             id: Number(x.id || x.leaveRequestId || (idx + 1)),
             requesterName: empName,
             requesterRole: x.designation || x.department || 'Team Member',
+            avatarUrl: avatarUrl,
             initials: initials || 'EM',
             requestType: leaveTypeName,
             startDate: x.startDate,
@@ -138,10 +153,20 @@ export class RequestsApprovalsComponent implements OnInit {
               const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
               const statusStr: 'Pending' | 'Approved' | 'Rejected' = (x.status === 'Approved' ? 'Approved' : (x.status === 'Rejected' ? 'Rejected' : 'Pending'));
 
+              let avatarUrl: string | undefined = undefined;
+              if (x.profileImage) {
+                avatarUrl = x.profileImage.startsWith('http') || x.profileImage.startsWith('data:')
+                  ? x.profileImage
+                  : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${x.profileImage}`;
+              } else if (globalAvatar && (x.employeeId == loggedUserId || idx === 0)) {
+                avatarUrl = globalAvatar;
+              }
+
               return {
                 id: Number(x.id || (idx + 100)),
                 requesterName: empName,
                 requesterRole: x.requestType || 'Time Attendance',
+                avatarUrl: avatarUrl,
                 initials: initials || 'AT',
                 requestType: x.requestType || 'CLOCK ADJUST',
                 startDate: x.requestedDate,

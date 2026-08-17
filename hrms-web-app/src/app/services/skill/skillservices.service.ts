@@ -1,29 +1,37 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { Observable, catchError, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SkillservicesService {
-  constructor() { }
-  apiUrl = environment.host
-  http = inject(HttpClient)
+  apiUrl = environment.host;
+  http = inject(HttpClient);
 
-  getSkill() {
-    return this.http.get<any[]>(`${this.apiUrl}/Skill/GetSkills`);
+  getSkill(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/Skill/GetSkills`).pipe(
+      catchError((err) => {
+        console.error('Error fetching skills:', err);
+        return of({ data: [] });
+      })
+    );
   }
 
-  createSkill(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/Skill/AddSkills/`, data)
+  createSkill(data: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl + `/Skill/AddSkills`, data);
   }
 
-  updateSkill(data: any) {
-    return this.http.put<any[]>(this.apiUrl + `/Skill/UpdateSkill/`, data);
+  updateSkill(data: any): Observable<any> {
+    return this.http.put<any>(this.apiUrl + `/Skill/UpdateSkill`, data).pipe(
+      catchError(() => {
+        return this.http.post<any>(this.apiUrl + `/Skill/UpdateSkill`, data);
+      })
+    );
   }
 
-  DeleteSkill(skillId: any) {
-    return this.http.delete(this.apiUrl + `/Skill/DeleteSkill?skillId=`+ skillId);
+  DeleteSkill(skillId: any): Observable<any> {
+    return this.http.delete<any>(this.apiUrl + `/Skill/DeleteSkill?skillId=` + skillId);
   }
- 
 }

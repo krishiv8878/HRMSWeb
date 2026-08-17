@@ -1,116 +1,244 @@
-<div class="form">
-    <form action="" [formGroup]="CandidateForm" (ngSubmit)="submitdata()">
-        <p>{{ isEdit ? 'edit candidate' : 'add candidate' }}</p>
+<div class="candidate-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ isEdit ? 'edit_note' : 'person_add' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Candidate Profile' : 'Add New Candidate' }}</h2>
+        <p class="modal-subtitle">Enter candidate experience, compensation, and pipeline details.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <div class="employee-form">
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>first name</mat-label>
-
-                        <input type="text" matInput name="firstName" placeholder="Enter FirstName"
-                            (keypress)="allowOnlyLetters($event)" formControlName="firstName">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>last name</mat-label>
-
-                        <input type="text" matInput name="lastName" placeholder="Enter LastName"
-                            (keypress)="allowOnlyLetters($event)" formControlName="lastName">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col">
-                    <mat-form-field appearance="outline">
-                        <mat-label>email</mat-label>
-
-                        <input type="text" matInput name="emailAddress" placeholder="Enter Email"
-                            formControlName="emailAddress">
-                    </mat-form-field>
-                </div>
-
-            </div>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>phone no</mat-label>
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter PhoneNo"
-                            (keypress)="allowOnlyNumbers($event)" formControlName="mobileNumber" maxlength="10">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>totalExperience (year)</mat-label>
-                        <input type="text" matInput name="totalExperience" placeholder=" Total Experience"
-                            (keypress)="allowOnlyNumbers($event)" formControlName="totalExperience">
-
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-
-                        <mat-label>relevantExperience (year)</mat-label>
-                        <input type="text" matInput name="RelevantExperience" (keypress)="allowOnlyNumbers($event)"
-                            placeholder="Relevant Experience" formControlName="relevantExperience">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>currentSalary (Annually)</mat-label>
-                        <input type="text" matInput name="currentSalary" placeholder="Current Salary"
-                            (keypress)="allowOnlyNumbers($event)" formControlName="currentSalary">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class=" row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>noticePeriod (days)</mat-label>
-                        <mat-select formControlName="noticePeriod" [(value)]="numbermenu">
-                            <mat-option *ngFor="let number of numbers" [value]="number"> {{number}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>expected Salary (Annually)</mat-label>
-                        <input type="text" matInput name="expectedSalary" placeholder="Expected Salary"
-                            (keypress)="allowOnlyNumbers($event)" formControlName="expectedSalary">
-                    </mat-form-field>
-                </div>
-
-                <div class="row">
-                    <div class="col">
-                        <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                    </div>
-                </div>
-            </div>
-
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }
-
+  <!-- Form Body -->
+  <form [formGroup]="CandidateForm" (ngSubmit)="submitdata()" class="candidate-form-body">
+    <!-- Row 1: First Name & Last Name -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">First Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">person</mat-icon>
+          <input
+            type="text"
+            formControlName="firstName"
+            placeholder="e.g. Sarah"
+            class="custom-input"
+            (keypress)="allowOnlyLetters($event)"
+          />
         </div>
-    </form>
+        <span class="error-text" *ngIf="CandidateForm.get('firstName')?.touched && CandidateForm.get('firstName')?.invalid">
+          First name is required (letters only)
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Last Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">person_outline</mat-icon>
+          <input
+            type="text"
+            formControlName="lastName"
+            placeholder="e.g. Jenkins"
+            class="custom-input"
+            (keypress)="allowOnlyLetters($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="CandidateForm.get('lastName')?.touched && CandidateForm.get('lastName')?.invalid">
+          Last name is required (letters only)
+        </span>
+      </div>
+    </div>
+
+    <!-- Row 2: Email & Mobile -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Email Address <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">email</mat-icon>
+          <input
+            type="email"
+            formControlName="emailAddress"
+            placeholder="e.g. sarah.j@example.com"
+            class="custom-input"
+          />
+        </div>
+        <span class="error-text" *ngIf="CandidateForm.get('emailAddress')?.touched && CandidateForm.get('emailAddress')?.invalid">
+          Valid email address is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Mobile No. <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">phone</mat-icon>
+          <input
+            type="text"
+            formControlName="mobileNumber"
+            placeholder="e.g. 9876543210"
+            maxlength="10"
+            class="custom-input"
+            (keypress)="allowOnlyNumbers($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="CandidateForm.get('mobileNumber')?.touched && CandidateForm.get('mobileNumber')?.invalid">
+          10-digit mobile number required
+        </span>
+      </div>
+    </div>
+
+    <!-- Row 3: Applied Role & Stage -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Applied Role <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">work_outline</mat-icon>
+          <select formControlName="appliedRole" class="custom-select">
+            <option *ngFor="let role of rolesList" [value]="role">{{ role }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Hiring Stage <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">alt_route</mat-icon>
+          <select formControlName="stage" class="custom-select">
+            <option *ngFor="let st of stagesList" [value]="st">{{ st }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Experience & Compensation -->
+    <div class="form-divider">
+      <span>EXPERIENCE & COMPENSATION</span>
+    </div>
+
+    <!-- Row 4: Total Exp & Relevant Exp -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Total Exp (Years) <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">history</mat-icon>
+          <input
+            type="text"
+            formControlName="totalExperience"
+            placeholder="e.g. 5.5"
+            class="custom-input"
+            (keypress)="allowOnlyNumbers($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="CandidateForm.get('totalExperience')?.touched && CandidateForm.get('totalExperience')?.invalid">
+          Total experience is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Relevant Exp (Years) <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">timeline</mat-icon>
+          <input
+            type="text"
+            formControlName="relevantExperience"
+            placeholder="e.g. 4.0"
+            class="custom-input"
+            (keypress)="allowOnlyNumbers($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="CandidateForm.get('relevantExperience')?.touched && CandidateForm.get('relevantExperience')?.invalid">
+          Relevant experience is required
+        </span>
+      </div>
+    </div>
+
+    <!-- Row 5: Current Exp/Salary & Expected Exp/Salary -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Current Exp / Salary (LPA) <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">payments</mat-icon>
+          <input
+            type="text"
+            formControlName="currentSalary"
+            placeholder="e.g. 12.0"
+            class="custom-input"
+            (keypress)="allowOnlyNumbers($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="CandidateForm.get('currentSalary')?.touched && CandidateForm.get('currentSalary')?.invalid">
+          Current CTC is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Expected Exp / Salary (LPA) <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">account_balance_wallet</mat-icon>
+          <input
+            type="text"
+            formControlName="expectedSalary"
+            placeholder="e.g. 16.5"
+            class="custom-input"
+            (keypress)="allowOnlyNumbers($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="CandidateForm.get('expectedSalary')?.touched && CandidateForm.get('expectedSalary')?.invalid">
+          Expected CTC is required
+        </span>
+      </div>
+    </div>
+
+    <!-- Row 6: Notice Period & Match Score -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Notice Period (Days) <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">event_note</mat-icon>
+          <select formControlName="noticePeriod" class="custom-select">
+            <option *ngFor="let d of noticePeriodOptions" [value]="d">{{ d }} Days</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Match Score (%)</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">insights</mat-icon>
+          <input
+            type="number"
+            formControlName="matchScore"
+            placeholder="e.g. 88"
+            min="1"
+            max="100"
+            class="custom-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 7: Active Checkbox -->
+    <div class="form-group-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
+        <span class="label-title">Active Candidate Profile</span>
+      </label>
+      <p class="checkbox-hint">Enables candidate tracking in live recruitment pipeline velocity.</p>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
+        {{ isEdit ? 'Update Candidate' : 'Save Candidate' }}
+      </button>
+    </div>
+  </form>
 </div>

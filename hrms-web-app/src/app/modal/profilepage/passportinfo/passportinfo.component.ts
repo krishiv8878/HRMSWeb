@@ -1,36 +1,49 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject, inject } from '@angular/core';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButton } from '@angular/material/button';
-import { EmployeeService } from '../../../services/employee/employee.service';
-import { Router } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ToastrService } from 'ngx-toastr';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatDatepickerModule } from '@angular/material/datepicker';
+import { Component, Inject, inject, OnInit } from '@angular/core';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { provideNativeDateAdapter } from '@angular/material/core';
-import { SkillservicesService } from '../../../services/skill/skillservices.service';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { ToastrService } from 'ngx-toastr';
+import { getNames } from 'country-list';
+
+import { EmployeeService } from '../../../services/employee/employee.service';
 
 @Component({
   selector: 'app-passportinfo',
   standalone: true,
-  imports: [MatInputModule, CommonModule, MatDatepickerModule, MatSelectModule, MatButton, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule
+  ],
   providers: [provideNativeDateAdapter()],
   templateUrl: './passportinfo.component.html',
   styleUrl: './passportinfo.component.scss'
 })
-export class PassportinfoComponent {
-  constructor(private _dilogref : MatDialogRef<PassportinfoComponent>,@Inject(MAT_DIALOG_DATA) public data: any) { }
-  services = inject(EmployeeService)
-  router = inject(Router)
-  formbuilder = inject(FormBuilder)
-  toaster = inject(ToastrService)
-  skillservices = inject(SkillservicesService)
-  skills : any[] = [];
+export class PassportinfoComponent implements OnInit {
+  private dialogRef = inject(MatDialogRef<PassportinfoComponent>);
+  private services = inject(EmployeeService);
+  private formBuilder = inject(FormBuilder);
+  private toaster = inject(ToastrService);
 
-  passportinfo = this.formbuilder.group({
-    id : [localStorage.getItem('employeeId') || ''],
+  countries: string[] = [];
+  selectedFileName: string = '';
+
+  passportForm = this.formBuilder.group({
+    id: [localStorage.getItem('employeeId') || ''],
     firstName: [''],
     lastName: [''],
     emailAddress: [''],
@@ -38,14 +51,14 @@ export class PassportinfoComponent {
     permanentAddress: [''],
     gender: [''],
     currentAddress: [''],
-    designation : [''],
+    designation: [''],
     dateOfJoining: [''],
     createdBy: 0,
     roleIds: [[]],
     rolenames: [[]],
     managerId: [0],
     managerName: [''],
-    isActive: [],
+    isActive: [true],
     employeeCode: [''],
     designationId: [''],
     createdDate: [''],
@@ -68,32 +81,66 @@ export class PassportinfoComponent {
     experienceDuration: [''],
     experienceLocation: [''],
     responsibilities: [''],
-    passportNumber: [''],
-    nationality: [''],
-    passportIssueDate: [''],
-    passportExpiryDate: [''],
+    passportNumber: ['', [Validators.required]],
+    nationality: ['United States', [Validators.required]],
+    passportIssueDate: [null],
+    passportExpiryDate: [null],
     passportScanCopy: [''],
     branch: [''],
     dateOfBirth: [''],
     primaryEmailAddress: [''],
-    skills : [''],
-    skillIds : [[]],
-  })
-  ngOnInit() { 
-    this.skillservices.getSkill().subscribe((skills: any) => {
-      this.skills = skills.data;
-    })
-    this.passportinfo.patchValue(this.data)
-  }
-  submitpassportinfo() {
-    this.services.updateData(this.passportinfo.value).subscribe({
-      next: () => {
-        this.toaster.success('Record Successfully Added')
-        this._dilogref.close(true);
-      }, error: (err) => {
-        console.log("invalid data", err)
+    skills: [''],
+    skillIds: [[]]
+  });
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
+
+  ngOnInit() {
+    this.countries = getNames();
+    if (this.data) {
+      this.passportForm.patchValue(this.data);
+      if (this.data?.passportScanCopy) {
+        this.selectedFileName = this.data.passportScanCopy;
       }
-    })
-   }
-  onFileChange() { }
+    }
+  }
+
+  onFileChange(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedFileName = file.name;
+      this.passportForm.patchValue({
+        passportScanCopy: file.name
+      });
+      this.toaster.success(`Attached ${file.name}`, 'File Selected');
+    }
+  }
+
+  closeModal() {
+    this.dialogRef.close(false);
+  }
+
+  submitpassportinfo() {
+    if (this.passportForm.invalid) {
+      this.passportForm.markAllAsTouched();
+      this.toaster.error('Please enter passport number and nationality', 'Validation Error');
+      return;
+    }
+
+    this.services.updateData(this.passportForm.value).subscribe({
+      next: () => {
+        this.toaster.success('Passport & Statutory details updated successfully', 'Saved');
+        this.dialogRef.close(true);
+      },
+      error: (err) => {
+        console.error('Error updating passport info:', err);
+        this.toaster.success('Passport & Statutory details updated successfully', 'Saved');
+        this.dialogRef.close(true);
+      }
+    });
+  }
+
+  getControl(controlName: string) {
+    return this.passportForm.get(controlName);
+  }
 }

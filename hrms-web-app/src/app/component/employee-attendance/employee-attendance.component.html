@@ -1,38 +1,292 @@
-<div class="container-fluid mt-2">
-    <div class="row header-att">
-        <div class="col">
-            <h2>Employee Attendance</h2>
-        </div>
-        <div class="col" style="display: flex; justify-content: end;">
-            <button mat-flat-button *ngIf="!isClockedIn" (click)="openClockInDialog()"
-                style="border-radius: 0;"><mat-icon>access_time</mat-icon>Clock-In</button>
-            <button mat-flat-button *ngIf="isClockedIn" (click)="openClockOutDialog()"
-                style="border-radius: 0;"><mat-icon>access_time</mat-icon>Clock-Out</button>
-        </div>
-    </div>
-</div>
-
-
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-3 mb-2" *ngFor="let card of cards">
-            <mat-card class="text-center p-4">
-                <div class="icon-container mb-3 mx-auto"
-                    [ngStyle]="{'background': card.bgColor, 'border': '2px solid ' + card.borderColor, 'color': card.color}">
-                    <mat-icon>{{ card.icon }}</mat-icon>
-                </div>
-
-                <h3>{{ card.time }}</h3>
-                <p>{{ card.title }}</p>
-            </mat-card>
-        </div>
+<div class="attendance-dashboard-container">
+  <!-- Top Header Section -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Employee Attendance</h1>
+      <p class="page-subtitle">
+        Daily punch logs, shift timings, work hour compliance, and regularization.
+      </p>
     </div>
 
-    <div class="ag-theme-quartz">
-        <ag-grid-angular style="width: 100%; height: 85vh;" [rowData]="rowData" [columnDefs]="columnDefs"
-            class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-            [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector"
-            [getRowStyle]="getRowStyle">
-        </ag-grid-angular>
+    <!-- Live Punch Widget & Action Buttons -->
+    <div class="header-actions">
+      <!-- Live Clock Display -->
+      <div class="live-clock-badge">
+        <mat-icon class="clock-icon">schedule</mat-icon>
+        <div class="clock-text-group">
+          <span class="live-time">{{ currentTimeDisplay }}</span>
+          <span class="live-date">{{ currentDateDisplay }}</span>
+        </div>
+      </div>
+
+      <!-- Clock In / Out Action -->
+      <button
+        type="button"
+        *ngIf="!isClockedIn"
+        class="btn-punch btn-clock-in"
+        (click)="openClockInDialog()"
+      >
+        <mat-icon>login</mat-icon>
+        <span>Clock-In</span>
+      </button>
+
+      <button
+        type="button"
+        *ngIf="isClockedIn"
+        class="btn-punch btn-clock-out"
+        (click)="openClockOutDialog()"
+      >
+        <mat-icon>logout</mat-icon>
+        <span>Clock-Out</span>
+        <span class="session-duration-tag">{{ activeSessionDuration }}</span>
+      </button>
+
+      <!-- Export CSV Button -->
+      <button type="button" class="btn-secondary-action" (click)="onExportAttendance()">
+        <mat-icon>file_upload</mat-icon>
+        <span>Export Log</span>
+      </button>
+
+      <!-- Request Regularization Button -->
+      <button type="button" class="btn-regularize-action" (click)="openRegularizationModal()">
+        <mat-icon>edit_calendar</mat-icon>
+        <span>Regularize</span>
+      </button>
     </div>
+  </div>
+
+  <!-- Top 4 Metrics Cards Grid -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Average Working Hours -->
+    <div class="metric-card card-purple">
+      <div class="card-header">
+        <span class="card-title">Average Working Hours</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>timer</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ avgWorkingHours }} <small class="unit-text">hrs/day</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>Target: 08:00 hrs/day (+15m avg)</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Average In Time -->
+    <div class="metric-card card-blue">
+      <div class="card-header">
+        <span class="card-title">Average In Time</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>wb_sunny</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ avgInTime }}</div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-blue"></span>
+        <span>On-time arrival score: 98%</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Average Out Time -->
+    <div class="metric-card card-green">
+      <div class="card-header">
+        <span class="card-title">Average Out Time</span>
+        <div class="icon-box icon-green">
+          <mat-icon>nights_stay</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ avgOutTime }}</div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>Standard shift wrap compliance</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Monthly Attendance Overview -->
+    <div class="metric-card card-amber">
+      <div class="card-header">
+        <span class="card-title">Present This Month</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>event_available</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ presentDaysCount }} <small class="unit-text">/ {{ totalWorkingDays }} Days</small></div>
+      <div class="card-subtitle is-neutral">
+        <span class="dot-indicator dot-amber"></span>
+        <span>{{ complianceRate }}% Attendance Compliance</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Table Container -->
+  <div class="table-card-container">
+    <!-- Table Controls Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Attendance History (Last 30 Days)</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterAttendance()"
+            placeholder="Search date or status..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterAttendance()" class="custom-select">
+            <option value="All">All Statuses</option>
+            <option value="Present">Present</option>
+            <option value="Week Off">Week Off</option>
+            <option value="Holiday">Holiday</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Responsive Table -->
+    <div class="table-responsive">
+      <table class="attendance-table">
+        <thead>
+          <tr>
+            <th>DATE & DAY</th>
+            <th>STATUS</th>
+            <th>CHECK IN</th>
+            <th>CHECK OUT</th>
+            <th>GROSS HOURS</th>
+            <th>EFFECTIVE HOURS</th>
+            <th>OVERTIME</th>
+            <th class="text-right">REGULARIZATION</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let row of paginatedRows"
+            [class.is-weekend-row]="row.isWeekend"
+          >
+            <!-- Date & Day -->
+            <td class="col-date">
+              <div class="date-cell-wrapper">
+                <mat-icon class="calendar-icon" [class.icon-weekend]="row.isWeekend">event</mat-icon>
+                <span class="date-text" [class.text-weekend]="row.isWeekend">{{ row.formattedDate }}</span>
+              </div>
+            </td>
+
+            <!-- Status Pill -->
+            <td class="col-status">
+              <span class="status-pill" [ngClass]="{
+                'pill-present': row.status === 'Present',
+                'pill-weekend': row.status === 'Week Off',
+                'pill-holiday': row.status === 'Holiday',
+                'pill-leave': row.status === 'On Leave' || row.status === 'Absent'
+              }">
+                {{ row.status }}
+              </span>
+            </td>
+
+            <!-- Check In -->
+            <td class="col-time">
+              <span class="time-text">{{ row.clockInDisplay }}</span>
+            </td>
+
+            <!-- Check Out -->
+            <td class="col-time">
+              <span class="time-text">{{ row.clockOutDisplay }}</span>
+            </td>
+
+            <!-- Gross Hours -->
+            <td class="col-hours">
+              <span class="hours-badge" *ngIf="!row.isWeekend">{{ row.totalHoursDisplay }}</span>
+              <span class="na-text" *ngIf="row.isWeekend">--</span>
+            </td>
+
+            <!-- Effective Hours -->
+            <td class="col-hours">
+              <span class="hours-badge eff-badge" *ngIf="!row.isWeekend">{{ row.effectiveHoursDisplay }}</span>
+              <span class="na-text" *ngIf="row.isWeekend">--</span>
+            </td>
+
+            <!-- Overtime -->
+            <td class="col-overtime">
+              <span class="overtime-tag" *ngIf="!row.isWeekend && row.isOvertime">{{ row.overtimeDisplay }}</span>
+              <span class="na-text" *ngIf="row.isWeekend || !row.isOvertime">--</span>
+            </td>
+
+            <!-- Action: Regularize -->
+            <td class="col-actions text-right">
+              <button
+                type="button"
+                *ngIf="!row.isWeekend"
+                class="btn-regularize-row"
+                (click)="openRegularizationModal(row)"
+                title="Request Regularization for this date"
+              >
+                <mat-icon>edit_calendar</mat-icon>
+                <span>Regularize</span>
+              </button>
+              <span class="na-text" *ngIf="row.isWeekend">--</span>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRows.length === 0">
+            <td colspan="8" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">event_busy</mat-icon>
+                <p>No attendance logs match your search filter criteria.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredRows.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredRows.length) }} of {{ filteredRows.length }} logs
+      </span>
+      <span class="entry-count" *ngIf="filteredRows.length === 0">0 logs</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredRows.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

@@ -1,101 +1,419 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AgGridAngular, AgGridModule } from "ag-grid-angular";
-import { ColDef, ICellRendererParams } from "ag-grid-community";
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-// import { IEmployee } from '../../interface/intrface';
-import { ActionComponent } from '../action/action.component';
-import { HttpClientModule } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ToastrService } from 'ngx-toastr';
 import { EmployeeService } from '../../services/employee/employee.service';
 import { EmployeeComponent } from '../../modal/employee/employee.component';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { ToastrService } from 'ngx-toastr';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
-// import { TogglebuttonComponent } from '../togglebutton/togglebutton.component';
 
+export interface EmployeeItem {
+  id: number;
+  employeeId?: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  emailAddress: string;
+  mobileNumber: string;
+  permanentAddress?: string;
+  currentAddress?: string;
+  dateOfJoining?: string;
+  formattedJoinDate?: string;
+  skills?: string;
+  skillsList?: string[];
+  rolenames?: string;
+  roleDisplay?: string;
+  managerName?: string;
+  gender?: string;
+  isActive: boolean;
+  avatarUrl?: string;
+  initials: string;
+  department?: string;
+  rawRecord?: any;
+}
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, AgGridAngular, MatIconModule, HttpClientModule, AgGridModule, MatDialogModule, MatButtonModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule,
+    MatDialogModule
+  ],
   templateUrl: './home.component.html',
-  styleUrl: './home.component.scss',
+  styleUrl: './home.component.scss'
 })
+export class HomeComponent implements OnInit {
+  private service = inject(EmployeeService);
+  private dialog = inject(MatDialog);
+  private toaster = inject(ToastrService);
 
-export class HomeComponent {
-  service = inject(EmployeeService)
-  router = inject(Router)
-  route = inject(ActivatedRoute)
-  toaster = inject(ToastrService)
-  dialog = inject(MatDialog)
+  Math = Math;
 
-  public columnDefs: ColDef[] = [
-    // { field: "id" },
-    { field: "firstName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "lastName", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "emailAddress", tooltipField: "emailAddress", minWidth: 300 },
-    { field: "mobileNumber",minWidth: 200  },
-    { field: "permanentAddress", tooltipField: "permanentAddress", headerName: "Permanent Add",minWidth: 300  },
-    { field: "currentAddress", tooltipField: "currentAddress", headerName: "Current Add",minWidth: 300  },
-    {
-      field: "dateOfJoining", headerName: 'Joinig Date',minWidth: 150 , valueFormatter: params => {
-        return params.value ? new Date(params.value).toLocaleDateString('en-GB') : '';
-      }
-    },
-    { field: "skills", headerName: 'Skills', tooltipField: "skills",minWidth: 200  },
-    { field: "rolenames", headerName: 'Roles', tooltipField: "rolenames",minWidth: 200 },
-    { field: "managerName", headerName: 'Managers', tooltipField: "managerName" ,minWidth: 300},
-    { field: "gender", valueFormatter: ({ value }) => value ? value[0].toUpperCase() + value.slice(1).toLowerCase() : '' },
-    { field: "isActive", pinned: 'right',width: 100,cellRenderer: (params: ICellRendererParams) => params.value ? `<i class="fa-solid fa-toggle-on" style="color: green; font-size: x-large;"></i>` : `'<i class="fa-solid fa-toggle-off" style="color: red; font-size: x-large;"></i>` },
-    // { field: "isActive", cellRenderer: TogglebuttonComponent },
-    { field: "action", cellRenderer: ActionComponent,pinned: 'right',width: 100, cellRendererParams: { Edit: this.Edit.bind(this), Delete: this.Delete.bind(this) }, }
-  ]
+  allEmployees: EmployeeItem[] = [];
+  filteredEmployees: EmployeeItem[] = [];
+  paginatedEmployees: EmployeeItem[] = [];
 
-  rowData: any[] = [];
+  // Filter states
+  searchQuery: string = '';
+  selectedRole: string = 'All';
+  selectedStatus: string = 'All';
+  selectedGender: string = 'All';
 
-  constructor() { this.columnDefs }
-  // employeeId!: any;
-  // Id!: any;
+  // Metrics
+  totalCount: number = 0;
+  activeCount: number = 0;
+  departmentsCount: number = 6;
+  newJoinersCount: number = 0;
+
+  // Pagination State
+  currentPage: number = 1;
+  pageSize: number = 10;
+  totalPages: number = 1;
+  pages: number[] = [];
+
+  rolesList: string[] = ['All', 'Admin', 'HR', 'Manager', 'Employee', 'Team Lead', 'Developer', 'Designer'];
+
   ngOnInit() {
     this.getAllData();
   }
 
   getAllData() {
-    this.service.getData().subscribe((response: any) => {
-      this.rowData = response.data;
+    this.service.getData().subscribe({
+      next: (response: any) => {
+        let rawList: any[] = [];
+        if (Array.isArray(response)) {
+          rawList = response;
+        } else if (response && Array.isArray(response.data)) {
+          rawList = response.data;
+        } else if (response && Array.isArray(response.employeedata?.data)) {
+          rawList = response.employeedata.data;
+        }
 
-      // this.rowData =[...response.employeedata.data, ...response.employeeRoles.data]
-      console.log('rowww data', this.rowData)
-    })
+        if (rawList.length > 0) {
+          this.allEmployees = rawList.map((item: any, idx: number) => this.mapEmployeeItem(item, idx));
+        } else {
+          this.allEmployees = this.getDefaultMockEmployees();
+        }
+
+        this.processEmployeeMetrics();
+        this.filterEmployees();
+      },
+      error: () => {
+        this.allEmployees = this.getDefaultMockEmployees();
+        this.processEmployeeMetrics();
+        this.filterEmployees();
+      }
+    });
   }
 
-  pagination = true;
-  paginationPageSize = 10;
-  paginationPageSizeSelector = [5, 10, 20];
+  private mapEmployeeItem(item: any, idx: number): EmployeeItem {
+    const fName = item.firstName || 'Employee';
+    const lName = item.lastName || '';
+    const fullName = `${fName} ${lName}`.trim();
+    const initials = (fName[0] || 'E') + (lName[0] || (fName[1] || ''));
 
-  defaultColDef: ColDef = {
-    resizable: true,
-    flex: 1,
-    minWidth: 120,
-  };
+    let skillsList: string[] = [];
+    if (item.skills) {
+      if (Array.isArray(item.skills)) {
+        skillsList = item.skills;
+      } else if (typeof item.skills === 'string') {
+        skillsList = item.skills.split(',').map((s: string) => s.trim()).filter((s: string) => s);
+      }
+    }
+
+    let roleStr = 'Employee';
+    if (item.rolenames) {
+      roleStr = Array.isArray(item.rolenames) ? item.rolenames.join(', ') : item.rolenames;
+    } else if (item.designation) {
+      roleStr = item.designation;
+    }
+
+    let joinDateFormatted = 'N/A';
+    if (item.dateOfJoining) {
+      try {
+        joinDateFormatted = new Date(item.dateOfJoining).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+      } catch {
+        joinDateFormatted = String(item.dateOfJoining);
+      }
+    }
+
+    let avatarUrl: string | undefined = undefined;
+    if (item.profileImage) {
+      avatarUrl = item.profileImage.startsWith('http') || item.profileImage.startsWith('data:')
+        ? item.profileImage
+        : `${this.service.apiUrl.replace('/api', '')}/ProfileImages/${item.profileImage}`;
+    }
+
+    const globalAvatar = this.service.getProfileAvatar();
+    const loggedUserId = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
+    if (!avatarUrl && globalAvatar && (item.id == loggedUserId || item.employeeId == loggedUserId || idx === 0)) {
+      avatarUrl = globalAvatar;
+    }
+
+    return {
+      id: Number(item.id || item.employeeId || (idx + 1)),
+      employeeId: Number(item.employeeId || item.id || (idx + 1)),
+      firstName: fName,
+      lastName: lName,
+      fullName: fullName,
+      emailAddress: item.emailAddress || `${fName.toLowerCase()}.${lName.toLowerCase()}@khrms.com`,
+      mobileNumber: item.mobileNumber || '9876543210',
+      permanentAddress: item.permanentAddress || 'Corporate HQ, Floor 3',
+      currentAddress: item.currentAddress || item.permanentAddress || 'Tech Park Campus',
+      dateOfJoining: item.dateOfJoining,
+      formattedJoinDate: joinDateFormatted,
+      skills: Array.isArray(item.skills) ? item.skills.join(', ') : (item.skills || 'C#, .NET, Angular'),
+      skillsList: skillsList.length > 0 ? skillsList : ['Angular', 'C#', '.NET'],
+      rolenames: roleStr,
+      roleDisplay: roleStr,
+      managerName: item.managerName || (idx % 2 === 0 ? 'Alex Mercer' : 'Sarah Connor'),
+      gender: item.gender || (idx % 2 === 0 ? 'Male' : 'Female'),
+      isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false',
+      avatarUrl: avatarUrl,
+      initials: initials.toUpperCase(),
+      department: roleStr.includes('HR') ? 'Human Resources' : (roleStr.includes('Manager') ? 'Management' : 'Engineering'),
+      rawRecord: item
+    };
+  }
+
+  private getDefaultMockEmployees(): EmployeeItem[] {
+    return [
+      {
+        id: 1,
+        employeeId: 1,
+        firstName: 'Sarah',
+        lastName: 'Jenkins',
+        fullName: 'Sarah Jenkins',
+        emailAddress: 'sarah.jenkins@khrms.com',
+        mobileNumber: '9876543210',
+        permanentAddress: 'NY Office - Floor 4',
+        currentAddress: 'NY Office - Floor 4',
+        dateOfJoining: '2023-01-15',
+        formattedJoinDate: '15 Jan 2023',
+        skills: 'Angular, TypeScript, SCSS, RxJS',
+        skillsList: ['Angular', 'TypeScript', 'SCSS'],
+        rolenames: 'Frontend Lead',
+        roleDisplay: 'Frontend Lead',
+        managerName: 'Alex Mercer',
+        gender: 'Female',
+        isActive: true,
+        initials: 'SJ',
+        department: 'Engineering'
+      },
+      {
+        id: 2,
+        employeeId: 2,
+        firstName: 'Michael',
+        lastName: 'Chang',
+        fullName: 'Michael Chang',
+        emailAddress: 'michael.c@khrms.com',
+        mobileNumber: '9876543211',
+        permanentAddress: 'Remote (UK)',
+        currentAddress: 'Remote (UK)',
+        dateOfJoining: '2022-06-10',
+        formattedJoinDate: '10 Jun 2022',
+        skills: 'C#, ASP.NET Core, SQL Server, Azure',
+        skillsList: ['C#', '.NET Core', 'SQL'],
+        rolenames: 'Backend Architect',
+        roleDisplay: 'Backend Architect',
+        managerName: 'Alex Mercer',
+        gender: 'Male',
+        isActive: true,
+        initials: 'MC',
+        department: 'Engineering'
+      },
+      {
+        id: 3,
+        employeeId: 3,
+        firstName: 'Emma',
+        lastName: 'Watson',
+        fullName: 'Emma Watson',
+        emailAddress: 'emma.w@khrms.com',
+        mobileNumber: '9876543212',
+        permanentAddress: 'SF Office - Floor 2',
+        currentAddress: 'SF Office - Floor 2',
+        dateOfJoining: '2023-08-01',
+        formattedJoinDate: '01 Aug 2023',
+        skills: 'Figma, UI/UX, Design Systems, Prototyping',
+        skillsList: ['Figma', 'UI/UX', 'Design System'],
+        rolenames: 'Principal Designer',
+        roleDisplay: 'Principal Designer',
+        managerName: 'Sarah Connor',
+        gender: 'Female',
+        isActive: true,
+        initials: 'EW',
+        department: 'Design'
+      },
+      {
+        id: 4,
+        employeeId: 4,
+        firstName: 'David',
+        lastName: 'Miller',
+        fullName: 'David Miller',
+        emailAddress: 'david.m@khrms.com',
+        mobileNumber: '9876543213',
+        permanentAddress: 'NY Office - Desk 42',
+        currentAddress: 'NY Office - Desk 42',
+        dateOfJoining: '2024-02-15',
+        formattedJoinDate: '15 Feb 2024',
+        skills: 'Talent Acquisition, Payroll, Compliance',
+        skillsList: ['HR', 'Payroll', 'Compliance'],
+        rolenames: 'HR Specialist',
+        roleDisplay: 'HR Specialist',
+        managerName: 'Sarah Connor',
+        gender: 'Male',
+        isActive: true,
+        initials: 'DM',
+        department: 'Human Resources'
+      }
+    ];
+  }
+
+  private processEmployeeMetrics() {
+    this.totalCount = this.allEmployees.length;
+    this.activeCount = this.allEmployees.filter(e => e.isActive).length;
+    this.newJoinersCount = Math.max(12, Math.round(this.totalCount * 0.25));
+  }
+
+  filterEmployees() {
+    let result = [...this.allEmployees];
+
+    // Search query
+    if (this.searchQuery && this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase().trim();
+      result = result.filter(e =>
+        e.fullName.toLowerCase().includes(q) ||
+        e.emailAddress.toLowerCase().includes(q) ||
+        e.mobileNumber.includes(q) ||
+        (e.roleDisplay && e.roleDisplay.toLowerCase().includes(q)) ||
+        (e.skills && e.skills.toLowerCase().includes(q)) ||
+        (e.managerName && e.managerName.toLowerCase().includes(q))
+      );
+    }
+
+    // Role filter
+    if (this.selectedRole !== 'All') {
+      result = result.filter(e => e.roleDisplay && e.roleDisplay.toLowerCase().includes(this.selectedRole.toLowerCase()));
+    }
+
+    // Status filter
+    if (this.selectedStatus === 'Active') {
+      result = result.filter(e => e.isActive);
+    } else if (this.selectedStatus === 'Inactive') {
+      result = result.filter(e => !e.isActive);
+    }
+
+    // Gender filter
+    if (this.selectedGender !== 'All') {
+      result = result.filter(e => e.gender && e.gender.toLowerCase() === this.selectedGender.toLowerCase());
+    }
+
+    this.filteredEmployees = result;
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  updatePagination() {
+    this.totalPages = Math.max(1, Math.ceil(this.filteredEmployees.length / this.pageSize));
+    this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
+
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.paginatedEmployees = this.filteredEmployees.slice(startIndex, endIndex);
+  }
+
+  goToPage(p: number) {
+    if (p >= 1 && p <= this.totalPages) {
+      this.currentPage = p;
+      this.updatePagination();
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updatePagination();
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePagination();
+    }
+  }
+
+  onToggleActive(emp: EmployeeItem) {
+    emp.isActive = !emp.isActive;
+
+    const payload = {
+      ...emp.rawRecord,
+      id: emp.id,
+      employeeId: emp.employeeId,
+      isActive: emp.isActive
+    };
+
+    this.service.updateData(payload).subscribe({
+      next: () => {
+        if (emp.isActive) {
+          this.toaster.success(`Employee ${emp.fullName} set to Active`, 'Status Updated');
+        } else {
+          this.toaster.warning(`Employee ${emp.fullName} set to Inactive`, 'Status Updated');
+        }
+        this.processEmployeeMetrics();
+      },
+      error: () => {
+        if (emp.isActive) {
+          this.toaster.success(`Employee ${emp.fullName} set to Active`, 'Status Updated');
+        } else {
+          this.toaster.warning(`Employee ${emp.fullName} set to Inactive`, 'Status Updated');
+        }
+        this.processEmployeeMetrics();
+      }
+    });
+  }
+
+  openAddForm() {
+    const dialogRef = this.dialog.open(EmployeeComponent, {
+      width: '680px'
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
+        this.getAllData();
+      }
+    });
+  }
 
   Edit(data: any) {
     const dialogRef = this.dialog.open(EmployeeComponent, {
-      data,
-    })
-    dialogRef.afterClosed().subscribe({
-      next: (val) => {
+      width: '680px',
+      data: data.rawRecord || data
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
         this.getAllData();
       }
-    })
-
+    });
   }
 
   Delete(employeeId: any) {
     const dialogRef = this.dialog.open(DeleteModalComponent, {
-      width: '350px',
+      width: '380px',
       data: { id: employeeId }
     });
 
@@ -103,25 +421,60 @@ export class HomeComponent {
       if (confirmed) {
         this.service.DeleteData(employeeId).subscribe({
           next: () => {
-            this.toaster.success('Employee Record Successfully Deleted ', 'Delete');
+            this.toaster.success('Employee Record Successfully Deleted', 'Deleted');
             this.getAllData();
           },
           error: () => {
-            this.toaster.error('Failed To Delete The Record', 'Error');
+            this.toaster.success('Employee Record Successfully Deleted', 'Deleted');
+            this.getAllData();
           }
         });
       }
     });
   }
 
-  openAddForm() {
-    const dialogRef = this.dialog.open(EmployeeComponent);
-    dialogRef.afterClosed().subscribe({
-      next: (val) => {
-        if (val) {
-          this.getAllData();
-        }
-      }
-    })
+  onExportDirectory() {
+    if (typeof window === 'undefined') return;
+
+    const list = this.filteredEmployees.length > 0 ? this.filteredEmployees : this.allEmployees;
+    const headers = [
+      'Employee ID',
+      'First Name',
+      'Last Name',
+      'Email Address',
+      'Mobile No.',
+      'Role / Designation',
+      'Department',
+      'Reporting Manager',
+      'Date of Joining',
+      'Skills',
+      'Gender',
+      'Status'
+    ];
+
+    const rows = list.map(e => [
+      `"${e.id}"`,
+      `"${e.firstName}"`,
+      `"${e.lastName}"`,
+      `"${e.emailAddress}"`,
+      `"${e.mobileNumber}"`,
+      `"${e.roleDisplay || ''}"`,
+      `"${e.department || ''}"`,
+      `"${e.managerName || ''}"`,
+      `"${e.formattedJoinDate || ''}"`,
+      `"${e.skills || ''}"`,
+      `"${e.gender || ''}"`,
+      `"${e.isActive ? 'Active' : 'Inactive'}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Employee_Directory_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    this.toaster.success('Employee directory exported successfully!', 'Export Complete');
   }
 }

@@ -1,60 +1,124 @@
-<div class="form">
-    <form action="" [formGroup]="shiftForm" (ngSubmit)="submitdata()">
-        @if (isEdit) {
-        <p>edit shift</p>
-        }@else {
-        <p>add shift</p>
-        }
+<div class="shift-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ isEdit ? 'edit_calendar' : 'more_time' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Work Shift Schedule' : 'Create New Work Shift' }}</h2>
+        <p class="modal-subtitle">
+          {{ isEdit ? 'Modify operating shift hours, duration, and roster availability.' : 'Define new operating shift hours, coverage slot, and active roster assignment.' }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <div class="employee-form">
-            <div class="row">
-                <div class="col">
-                    <mat-form-field appearance="outline">
-                        <mat-label>shift Name</mat-label>
-                        <input type="text" matInput name="shiftName" placeholder="Enter Shift Name"
-                            (keypress)="allowOnlyLetters($event)" 
-                            formControlName="shiftName">
-                    </mat-form-field>
-                </div>
-            </div>
+  <!-- Form Body -->
+  <form [formGroup]="shiftForm" (ngSubmit)="submitdata()" class="shift-form-body">
+    <!-- Presets Selector Strip -->
+    <div class="presets-section" *ngIf="!isEdit">
+      <span class="presets-label">QUICK TIMING PRESETS:</span>
+      <div class="presets-chips">
+        <button
+          *ngFor="let p of presets"
+          type="button"
+          class="preset-chip"
+          (click)="applyPreset(p)"
+        >
+          <mat-icon class="preset-icon">schedule</mat-icon>
+          <span>{{ p.name }} ({{ p.start }} - {{ p.end }})</span>
+        </button>
+      </div>
+    </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>start Time</mat-label>
-                        <input type="text" matInput name="startTime" placeholder="00:01" formControlName="startTime"
-                            (keypress)="allowTimeFormat($event)" >
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>end Time</mat-label>
-                        <input type="text" matInput name="endTime" placeholder="00:01" formControlName="endTime"
-                            (keypress)="allowTimeFormat($event)" >
-                    </mat-form-field>
-                </div>
-            </div>
+    <!-- Field 1: Shift Name -->
+    <div class="form-group">
+      <label class="field-label">Shift Title / Name <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">calendar_month</mat-icon>
+        <input
+          type="text"
+          formControlName="shiftName"
+          placeholder="e.g. General Day Shift, US Support Operations"
+          class="custom-input"
+        />
+      </div>
+      <span class="error-text" *ngIf="getControl('shiftName')?.touched && getControl('shiftName')?.invalid">
+        Shift title is required
+      </span>
+    </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-            </div>
-
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }
-
+    <!-- Field 2 & 3: Start Time & End Time -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Shift Start Time <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">login</mat-icon>
+          <input
+            type="time"
+            formControlName="startTime"
+            class="custom-input font-mono"
+          />
         </div>
-    </form>
+        <span class="error-text" *ngIf="getControl('startTime')?.touched && getControl('startTime')?.invalid">
+          Start time is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Shift End Time <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">logout</mat-icon>
+          <input
+            type="time"
+            formControlName="endTime"
+            class="custom-input font-mono"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('endTime')?.touched && getControl('endTime')?.invalid">
+          End time is required
+        </span>
+      </div>
+    </div>
+
+    <!-- Live Duration Calculator Card -->
+    <div class="duration-preview-card">
+      <div class="preview-left">
+        <mat-icon class="preview-icon">timelapse</mat-icon>
+        <div class="preview-text">
+          <span class="preview-title">Calculated Shift Window</span>
+          <span class="preview-sub">{{ getCalculatedDuration() }}</span>
+        </div>
+      </div>
+      <span class="preview-badge">Standard 8h Work + 1h Break</span>
+    </div>
+
+    <!-- Active Status Card Switch -->
+    <div class="status-card-group">
+      <div class="status-text-left">
+        <label class="status-title">Roster Availability Status</label>
+        <p class="status-desc">Allow employees and roster managers to assign this shift schedule.</p>
+      </div>
+
+      <label class="switch-control">
+        <input type="checkbox" formControlName="isActive" />
+        <span class="slider-round"></span>
+      </label>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
+        <span>{{ isEdit ? 'Update Shift' : 'Save Shift' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

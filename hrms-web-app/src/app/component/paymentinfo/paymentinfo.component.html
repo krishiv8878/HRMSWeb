@@ -1,27 +1,288 @@
-<div class="container-flued">
-    <div class="row">
-        <div class="col">
-            <div class="table-menu">
-                <div class="table-title">
-                    <h2>Payment Infomation</h2>
-                </div>
-                <div class="table-btn">
-                    <button mat-flat-button (click)="openAddForm()"  style="border-radius: 0;">add </button>
-                </div>
-            </div>
-        </div>
+<div class="payment-dashboard-container">
+  <!-- Top Header Bar -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Banking & Payment Information</h1>
+      <p class="page-subtitle">
+        Direct deposit accounts, disbursement channels, IFSC routing, and payroll verification.
+      </p>
     </div>
 
-    <div class="row">
-        <div class="col">
-            <div class="hero-img">
-                <div class="container-fluid data">
-                    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData"
-                        [columnDefs]="columnDefs" class="ag-theme-quartz" [defaultColDef]="defaultColDef"
-                        [pagination]="pagination" [paginationPageSize]="paginationPageSize"
-                        [paginationPageSizeSelector]="paginationPageSizeSelector" />
-                </div>
-            </div>
-        </div>
+    <div class="header-actions">
+      <!-- Export Matrix CSV Button -->
+      <button type="button" class="btn-export" (click)="onExportPaymentMatrix()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Matrix</span>
+      </button>
+
+      <!-- Add Account Button -->
+      <button type="button" class="btn-add-account" (click)="openAddForm()">
+        <mat-icon class="btn-icon">account_balance</mat-icon>
+        <span>Add Bank Account</span>
+      </button>
     </div>
+  </div>
+
+  <!-- Top 4 Metrics Cards Grid -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Registered Accounts -->
+    <div class="metric-card card-blue">
+      <div class="card-header">
+        <span class="card-title">REGISTERED ACCOUNTS</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>account_balance</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalAccountsCount }} <small class="unit-text">Profiles</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>{{ activeAccountsCount }} Verified & Active</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Disbursement Channels -->
+    <div class="metric-card card-emerald">
+      <div class="card-header">
+        <span class="card-title">DISBURSEMENT ROUTE</span>
+        <div class="icon-box icon-emerald">
+          <mat-icon>verified_user</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">100% <small class="unit-text">Direct Deposit</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>NEFT, RTGS & IMPS Enabled</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Partner Banks -->
+    <div class="metric-card card-purple">
+      <div class="card-header">
+        <span class="card-title">CLEARING BANKS</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ banksCount }} <small class="unit-text">Institutions</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-blue"></span>
+        <span>HDFC, ICICI, SBI & Axis</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Compliance Score -->
+    <div class="metric-card card-amber">
+      <div class="card-header">
+        <span class="card-title">PAYROLL COMPLIANCE</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>security</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ complianceRate }}% <small class="unit-text">KYC Verified</small></div>
+      <div class="card-subtitle is-neutral">
+        <span class="dot-indicator dot-amber"></span>
+        <span>RBI & Banking SLA Verified</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bank Profiles Table Card -->
+  <div class="table-card-container">
+    <!-- Table Controls Header Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Direct Deposit Profiles ({{ allPayments.length }})</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterPayments()"
+            placeholder="Search bank, account, IFSC, name..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Bank Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedBank" (change)="filterPayments()" class="custom-select">
+            <option value="All">All Banks</option>
+            <option *ngFor="let b of banksList" [value]="b">{{ b }}</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterPayments()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Active">Active / Verified</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Accounts Table -->
+    <div class="table-responsive">
+      <table class="payment-table">
+        <thead>
+          <tr>
+            <th>BENEFICIARY & ID</th>
+            <th>BANKING INSTITUTION</th>
+            <th>ACCOUNT NUMBER</th>
+            <th>IFSC CODE</th>
+            <th>DISBURSEMENT METHOD</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let pay of paginatedPayments">
+            <!-- Beneficiary Name & Employee ID -->
+            <td class="col-beneficiary">
+              <div class="beneficiary-wrapper">
+                <div class="avatar-circle">
+                  <img *ngIf="pay.avatarUrl" [src]="pay.avatarUrl" [alt]="pay.nameOnAccount" class="pay-avatar-img" />
+                  <mat-icon *ngIf="!pay.avatarUrl">person</mat-icon>
+                </div>
+                <div class="info-group">
+                  <span class="beneficiary-name">{{ pay.nameOnAccount }}</span>
+                  <span class="emp-id-tag">EMP ID: #{{ pay.employeeId }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Banking Institution -->
+            <td class="col-bank">
+              <div class="bank-wrapper">
+                <div class="bank-icon-badge">
+                  <mat-icon>account_balance</mat-icon>
+                </div>
+                <div class="bank-text-group">
+                  <span class="bank-name">{{ pay.bankName }}</span>
+                  <span class="account-type-text">{{ pay.accountType }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Account Number (with eye toggle) -->
+            <td class="col-account">
+              <div class="account-wrapper">
+                <span class="account-number-text" [class.is-revealed]="pay.showFullAccount">
+                  {{ pay.showFullAccount ? pay.accountNumber : pay.maskedAccount }}
+                </span>
+                <button
+                  type="button"
+                  class="btn-toggle-eye"
+                  (click)="toggleAccountMask(pay)"
+                  [title]="pay.showFullAccount ? 'Mask Account Number' : 'Reveal Account Number'"
+                >
+                  <mat-icon>{{ pay.showFullAccount ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+              </div>
+            </td>
+
+            <!-- IFSC Code -->
+            <td class="col-ifsc">
+              <span class="ifsc-badge">{{ pay.ifscCode }}</span>
+            </td>
+
+            <!-- Disbursement Method -->
+            <td class="col-method">
+              <div class="method-pill">
+                <mat-icon class="method-icon">payments</mat-icon>
+                <span>{{ pay.disbursementMethod }}</span>
+              </div>
+            </td>
+
+            <!-- Status (Display Only Badge) -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="pay.isActive ? 'badge-active' : 'badge-inactive'">
+                <span class="dot"></span>
+                <span>{{ pay.isActive ? 'Verified / Active' : 'Inactive' }}</span>
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(pay)" title="Edit Banking Details">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="pay.isActive !== false"
+                  [class.btn-toggle-on]="pay.isActive === false"
+                  (click)="onToggleActive(pay)"
+                  [title]="pay.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ pay.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedPayments.length === 0">
+            <td colspan="7" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">credit_card_off</mat-icon>
+                <p *ngIf="allPayments.length === 0">
+                  No bank payment accounts configured. Click <strong>'+ Add Bank Account'</strong> above to set up direct deposit.
+                </p>
+                <p *ngIf="allPayments.length > 0">
+                  No payment accounts match your search or filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredPayments.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredPayments.length) }} of {{ filteredPayments.length }} accounts
+      </span>
+      <span class="entry-count" *ngIf="filteredPayments.length === 0">0 accounts</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredPayments.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

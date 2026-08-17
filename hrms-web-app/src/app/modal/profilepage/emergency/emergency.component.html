@@ -1,114 +1,189 @@
-<div class="form">
-    <form action="" [formGroup]="contact" (ngSubmit)="submitcontact()">
-        <p>Emergency Contact</p>
-        <mat-card>
-            <p class="contactt">Primary Contact</p>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>First Name</mat-label>
-                        <input type="text" matInput name="firstName" placeholder="Enter First Name"
-                            formControlName="primaryContactName">
-                    </mat-form-field>
-                </div>
+<div class="emergency-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>emergency</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Emergency & Next-of-Kin Contacts</h2>
+        <p class="modal-subtitle">Designate primary and secondary contacts for urgent medical or workplace notifications.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Email</mat-label>
-                        <input type="email" matInput name="emailAddress" placeholder="Enter Email"
-                            formControlName="primaryEmailAddress">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Phone Number</mat-label>
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter Phone Number"
-                            formControlName="primaryContactPhone">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Relationship</mat-label>
-                        <input type="text" matInput name="Relationship" placeholder="Enter Relationship"
-                            formControlName="primaryContactRelationship">
-
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-
-                <div class="col">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Address</mat-label>
-                        <input type="text" matInput name="address" placeholder="Enter Address"
-                            formControlName="primaryContactAddress">
-
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-        <mat-card class="mt-4">
-            <p class="contactt">secondary Contact</p>
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>First Name</mat-label>
-                        <input type="text" matInput name="firstName" placeholder="Enter First Name"
-                            formControlName="secondaryContactName">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Email</mat-label>
-                        <input type="email" matInput name="emailAddress" placeholder="Enter Email"
-                            formControlName="secondaryContactEmail">
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Phone Number</mat-label>
-                        <input type="text" matInput name="mobileNumber" placeholder="Enter Phone Number"
-                            formControlName="secondaryContactPhone">
-                    </mat-form-field>
-                </div>
-
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Relationship</mat-label>
-                        <input type="text" matInput name="Relationship" placeholder="Enter Relationship"
-                            formControlName="secondaryContactRelationship">
-
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Address</mat-label>
-                        <input type="text" matInput name="address" placeholder="Enter Address"
-                            formControlName="secondaryContactAddress">
-
-                    </mat-form-field>
-                </div>
-            </div>
-        </mat-card>
-
-        <div class="button-btn mt-4" mat-dialog-actions>
-            <button mat-flat-button class="edit-btn" style="border-radius: 0;">Submit</button>
+  <!-- Form Body -->
+  <form [formGroup]="contactForm" (ngSubmit)="submitcontact()" class="emergency-form-body">
+    <!-- Block 1: Primary Contact -->
+    <div class="contact-card-block primary-block">
+      <div class="block-header">
+        <div class="badge-tier tier-primary">
+          <mat-icon>priority_high</mat-icon>
+          <span>PRIMARY EMERGENCY CONTACT (REQUIRED)</span>
         </div>
-    </form>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Full Name <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">person</mat-icon>
+            <input
+              type="text"
+              formControlName="primaryContactName"
+              placeholder="e.g. Robert Jenkins"
+              class="custom-input"
+            />
+          </div>
+          <span class="error-text" *ngIf="getControl('primaryContactName')?.touched && getControl('primaryContactName')?.invalid">
+            Primary contact name is required
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Relationship <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">diversity_1</mat-icon>
+            <select formControlName="primaryContactRelationship" class="custom-select">
+              <option *ngFor="let rel of relationships" [value]="rel">{{ rel }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Emergency Mobile Number <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">phone</mat-icon>
+            <input
+              type="text"
+              formControlName="primaryContactPhone"
+              placeholder="+1 (555) 876-5432"
+              class="custom-input"
+            />
+          </div>
+          <span class="error-text" *ngIf="getControl('primaryContactPhone')?.touched && getControl('primaryContactPhone')?.invalid">
+            Primary emergency phone is required
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Email Address</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">email</mat-icon>
+            <input
+              type="email"
+              formControlName="primaryEmailAddress"
+              placeholder="contact@example.com"
+              class="custom-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Residential Address</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">home</mat-icon>
+          <input
+            type="text"
+            formControlName="primaryContactAddress"
+            placeholder="Street Address, City, State"
+            class="custom-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Block 2: Secondary Contact -->
+    <div class="contact-card-block secondary-block">
+      <div class="block-header">
+        <div class="badge-tier tier-secondary">
+          <mat-icon>contact_phone</mat-icon>
+          <span>SECONDARY EMERGENCY CONTACT (OPTIONAL)</span>
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Full Name</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">person_outline</mat-icon>
+            <input
+              type="text"
+              formControlName="secondaryContactName"
+              placeholder="e.g. Eleanor Vance"
+              class="custom-input"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Relationship</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">diversity_1</mat-icon>
+            <select formControlName="secondaryContactRelationship" class="custom-select">
+              <option *ngFor="let rel of relationships" [value]="rel">{{ rel }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Emergency Mobile Number</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">phone</mat-icon>
+            <input
+              type="text"
+              formControlName="secondaryContactPhone"
+              placeholder="+1 (555) 345-6789"
+              class="custom-input"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Email Address</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">email</mat-icon>
+            <input
+              type="email"
+              formControlName="secondaryContactEmail"
+              placeholder="eleanor@example.com"
+              class="custom-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Residential Address</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">home</mat-icon>
+          <input
+            type="text"
+            formControlName="secondaryContactAddress"
+            placeholder="Street Address, City, State"
+            class="custom-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>save</mat-icon>
+        <span>Save Emergency Contacts</span>
+      </button>
+    </div>
+  </form>
 </div>

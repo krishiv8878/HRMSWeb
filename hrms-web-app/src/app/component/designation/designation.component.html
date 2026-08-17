@@ -1,14 +1,262 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Designation</h2>
+<div class="designations-dashboard-container">
+  <!-- Top Header Bar -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Designation & Job Architecture</h1>
+      <p class="page-subtitle">
+        Organizational job titles, departmental domains, career ladders, and compensation bands.
+      </p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openAddForm()"  style="border-radius: 0;">add </button>
-    </div>
-</div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <div class="header-actions">
+      <!-- Export CSV Button -->
+      <button type="button" class="btn-export" (click)="onExportDesignations()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Matrix</span>
+      </button>
+
+      <!-- Add Designation Button -->
+      <button type="button" class="btn-add-designation" (click)="openAddForm()">
+        <mat-icon class="btn-icon">add_business</mat-icon>
+        <span>Add Designation</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Top 4 Metrics Cards Grid -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Registered Designations -->
+    <div class="metric-card card-purple">
+      <div class="card-header">
+        <span class="card-title">JOB TITLES</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>work_outline</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalCount }} <small class="unit-text">Titles</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>{{ activeCount }} Active job titles</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Functional Domains -->
+    <div class="metric-card card-blue">
+      <div class="card-header">
+        <span class="card-title">DEPARTMENTS</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>domain</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ departmentsCount }} <small class="unit-text">Units</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-blue"></span>
+        <span>Engineering, Design, HR & Sales</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Career Ladders -->
+    <div class="metric-card card-emerald">
+      <div class="card-header">
+        <span class="card-title">CAREER LADDERS</span>
+        <div class="icon-box icon-emerald">
+          <mat-icon>stairs</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ ladderLevelsCount }} <small class="unit-text">Tiers</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>Entry, Mid, Senior & Leadership</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Architecture Health -->
+    <div class="metric-card card-amber">
+      <div class="card-header">
+        <span class="card-title">ALIGNMENT SCORE</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>insights</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">98.4% <small class="unit-text">Mapped</small></div>
+      <div class="card-subtitle is-neutral">
+        <span class="dot-indicator dot-amber"></span>
+        <span>Standardized job titles</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Designations Table Card Container -->
+  <div class="table-card-container">
+    <!-- Table Controls Header Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Job Designations ({{ allDesignations.length }})</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterDesignations()"
+            placeholder="Search job title, dept, or tier..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Dept Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedDept" (change)="filterDesignations()" class="custom-select">
+            <option value="All">All Departments</option>
+            <option *ngFor="let d of deptList" [value]="d">{{ d }}</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterDesignations()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Designations Table -->
+    <div class="table-responsive">
+      <table class="designations-table">
+        <thead>
+          <tr>
+            <th>DESIGNATION / TITLE</th>
+            <th>DEPARTMENT DOMAIN</th>
+            <th>CAREER LADDER</th>
+            <th>HEADCOUNT</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let desig of paginatedDesignations">
+            <!-- Designation Title & Icon -->
+            <td class="col-designation">
+              <div class="designation-name-wrapper">
+                <div class="designation-icon-badge" [ngClass]="'badge-' + desig.departmentCategory.toLowerCase().replace(' & ', '-').replace(' ', '-')">
+                  <mat-icon>{{ desig.iconName }}</mat-icon>
+                </div>
+                <span class="designation-title">{{ desig.designationName }}</span>
+              </div>
+            </td>
+
+            <!-- Department Domain -->
+            <td class="col-department">
+              <span class="dept-pill" [ngClass]="'pill-' + desig.departmentCategory.toLowerCase().replace(' & ', '-').replace(' ', '-')">
+                {{ desig.departmentCategory }}
+              </span>
+            </td>
+
+            <!-- Career Level -->
+            <td class="col-level">
+              <span class="level-pill" [ngClass]="'tier-' + desig.careerLevel.toLowerCase().replace(' ', '-')">
+                {{ desig.careerLevel }}
+              </span>
+            </td>
+
+            <!-- Headcount -->
+            <td class="col-headcount">
+              <div class="headcount-wrapper">
+                <mat-icon class="people-icon">people_outline</mat-icon>
+                <span class="people-count">{{ desig.headcount }} Personnel</span>
+              </div>
+            </td>
+
+            <!-- Status (Display Only Badge) -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="desig.isActive ? 'badge-active' : 'badge-inactive'">
+                <span class="dot"></span>
+                <span>{{ desig.isActive ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(desig)" title="Edit Designation">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="desig.isActive !== false"
+                  [class.btn-toggle-on]="desig.isActive === false"
+                  (click)="onToggleActive(desig)"
+                  [title]="desig.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ desig.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedDesignations.length === 0">
+            <td colspan="6" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">work_off</mat-icon>
+                <p *ngIf="allDesignations.length === 0">
+                  No designations found in catalog. Click <strong>'+ Add Designation'</strong> above to create your first job title.
+                </p>
+                <p *ngIf="allDesignations.length > 0">
+                  No designations match your search or filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredDesignations.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredDesignations.length) }} of {{ filteredDesignations.length }} designations
+      </span>
+      <span class="entry-count" *ngIf="filteredDesignations.length === 0">0 designations</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredDesignations.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

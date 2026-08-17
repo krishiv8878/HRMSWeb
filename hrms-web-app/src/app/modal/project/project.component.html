@@ -1,79 +1,104 @@
-<div class="form">
-    <form action="" [formGroup]="project" (ngSubmit)="submitdata()">
-        @if (isEdit) {
-        <p>edit project </p>
-        }@else {
-        <p>add project </p>
-        }
-        <div class="employee-form">
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>clientName</mat-label>
-                        <input type="text" matInput name="clientName" placeholder="Enter ClientName"
-                            (keypress)="allowOnlyLetters($event)" 
-                            formControlName="clientName">
-                    </mat-form-field>
-                </div>
-                <div class="col-xl-6">
-                    <mat-form-field appearance="outline">
-                        <mat-label>projectName</mat-label>
-                        <input type="text" matInput name="ProjectName" placeholder="Enter ProjectName"
-                            (keypress)="allowOnlyLetters($event)" 
-                            formControlName="projectName">
-                    </mat-form-field>
-                </div>
-            </div>
+<div class="project-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ isEdit ? 'edit_note' : 'add_task' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Client Project' : 'Add New Project' }}</h2>
+        <p class="modal-subtitle">Define project scope, client account, territory region, and active delivery status.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-            <div class="row">               
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>clientRegion</mat-label>
-                        <!-- <input type="text" matInput name="clientRegion" formControlName="clientRegion"
-                           (keydown.space)="$event.preventDefault()"
-                            placeholder="Enter ClientRegion"> -->
-                        <mat-select formControlName="clientRegion">
-                            <mat-option *ngFor="let country of countries" [value]="country">
-                                {{ country }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </div>
-
-
-                <div class="col-xl-12">
-                    <mat-form-field appearance="outline">
-                        <mat-label>description</mat-label>
-                        <!-- <input type="text" matInput name="description" placeholder="Enter Description" (keydown.space)="$event.preventDefault()"
-                            formControlName="description"> -->
-                        <textarea matInput placeholder="Enter Project Description" rows="2"
-                            formControlName="description"></textarea>
-
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-            </div>
-
-
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn" style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate" style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"
-                    style="border-radius: 0;">cancel</button>
-            </div>
-            }
-
+  <!-- Form Body -->
+  <form [formGroup]="projectForm" (ngSubmit)="submitdata()" class="project-form-body">
+    <!-- Row 1: Project Name & Client Account -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Project Name <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">rocket_launch</mat-icon>
+          <input
+            type="text"
+            formControlName="projectName"
+            placeholder="e.g. OmniCloud Core Platform"
+            class="custom-input"
+            (keypress)="allowOnlyLetters($event)"
+          />
         </div>
-    </form>
+        <span class="error-text" *ngIf="getControl('projectName')?.touched && getControl('projectName')?.invalid">
+          Project name is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Client Account <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">domain</mat-icon>
+          <input
+            type="text"
+            formControlName="clientName"
+            placeholder="e.g. Apex Financial Technologies"
+            class="custom-input"
+            (keypress)="allowOnlyLetters($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('clientName')?.touched && getControl('clientName')?.invalid">
+          Client account name is required
+        </span>
+      </div>
+    </div>
+
+    <!-- Row 2: Client Region -->
+    <div class="form-group">
+      <label class="field-label">Client Region / Territory <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">public</mat-icon>
+        <select formControlName="clientRegion" class="custom-select">
+          <option *ngFor="let country of countries" [value]="country">{{ country }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 3: Description -->
+    <div class="form-group">
+      <label class="field-label">Project Scope & Deliverable Description <span class="required">*</span></label>
+      <div class="input-wrapper textarea-wrapper">
+        <textarea
+          formControlName="description"
+          placeholder="Enter core deliverables, architectural scope, and milestone objectives..."
+          rows="3"
+          class="custom-textarea"
+        ></textarea>
+      </div>
+      <span class="error-text" *ngIf="getControl('description')?.touched && getControl('description')?.invalid">
+        Project description is required
+      </span>
+    </div>
+
+    <!-- Active Status Card -->
+    <div class="form-group-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
+        <span class="label-title">Active Project Delivery Status</span>
+      </label>
+      <p class="checkbox-hint">Enables engineers and resources to log timesheets and allocate deliverables to this project.</p>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
+        <span>{{ isEdit ? 'Update Project' : 'Save Project' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

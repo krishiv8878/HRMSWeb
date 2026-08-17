@@ -1,15 +1,204 @@
 <header class="top-header-container">
-  <!-- Search Input Area -->
-  <div class="search-wrapper">
+  <!-- Search Input Area with Interactive Global Search -->
+  <div class="search-wrapper" #searchContainer>
     <mat-icon class="search-icon">search</mat-icon>
     <input
+      #searchInput
       type="text"
       class="search-input"
       [(ngModel)]="headerSearchQuery"
+      (focus)="onSearchFocus()"
       (ngModelChange)="onSearchChange($event)"
-      placeholder="Search across Enterprise HRMS..."
+      (keydown)="onSearchKeydown($event)"
+      placeholder="Search employees, modules, documents (Ctrl + K)..."
       aria-label="Search across Enterprise HRMS"
+      autocomplete="off"
     />
+    <button
+      *ngIf="headerSearchQuery"
+      type="button"
+      class="clear-search-btn"
+      (click)="clearSearch()"
+      aria-label="Clear Search"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+    <div *ngIf="!headerSearchQuery" class="search-shortcut-badge">
+      <span>⌘K</span>
+    </div>
+
+    <!-- Global Search Results Dropdown Overlay -->
+    <div
+      *ngIf="isSearchOpen && headerSearchQuery.trim().length > 0"
+      class="global-search-dropdown"
+    >
+      <!-- Results Header -->
+      <div class="search-dropdown-header">
+        <span class="results-count-text">
+          <strong>{{ totalResultsCount }}</strong> {{ totalResultsCount === 1 ? 'result' : 'results' }} for "<em>{{ headerSearchQuery }}</em>"
+        </span>
+        <button type="button" class="close-dropdown-btn" (click)="closeSearch()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Scrollable Results Container -->
+      <div class="search-dropdown-body">
+        <!-- 1. System Navigation & Modules -->
+        <div *ngIf="filteredModules.length > 0" class="search-category-section">
+          <div class="category-title-header">
+            <mat-icon class="cat-icon">apps</mat-icon>
+            <span>PAGES & MODULES</span>
+            <span class="category-count-badge">{{ filteredModules.length }}</span>
+          </div>
+          <div class="search-items-list">
+            <div
+              *ngFor="let mod of filteredModules"
+              class="search-item-row module-item"
+              [class.is-selected]="isItemSelected(mod.id)"
+              (click)="selectResult(mod)"
+            >
+              <div class="item-icon-wrapper module-icon-box">
+                <mat-icon>{{ mod.icon }}</mat-icon>
+              </div>
+              <div class="item-info">
+                <span class="item-title">{{ mod.title }}</span>
+                <span class="item-subtitle">{{ mod.subtitle }}</span>
+              </div>
+              <div class="item-action-hint">
+                <span class="jump-pill">Jump to Page</span>
+                <mat-icon>arrow_forward</mat-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Employees & Workforce -->
+        <div *ngIf="filteredEmployees.length > 0" class="search-category-section">
+          <div class="category-title-header">
+            <mat-icon class="cat-icon">badge</mat-icon>
+            <span>EMPLOYEES</span>
+            <span class="category-count-badge">{{ filteredEmployees.length }}</span>
+          </div>
+          <div class="search-items-list">
+            <div
+              *ngFor="let emp of filteredEmployees"
+              class="search-item-row employee-item"
+              [class.is-selected]="isItemSelected(emp.id)"
+              (click)="selectResult(emp)"
+            >
+              <div class="item-avatar-wrapper">
+                <img *ngIf="emp.avatarUrl" [src]="emp.avatarUrl" [alt]="emp.title" class="emp-search-avatar" />
+                <div *ngIf="!emp.avatarUrl" class="emp-search-initials">
+                  {{ emp.initials || 'EM' }}
+                </div>
+              </div>
+              <div class="item-info">
+                <span class="item-title">{{ emp.title }}</span>
+                <span class="item-subtitle">{{ emp.subtitle }}</span>
+              </div>
+              <div class="item-tag-badge" *ngIf="emp.metaBadge">
+                {{ emp.metaBadge }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Documents & Policies -->
+        <div *ngIf="filteredDocuments.length > 0" class="search-category-section">
+          <div class="category-title-header">
+            <mat-icon class="cat-icon">folder_shared</mat-icon>
+            <span>DOCUMENTS</span>
+            <span class="category-count-badge">{{ filteredDocuments.length }}</span>
+          </div>
+          <div class="search-items-list">
+            <div
+              *ngFor="let doc of filteredDocuments"
+              class="search-item-row doc-item"
+              [class.is-selected]="isItemSelected(doc.id)"
+              (click)="selectResult(doc)"
+            >
+              <div class="item-icon-wrapper doc-icon-box">
+                <mat-icon>{{ doc.icon }}</mat-icon>
+              </div>
+              <div class="item-info">
+                <span class="item-title">{{ doc.title }}</span>
+                <span class="item-subtitle">{{ doc.subtitle }}</span>
+              </div>
+              <div class="item-tag-badge doc-badge" *ngIf="doc.metaBadge">
+                {{ doc.metaBadge }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Candidates & Talent -->
+        <div *ngIf="filteredCandidates.length > 0" class="search-category-section">
+          <div class="category-title-header">
+            <mat-icon class="cat-icon">how_to_reg</mat-icon>
+            <span>CANDIDATES & TALENT</span>
+            <span class="category-count-badge">{{ filteredCandidates.length }}</span>
+          </div>
+          <div class="search-items-list">
+            <div
+              *ngFor="let cand of filteredCandidates"
+              class="search-item-row cand-item"
+              [class.is-selected]="isItemSelected(cand.id)"
+              (click)="selectResult(cand)"
+            >
+              <div class="item-icon-wrapper cand-icon-box">
+                <mat-icon>{{ cand.icon }}</mat-icon>
+              </div>
+              <div class="item-info">
+                <span class="item-title">{{ cand.title }}</span>
+                <span class="item-subtitle">{{ cand.subtitle }}</span>
+              </div>
+              <div class="item-tag-badge cand-badge" *ngIf="cand.metaBadge">
+                {{ cand.metaBadge }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State When No Items Found -->
+        <div *ngIf="totalResultsCount === 0" class="search-empty-state">
+          <div class="empty-icon-circle">
+            <mat-icon>search_off</mat-icon>
+          </div>
+          <h4>No matching records found</h4>
+          <p>We couldn't find any employees, modules, or documents matching "<strong>{{ headerSearchQuery }}</strong>".</p>
+          <div class="popular-suggestions">
+            <span class="suggestions-label">Quick Jump to:</span>
+            <div class="suggestion-chips">
+              <button type="button" class="chip-btn" (click)="selectResult(systemModules[0])">
+                <mat-icon>badge</mat-icon> Employees
+              </button>
+              <button type="button" class="chip-btn" (click)="selectResult(systemModules[6])">
+                <mat-icon>folder_shared</mat-icon> Documents
+              </button>
+              <button type="button" class="chip-btn" (click)="selectResult(systemModules[3])">
+                <mat-icon>beach_access</mat-icon> Leave Requests
+              </button>
+              <button type="button" class="chip-btn" (click)="selectResult(systemModules[1])">
+                <mat-icon>schedule</mat-icon> Shifts
+              </button>
+              <button type="button" class="chip-btn" (click)="selectResult(systemModules[2])">
+                <mat-icon>event_available</mat-icon> Holidays
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dropdown Footer with Keyboard Navigation Hints -->
+      <div class="search-dropdown-footer">
+        <div class="shortcut-hints">
+          <span class="hint-item"><kbd>↑</kbd><kbd>↓</kbd> to navigate</span>
+          <span class="hint-item"><kbd>↵</kbd> to select</span>
+          <span class="hint-item"><kbd>esc</kbd> to dismiss</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Right Actions & User Profile -->
@@ -18,17 +207,12 @@
       <mat-icon>notifications</mat-icon>
     </button>
 
-    <!-- Info/Help button hidden per request -->
-    <!-- <button type="button" class="action-btn" aria-label="Help Center">
-      <mat-icon>help_outline</mat-icon>
-    </button> -->
-
     <button type="button" class="action-btn" aria-label="App Menu">
       <mat-icon>apps</mat-icon>
     </button>
 
-    <!-- User Profile Avatar Container -->
-    <div class="user-avatar-container" [matMenuTriggerFor]="userMenu">
+    <!-- Single User Profile Trigger -->
+    <div class="user-profile-trigger" [matMenuTriggerFor]="userMenu" role="button" tabindex="0">
       <img
         *ngIf="getUserAvatar()"
         [src]="getUserAvatar()"
@@ -38,23 +222,31 @@
       <div *ngIf="!getUserAvatar()" class="user-initials-badge">
         {{ getUserInitials() }}
       </div>
+      <div class="user-meta-name">
+        <span class="user-name">{{ getUserName() }}</span>
+      </div>
+      <mat-icon class="chevron-icon">keyboard_arrow_down</mat-icon>
     </div>
 
+    <!-- Clean Executive User Menu -->
     <mat-menu #userMenu="matMenu" xPosition="before" class="custom-user-menu">
       <div class="menu-header">
-        <strong>{{ getUserName() }}</strong>
+        <strong class="menu-name">{{ getUserName() }}</strong>
         <span class="menu-role">{{ getUserRole() }}</span>
       </div>
       <mat-divider></mat-divider>
       <button mat-menu-item [routerLink]="['/index/user-profile']">
-        <mat-icon>person</mat-icon> My Profile
+        <mat-icon>account_circle</mat-icon>
+        <span>My Profile</span>
       </button>
       <button mat-menu-item (click)="resignation()">
-        <mat-icon>exit_to_app</mat-icon> Resignation
+        <mat-icon>exit_to_app</mat-icon>
+        <span>Resignation</span>
       </button>
       <mat-divider></mat-divider>
       <button mat-menu-item (click)="logout()" class="logout-item">
-        <mat-icon>power_settings_new</mat-icon> Log Out
+        <mat-icon>power_settings_new</mat-icon>
+        <span>Log Out</span>
       </button>
     </mat-menu>
   </div>

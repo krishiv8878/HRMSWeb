@@ -1,42 +1,58 @@
-<div class="form">
-    <form action="" [formGroup]="designation" (ngSubmit)="submitdata()">
-        @if (isEdit) {
-        <p>edit designation</p>
-        }@else {
-        <p>add designation</p>
-        }
-        <div class="employee-form">
-            <div class="row">
-                <div class="col">
-                    <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Designation Name</mat-label>
-                        <input type="text" matInput name="DesignationName" placeholder="Enter Designation Name" (keypress)="allowOnlyLetters($event)" 
-                            formControlName="designationName">
-                    </mat-form-field>
-                </div>
-            </div>
-            
+<div class="designation-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ isEdit ? 'work' : 'add_business' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ isEdit ? 'Edit Job Designation' : 'Add New Designation' }}</h2>
+        <p class="modal-subtitle">Define corporate job titles, departmental domains, and ladder tiers.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-            <div class="row">
-                <div class="col-xl-6">
-                    <mat-checkbox formControlName="isActive">Active</mat-checkbox>
-                </div>
-            </div>
+  <!-- Form Body -->
+  <form [formGroup]="designation" (ngSubmit)="submitdata()" class="designation-form-body">
+    <!-- Designation Name Field -->
+    <div class="form-group">
+      <label class="field-label">Job Title / Designation Name <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">work_outline</mat-icon>
+        <input
+          type="text"
+          formControlName="designationName"
+          placeholder="e.g. Senior Software Architect, Product Lead, HR Partner"
+          class="custom-input"
+          (keypress)="allowOnlyLetters($event)"
+        />
+      </div>
+      <span class="error-text" *ngIf="getControl('designationName')?.touched && getControl('designationName')?.invalid">
+        Designation title is required
+      </span>
+    </div>
 
+    <!-- Active Status Card -->
+    <div class="form-group-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
+        <span class="label-title">Active Designation Status</span>
+      </label>
+      <p class="checkbox-hint">Enables this designation to be assigned in employee onboarding and job postings.</p>
+    </div>
 
-            @if(isEdit){
-            <div class="button-btn" mat-dialog-actions>
-                <button mat-flat-button class="edit-btn"  style="border-radius: 0;">update</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
-            </div>
-            }@else {
-            <div class="button-btn">
-                <button mat-flat-button class="edit-btn" routerLink="createdDate"  style="border-radius: 0;">add</button>
-                <button mat-raised-button class="cancel-btn" mat-dialog-close="false"  style="border-radius: 0;">cancel</button>
-            </div>
-            }
-
-
-        </div>
-    </form>
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit">
+        <mat-icon>{{ isEdit ? 'save' : 'add_business' }}</mat-icon>
+        <span>{{ isEdit ? 'Update Designation' : 'Save Designation' }}</span>
+      </button>
+    </div>
+  </form>
 </div>

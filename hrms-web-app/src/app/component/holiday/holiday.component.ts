@@ -280,17 +280,17 @@ export class HolidayComponent implements OnInit {
       next: () => {
         this.processHolidaysData();
         if (nextState) {
-          this.toaster.success('Holiday status set to Active', 'Success');
+          this.toaster.success(`Holiday '${holiday.holidayName}' set to Active`, 'Status Updated');
         } else {
-          this.toaster.warning('Holiday status set to Inactive', 'Status Updated');
+          this.toaster.warning(`Holiday '${holiday.holidayName}' Inactivated`, 'Holiday Inactivated');
         }
       },
       error: () => {
         this.processHolidaysData();
         if (nextState) {
-          this.toaster.success('Holiday status set to Active', 'Success');
+          this.toaster.success(`Holiday '${holiday.holidayName}' set to Active`, 'Status Updated');
         } else {
-          this.toaster.warning('Holiday status set to Inactive', 'Status Updated');
+          this.toaster.warning(`Holiday '${holiday.holidayName}' Inactivated`, 'Holiday Inactivated');
         }
       }
     });

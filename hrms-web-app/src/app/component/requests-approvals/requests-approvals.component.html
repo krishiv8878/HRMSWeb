@@ -135,7 +135,13 @@
             <!-- Requester Avatar & Name -->
             <td class="col-requester">
               <div class="user-avatar-group">
-                <div class="avatar-circle">
+                <img
+                  *ngIf="item.avatarUrl"
+                  [src]="item.avatarUrl"
+                  [alt]="item.requesterName"
+                  class="user-avatar-img"
+                />
+                <div *ngIf="!item.avatarUrl" class="avatar-circle">
                   {{ item.initials || 'EM' }}
                 </div>
                 <div class="user-info">

@@ -1,15 +1,260 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Role Master</h2>
+<div class="roles-dashboard-container">
+  <!-- Top Header Bar -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Role Master & Access Permissions</h1>
+      <p class="page-subtitle">
+        System security tiers, organizational access governance, and role definitions.
+      </p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openAddForm()"  style="border-radius: 0;">add </button>
+
+    <div class="header-actions">
+      <!-- Export CSV Button -->
+      <button type="button" class="btn-export" (click)="onExportRoles()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Matrix</span>
+      </button>
+
+      <!-- Add Role Button -->
+      <button type="button" class="btn-add-role" (click)="openAddForm()">
+        <mat-icon class="btn-icon">add_moderator</mat-icon>
+        <span>Add Role</span>
+      </button>
     </div>
-</div>
+  </div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+  <!-- Top 4 Metrics Cards Grid -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Registered Roles -->
+    <div class="metric-card card-purple">
+      <div class="card-header">
+        <span class="card-title">ROLE PROFILES</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>security</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalRolesCount }} <small class="unit-text">Roles</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>{{ activeRolesCount }} Active permission sets</span>
+      </div>
+    </div>
 
+    <!-- Card 2: Security Tiers -->
+    <div class="metric-card card-blue">
+      <div class="card-header">
+        <span class="card-title">SECURITY TIERS</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>admin_panel_settings</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ levelsCount }} <small class="unit-text">Tiers</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-blue"></span>
+        <span>Admin, Manager, HR & Employee</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Access Governance -->
+    <div class="metric-card card-emerald">
+      <div class="card-header">
+        <span class="card-title">GOVERNANCE HEALTH</span>
+        <div class="icon-box icon-emerald">
+          <mat-icon>verified</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">100% <small class="unit-text">Compliant</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>Zero privilege escalation</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Workforce Mapping -->
+    <div class="metric-card card-amber">
+      <div class="card-header">
+        <span class="card-title">USER MAPPING</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>group_work</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">148 <small class="unit-text">Personnel</small></div>
+      <div class="card-subtitle is-neutral">
+        <span class="dot-indicator dot-amber"></span>
+        <span>Mapped across active roles</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Roles Table Card -->
+  <div class="table-card-container">
+    <!-- Table Controls Header Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Security Roles ({{ allRoles.length }})</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterRoles()"
+            placeholder="Search role, tier, or scope..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Tier Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedLevel" (change)="filterRoles()" class="custom-select">
+            <option value="All">All Tiers</option>
+            <option *ngFor="let l of levelsList" [value]="l">{{ l }}</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterRoles()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Roles Table -->
+    <div class="table-responsive">
+      <table class="roles-table">
+        <thead>
+          <tr>
+            <th>ROLE DEFINITION</th>
+            <th>SECURITY TIER</th>
+            <th>PERMISSION SCOPE</th>
+            <th>ASSIGNED USERS</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let role of paginatedRoles">
+            <!-- Role Name & Icon -->
+            <td class="col-role">
+              <div class="role-name-wrapper">
+                <div class="role-icon-badge" [ngClass]="'badge-' + role.accessLevel.toLowerCase().replace(' ', '-')">
+                  <mat-icon>{{ role.iconName }}</mat-icon>
+                </div>
+                <span class="role-title">{{ role.roleName }}</span>
+              </div>
+            </td>
+
+            <!-- Security Tier -->
+            <td class="col-tier">
+              <span class="tier-pill" [ngClass]="'pill-' + role.accessLevel.toLowerCase().replace(' ', '-')">
+                {{ role.accessLevel }}
+              </span>
+            </td>
+
+            <!-- Permission Scope -->
+            <td class="col-scope">
+              <span class="scope-text">{{ role.securityScope }}</span>
+            </td>
+
+            <!-- Assigned Users -->
+            <td class="col-users">
+              <div class="users-wrapper">
+                <mat-icon class="people-icon">people_outline</mat-icon>
+                <span class="people-count">{{ role.assignedUsersCount }} Users</span>
+              </div>
+            </td>
+
+            <!-- Status (Display Only Badge) -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="role.isActive ? 'badge-active' : 'badge-inactive'">
+                <span class="dot"></span>
+                <span>{{ role.isActive ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(role)" title="Edit Role Permissions">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="role.isActive !== false"
+                  [class.btn-toggle-on]="role.isActive === false"
+                  (click)="onToggleActive(role)"
+                  [title]="role.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ role.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRoles.length === 0">
+            <td colspan="6" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">shield_moon</mat-icon>
+                <p *ngIf="allRoles.length === 0">
+                  No roles configured in database. Click <strong>'+ Add Role'</strong> above to create your first security role.
+                </p>
+                <p *ngIf="allRoles.length > 0">
+                  No roles match your search or filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredRoles.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredRoles.length) }} of {{ filteredRoles.length }} roles
+      </span>
+      <span class="entry-count" *ngIf="filteredRoles.length === 0">0 roles</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredRoles.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

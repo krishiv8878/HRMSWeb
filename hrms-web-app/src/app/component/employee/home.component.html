@@ -1,27 +1,285 @@
-<div class="container-flued">
-    <div class="row">
-        <div class="col">
-            <div class="table-menu">
-                <div class="table-title">
-                    <h3>Employee</h3>
-                </div>
-                <div class="table-btn">
-                    <button mat-flat-button (click)="openAddForm()" style="border-radius: 0;">add </button>
-                </div>
-            </div>
-        </div>
+<div class="employee-dashboard-container">
+  <!-- Top Header Bar -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Employee Directory & Workforce</h1>
+      <p class="page-subtitle">
+        Overview of corporate headcount, department distribution, and personnel profiles.
+      </p>
     </div>
 
-    <div class="row">
-        <div class="col">
-            <div class="hero-img">
-                <div class="container-fluid data">
-                    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData"
-                        [columnDefs]="columnDefs" class="ag-theme-quartz" [defaultColDef]="defaultColDef"
-                        [pagination]="pagination" [paginationPageSize]="paginationPageSize"
-                        [paginationPageSizeSelector]="paginationPageSizeSelector" />
-                </div>
-            </div>
-        </div>
+    <div class="header-actions">
+      <!-- Export Directory CSV Button -->
+      <button type="button" class="btn-export" (click)="onExportDirectory()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Directory</span>
+      </button>
+
+      <!-- Add Employee Button -->
+      <button type="button" class="btn-add-employee" (click)="openAddForm()">
+        <mat-icon class="btn-icon">person_add</mat-icon>
+        <span>Add Employee</span>
+      </button>
     </div>
+  </div>
+
+  <!-- Top 4 Metrics Cards Grid -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Total Workforce -->
+    <div class="metric-card card-blue">
+      <div class="card-header">
+        <span class="card-title">TOTAL HEADCOUNT</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>groups</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalCount }} <small class="unit-text">Members</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>{{ activeCount }} Active personnel</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Departments -->
+    <div class="metric-card card-purple">
+      <div class="card-header">
+        <span class="card-title">DEPARTMENTS</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>domain</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ departmentsCount }} <small class="unit-text">Units</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-blue"></span>
+        <span>Engineering, HR, Design & Ops</span>
+      </div>
+    </div>
+
+    <!-- Card 3: New Joiners -->
+    <div class="metric-card card-emerald">
+      <div class="card-header">
+        <span class="card-title">NEW ONBOARDING</span>
+        <div class="icon-box icon-emerald">
+          <mat-icon>badge</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">+{{ newJoinersCount }} <small class="unit-text">This Year</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>98% Onboarding completion</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Workforce Engagement -->
+    <div class="metric-card card-amber">
+      <div class="card-header">
+        <span class="card-title">WORKFORCE STATUS</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>insights</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">96.4% <small class="unit-text">Active</small></div>
+      <div class="card-subtitle is-neutral">
+        <span class="dot-indicator dot-amber"></span>
+        <span>Corporate SLA & Attendance verified</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employee Directory Table Card -->
+  <div class="table-card-container">
+    <!-- Table Controls Header Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Personnel Records ({{ allEmployees.length }})</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterEmployees()"
+            placeholder="Search name, email, skills..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Role Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedRole" (change)="filterEmployees()" class="custom-select">
+            <option value="All">All Roles</option>
+            <option *ngFor="let r of rolesList" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterEmployees()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Table -->
+    <div class="table-responsive">
+      <table class="employee-table">
+        <thead>
+          <tr>
+            <th>EMPLOYEE</th>
+            <th>ROLE & DEPARTMENT</th>
+            <th>REPORTING MANAGER</th>
+            <th>CONTACT</th>
+            <th>JOINING DATE</th>
+            <th>SKILLS</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let emp of paginatedEmployees">
+            <!-- Employee Avatar & Name -->
+            <td class="col-employee">
+              <div class="employee-avatar-group">
+                <img
+                  *ngIf="emp.avatarUrl"
+                  [src]="emp.avatarUrl"
+                  [alt]="emp.fullName"
+                  class="avatar-img"
+                />
+                <div *ngIf="!emp.avatarUrl" class="avatar-circle">
+                  {{ emp.initials || 'EM' }}
+                </div>
+                <div class="name-info">
+                  <span class="emp-name">{{ emp.fullName }}</span>
+                  <span class="emp-email">{{ emp.emailAddress }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Role & Department -->
+            <td class="col-role">
+              <div class="role-wrapper">
+                <span class="role-badge">{{ emp.roleDisplay || 'Employee' }}</span>
+                <span class="dept-text">{{ emp.department || 'General' }}</span>
+              </div>
+            </td>
+
+            <!-- Reporting Manager -->
+            <td class="col-manager">
+              <div class="manager-wrapper">
+                <mat-icon class="manager-icon">supervisor_account</mat-icon>
+                <span class="manager-name">{{ emp.managerName || 'Direct Report' }}</span>
+              </div>
+            </td>
+
+            <!-- Contact -->
+            <td class="col-contact">
+              <span class="phone-text">{{ emp.mobileNumber }}</span>
+            </td>
+
+            <!-- Joining Date -->
+            <td class="col-date">
+              <span class="date-text">{{ emp.formattedJoinDate }}</span>
+            </td>
+
+            <!-- Skills Stack -->
+            <td class="col-skills">
+              <div class="skills-tags-wrapper">
+                <span class="skill-tag" *ngFor="let s of (emp.skillsList || []) | slice:0:3">{{ s }}</span>
+                <span class="skill-tag skill-more" *ngIf="(emp.skillsList || []).length > 3">+{{ (emp.skillsList || []).length - 3 }}</span>
+              </div>
+            </td>
+
+            <!-- Active Status (Display Only Badge) -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="emp.isActive ? 'badge-active' : 'badge-inactive'">
+                <span class="dot"></span>
+                <span>{{ emp.isActive ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(emp)" title="Edit Employee Profile">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="emp.isActive !== false"
+                  [class.btn-toggle-on]="emp.isActive === false"
+                  (click)="onToggleActive(emp)"
+                  [title]="emp.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ emp.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedEmployees.length === 0">
+            <td colspan="8" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">group_off</mat-icon>
+                <p *ngIf="allEmployees.length === 0">
+                  No employee records found in the database. Click <strong>'+ Add Employee'</strong> above to create your first personnel profile.
+                </p>
+                <p *ngIf="allEmployees.length > 0">
+                  No employees match your search or filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredEmployees.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredEmployees.length) }} of {{ filteredEmployees.length }} employees
+      </span>
+      <span class="entry-count" *ngIf="filteredEmployees.length === 0">0 employees</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredEmployees.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

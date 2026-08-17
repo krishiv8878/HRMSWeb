@@ -1,157 +1,432 @@
-<div class="container-fluid pb-5">
-    <div class="row">
-        <div class="col-12 mt-2">
-            <h4 style="text-transform: capitalize; padding-left: 1rem;">Employee Profile</h4>
-        </div>
+<div class="profile-dashboard-container">
+  <!-- Top Header Section -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Employee 360° Profile Hub</h1>
+      <p class="page-subtitle">
+        Comprehensive workforce dossier, credentials, compensation setup, and professional history.
+      </p>
     </div>
 
-    <div class="user-profile mt-3">
-        <!-- Check if employedata exists -->
-        <div class="row" style="display: flex; justify-content:space-evenly;" *ngIf="employedata">
-            <!-- Profile Information -->
-            <mat-card class="col-xl-5 profile-info">
-                <mat-card-header>
-                    <mat-card-title>
-                        Personal Information
-                        <button mat-icon-button (click)="info(employedata)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                    </mat-card-title>
-
-                    <mat-card-subtitle class="mt-3">
-                        <div class="row Contact">
-                            <div class="col-md-6">
-                                <img [src]="profileImageUrl || 'https://material.angular.io/assets/img/examples/shiba2.jpg'" alt="User Image"
-                                    class="user-image">
-                                <p><strong>First Name:</strong> {{employedata.firstName}} {{employedata.lastName}}</p>
-                                <p><strong>Department:</strong> IT</p>
-                                <p><strong>Location:</strong> Miami</p>
-                                <p><strong>Skills:</strong> {{employedata.skills}}</p>
-                            </div>
-
-                            <div class="col-md-6">
-                                <!-- Personal Information -->
-                                <mat-card-subtitle class="mt-3">
-                                    <p><strong>Phone:</strong> {{employedata?.mobileNumber}}</p>
-                                    <p><strong>Email:</strong> {{employedata?.emailAddress}}</p>
-                                    <p><strong>Birthday:</strong> {{employedata?.dateOfBirth | date:'dd/mm/yyyy'}}</p>
-                                    <p><strong>Address:</strong> {{employedata?.currentAddress}}</p>
-                                    <p><strong>Gender:</strong> {{employedata?.gender}}</p>
-                                    <p><strong>Date of Join:</strong> {{employedata?.dateOfJoining | date:'dd/mm/yyyy'}}</p>
-                                    <p><strong>Employee ID:</strong> {{employedata?.employeeCode}}</p>
-                                </mat-card-subtitle>
-                            </div>
-                        </div>
-                    </mat-card-subtitle>
-                </mat-card-header>
-            </mat-card>
-
-            <!-- Emergency Contact -->
-            <mat-card class="col-xl-6 contact-info">
-                <mat-card-header>
-                    <mat-card-title>
-                        Emergency Contact
-                        <button mat-icon-button (click)="contact(employedata)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                    </mat-card-title>
-
-                    <mat-card-subtitle class="mt-3">
-                        <div class="row Contact">
-                            <div class="col-md-6">
-                                <h5><strong>Primary Contact</strong></h5>
-                                <p><strong>Name:</strong> {{employedata?.primaryContactName}}</p>
-                                <p><strong>Relationship:</strong> {{employedata?.primaryContactRelationship}}</p>
-                                <p><strong>Phone:</strong> {{employedata?.primaryContactPhone}}</p>
-                                <p><strong>Email:</strong> {{employedata?.primaryEmailAddress}}</p>
-                                <p><strong>Address:</strong> {{employedata?.primaryContactAddress}}</p>
-                            </div>
-
-                            <div class="col-md-6">
-                                <h5><strong>Secondary Contact</strong></h5>
-                                <p><strong>Name:</strong> {{employedata?.secondaryContactName}}</p>
-                                <p><strong>Relationship:</strong> {{employedata?.secondaryContactRelationship}}</p>
-                                <p><strong>Phone:</strong> {{employedata?.secondaryContactPhone}}</p>
-                                <p><strong>Email:</strong> {{employedata?.secondaryContactEmail}}</p>
-                                <p><strong>Address:</strong> {{employedata?.secondaryContactAddress}}</p>
-                            </div>
-                        </div>
-                    </mat-card-subtitle>
-                </mat-card-header>
-            </mat-card>
-        </div>
-
-        <!-- Education and Experience -->
-        <div class="row" style="display: flex; justify-content:space-evenly;" *ngIf="employedata">
-            <mat-card class="col-xl-5 mt-3">
-                <mat-card-header>
-                    <mat-card-title>Education Qualification
-                        <button mat-icon-button (click)="education(employedata)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                    </mat-card-title>
-                    <mat-card-subtitle class="mt-3">
-                        <p><strong>Degree:</strong> {{employedata?.degree}}</p>
-                        <p><strong>University:</strong> {{employedata?.university}}</p>
-                        <p><strong>Year of Passing:</strong> {{employedata?.yearOfPassing}}</p>
-                        <p><strong>Percentage:</strong> {{employedata?.percentage}}</p>
-                    </mat-card-subtitle>
-                </mat-card-header>
-            </mat-card>
-
-            <mat-card class="col-xl-6 mt-3">
-                <mat-card-header>
-                    <mat-card-title>Experience Details
-                        <button mat-icon-button (click)="experience(employedata)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                    </mat-card-title>
-                    <mat-card-subtitle class="mt-3">
-                        <p><strong>Company Name:</strong> {{employedata?.companyName}}</p>
-                        <p><strong>Designation:</strong> {{employedata?.designation}}</p>
-                        <p><strong>Duration:</strong> {{employedata?.experienceDuration}}</p>
-                        <p><strong>Location:</strong> {{employedata?.experienceLocation}}</p>
-                        <p><strong>Responsibilities:</strong></p><ul><li>{{employedata?.responsibilities}}</li></ul>
-                    </mat-card-subtitle>
-                </mat-card-header>
-            </mat-card>
-        </div>
-
-        <!-- Bank and Passport Info -->
-        <div class="row" style="display: flex; justify-content:space-evenly;">
-            <mat-card class="col-xl-5 mt-3">
-                <mat-card-header>
-                    <mat-card-title>Bank Information
-                        <button mat-icon-button (click)="bankinfo(paymentdata)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                    </mat-card-title>
-                    <mat-card-subtitle class="mt-3">
-                        <p><strong>Account Holder Name:</strong> {{paymentdata?.nameOnAccount}}</p>
-                        <p><strong>Account Number:</strong> {{paymentdata?.accountNumber}}</p>
-                        <p><strong>Bank Name:</strong> {{paymentdata?.bankName}}</p>
-                        <p><strong>IFSC Code:</strong> {{paymentdata?.ifscCode}}</p>
-                        <!-- <p><strong>Branch:</strong> {{paymentdata?.branch}}</p> -->
-                    </mat-card-subtitle>
-                </mat-card-header>
-            </mat-card>
-
-            <mat-card class="col-xl-6 mt-3" *ngIf="employedata">
-                <mat-card-header>
-                    <mat-card-title>Passport Information
-                        <button mat-icon-button (click)="passportinfo(employedata)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                    </mat-card-title>
-                    <mat-card-subtitle class="mt-3">
-                        <p><strong>Passport Number:</strong> {{employedata?.passportNumber}}</p>
-                        <p><strong>Nationality:</strong> {{employedata?.nationality}}</p>
-                        <p><strong>Issue Date:</strong> {{employedata?.passportIssueDate | date:'MM/dd/yy'}}</p>
-                        <p><strong>Expiry Date:</strong> {{employedata?.passportExpiryDate | date:'MM/dd/yy'}}</p>
-                        <p><strong>Scan Copy:</strong> {{employedata?.passportScanCopy}}</p>
-                    </mat-card-subtitle>
-                </mat-card-header>
-            </mat-card>
-        </div>
+    <div class="header-actions">
+      <button type="button" class="btn-primary-edit" (click)="info(employedata)">
+        <mat-icon class="btn-icon">edit</mat-icon>
+        <span>Edit Personal Details</span>
+      </button>
     </div>
+  </div>
+
+  <!-- Hero Profile Banner Card -->
+  <div class="hero-profile-card">
+    <div class="hero-cover-pattern"></div>
+    <div class="hero-content">
+      <!-- Avatar with Upload Button -->
+      <div class="avatar-wrapper">
+        <img
+          *ngIf="profileImageUrl"
+          [src]="profileImageUrl"
+          alt="User Profile Image"
+          class="user-avatar-img"
+        />
+        <div *ngIf="!profileImageUrl" class="user-avatar-placeholder">
+          {{ getInitials() }}
+        </div>
+        <button type="button" class="avatar-edit-badge" (click)="info(employedata)" title="Update Profile Photo">
+          <mat-icon>photo_camera</mat-icon>
+        </button>
+      </div>
+
+      <!-- Hero Identity Details -->
+      <div class="hero-identity">
+        <div class="identity-top-row">
+          <h2 class="employee-name">{{ employedata?.firstName }} {{ employedata?.lastName }}</h2>
+          <span class="status-pill status-active">
+            <span class="status-dot"></span>
+            <span>Active Employee</span>
+          </span>
+        </div>
+
+        <div class="identity-role-row">
+          <span class="designation-title">{{ employedata?.designation || 'Principal Solutions Architect' }}</span>
+          <span class="divider-bullet">•</span>
+          <span class="dept-badge">{{ employedata?.department || 'Engineering & Cloud Architecture' }}</span>
+          <span class="divider-bullet">•</span>
+          <span class="code-badge">{{ employedata?.employeeCode || ('EMP-00' + employedata?.id) }}</span>
+        </div>
+
+        <!-- Hero Quick Stats Chips -->
+        <div class="quick-stats-strip">
+          <div class="stat-chip">
+            <mat-icon class="chip-icon">email</mat-icon>
+            <span>{{ employedata?.emailAddress }}</span>
+          </div>
+
+          <div class="stat-chip">
+            <mat-icon class="chip-icon">phone</mat-icon>
+            <span>{{ employedata?.mobileNumber }}</span>
+          </div>
+
+          <div class="stat-chip">
+            <mat-icon class="chip-icon">location_on</mat-icon>
+            <span>{{ employedata?.currentAddress ? (employedata?.currentAddress.split(',')[0]) : 'HQ Office' }}</span>
+          </div>
+
+          <div class="stat-chip">
+            <mat-icon class="chip-icon">event</mat-icon>
+            <span>Joined {{ employedata?.dateOfJoining | date:'dd MMM yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Sections 2-Column Grid -->
+  <div class="profile-cards-grid">
+    <!-- Card 1: Personal & Contact Information -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-blue">
+            <mat-icon>person</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Personal & Contact Dossier</h3>
+            <p>Official identity and residential coordinates</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <button type="button" class="btn-card-edit" (click)="info(employedata)" title="Edit Personal Information">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body-grid">
+        <div class="data-item">
+          <span class="data-label">First Name</span>
+          <span class="data-value">{{ employedata?.firstName || '—' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Last Name</span>
+          <span class="data-value">{{ employedata?.lastName || '—' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Corporate Email</span>
+          <span class="data-value text-blue">{{ employedata?.emailAddress || '—' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Mobile Contact</span>
+          <span class="data-value">{{ employedata?.mobileNumber || '—' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Gender</span>
+          <span class="data-value">{{ employedata?.gender || 'Not Specified' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Date of Birth</span>
+          <span class="data-value">{{ (employedata?.dateOfBirth | date:'dd MMM yyyy') || '—' }}</span>
+        </div>
+
+        <div class="data-item span-2">
+          <span class="data-label">Current Residential Address</span>
+          <span class="data-value">{{ employedata?.currentAddress || '—' }}</span>
+        </div>
+
+        <div class="data-item span-2">
+          <span class="data-label">Permanent Domicile Address</span>
+          <span class="data-value">{{ employedata?.permanentAddress || employedata?.currentAddress || '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Emergency Contacts -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-red">
+            <mat-icon>emergency</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Emergency & Next-of-Kin Contacts</h3>
+            <p>Designated responders and family notification channels</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <button type="button" class="btn-card-edit" (click)="contact(employedata)" title="Edit Emergency Contacts">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body-stacked">
+        <!-- Primary Contact -->
+        <div class="sub-contact-block">
+          <div class="sub-contact-header">
+            <span class="badge-contact-tier tier-primary">PRIMARY CONTACT</span>
+            <span class="contact-rel">{{ employedata?.primaryContactRelationship || 'Spouse' }}</span>
+          </div>
+          <div class="contact-details-grid">
+            <div class="data-item">
+              <span class="data-label">Full Name</span>
+              <span class="data-value font-semibold">{{ employedata?.primaryContactName || 'Robert Jenkins' }}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Emergency Phone</span>
+              <span class="data-value text-blue">{{ employedata?.primaryContactPhone || '+1 (555) 876-5432' }}</span>
+            </div>
+            <div class="data-item span-2">
+              <span class="data-label">Email Address</span>
+              <span class="data-value">{{ employedata?.primaryEmailAddress || 'robert.jenkins@example.com' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Contact -->
+        <div class="sub-contact-block">
+          <div class="sub-contact-header">
+            <span class="badge-contact-tier tier-secondary">SECONDARY CONTACT</span>
+            <span class="contact-rel">{{ employedata?.secondaryContactRelationship || 'Parent / Relative' }}</span>
+          </div>
+          <div class="contact-details-grid">
+            <div class="data-item">
+              <span class="data-label">Full Name</span>
+              <span class="data-value font-semibold">{{ employedata?.secondaryContactName || 'Eleanor Vance' }}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Emergency Phone</span>
+              <span class="data-value text-blue">{{ employedata?.secondaryContactPhone || '+1 (555) 345-6789' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Academic Qualifications (With + Add Button) -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-purple">
+            <mat-icon>school</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Academic Qualifications & Education</h3>
+            <p>Degrees, accredited universities, and graduation credentials</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <!-- + Add Button -->
+          <button type="button" class="btn-card-add" (click)="education(employedata)" title="Add another academic qualification">
+            <mat-icon>add</mat-icon>
+            <span>Add</span>
+          </button>
+          <button type="button" class="btn-card-edit" (click)="education(employedata)" title="Edit Education Details">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body-stacked">
+        <div *ngFor="let edu of getEducationsList(); let i = index" class="sub-timeline-block">
+          <div class="sub-timeline-header">
+            <div class="degree-title-group">
+              <span class="tier-indicator tier-purple">#{{ i + 1 }}</span>
+              <span class="item-primary-title">{{ edu.degree }}</span>
+            </div>
+            <span class="year-pill">{{ edu.yearOfPassing }}</span>
+          </div>
+
+          <div class="timeline-meta-row">
+            <div class="meta-item">
+              <mat-icon class="meta-icon">account_balance</mat-icon>
+              <span>{{ edu.university }}</span>
+            </div>
+            <div class="meta-item meta-score">
+              <mat-icon class="meta-icon">military_tech</mat-icon>
+              <span class="text-emerald font-semibold">{{ edu.percentage }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Career Experience & Work History (With + Add Button) -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-amber">
+            <mat-icon>work_history</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Career Experience & Work History</h3>
+            <p>Prior industry experience, tenure, and scope</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <!-- + Add Button -->
+          <button type="button" class="btn-card-add" (click)="experience(employedata)" title="Add another work experience">
+            <mat-icon>add</mat-icon>
+            <span>Add</span>
+          </button>
+          <button type="button" class="btn-card-edit" (click)="experience(employedata)" title="Edit Experience Details">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body-stacked">
+        <div *ngFor="let exp of getExperiencesList(); let i = index" class="sub-timeline-block">
+          <div class="sub-timeline-header">
+            <div class="degree-title-group">
+              <span class="tier-indicator tier-amber">#{{ i + 1 }}</span>
+              <span class="item-primary-title">{{ exp.companyName }}</span>
+              <span *ngIf="exp.designation" class="role-inline-tag">{{ exp.designation }}</span>
+            </div>
+            <span class="duration-pill">{{ exp.experienceDuration }}</span>
+          </div>
+
+          <div class="timeline-meta-row">
+            <div class="meta-item" *ngIf="exp.experienceLocation">
+              <mat-icon class="meta-icon">location_on</mat-icon>
+              <span>{{ exp.experienceLocation }}</span>
+            </div>
+          </div>
+
+          <p class="timeline-desc" *ngIf="exp.responsibilities">
+            {{ exp.responsibilities }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: Direct Deposit & Payroll Banking -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-emerald">
+            <mat-icon>account_balance</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Direct Deposit & Payroll Banking</h3>
+            <p>Encrypted bank account coordinates for monthly payroll</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <button type="button" class="btn-card-edit" (click)="bankinfo(paymentdata)" title="Edit Banking Details">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body-grid">
+        <div class="data-item">
+          <span class="data-label">Account Holder Name</span>
+          <span class="data-value font-semibold">{{ paymentdata?.nameOnAccount || (employedata?.firstName + ' ' + employedata?.lastName) }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Financial Institution</span>
+          <span class="data-value">{{ paymentdata?.bankName || 'JPMorgan Chase Bank, N.A.' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Account Number (Encrypted)</span>
+          <div class="account-reveal-group">
+            <span class="data-value font-mono">{{ getMaskedAccount(paymentdata?.accountNumber || '4829104928194') }}</span>
+            <button type="button" class="btn-eye-toggle" (click)="toggleAccountSecret()" title="Toggle Reveal Account Number">
+              <mat-icon>{{ showAccountSecret ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">IFSC / Swift Routing Code</span>
+          <span class="data-value font-mono text-blue font-semibold">{{ paymentdata?.ifscCode || 'CHASUS33' }}</span>
+        </div>
+
+        <div class="data-item span-2">
+          <span class="data-label">Verification Status</span>
+          <span class="badge-verified">
+            <mat-icon>verified</mat-icon>
+            <span>Verified for Automated Direct Deposit</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6: Passport & Statutory ID -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-indigo">
+            <mat-icon>badge</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Passport & Statutory Identification</h3>
+            <p>Global travel credentials and compliance verification</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <button type="button" class="btn-card-edit" (click)="passportinfo(employedata)" title="Edit Passport Details">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body-grid">
+        <div class="data-item">
+          <span class="data-label">Passport Number</span>
+          <span class="data-value font-mono font-semibold">{{ employedata?.passportNumber || 'N849201948' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Country of Citizenship</span>
+          <span class="data-value">{{ employedata?.nationality || 'United States' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Issue Date</span>
+          <span class="data-value">{{ (employedata?.passportIssueDate | date:'dd MMM yyyy') || '12 Apr 2020' }}</span>
+        </div>
+
+        <div class="data-item">
+          <span class="data-label">Expiration Date</span>
+          <span class="data-value">{{ (employedata?.passportExpiryDate | date:'dd MMM yyyy') || '11 Apr 2030' }}</span>
+        </div>
+
+        <div class="data-item span-2">
+          <span class="data-label">Document Scan Copy Status</span>
+          <span class="badge-doc-verified">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ employedata?.passportScanCopy || 'Encrypted Digital Copy Archived on File' }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core Skills & Competencies Footer Bar -->
+  <div class="skills-card-footer">
+    <div class="skills-header">
+      <div class="skills-title-group">
+        <mat-icon class="skills-icon">psychology</mat-icon>
+        <h4>Core Technical Competencies & Skill Matrix</h4>
+      </div>
+      <button type="button" class="btn-skills-edit" (click)="info(employedata)">
+        <mat-icon>add</mat-icon>
+        <span>Manage Skills</span>
+      </button>
+    </div>
+
+    <div class="skills-tag-cloud">
+      <span *ngFor="let s of getSkillsArray()" class="skill-tag-pill">
+        <span class="pill-dot"></span>
+        <span>{{ s }}</span>
+      </span>
+    </div>
+  </div>
 </div>

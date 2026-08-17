@@ -1,15 +1,262 @@
-<div class="table-menu">
-    <div class="table-title">
-        <h2>Skill</h2>
+<div class="skills-dashboard-container">
+  <!-- Top Header Bar -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Skills Master & Competency Matrix</h1>
+      <p class="page-subtitle">
+        Technical proficiency matrix, core competencies, and workforce capability mapping.
+      </p>
     </div>
-    <div class="table-btn">
-        <button mat-flat-button (click)="openSkillForm()"  style="border-radius: 0;">Add </button>
+
+    <div class="header-actions">
+      <!-- Export CSV Button -->
+      <button type="button" class="btn-export" (click)="onExportSkills()">
+        <mat-icon class="btn-icon">file_upload</mat-icon>
+        <span>Export Matrix</span>
+      </button>
+
+      <!-- Add Skill Button -->
+      <button type="button" class="btn-add-skill" (click)="openSkillForm()">
+        <mat-icon class="btn-icon">add</mat-icon>
+        <span>Add Skill</span>
+      </button>
     </div>
-</div>
+  </div>
 
+  <!-- Top 4 Metrics Cards Grid -->
+  <div class="metrics-cards-grid">
+    <!-- Card 1: Total Skills -->
+    <div class="metric-card card-purple">
+      <div class="card-header">
+        <span class="card-title">REGISTERED SKILLS</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>psychology</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ totalSkillsCount }} <small class="unit-text">Skills</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>{{ activeSkillsCount }} Active competencies</span>
+      </div>
+    </div>
 
-<div class="container-fluid data">
-    <ag-grid-angular style="height: 85vh; width: 100%; border: 0;" [rowData]="rowData" [columnDefs]="columnDefs"
-        class="ag-theme-quartz" [defaultColDef]="defaultColDef" [pagination]="pagination"
-        [paginationPageSize]="paginationPageSize" [paginationPageSizeSelector]="paginationPageSizeSelector" />
+    <!-- Card 2: Domains -->
+    <div class="metric-card card-blue">
+      <div class="card-header">
+        <span class="card-title">DOMAINS</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>hub</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ categoriesCount }} <small class="unit-text">Domains</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-blue"></span>
+        <span>Frontend, Backend, Cloud & DB</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Workforce Coverage -->
+    <div class="metric-card card-emerald">
+      <div class="card-header">
+        <span class="card-title">TALENT COVERAGE</span>
+        <div class="icon-box icon-emerald">
+          <mat-icon>verified</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ coverageRate }}% <small class="unit-text">Mapped</small></div>
+      <div class="card-subtitle is-good">
+        <span class="dot-indicator dot-green"></span>
+        <span>Workforce-to-skill alignment</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Benchmark Rating -->
+    <div class="metric-card card-amber">
+      <div class="card-header">
+        <span class="card-title">BENCHMARK MATRIX</span>
+        <div class="icon-box icon-amber">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">96.2% <small class="unit-text">Score</small></div>
+      <div class="card-subtitle is-neutral">
+        <span class="dot-indicator dot-amber"></span>
+        <span>Standardized enterprise skills</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skills Inventory Table Card -->
+  <div class="table-card-container">
+    <!-- Table Controls Header Bar -->
+    <div class="table-header-bar">
+      <div class="table-title">
+        <h2>Skills Inventory ({{ allSkills.length }})</h2>
+      </div>
+
+      <div class="table-controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterSkills()"
+            placeholder="Search skills, domains, tags..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Domain Category Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedCategory" (change)="filterSkills()" class="custom-select">
+            <option value="All">All Domains</option>
+            <option *ngFor="let c of categoriesList" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedStatus" (change)="filterSkills()" class="custom-select">
+            <option value="All">Status: All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills Table -->
+    <div class="table-responsive">
+      <table class="skills-table">
+        <thead>
+          <tr>
+            <th>SKILL & COMPETENCY</th>
+            <th>DOMAIN CATEGORY</th>
+            <th>WORKFORCE UTILIZATION</th>
+            <th>PROFICIENCY BENCHMARK</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let skill of paginatedSkills">
+            <!-- Skill Name & Icon -->
+            <td class="col-skill">
+              <div class="skill-name-wrapper">
+                <div class="skill-icon-badge" [ngClass]="'badge-' + skill.category.toLowerCase().replace(' & ', '-').replace(' ', '-')">
+                  <mat-icon>{{ skill.iconName }}</mat-icon>
+                </div>
+                <span class="skill-title">{{ skill.skillName }}</span>
+              </div>
+            </td>
+
+            <!-- Domain Category -->
+            <td class="col-category">
+              <span class="domain-pill" [ngClass]="'pill-' + skill.category.toLowerCase().replace(' & ', '-').replace(' ', '-')">
+                {{ skill.category }}
+              </span>
+            </td>
+
+            <!-- Workforce Utilization -->
+            <td class="col-utilization">
+              <div class="utilization-wrapper">
+                <mat-icon class="people-icon">people_outline</mat-icon>
+                <span class="people-count">{{ skill.assignedCount }} Personnel</span>
+              </div>
+            </td>
+
+            <!-- Proficiency Level -->
+            <td class="col-proficiency">
+              <span class="proficiency-tag" [ngClass]="'level-' + skill.proficiencyLevel.toLowerCase()">
+                {{ skill.proficiencyLevel }}
+              </span>
+            </td>
+
+            <!-- Active Status (Display Only Badge) -->
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="skill.isActive ? 'badge-active' : 'badge-inactive'">
+                <span class="dot"></span>
+                <span>{{ skill.isActive ? 'Active' : 'Inactive' }}</span>
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(skill)" title="Edit Skill">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action-icon"
+                  [class.btn-toggle-off]="skill.isActive !== false"
+                  [class.btn-toggle-on]="skill.isActive === false"
+                  (click)="onToggleActive(skill)"
+                  [title]="skill.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                >
+                  <mat-icon>{{ skill.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedSkills.length === 0">
+            <td colspan="6" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">psychology_alt</mat-icon>
+                <p *ngIf="allSkills.length === 0">
+                  No skills recorded in the catalog. Click <strong>'+ Add Skill'</strong> above to create your first skill competency.
+                </p>
+                <p *ngIf="allSkills.length > 0">
+                  No skills match your search or filter criteria.
+                </p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Pagination Footer -->
+    <div class="table-footer">
+      <span class="entry-count" *ngIf="filteredSkills.length > 0">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredSkills.length) }} of {{ filteredSkills.length }} skills
+      </span>
+      <span class="entry-count" *ngIf="filteredSkills.length === 0">0 skills</span>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+          aria-label="Previous Page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <button
+          *ngFor="let p of pages"
+          type="button"
+          class="page-num-btn"
+          [class.active]="currentPage === p"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          class="page-nav-btn"
+          [disabled]="currentPage === totalPages || filteredSkills.length === 0"
+          (click)="nextPage()"
+          aria-label="Next Page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

@@ -76,17 +76,30 @@
     }
 
     .btn-primary {
-      background-color: #2563eb;
-      border: 1px solid #2563eb;
+      height: 38px;
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      border: 1px solid #1e40af;
+      border-radius: 6px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
       color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2);
+      transition: all 0.15s ease;
 
-      &:hover {
-        background-color: #1d4ed8;
-        border-color: #1d4ed8;
+      .btn-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
       }
 
-      &:focus {
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+      &:hover {
+        background: linear-gradient(135deg, #1e40af, #172554);
+        box-shadow: 0 4px 6px rgba(29, 78, 216, 0.3);
       }
     }
   }
