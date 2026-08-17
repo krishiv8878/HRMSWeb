@@ -51,7 +51,7 @@
       <div class="card-value">{{ departmentsCount }} <small class="unit-text">Units</small></div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-blue"></span>
-        <span>Engineering, HR, Design & Ops</span>
+        <span>{{ departmentNamesSummary }}</span>
       </div>
     </div>
 
@@ -63,10 +63,10 @@
           <mat-icon>badge</mat-icon>
         </div>
       </div>
-      <div class="card-value">+{{ newJoinersCount }} <small class="unit-text">This Year</small></div>
+      <div class="card-value">+{{ newJoinersCount }} <small class="unit-text">Recent</small></div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-green"></span>
-        <span>98% Onboarding completion</span>
+        <span>{{ onboardingCompletionPercent }}% Profile completion</span>
       </div>
     </div>
 
@@ -78,10 +78,10 @@
           <mat-icon>insights</mat-icon>
         </div>
       </div>
-      <div class="card-value">96.4% <small class="unit-text">Active</small></div>
+      <div class="card-value">{{ workforceActiveRate }}% <small class="unit-text">Active</small></div>
       <div class="card-subtitle is-neutral">
         <span class="dot-indicator dot-amber"></span>
-        <span>Corporate SLA & Attendance verified</span>
+        <span>{{ activeCount }} Active • {{ inactiveCount }} Inactive</span>
       </div>
     </div>
   </div>

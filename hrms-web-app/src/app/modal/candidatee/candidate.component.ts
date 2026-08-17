@@ -134,45 +134,59 @@ export class CandidateeComponent implements OnInit {
 
     const formVal = this.CandidateForm.value;
 
+    const isoDate = new Date().toISOString();
+
     // Exact Payload mapping matching C# Candidate Model
-    const payload = {
+    const payload: any = {
       id: this.isEdit ? Number(formVal.id || 0) : 0,
+      candidateId: this.isEdit ? Number(formVal.id || 0) : 0,
       firstName: (formVal.firstName || '').trim(),
       lastName: (formVal.lastName || '').trim(),
       emailAddress: (formVal.emailAddress || '').trim(),
       mobileNumber: String(formVal.mobileNumber || '').trim(),
-      totalExperience: String(formVal.totalExperience || '').trim(), // C# string
-      relevantExperience: String(formVal.relevantExperience || '').trim(), // C# string
-      currentSalary: Math.round(Number(formVal.currentSalary || 0)), // C# long (integer)
-      expectedSalary: Math.round(Number(formVal.expectedSalary || 0)), // C# long (integer)
-      noticePeriod: parseInt(String(formVal.noticePeriod || 30), 10), // C# int (integer)
+      appliedRole: formVal.appliedRole || 'Senior Frontend Engineer',
+      stage: formVal.stage || 'Screening',
+      totalExperience: String(formVal.totalExperience || '').trim(),
+      relevantExperience: String(formVal.relevantExperience || '').trim(),
+      currentSalary: Math.round(Number(formVal.currentSalary || 0)),
+      expectedSalary: Math.round(Number(formVal.expectedSalary || 0)),
+      noticePeriod: parseInt(String(formVal.noticePeriod || 30), 10),
+      matchScore: Number(formVal.matchScore || 85),
+      lastUpdated: isoDate,
+      LastUpdated: isoDate,
       isActive: formVal.isActive !== false
     };
 
     if (this.isEdit) {
       this.services.updateData(payload).subscribe({
-        next: () => {
-          this.toaster.success('Candidate profile updated successfully', 'Updated');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('Candidate profile updated successfully', 'Updated');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to update candidate profile', 'Error');
+          }
         },
         error: (err) => {
           console.error('Error updating candidate:', err);
-          const msg = err?.error?.message || err?.error?.title || 'Candidate profile updated';
-          this.toaster.info(msg, 'Status');
-          this.dialogRef.close(true);
+          const msg = err?.error?.responseMessage || err?.error?.message || err?.error?.title || 'Error updating candidate';
+          this.toaster.error(msg, 'Update Error');
         }
       });
     } else {
       this.services.createData(payload).subscribe({
-        next: () => {
-          this.toaster.success('New candidate added successfully', 'Created');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('New candidate added successfully', 'Created');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to add new candidate', 'Error');
+          }
         },
         error: (err) => {
           console.error('Error adding candidate:', err);
-          const msg = err?.error?.message || err?.error?.title || 'New candidate added';
-          this.toaster.info(msg, 'Status');
-          this.dialogRef.close(true);
+          const msg = err?.error?.responseMessage || err?.error?.message || err?.error?.title || 'Error adding candidate';
+          this.toaster.error(msg, 'Creation Error');
         }
       });
     }

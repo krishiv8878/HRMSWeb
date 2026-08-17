@@ -35,9 +35,14 @@ export class SkillsComponent implements OnInit {
 
   isEdit: boolean = false;
 
+  categoriesList: string[] = ['Frontend', 'Backend', 'Database', 'Cloud & DevOps', 'Design & UX', 'Leadership', 'General'];
+  proficiencyLevels: string[] = ['Expert', 'Advanced', 'Intermediate', 'Foundational'];
+
   Skillform = this.formBuilder.group({
     id: [0],
     skillName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-,#,+,/,&]+$')]],
+    category: ['Frontend', [Validators.required]],
+    proficiencyLevel: ['Advanced', [Validators.required]],
     isActive: [true]
   });
 
@@ -49,6 +54,8 @@ export class SkillsComponent implements OnInit {
       this.Skillform.patchValue({
         id: this.data.id || 0,
         skillName: this.data.skillName || '',
+        category: this.data.category || 'Frontend',
+        proficiencyLevel: this.data.proficiencyLevel || this.data.proficiencyBenchmark || 'Advanced',
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
     }
@@ -68,7 +75,7 @@ export class SkillsComponent implements OnInit {
   submitdata() {
     if (this.Skillform.invalid) {
       this.Skillform.markAllAsTouched();
-      this.toaster.error('Please enter a valid skill name', 'Validation Error');
+      this.toaster.error('Please enter a valid skill name and details', 'Validation Error');
       return;
     }
 
@@ -80,9 +87,14 @@ export class SkillsComponent implements OnInit {
       return;
     }
 
-    const payload = {
+    const payload: any = {
       id: this.isEdit ? Number(val.id || 0) : 0,
       skillName: trimmedName,
+      category: val.category || 'Frontend',
+      Category: val.category || 'Frontend',
+      proficiencyLevel: val.proficiencyLevel || 'Advanced',
+      ProficiencyLevel: val.proficiencyLevel || 'Advanced',
+      proficiencyBenchmark: val.proficiencyLevel || 'Advanced',
       isActive: Boolean(val.isActive)
     };
 

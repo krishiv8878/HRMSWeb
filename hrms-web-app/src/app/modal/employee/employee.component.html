@@ -134,15 +134,16 @@
     <!-- Row 4: Roles & Designation -->
     <div class="form-row-2">
       <div class="form-group">
-        <label class="field-label">Corporate Designation</label>
+        <label class="field-label">Corporate Designation <span class="required">*</span></label>
         <div class="input-wrapper">
           <mat-icon class="input-icon">work_outline</mat-icon>
-          <input
-            type="text"
-            formControlName="designation"
-            placeholder="e.g. Senior Frontend Engineer"
-            class="custom-input"
-          />
+          <select
+            formControlName="designationId"
+            (change)="onDesignationSelect($event)"
+            class="custom-select"
+          >
+            <option *ngFor="let d of designations" [value]="d.id">{{ d.name }}</option>
+          </select>
         </div>
       </div>
 

@@ -14,6 +14,7 @@ import { ToastrService } from 'ngx-toastr';
 import { EmployeeService } from '../../services/employee/employee.service';
 import { SkillservicesService } from '../../services/skill/skillservices.service';
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
+import { DesignationservicesService } from '../../services/designation/designationservices.service';
 
 @Component({
   selector: 'app-employee',
@@ -42,14 +43,16 @@ export class EmployeeComponent implements OnInit {
   private services = inject(EmployeeService);
   private rolesServices = inject(RoleservicesService);
   private skillServices = inject(SkillservicesService);
+  private designationServices = inject(DesignationservicesService);
   private toaster = inject(ToastrService);
 
   isEdit: boolean = false;
-  emp = localStorage.getItem('employeeId');
+  emp = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
 
   roles: any[] = [];
   managers: any[] = [];
   skills: any[] = [];
+  designations: any[] = [];
 
   genderOptions: string[] = ['Male', 'Female', 'Other'];
 
@@ -62,10 +65,12 @@ export class EmployeeComponent implements OnInit {
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
     gender: ['Male', [Validators.required]],
     dateOfJoining: [new Date(), [Validators.required]],
+    designationId: [1, [Validators.required]],
     designation: [''],
     roleIds: [<any[]>[], [Validators.required]],
     managerId: [0],
     skillIds: [<any[]>[]],
+    employeeCode: [0],
     currentAddress: ['', [Validators.required]],
     permanentAddress: ['', [Validators.required]],
     isActive: [true]
@@ -92,10 +97,12 @@ export class EmployeeComponent implements OnInit {
         mobileNumber: this.data.mobileNumber || '',
         gender: this.data.gender || 'Male',
         dateOfJoining: joinDate,
+        designationId: this.data.designationId ? Number(this.data.designationId) : 1,
         designation: this.data.designation || this.data.rolenames || '',
         roleIds: Array.isArray(this.data.roleIds) ? this.data.roleIds : (this.data.roleId ? [this.data.roleId] : [1]),
         managerId: this.data.managerId || 0,
         skillIds: Array.isArray(this.data.skillIds) ? this.data.skillIds : [],
+        employeeCode: this.data.employeeCode || 0,
         currentAddress: this.data.currentAddress || '',
         permanentAddress: this.data.permanentAddress || '',
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
@@ -104,6 +111,31 @@ export class EmployeeComponent implements OnInit {
   }
 
   private loadDropdownData() {
+    this.designationServices.getData().subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        this.designations = list.map((d: any) => ({
+          id: Number(d.id || d.designationId),
+          name: d.designationName || d.designation || 'Specialist'
+        }));
+        if (this.designations.length > 0 && !this.Employeeform.value.designationId) {
+          this.Employeeform.patchValue({
+            designationId: this.designations[0].id,
+            designation: this.designations[0].name
+          });
+        }
+      },
+      error: () => {
+        this.designations = [
+          { id: 1, name: 'Software Engineer' },
+          { id: 2, name: 'Senior Developer' },
+          { id: 3, name: 'Tech Lead' },
+          { id: 4, name: 'HR Executive' },
+          { id: 5, name: 'Project Manager' }
+        ];
+      }
+    });
+
     this.skillServices.getSkill().subscribe({
       next: (res: any) => {
         this.skills = Array.isArray(res) ? res : (res?.data || []);
@@ -148,6 +180,14 @@ export class EmployeeComponent implements OnInit {
     });
   }
 
+  onDesignationSelect(event: any) {
+    const selectedId = Number(event.target.value);
+    const found = this.designations.find(d => d.id === selectedId);
+    if (found) {
+      this.Employeeform.patchValue({ designation: found.name });
+    }
+  }
+
   allowOnlyLetters(event: KeyboardEvent) {
     const key = event.key;
     if (!/^[a-zA-Z ]$/.test(key)) {
@@ -175,46 +215,79 @@ export class EmployeeComponent implements OnInit {
 
     const val = this.Employeeform.value;
 
-    const payload = {
-      ...val,
-      id: this.isEdit ? Number(val.id || 0) : 0,
+    const clientUrl = typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'http://localhost:4200';
+
+    const managerIdVal = (val.managerId && Number(val.managerId) > 0) ? Number(val.managerId) : null;
+    const designationIdVal = (val.designationId && Number(val.designationId) > 0)
+      ? Number(val.designationId)
+      : (this.designations[0]?.id || 1);
+
+    const designationName = (val.designation || this.designations.find(d => d.id === designationIdVal)?.name || 'Software Engineer').trim();
+
+    const rawRoles: any = val.roleIds;
+    const roleIdsArray = (Array.isArray(rawRoles) && rawRoles.length > 0)
+      ? rawRoles.map((r: any) => Number(r))
+      : [1];
+
+    const rawSkills: any = val.skillIds;
+    const skillIdsArray = (Array.isArray(rawSkills) && rawSkills.length > 0)
+      ? rawSkills.map((s: any) => Number(s))
+      : [];
+
+    const payload: any = {
+      id: this.isEdit ? Number(val.id || val.employeeId || 0) : 0,
       employeeId: this.isEdit ? Number(val.employeeId || val.id || 0) : 0,
       firstName: (val.firstName || '').trim(),
       lastName: (val.lastName || '').trim(),
       emailAddress: (val.emailAddress || '').trim(),
+      primaryEmailAddress: (val.emailAddress || '').trim(),
       mobileNumber: String(val.mobileNumber || '').trim(),
       gender: val.gender || 'Male',
       dateOfJoining: val.dateOfJoining ? new Date(val.dateOfJoining).toISOString() : new Date().toISOString(),
       currentAddress: (val.currentAddress || '').trim(),
-      permanentAddress: (val.permanentAddress || '').trim(),
-      roleIds: val.roleIds || [1],
-      managerId: Number(val.managerId || 0),
-      skillIds: val.skillIds || [],
-      isActive: Boolean(val.isActive)
+      permanentAddress: (val.permanentAddress || val.currentAddress || '').trim(),
+      designationId: designationIdVal,
+      designation: designationName,
+      roleIds: roleIdsArray,
+      managerId: managerIdVal,
+      skillIds: skillIdsArray,
+      employeeCode: Number(val.employeeCode || Math.floor(100000 + Math.random() * 900000)),
+      profileCompleted: true,
+      clientUrl: clientUrl,
+      isActive: Boolean(val.isActive),
+      isDeleted: false
     };
 
     if (this.isEdit) {
       this.services.updateData(payload).subscribe({
-        next: () => {
-          this.toaster.success('Employee profile updated successfully', 'Updated');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('Employee profile updated successfully', 'Updated');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to update employee', 'Update Error');
+          }
         },
         error: (err) => {
           console.error('Error updating employee:', err);
-          this.toaster.success('Employee profile updated successfully', 'Updated');
-          this.dialogRef.close(true);
+          this.toaster.error(err?.error?.responseMessage || 'Error updating employee profile', 'Error');
         }
       });
     } else {
       this.services.createData(payload).subscribe({
-        next: () => {
-          this.toaster.success('New employee added successfully', 'Created');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('New employee added successfully', 'Created');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to add employee', 'Creation Error');
+          }
         },
         error: (err) => {
           console.error('Error adding employee:', err);
-          this.toaster.success('New employee added successfully', 'Created');
-          this.dialogRef.close(true);
+          this.toaster.error(err?.error?.responseMessage || 'Error adding new employee', 'Error');
         }
       });
     }

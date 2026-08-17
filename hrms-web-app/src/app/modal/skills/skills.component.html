@@ -35,6 +35,29 @@
       </span>
     </div>
 
+    <!-- Row: Domain Category & Proficiency Benchmark -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Domain Category <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">hub</mat-icon>
+          <select formControlName="category" class="custom-select">
+            <option *ngFor="let cat of categoriesList" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Proficiency Benchmark <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">trending_up</mat-icon>
+          <select formControlName="proficiencyLevel" class="custom-select">
+            <option *ngFor="let lvl of proficiencyLevels" [value]="lvl">{{ lvl }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
     <!-- Active Status Card -->
     <div class="form-group-checkbox">
       <label class="checkbox-label">
