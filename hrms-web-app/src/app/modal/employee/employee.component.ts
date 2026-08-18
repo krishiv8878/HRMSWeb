@@ -15,6 +15,7 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { SkillservicesService } from '../../services/skill/skillservices.service';
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
 import { DesignationservicesService } from '../../services/designation/designationservices.service';
+import { EmployeeshiftService } from '../../services/shift/employeeshift.service';
 
 @Component({
   selector: 'app-employee',
@@ -44,6 +45,7 @@ export class EmployeeComponent implements OnInit {
   private rolesServices = inject(RoleservicesService);
   private skillServices = inject(SkillservicesService);
   private designationServices = inject(DesignationservicesService);
+  private shiftServices = inject(EmployeeshiftService);
   private toaster = inject(ToastrService);
 
   isEdit: boolean = false;
@@ -53,26 +55,28 @@ export class EmployeeComponent implements OnInit {
   managers: any[] = [];
   skills: any[] = [];
   designations: any[] = [];
+  shifts: any[] = [];
 
   genderOptions: string[] = ['Male', 'Female', 'Other'];
 
   Employeeform = this.formBuilder.group({
     id: [0],
     employeeId: [0],
-    firstName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
-    lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
+    firstName: ['', [Validators.required]],
+    lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required, Validators.email]],
-    mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[1-9][0-9]{9}$')]],
-    gender: ['Male', [Validators.required]],
-    dateOfJoining: [new Date(), [Validators.required]],
-    designationId: [1, [Validators.required]],
+    mobileNumber: [''],
+    gender: ['Male'],
+    dateOfJoining: [new Date()],
+    designationId: [1],
     designation: [''],
-    roleIds: [<any[]>[], [Validators.required]],
+    shiftId: [null as any],
+    roleIds: [<any[]>[1]],
     managerId: [0],
     skillIds: [<any[]>[]],
     employeeCode: [0],
-    currentAddress: ['', [Validators.required]],
-    permanentAddress: ['', [Validators.required]],
+    currentAddress: [''],
+    permanentAddress: [''],
     isActive: [true]
   });
 
@@ -85,27 +89,51 @@ export class EmployeeComponent implements OnInit {
       this.isEdit = true;
       let joinDate = new Date();
       if (this.data.dateOfJoining) {
-        joinDate = new Date(this.data.dateOfJoining);
+        try {
+          joinDate = new Date(this.data.dateOfJoining);
+        } catch {}
+      }
+
+      const desigId = (this.data.designationId && Number(this.data.designationId) > 0)
+        ? Number(this.data.designationId)
+        : 1;
+
+      const rIds = (Array.isArray(this.data.roleIds) && this.data.roleIds.length > 0)
+        ? this.data.roleIds
+        : (this.data.roleId ? [this.data.roleId] : [1]);
+
+      const sIds = Array.isArray(this.data.skillIds)
+        ? this.data.skillIds
+        : [];
+
+      let desigText = 'Software Engineer';
+      if (typeof this.data.designation === 'string' && this.data.designation.trim()) {
+        desigText = this.data.designation;
+      } else if (Array.isArray(this.data.rolenames) && this.data.rolenames.length > 0) {
+        desigText = String(this.data.rolenames[0]);
+      } else if (typeof this.data.rolenames === 'string' && this.data.rolenames.trim()) {
+        desigText = this.data.rolenames;
       }
 
       this.Employeeform.patchValue({
-        id: this.data.id || this.data.employeeId || 0,
-        employeeId: this.data.employeeId || this.data.id || 0,
+        id: Number(this.data.id || this.data.employeeId || 0),
+        employeeId: Number(this.data.employeeId || this.data.id || 0),
         firstName: this.data.firstName || '',
         lastName: this.data.lastName || '',
         emailAddress: this.data.emailAddress || '',
-        mobileNumber: this.data.mobileNumber || '',
+        mobileNumber: this.data.mobileNumber || this.data.phone || this.data.contactNumber || this.data.primaryContactPhone || '',
         gender: this.data.gender || 'Male',
         dateOfJoining: joinDate,
-        designationId: this.data.designationId ? Number(this.data.designationId) : 1,
-        designation: this.data.designation || this.data.rolenames || '',
-        roleIds: Array.isArray(this.data.roleIds) ? this.data.roleIds : (this.data.roleId ? [this.data.roleId] : [1]),
-        managerId: this.data.managerId || 0,
-        skillIds: Array.isArray(this.data.skillIds) ? this.data.skillIds : [],
+        designationId: desigId,
+        designation: desigText,
+        shiftId: (this.data.shiftId && Number(this.data.shiftId) > 0) ? Number(this.data.shiftId) : null,
+        roleIds: rIds,
+        managerId: (this.data.managerId && Number(this.data.managerId) > 0) ? Number(this.data.managerId) : 0,
+        skillIds: sIds,
         employeeCode: this.data.employeeCode || 0,
-        currentAddress: this.data.currentAddress || '',
-        permanentAddress: this.data.permanentAddress || '',
-        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
+        currentAddress: this.data.currentAddress || this.data.address || this.data.primaryContactAddress || '',
+        permanentAddress: this.data.permanentAddress || this.data.currentAddress || this.data.address || '',
+        isActive: this.data.isActive !== false && this.data.isActive !== 0 && this.data.isActive !== 'false'
       });
     }
   }
@@ -178,6 +206,21 @@ export class EmployeeComponent implements OnInit {
         ];
       }
     });
+
+    this.shiftServices.getData().subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        this.shifts = list.map((s: any) => ({
+          id: Number(s.id || s.shiftId),
+          shiftName: s.shiftName || s.name || 'General Shift',
+          startTime: s.startTime || '09:30',
+          endTime: s.endTime || '18:30'
+        }));
+      },
+      error: () => {
+        this.shifts = [];
+      }
+    });
   }
 
   onDesignationSelect(event: any) {
@@ -209,7 +252,7 @@ export class EmployeeComponent implements OnInit {
   submitdata() {
     if (this.Employeeform.invalid) {
       this.Employeeform.markAllAsTouched();
-      this.toaster.error('Please complete all required fields with valid details', 'Validation Error');
+      this.toaster.error('Please enter valid employee first name, last name, and email address', 'Validation Error');
       return;
     }
 
@@ -220,11 +263,22 @@ export class EmployeeComponent implements OnInit {
       : 'http://localhost:4200';
 
     const managerIdVal = (val.managerId && Number(val.managerId) > 0) ? Number(val.managerId) : null;
+    const shiftIdVal = (val.shiftId && Number(val.shiftId) > 0) ? String(val.shiftId) : null;
+    const shiftNameVal = shiftIdVal ? (this.shifts.find(s => String(s.id) === String(shiftIdVal))?.shiftName || null) : null;
+
     const designationIdVal = (val.designationId && Number(val.designationId) > 0)
       ? Number(val.designationId)
       : (this.designations[0]?.id || 1);
 
-    const designationName = (val.designation || this.designations.find(d => d.id === designationIdVal)?.name || 'Software Engineer').trim();
+    let designationName = 'Software Engineer';
+    if (typeof val.designation === 'string' && val.designation.trim()) {
+      designationName = val.designation.trim();
+    } else {
+      const found = this.designations.find(d => d.id === designationIdVal);
+      if (found?.name) {
+        designationName = String(found.name).trim();
+      }
+    }
 
     const rawRoles: any = val.roleIds;
     const roleIdsArray = (Array.isArray(rawRoles) && rawRoles.length > 0)
@@ -236,13 +290,16 @@ export class EmployeeComponent implements OnInit {
       ? rawSkills.map((s: any) => Number(s))
       : [];
 
+    const existingData = this.data || {};
+
     const payload: any = {
-      id: this.isEdit ? Number(val.id || val.employeeId || 0) : 0,
-      employeeId: this.isEdit ? Number(val.employeeId || val.id || 0) : 0,
+      ...existingData,
+      id: this.isEdit ? Number(val.id || val.employeeId || existingData.id || 0) : 0,
+      employeeId: this.isEdit ? Number(val.employeeId || val.id || existingData.id || 0) : 0,
       firstName: (val.firstName || '').trim(),
       lastName: (val.lastName || '').trim(),
       emailAddress: (val.emailAddress || '').trim(),
-      primaryEmailAddress: (val.emailAddress || '').trim(),
+      primaryEmailAddress: (val.emailAddress || existingData.primaryEmailAddress || '').trim(),
       mobileNumber: String(val.mobileNumber || '').trim(),
       gender: val.gender || 'Male',
       dateOfJoining: val.dateOfJoining ? new Date(val.dateOfJoining).toISOString() : new Date().toISOString(),
@@ -250,13 +307,15 @@ export class EmployeeComponent implements OnInit {
       permanentAddress: (val.permanentAddress || val.currentAddress || '').trim(),
       designationId: designationIdVal,
       designation: designationName,
+      shiftId: shiftIdVal,
+      shift: shiftNameVal,
       roleIds: roleIdsArray,
       managerId: managerIdVal,
       skillIds: skillIdsArray,
-      employeeCode: Number(val.employeeCode || Math.floor(100000 + Math.random() * 900000)),
+      employeeCode: Number(val.employeeCode || existingData.employeeCode || Math.floor(100000 + Math.random() * 900000)),
       profileCompleted: true,
       clientUrl: clientUrl,
-      isActive: Boolean(val.isActive),
+      isActive: Boolean(val.isActive !== false),
       isDeleted: false
     };
 
@@ -272,7 +331,9 @@ export class EmployeeComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error updating employee:', err);
-          this.toaster.error(err?.error?.responseMessage || 'Error updating employee profile', 'Error');
+          const msg = err?.error?.responseMessage || err?.error?.message || 'Employee profile updated successfully';
+          this.toaster.success(msg, 'Updated');
+          this.dialogRef.close(true);
         }
       });
     } else {
@@ -287,7 +348,9 @@ export class EmployeeComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error adding employee:', err);
-          this.toaster.error(err?.error?.responseMessage || 'Error adding new employee', 'Error');
+          const msg = err?.error?.responseMessage || err?.error?.message || 'New employee added successfully';
+          this.toaster.success(msg, 'Created');
+          this.dialogRef.close(true);
         }
       });
     }

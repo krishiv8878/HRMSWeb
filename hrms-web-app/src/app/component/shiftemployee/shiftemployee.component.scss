@@ -300,24 +300,28 @@
           height: 16px;
           color: #64748b;
           pointer-events: none;
+          z-index: 2;
         }
 
-        .filter-select {
+        .filter-select,
+        .custom-select {
           height: 36px;
           background-color: #f8fafc;
           border: 1px solid #cbd5e1;
           border-radius: 6px;
-          padding: 0 28px 0 32px;
+          padding: 0 28px 0 34px;
           font-size: 13px;
           font-weight: 500;
           color: #334155;
           outline: none;
           cursor: pointer;
+          appearance: auto;
           transition: all 0.15s ease;
 
           &:focus {
             border-color: #2563eb;
             background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
           }
         }
       }

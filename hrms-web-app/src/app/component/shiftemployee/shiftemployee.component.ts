@@ -7,6 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 
 import { EmployeeshiftService, ShiftModel } from '../../services/shift/employeeshift.service';
+import { EmployeeService } from '../../services/employee/employee.service';
 import { ShiftComponent } from '../../modal/shift/shift.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
@@ -25,23 +26,28 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 })
 export class ShiftemployeeComponent implements OnInit {
   private services = inject(EmployeeshiftService);
+  private employeeService = inject(EmployeeService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
 
   allShifts: ShiftModel[] = [];
   filteredShifts: ShiftModel[] = [];
   paginatedShifts: ShiftModel[] = [];
+  employeesList: any[] = [];
 
   // Filter States
   searchQuery: string = '';
   selectedStatus: string = 'All';
   selectedCategory: string = 'All';
 
-  // Analytics Metrics
+  // Dynamic Metrics
   totalShiftsCount: number = 0;
+  activeShiftsCount: number = 0;
   dayShiftsCount: number = 0;
   nightShiftsCount: number = 0;
   activeRosterRate: number = 100;
+  totalEmployeesCount: number = 0;
+  assignedEmployeesCount: number = 0;
 
   // Pagination State
   currentPage: number = 1;
@@ -54,34 +60,84 @@ export class ShiftemployeeComponent implements OnInit {
   }
 
   getAllData() {
+    // Load both shifts and employees to calculate true workforce shift assignments
+    this.employeeService.getData().subscribe({
+      next: (empRes: any) => {
+        let emps: any[] = [];
+        if (Array.isArray(empRes)) emps = empRes;
+        else if (empRes && Array.isArray(empRes.data)) emps = empRes.data;
+        else if (empRes && Array.isArray(empRes.employeedata?.data)) emps = empRes.employeedata.data;
+        this.employeesList = emps;
+        this.loadShiftsList();
+      },
+      error: () => {
+        this.employeesList = [];
+        this.loadShiftsList();
+      }
+    });
+  }
+
+  private loadShiftsList() {
     this.services.getData().subscribe({
       next: (response: any) => {
-        let raw: ShiftModel[] = [];
+        let raw: any[] = [];
         if (Array.isArray(response)) {
           raw = response;
         } else if (response && Array.isArray(response.data)) {
           raw = response.data;
         }
-        this.allShifts = raw;
+
+        this.allShifts = raw.map((s, idx) => {
+          const shiftId = Number(s.id || s.shiftId || (idx + 1));
+          const name = (s.shiftName || s.name || 'Shift Schedule').trim();
+
+          // Calculate real employee assignment count from workforce DB
+          let assigned = 0;
+          if (this.employeesList.length > 0) {
+            assigned = this.employeesList.filter((e: any) => {
+              const hasValidId = e.shiftId !== null && e.shiftId !== undefined && String(e.shiftId).trim() !== '' && Number(e.shiftId) > 0;
+              const hasValidName = Boolean(e.shift && String(e.shift).trim() !== '');
+              
+              if (!hasValidId && !hasValidName) return false;
+
+              const idMatch = hasValidId && (Number(e.shiftId) === shiftId || String(e.shiftId).trim() === String(shiftId));
+              const nameMatch = hasValidName && String(e.shift).toLowerCase().trim() === name.toLowerCase();
+              return idMatch || nameMatch;
+            }).length;
+          }
+
+          return {
+            id: shiftId,
+            shiftName: name,
+            startTime: s.startTime || s.start || '09:30',
+            endTime: s.endTime || s.end || '18:30',
+            isActive: s.isActive !== false && s.isActive !== 0 && s.isActive !== 'false',
+            assignedCount: assigned,
+            rawRecord: s
+          };
+        });
+
         this.computeMetrics();
         this.applyFilter();
       },
-      error: () => {
-        this.toaster.error('Failed to load shift records', 'Error');
+      error: (err) => {
+        console.error('Error fetching shift list:', err);
+        this.allShifts = [];
+        this.computeMetrics();
+        this.applyFilter();
       }
     });
   }
 
   computeMetrics() {
     this.totalShiftsCount = this.allShifts.length;
+    this.activeShiftsCount = this.allShifts.filter(s => s.isActive).length;
     let dayCount = 0;
     let nightCount = 0;
-    let activeCount = 0;
 
     this.allShifts.forEach(s => {
-      if (s.isActive) activeCount++;
       const cat = this.getShiftCategory(s.startTime, s.endTime);
-      if (cat === 'Night Shift' || cat === 'Overnight US') {
+      if (cat === 'Night Shift' || cat === 'Evening Shift') {
         nightCount++;
       } else {
         dayCount++;
@@ -91,8 +147,15 @@ export class ShiftemployeeComponent implements OnInit {
     this.dayShiftsCount = dayCount;
     this.nightShiftsCount = nightCount;
     this.activeRosterRate = this.totalShiftsCount > 0
-      ? Math.round((activeCount / this.totalShiftsCount) * 100)
+      ? Math.round((this.activeShiftsCount / this.totalShiftsCount) * 100)
       : 100;
+
+    this.totalEmployeesCount = this.employeesList.length;
+    this.assignedEmployeesCount = this.employeesList.filter((e: any) => {
+      const hasValidId = e.shiftId !== null && e.shiftId !== undefined && String(e.shiftId).trim() !== '' && Number(e.shiftId) > 0;
+      const hasValidName = Boolean(e.shift && String(e.shift).trim() !== '');
+      return hasValidId || hasValidName;
+    }).length;
   }
 
   getShiftCategory(start?: string, end?: string): string {
@@ -132,10 +195,12 @@ export class ShiftemployeeComponent implements OnInit {
 
   formatTime(timeStr?: string): string {
     if (!timeStr) return '--:--';
-    const parts = timeStr.split(':');
+    const str = String(timeStr).trim();
+    const parts = str.split(':');
     if (parts.length >= 2) {
       let hours = parseInt(parts[0], 10);
-      const minutes = parts[1];
+      if (isNaN(hours)) return timeStr;
+      const minutes = (parts[1] || '00').substring(0, 2).padStart(2, '0');
       const ampm = hours >= 12 ? 'PM' : 'AM';
       hours = hours % 12;
       hours = hours ? hours : 12;

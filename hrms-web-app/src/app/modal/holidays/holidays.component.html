@@ -31,20 +31,34 @@
       </div>
     </div>
 
-    <!-- Holiday Date -->
-    <div class="form-group">
-      <label class="field-label">Observance Date <span class="required">*</span></label>
-      <div class="input-wrapper">
-        <mat-icon class="input-icon">event</mat-icon>
-        <input
-          matInput
-          [matDatepicker]="picker"
-          formControlName="holidayDate"
-          placeholder="Select holiday date"
-          class="custom-input custom-date-input"
-        />
-        <mat-datepicker-toggle matIconSuffix [for]="picker" class="picker-toggle-btn"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
+    <!-- Row: Holiday Date & Holiday Category -->
+    <div class="form-row-2">
+      <!-- Holiday Date -->
+      <div class="form-group">
+        <label class="field-label">Observance Date <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">event</mat-icon>
+          <input
+            matInput
+            [matDatepicker]="picker"
+            formControlName="holidayDate"
+            placeholder="Select holiday date"
+            class="custom-input custom-date-input"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="picker" class="picker-toggle-btn"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </div>
+      </div>
+
+      <!-- Holiday Category / Type -->
+      <div class="form-group">
+        <label class="field-label">Holiday Category <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">category</mat-icon>
+          <select formControlName="type" class="custom-select">
+            <option *ngFor="let t of holidayTypes" [value]="t">{{ t }}</option>
+          </select>
+        </div>
       </div>
     </div>
 

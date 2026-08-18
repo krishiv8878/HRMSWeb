@@ -84,28 +84,17 @@ export class LeaveRequestComponent implements OnInit {
         }
 
         if (rawList.length > 0) {
-          this.leaveTypes = rawList.map((item: any) => ({
-            id: Number(item.id || item.leaveTypeId || 1),
+          this.leaveTypes = rawList.map((item: any, idx: number) => ({
+            id: Number(item.id || item.leaveTypeId || (idx + 1)),
             leaveTypeName: item.leaveTypeName || item.leaveName || item.type || 'Leave'
           }));
         } else {
-          this.leaveTypes = [
-            { id: 1, leaveTypeName: 'Annual Leave' },
-            { id: 2, leaveTypeName: 'Sick Leave' },
-            { id: 3, leaveTypeName: 'Casual Leave' },
-            { id: 4, leaveTypeName: 'Maternity / Paternity Leave' },
-            { id: 5, leaveTypeName: 'Unpaid Leave' }
-          ];
+          this.leaveTypes = [];
         }
       },
-      error: () => {
-        this.leaveTypes = [
-          { id: 1, leaveTypeName: 'Annual Leave' },
-          { id: 2, leaveTypeName: 'Sick Leave' },
-          { id: 3, leaveTypeName: 'Casual Leave' },
-          { id: 4, leaveTypeName: 'Maternity / Paternity Leave' },
-          { id: 5, leaveTypeName: 'Unpaid Leave' }
-        ];
+      error: (err) => {
+        console.error('Error loading leave types for requests:', err);
+        this.leaveTypes = [];
       }
     });
   }

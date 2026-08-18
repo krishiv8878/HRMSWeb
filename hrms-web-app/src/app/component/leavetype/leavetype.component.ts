@@ -71,33 +71,21 @@ export class LeavetypeComponent implements OnInit {
         }
 
         if (rawList.length > 0) {
-          this.allLeaveTypes = rawList.map((item: any) => ({
-            id: item.id || item.leaveTypeId || 0,
+          this.allLeaveTypes = rawList.map((item: any, idx: number) => ({
+            id: Number(item.id || item.leaveTypeId || (idx + 1)),
             type: item.type || item.leaveTypeName || item.leaveName || 'General Leave',
-            description: item.description || 'Employee leave category',
-            isActive: item.isActive !== undefined ? Boolean(item.isActive) : true
+            description: item.description || 'Employee corporate leave policy',
+            isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false'
           }));
         } else {
-          // Default fallbacks if backend is empty
-          this.allLeaveTypes = [
-            { id: 1, type: 'Annual Leave', description: 'Standard paid yearly time off for vacation and personal rest.', isActive: true },
-            { id: 2, type: 'Sick Leave', description: 'Medical and wellness absence requiring medical certification for >2 days.', isActive: true },
-            { id: 3, type: 'Casual Leave', description: 'Short notice urgent personal leave entitlement.', isActive: true },
-            { id: 4, type: 'Maternity / Paternity', description: 'Parental leave benefits for new parents.', isActive: true },
-            { id: 5, type: 'Unpaid Leave', description: 'Approved leave taken without pay compensation.', isActive: false }
-          ];
+          this.allLeaveTypes = [];
         }
         this.recalculateStats();
         this.filterRecords();
       },
-      error: () => {
-        this.allLeaveTypes = [
-          { id: 1, type: 'Annual Leave', description: 'Standard paid yearly time off for vacation and personal rest.', isActive: true },
-          { id: 2, type: 'Sick Leave', description: 'Medical and wellness absence requiring medical certification for >2 days.', isActive: true },
-          { id: 3, type: 'Casual Leave', description: 'Short notice urgent personal leave entitlement.', isActive: true },
-          { id: 4, type: 'Maternity / Paternity', description: 'Parental leave benefits for new parents.', isActive: true },
-          { id: 5, type: 'Unpaid Leave', description: 'Approved leave taken without pay compensation.', isActive: false }
-        ];
+      error: (err) => {
+        console.error('Error fetching leave types from database:', err);
+        this.allLeaveTypes = [];
         this.recalculateStats();
         this.filterRecords();
       }

@@ -450,9 +450,19 @@ export class HomeComponent implements OnInit {
   }
 
   Edit(data: any) {
+    const raw = data.rawRecord || {};
+    const mergedData = {
+      ...data,
+      ...raw,
+      mobileNumber: raw.mobileNumber || data.mobileNumber || '',
+      currentAddress: raw.currentAddress || data.currentAddress || '',
+      permanentAddress: raw.permanentAddress || data.permanentAddress || '',
+      gender: raw.gender || data.gender || 'Male'
+    };
+
     const dialogRef = this.dialog.open(EmployeeComponent, {
       width: '680px',
-      data: data.rawRecord || data
+      data: mergedData
     });
 
     dialogRef.afterClosed().subscribe((res) => {

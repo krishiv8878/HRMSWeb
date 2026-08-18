@@ -182,6 +182,20 @@
       </div>
     </div>
 
+    <!-- Row 6: Work Shift Schedule -->
+    <div class="form-group">
+      <label class="field-label">Assigned Work Shift</label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">schedule</mat-icon>
+        <select formControlName="shiftId" class="custom-select">
+          <option [ngValue]="null">Select Work Shift Schedule (Default / Optional)</option>
+          <option *ngFor="let s of shifts" [ngValue]="s.id">
+            {{ s.shiftName }} ({{ s.startTime }} - {{ s.endTime }})
+          </option>
+        </select>
+      </div>
+    </div>
+
     <!-- Section 3: Address Information -->
     <div class="form-section-title">
       <mat-icon>location_on</mat-icon>
