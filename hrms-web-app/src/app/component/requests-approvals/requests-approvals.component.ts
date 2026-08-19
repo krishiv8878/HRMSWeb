@@ -318,14 +318,25 @@ export class RequestsApprovalsComponent implements OnInit {
 
   approveRequest(item: ApprovalRequestItem): void {
     const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
-      width: '380px',
+      width: '420px',
       data: { ...item.rawRecord, isApproved: true }
     });
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
+        const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
+
         if (item.category === 'Leave') {
-          this.service.approveLeaveRequest({ id: item.id, isApproved: true }).subscribe({
+          const payload = {
+            id: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
+            leaveRequestId: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
+            isApproved: true,
+            approvedBy: loggedManagerId,
+            approvedDate: new Date().toISOString(),
+            status: 'Approved'
+          };
+
+          this.service.approveLeaveRequest(payload).subscribe({
             next: () => {
               this.toaster.success(`Leave request for ${item.requesterName} Approved`, 'Approved');
               this.loadAllRequests();
@@ -336,8 +347,14 @@ export class RequestsApprovalsComponent implements OnInit {
             }
           });
         } else {
-          item.rawRecord.status = 'Approved';
-          this.service2.updateData(item.rawRecord).subscribe({
+          const payload = {
+            ...item.rawRecord,
+            status: 'Approved',
+            isApproved: true,
+            approvedBy: loggedManagerId,
+            approvedDate: new Date().toISOString()
+          };
+          this.service2.updateData(payload).subscribe({
             next: () => {
               this.toaster.success(`Attendance request for ${item.requesterName} Approved`, 'Approved');
               this.loadAllRequests();
@@ -354,14 +371,25 @@ export class RequestsApprovalsComponent implements OnInit {
 
   rejectRequest(item: ApprovalRequestItem): void {
     const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
-      width: '380px',
+      width: '420px',
       data: { ...item.rawRecord, isApproved: false }
     });
 
     dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
+        const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
+
         if (item.category === 'Leave') {
-          this.service.approveLeaveRequest({ id: item.id, isApproved: false }).subscribe({
+          const payload = {
+            id: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
+            leaveRequestId: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
+            isApproved: false,
+            approvedBy: loggedManagerId,
+            approvedDate: new Date().toISOString(),
+            status: 'Rejected'
+          };
+
+          this.service.approveLeaveRequest(payload).subscribe({
             next: () => {
               this.toaster.warning(`Leave request for ${item.requesterName} Rejected`, 'Rejected');
               this.loadAllRequests();
@@ -372,8 +400,14 @@ export class RequestsApprovalsComponent implements OnInit {
             }
           });
         } else {
-          item.rawRecord.status = 'Rejected';
-          this.service2.updateData(item.rawRecord).subscribe({
+          const payload = {
+            ...item.rawRecord,
+            status: 'Rejected',
+            isApproved: false,
+            approvedBy: loggedManagerId,
+            approvedDate: new Date().toISOString()
+          };
+          this.service2.updateData(payload).subscribe({
             next: () => {
               this.toaster.warning(`Attendance request for ${item.requesterName} Rejected`, 'Rejected');
               this.loadAllRequests();

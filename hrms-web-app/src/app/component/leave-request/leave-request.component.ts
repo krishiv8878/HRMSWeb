@@ -62,11 +62,11 @@ export class LeaveRequestComponent implements OnInit {
   pages: number[] = [];
   paginatedRequests: SubmittedLeaveRequest[] = [];
 
-  // Metric Stats
+  // Dynamic Metric Stats
   totalCount: number = 0;
-  annualBalance: number = 14;
-  sickBalance: number = 5;
+  approvedCount: number = 0;
   pendingCount: number = 0;
+  rejectedCount: number = 0;
 
   ngOnInit() {
     this.loadLeaveTypes();
@@ -115,7 +115,7 @@ export class LeaveRequestComponent implements OnInit {
           this.allRequests = rawList.map((item: any) => {
             const leaveTypeId = Number(item.leaveTypeId || item.leaveType || 1);
             const matchedType = this.leaveTypes.find(t => t.id === leaveTypeId);
-            const typeName = item.leaveTypeName || item.leaveName || (matchedType ? matchedType.leaveTypeName : 'Annual Leave');
+            const typeName = item.leaveTypeName || item.leaveName || item.type || (matchedType ? matchedType.leaveTypeName : 'Standard Leave');
 
             const approvedByVal = (item.approvedBy !== undefined && item.approvedBy !== null) ? Number(item.approvedBy) : 0;
             const statusStr = item.status ? String(item.status).trim() : '';
@@ -123,7 +123,7 @@ export class LeaveRequestComponent implements OnInit {
             let isApprovedVal = item.isApproved === true || item.isApproved === 1 || statusStr.toLowerCase() === 'approved';
 
             return {
-              id: Number(item.id || item.leaveRequestId || 0),
+              id: Number(item.id || item.leaveRequestId || item.leaveId || 0),
               startDate: item.startDate || item.fromDate || '',
               endDate: item.endDate || item.toDate || '',
               leaveReason: item.leaveReason || item.reason || item.comments || '',
@@ -137,6 +137,8 @@ export class LeaveRequestComponent implements OnInit {
               isDeleted: item.isDeleted === 1 || item.isDeleted === true ? 1 : 0
             };
           });
+        } else {
+          this.allRequests = [];
         }
 
         this.recalculateStats();
@@ -144,6 +146,7 @@ export class LeaveRequestComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error fetching leave requests from database:', err);
+        this.allRequests = [];
         this.recalculateStats();
         this.filterRequests();
       }
@@ -152,7 +155,9 @@ export class LeaveRequestComponent implements OnInit {
 
   recalculateStats() {
     this.totalCount = this.allRequests.length;
+    this.approvedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Approved' && r.isActive !== false).length;
     this.pendingCount = this.allRequests.filter(r => this.getStatusText(r) === 'Pending').length;
+    this.rejectedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Rejected' || r.isActive === false).length;
   }
 
   filterRequests() {
