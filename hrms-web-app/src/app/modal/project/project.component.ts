@@ -40,12 +40,18 @@ export class ProjectComponent implements OnInit {
   id!: any;
   countries: string[] = [];
 
+  statusOptions = ['In Progress', 'Completed', 'On Hold', 'Planned'];
+
   projectForm = this.formBuilder.group({
     id: [0],
     projectName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-_/&]+$')]],
     clientName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-_/&]+$')]],
     clientRegion: ['United States', [Validators.required]],
     description: ['', [Validators.required]],
+    teamSize: [5, [Validators.required, Validators.min(0)]],
+    status: ['In Progress', [Validators.required]],
+    startDate: [''],
+    endDate: [''],
     isActive: [true]
   });
 
@@ -62,6 +68,10 @@ export class ProjectComponent implements OnInit {
         clientName: this.data.clientName || '',
         clientRegion: this.data.clientRegion || 'United States',
         description: this.data.description || '',
+        teamSize: this.data.teamSize || 5,
+        status: this.data.status || 'In Progress',
+        startDate: this.data.startDate ? new Date(this.data.startDate).toISOString().slice(0, 10) : '',
+        endDate: this.data.endDate ? new Date(this.data.endDate).toISOString().slice(0, 10) : '',
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
     }
@@ -92,6 +102,10 @@ export class ProjectComponent implements OnInit {
       clientName: (val.clientName || '').trim(),
       clientRegion: val.clientRegion || 'Global',
       description: (val.description || '').trim(),
+      teamSize: Number(val.teamSize || 0),
+      status: val.status || 'In Progress',
+      startDate: val.startDate || null,
+      endDate: val.endDate || null,
       isActive: Boolean(val.isActive)
     };
 

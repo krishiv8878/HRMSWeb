@@ -54,13 +54,40 @@
       </div>
     </div>
 
-    <!-- Row 2: Client Region -->
+    <!-- Row 2: Client Region & Team Size -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Client Region / Territory <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">public</mat-icon>
+          <select formControlName="clientRegion" class="custom-select">
+            <option *ngFor="let country of countries" [value]="country">{{ country }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Assigned Team Size <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">groups</mat-icon>
+          <input
+            type="number"
+            formControlName="teamSize"
+            placeholder="e.g. 8"
+            min="0"
+            class="custom-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Status -->
     <div class="form-group">
-      <label class="field-label">Client Region / Territory <span class="required">*</span></label>
+      <label class="field-label">Project Delivery Status <span class="required">*</span></label>
       <div class="input-wrapper">
-        <mat-icon class="input-icon">public</mat-icon>
-        <select formControlName="clientRegion" class="custom-select">
-          <option *ngFor="let country of countries" [value]="country">{{ country }}</option>
+        <mat-icon class="input-icon">tune</mat-icon>
+        <select formControlName="status" class="custom-select">
+          <option *ngFor="let st of statusOptions" [value]="st">{{ st }}</option>
         </select>
       </div>
     </div>

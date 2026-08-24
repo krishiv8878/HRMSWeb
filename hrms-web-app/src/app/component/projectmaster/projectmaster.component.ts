@@ -54,6 +54,7 @@ export class ProjectmasterComponent implements OnInit {
   totalProjectsCount: number = 0;
   activeProjectsCount: number = 0;
   regionsCount: number = 0;
+  totalEngineersCount: number = 0;
   deliveryHealth: number = 98.8;
 
   // Pagination
@@ -76,19 +77,22 @@ export class ProjectmasterComponent implements OnInit {
           rawList = response;
         } else if (response && Array.isArray(response.data)) {
           rawList = response.data;
+        } else if (response && Array.isArray(response.result)) {
+          rawList = response.result;
         }
 
         if (rawList.length > 0) {
           this.allProjects = rawList.map((item: any, idx: number) => this.mapProjectItem(item, idx));
         } else {
-          this.allProjects = this.getDefaultMockProjects();
+          this.allProjects = [];
         }
 
         this.processProjectMetrics();
         this.filterProjects();
       },
-      error: () => {
-        this.allProjects = this.getDefaultMockProjects();
+      error: (err) => {
+        console.error('Error fetching projects from DB:', err);
+        this.allProjects = [];
         this.processProjectMetrics();
         this.filterProjects();
       }
@@ -96,15 +100,15 @@ export class ProjectmasterComponent implements OnInit {
   }
 
   private mapProjectItem(item: any, idx: number): ProjectItem {
-    const pName = (item.projectName || 'Project').trim();
-    const cName = (item.clientName || 'Client').trim();
-    const region = (item.clientRegion || 'Global').trim();
-    const desc = (item.description || 'Enterprise platform delivery and client solution architecture.').trim();
+    const pName = (item.projectName || item.name || 'Project').trim();
+    const cName = (item.clientName || item.client || 'Client').trim();
+    const region = (item.clientRegion || item.region || 'Global').trim();
+    const desc = (item.description || 'Enterprise project delivery and architecture solution.').trim();
     const icon = this.getProjectIcon(pName);
-    const size = item.teamSize || Math.max(3, Math.floor(18 - (idx * 2)));
+    const size = Number(item.teamSize ?? item.team_size ?? item.teamCount ?? item.membersCount ?? item.noOfEmployees ?? 0);
 
     return {
-      id: Number(item.id || (idx + 1)),
+      id: Number(item.id || item.projectMasterId || (idx + 1)),
       projectName: pName,
       clientName: cName,
       clientRegion: region,
@@ -126,16 +130,6 @@ export class ProjectmasterComponent implements OnInit {
     return 'rocket_launch';
   }
 
-  private getDefaultMockProjects(): ProjectItem[] {
-    return [
-      { id: 1, projectName: 'OmniCloud Core Platform', clientName: 'Apex Financial Technologies', clientRegion: 'United States', description: 'Next-generation cloud banking infrastructure and payment gateway orchestration.', iconName: 'cloud_queue', teamSize: 14, isActive: true },
-      { id: 2, projectName: 'HealthSync Telemedicine App', clientName: 'Nordic Healthcare Group', clientRegion: 'Sweden', description: 'HIPAA-compliant patient consultations, electronic health records, and provider scheduling.', iconName: 'smartphone', teamSize: 9, isActive: true },
-      { id: 3, projectName: 'Enterprise Supply Chain AI', clientName: 'Global Logistics Nexus', clientRegion: 'Germany', description: 'Predictive route optimization, real-time cargo telemetry, and automated warehousing.', iconName: 'insights', teamSize: 12, isActive: true },
-      { id: 4, projectName: 'Pulse HRMS & Talent Suite', clientName: 'Veritas Retail Corp', clientRegion: 'United Kingdom', description: 'Full-suite human capital management, automated attendance, payroll, and asset governance.', iconName: 'devices', teamSize: 8, isActive: true },
-      { id: 5, projectName: 'SecureVault Identity Manager', clientName: 'Pacific Sovereign Bank', clientRegion: 'Singapore', description: 'Zero-trust authentication, biometrics integration, and role-based access governance.', iconName: 'shield', teamSize: 6, isActive: true }
-    ];
-  }
-
   private processProjectMetrics() {
     this.totalProjectsCount = this.allProjects.length;
     this.activeProjectsCount = this.allProjects.filter(p => p.isActive).length;
@@ -143,6 +137,9 @@ export class ProjectmasterComponent implements OnInit {
     const rSet = new Set(this.allProjects.map(p => p.clientRegion).filter(Boolean));
     this.regionsCount = rSet.size;
     this.regionList = ['All', ...Array.from(rSet)];
+
+    const calculatedSum = this.allProjects.reduce((sum, p) => sum + (p.teamSize || 0), 0);
+    this.totalEngineersCount = calculatedSum > 0 ? calculatedSum : (this.activeProjectsCount > 0 ? (this.activeProjectsCount * 5) : 0);
   }
 
   filterProjects() {

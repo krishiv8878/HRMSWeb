@@ -34,7 +34,7 @@ export class AssetsmasterComponent implements OnInit {
   assets$: Observable<AssetItem[]> = this.assetService.assets$;
 
   ngOnInit() {
-    this.assetService.recalculateMetrics();
+    this.assetService.fetchAssetsFromApi();
   }
 
   onExport() {
