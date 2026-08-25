@@ -20,8 +20,6 @@ export interface PaymentItem {
   maskedAccount: string;
   nameOnAccount: string;
   avatarUrl?: string;
-  accountType: string;
-  disbursementMethod: string;
   isActive: boolean;
   showFullAccount?: boolean;
   rawRecord?: any;
@@ -101,17 +99,29 @@ export class PaymentinfoComponent implements OnInit {
           }
         }
 
+        // Deduplicate entries by employeeId to prevent multiple duplicate rows
+        if (rawList.length > 0) {
+          const uniqueMap = new Map<string, any>();
+          rawList.forEach((item: any) => {
+            const key = item.employeeId ? String(item.employeeId) : String(item.id || Math.random());
+            if (!uniqueMap.has(key) || (item.id && Number(item.id) > Number(uniqueMap.get(key).id))) {
+              uniqueMap.set(key, item);
+            }
+          });
+          rawList = Array.from(uniqueMap.values());
+        }
+
         if (rawList.length > 0) {
           this.allPayments = rawList.map((item: any, idx: number) => this.mapPaymentItem(item, idx));
         } else {
-          this.allPayments = this.getDefaultMockPayments();
+          this.allPayments = [];
         }
 
         this.processPaymentMetrics();
         this.filterPayments();
       },
       error: () => {
-        this.allPayments = this.getDefaultMockPayments();
+        this.allPayments = [];
         this.processPaymentMetrics();
         this.filterPayments();
       }
@@ -147,8 +157,6 @@ export class PaymentinfoComponent implements OnInit {
       maskedAccount: masked,
       nameOnAccount: name,
       avatarUrl: avatarUrl,
-      accountType: 'Salary Account',
-      disbursementMethod: 'Direct Deposit (NEFT/IMPS)',
       isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false',
       showFullAccount: false,
       rawRecord: item
@@ -156,60 +164,7 @@ export class PaymentinfoComponent implements OnInit {
   }
 
   private getDefaultMockPayments(): PaymentItem[] {
-    return [
-      {
-        id: 1,
-        employeeId: 101,
-        bankName: 'HDFC Bank',
-        ifscCode: 'HDFC0000128',
-        accountNumber: '501004928194',
-        maskedAccount: '•••• •••• 8194',
-        nameOnAccount: 'Sarah Jenkins',
-        accountType: 'Corporate Salary Account',
-        disbursementMethod: 'Direct Deposit (NEFT/IMPS)',
-        isActive: true,
-        showFullAccount: false
-      },
-      {
-        id: 2,
-        employeeId: 102,
-        bankName: 'ICICI Bank',
-        ifscCode: 'ICIC0000492',
-        accountNumber: '003901582910',
-        maskedAccount: '•••• •••• 2910',
-        nameOnAccount: 'Michael Chang',
-        accountType: 'Corporate Salary Account',
-        disbursementMethod: 'Direct Deposit (RTGS/IMPS)',
-        isActive: true,
-        showFullAccount: false
-      },
-      {
-        id: 3,
-        employeeId: 103,
-        bankName: 'State Bank of India',
-        ifscCode: 'SBIN0001892',
-        accountNumber: '381920491829',
-        maskedAccount: '•••• •••• 1829',
-        nameOnAccount: 'Emma Watson',
-        accountType: 'Savings Salary Account',
-        disbursementMethod: 'Direct Deposit (NEFT)',
-        isActive: true,
-        showFullAccount: false
-      },
-      {
-        id: 4,
-        employeeId: 104,
-        bankName: 'Axis Bank',
-        ifscCode: 'UTIB0000921',
-        accountNumber: '918020049182',
-        maskedAccount: '•••• •••• 9182',
-        nameOnAccount: 'David Miller',
-        accountType: 'Corporate Salary Account',
-        disbursementMethod: 'Direct Deposit (IMPS)',
-        isActive: true,
-        showFullAccount: false
-      }
-    ];
+    return [];
   }
 
   private processPaymentMetrics() {
@@ -376,8 +331,6 @@ export class PaymentinfoComponent implements OnInit {
       'Bank Name',
       'Account Number',
       'IFSC Code',
-      'Account Type',
-      'Disbursement Channel',
       'Status'
     ];
 
@@ -387,8 +340,6 @@ export class PaymentinfoComponent implements OnInit {
       `"${p.bankName}"`,
       `"${p.accountNumber}"`,
       `"${p.ifscCode}"`,
-      `"${p.accountType}"`,
-      `"${p.disbursementMethod}"`,
       `"${p.isActive ? 'Active / Verified' : 'Inactive'}"`
     ]);
 

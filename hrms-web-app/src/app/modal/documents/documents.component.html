@@ -31,28 +31,14 @@
       </div>
     </div>
 
-    <!-- Category & Access Level Grid -->
-    <div class="form-row-2">
-      <!-- Category -->
-      <div class="form-group">
-        <label class="field-label">Document Category <span class="required">*</span></label>
-        <div class="input-wrapper">
-          <mat-icon class="input-icon">folder_open</mat-icon>
-          <select formControlName="category" class="custom-select">
-            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Access Level -->
-      <div class="form-group">
-        <label class="field-label">Access Permissions <span class="required">*</span></label>
-        <div class="input-wrapper">
-          <mat-icon class="input-icon">lock_outline</mat-icon>
-          <select formControlName="accessLevel" class="custom-select">
-            <option *ngFor="let lvl of accessLevels" [value]="lvl">{{ lvl }}</option>
-          </select>
-        </div>
+    <!-- Category -->
+    <div class="form-group">
+      <label class="field-label">Document Category <span class="required">*</span></label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">folder_open</mat-icon>
+        <select formControlName="category" class="custom-select">
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+        </select>
       </div>
     </div>
 

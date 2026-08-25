@@ -51,6 +51,18 @@ export class UserprofileComponent implements OnInit {
       }
     });
 
+    this.services.userProfile$.subscribe(profile => {
+      if (profile && (profile.firstName || profile.lastName || profile.fullName) && this.employedata) {
+        if (profile.firstName) this.employedata.firstName = profile.firstName;
+        if (profile.lastName) this.employedata.lastName = profile.lastName;
+        if (profile.fullName) {
+          this.employedata.fullName = profile.fullName;
+          this.employedata.name = profile.fullName;
+        }
+        if (profile.email) this.employedata.emailAddress = profile.email;
+      }
+    });
+
     const initial = this.services.getProfileAvatar();
     if (initial) {
       this.profileImageUrl = initial;

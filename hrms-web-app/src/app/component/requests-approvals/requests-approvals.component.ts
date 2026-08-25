@@ -94,6 +94,12 @@ export class RequestsApprovalsComponent implements OnInit {
           rawList = response.data;
         } else if (response && Array.isArray(response.result)) {
           rawList = response.result;
+        } else if (response && Array.isArray(response.items)) {
+          rawList = response.items;
+        } else if (response && response.data && Array.isArray(response.data.items)) {
+          rawList = response.data.items;
+        } else if (response && response.data && Array.isArray(response.data.data)) {
+          rawList = response.data.data;
         }
 
         const globalAvatar = this.employeeService.getProfileAvatar();
@@ -104,8 +110,9 @@ export class RequestsApprovalsComponent implements OnInit {
           const leaveTypeName = typeof x.leaveType === 'string' ? x.leaveType : (x.leaveType?.type || x.leaveType?.leaveTypeName || x.leaveTypeName || x.type || 'Annual Leave');
 
           const approvedByVal = (x.approvedBy !== undefined && x.approvedBy !== null && x.approvedBy !== 0) ? Number(x.approvedBy) : 0;
-          const isApprovedBool = (approvedByVal !== 0 && (x.isApproved === true || x.isApproved === 1 || x.status === 'Approved'));
-          const isRejectedBool = (approvedByVal !== 0 && !isApprovedBool) || (x.status === 'Rejected');
+          const rawStatus = x.status ? String(x.status).trim().toLowerCase() : '';
+          const isApprovedBool = (x.isApproved === true || x.isApproved === 1 || rawStatus === 'approved');
+          const isRejectedBool = rawStatus === 'rejected' || (approvedByVal > 0 && !isApprovedBool);
           const statusStr: 'Pending' | 'Approved' | 'Rejected' = isApprovedBool ? 'Approved' : (isRejectedBool ? 'Rejected' : 'Pending');
 
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();

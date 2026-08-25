@@ -135,7 +135,6 @@
             <th>BANKING INSTITUTION</th>
             <th>ACCOUNT NUMBER</th>
             <th>IFSC CODE</th>
-            <th>DISBURSEMENT METHOD</th>
             <th>STATUS</th>
             <th class="text-right">ACTIONS</th>
           </tr>
@@ -164,7 +163,6 @@
                 </div>
                 <div class="bank-text-group">
                   <span class="bank-name">{{ pay.bankName }}</span>
-                  <span class="account-type-text">{{ pay.accountType }}</span>
                 </div>
               </div>
             </td>
@@ -189,14 +187,6 @@
             <!-- IFSC Code -->
             <td class="col-ifsc">
               <span class="ifsc-badge">{{ pay.ifscCode }}</span>
-            </td>
-
-            <!-- Disbursement Method -->
-            <td class="col-method">
-              <div class="method-pill">
-                <mat-icon class="method-icon">payments</mat-icon>
-                <span>{{ pay.disbursementMethod }}</span>
-              </div>
             </td>
 
             <!-- Status (Display Only Badge) -->
