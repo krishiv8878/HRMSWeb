@@ -51,7 +51,7 @@
       <div class="card-value">{{ departmentsCount }} <small class="unit-text">Units</small></div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-blue"></span>
-        <span>Engineering, Design, HR & Sales</span>
+        <span>{{ topDepartmentsSummary }}</span>
       </div>
     </div>
 
@@ -66,7 +66,7 @@
       <div class="card-value">{{ ladderLevelsCount }} <small class="unit-text">Tiers</small></div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-green"></span>
-        <span>Entry, Mid, Senior & Leadership</span>
+        <span>{{ topLadderSummary }}</span>
       </div>
     </div>
 
@@ -78,10 +78,10 @@
           <mat-icon>insights</mat-icon>
         </div>
       </div>
-      <div class="card-value">98.4% <small class="unit-text">Mapped</small></div>
+      <div class="card-value">{{ alignmentScore }}% <small class="unit-text">Mapped</small></div>
       <div class="card-subtitle is-neutral">
         <span class="dot-indicator dot-amber"></span>
-        <span>Standardized job titles</span>
+        <span>{{ positionedEmployeesCount }} / {{ totalEmployeesCount }} Workforce positioned</span>
       </div>
     </div>
   </div>

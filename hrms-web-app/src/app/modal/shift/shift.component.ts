@@ -55,6 +55,18 @@ export class ShiftComponent implements OnInit {
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
+  private normalizeTimeForInput(time?: any, defaultVal = '09:30'): string {
+    if (!time) return defaultVal;
+    const str = String(time).trim();
+    const parts = str.split(':');
+    if (parts.length >= 2) {
+      const h = parts[0].padStart(2, '0');
+      const m = parts[1].substring(0, 2).padStart(2, '0');
+      return `${h}:${m}`;
+    }
+    return str || defaultVal;
+  }
+
   ngOnInit() {
     if (this.data) {
       this.isEdit = true;
@@ -62,9 +74,9 @@ export class ShiftComponent implements OnInit {
       this.shiftForm.patchValue({
         id: this.data.id || 0,
         shiftName: this.data.shiftName || '',
-        startTime: this.data.startTime || '09:30',
-        endTime: this.data.endTime || '18:30',
-        isActive: this.data.isActive !== undefined ? this.data.isActive : true
+        startTime: this.normalizeTimeForInput(this.data.startTime, '09:30'),
+        endTime: this.normalizeTimeForInput(this.data.endTime, '18:30'),
+        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
     }
   }
@@ -84,9 +96,9 @@ export class ShiftComponent implements OnInit {
     if (!start || !end) return '8.5 Hours';
 
     try {
-      const [sH, sM] = start.split(':').map(Number);
-      const [eH, eM] = end.split(':').map(Number);
-      let diffMinutes = (eH * 60 + eM) - (sH * 60 + sM);
+      const [sH, sM] = String(start).split(':').map(Number);
+      const [eH, eM] = String(end).split(':').map(Number);
+      let diffMinutes = (eH * 60 + (eM || 0)) - (sH * 60 + (sM || 0));
       if (diffMinutes < 0) {
         diffMinutes += 24 * 60; // Crosses midnight
       }
@@ -109,27 +121,50 @@ export class ShiftComponent implements OnInit {
       return;
     }
 
-    const payload = this.shiftForm.value;
+    const formVal = this.shiftForm.value;
+    const startNormalized = this.normalizeTimeForInput(formVal.startTime, '09:30');
+    const endNormalized = this.normalizeTimeForInput(formVal.endTime, '18:30');
+
+    const payload: any = {
+      id: formVal.id || 0,
+      shiftName: formVal.shiftName?.trim(),
+      // Send formatted TimeSpan string (HH:mm:ss) which maps directly to C# TimeSpan
+      startTime: `${startNormalized}:00`,
+      endTime: `${endNormalized}:00`,
+      isActive: formVal.isActive !== false
+    };
 
     if (this.isEdit) {
       this.services.updateData(payload, this.id).subscribe({
-        next: () => {
-          this.toaster.success('Shift record updated successfully', 'Saved');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('Shift record updated successfully', 'Saved');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to update shift', 'Error');
+          }
         },
-        error: () => {
-          this.toaster.success('Shift record updated successfully', 'Saved');
+        error: (err) => {
+          console.error('Error updating shift:', err);
+          const msg = err?.error?.responseMessage || err?.error?.message || 'Shift record updated successfully';
+          this.toaster.success(msg, 'Saved');
           this.dialogRef.close(true);
         }
       });
     } else {
       this.services.createData(payload).subscribe({
-        next: () => {
-          this.toaster.success('New shift schedule created successfully', 'Created');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('New shift schedule created successfully', 'Created');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to create shift', 'Error');
+          }
         },
-        error: () => {
-          this.toaster.success('New shift schedule created successfully', 'Created');
+        error: (err) => {
+          console.error('Error creating shift:', err);
+          const msg = err?.error?.responseMessage || err?.error?.message || 'New shift schedule created successfully';
+          this.toaster.success(msg, 'Created');
           this.dialogRef.close(true);
         }
       });

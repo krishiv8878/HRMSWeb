@@ -50,7 +50,7 @@ export class AssetTableComponent implements OnInit, OnChanges {
 
   categories: string[] = ['All', 'Laptop', 'Monitor', 'Tablet', 'Furniture', 'Peripherals'];
   statuses: string[] = ['All', 'Active', 'Available', 'In Repair'];
-  locations: string[] = ['All', 'NY Office - Floor 4', 'Storage Room B', 'Remote (UK)', 'SF Office - Floor 2', 'NY Office - Desk 42'];
+  locations: string[] = ['All'];
 
   ngOnInit() {
     this.filterAssets();
@@ -64,6 +64,10 @@ export class AssetTableComponent implements OnInit, OnChanges {
 
   filterAssets() {
     let result = [...this.assets];
+
+    // Build dynamic locations list
+    const locSet = new Set(this.assets.map(a => a.location).filter(Boolean));
+    this.locations = ['All', ...Array.from(locSet)];
 
     // Search query
     if (this.searchQuery && this.searchQuery.trim()) {
@@ -162,9 +166,14 @@ export class AssetTableComponent implements OnInit, OnChanges {
     this.toastr.success(`Asset ${id} sent for deployment! Status set to 'Available'`, 'Ready for Deployment');
   }
 
+  onSendToRepair(id: string) {
+    this.assetService.sendToRepair(id);
+    this.toastr.warning(`Asset ${id} status updated to 'In Repair'`, 'Sent to Repair');
+  }
+
   onDelete(id: string) {
     this.assetService.deleteAsset(id);
-    this.toastr.warning(`Asset ${id} status changed to 'In Repair'`, 'Asset Status Updated');
+    this.toastr.error(`Asset ${id} removed from database`, 'Asset Deleted');
   }
 
   getStatusPillClass(status: AssetStatus): string {

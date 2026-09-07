@@ -33,39 +33,25 @@
       </div>
       <div class="card-value">{{ totalCount }}</div>
       <div class="card-subtitle">
-        <span>Submitted this year</span>
+        <span>Recorded in database</span>
       </div>
     </div>
 
-    <!-- Card 2: Annual Leave Balance -->
+    <!-- Card 2: Approved Leaves -->
     <div class="metric-card">
       <div class="card-header">
-        <span class="card-title">ANNUAL LEAVE</span>
+        <span class="card-title">APPROVED LEAVES</span>
         <div class="icon-box icon-indigo">
-          <mat-icon>beach_access</mat-icon>
+          <mat-icon>check_circle</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ annualBalance }} <small class="unit-text">days</small></div>
+      <div class="card-value">{{ approvedCount }}</div>
       <div class="card-subtitle is-positive">
-        <span>Available balance</span>
+        <span>Confirmed & authorized</span>
       </div>
     </div>
 
-    <!-- Card 3: Sick Leave Balance -->
-    <div class="metric-card">
-      <div class="card-header">
-        <span class="card-title">SICK LEAVE</span>
-        <div class="icon-box icon-rose">
-          <mat-icon>medical_services</mat-icon>
-        </div>
-      </div>
-      <div class="card-value">{{ sickBalance }} <small class="unit-text">days</small></div>
-      <div class="card-subtitle">
-        <span>Available balance</span>
-      </div>
-    </div>
-
-    <!-- Card 4: Pending Approval -->
+    <!-- Card 3: Pending Approval -->
     <div class="metric-card">
       <div class="card-header">
         <span class="card-title">PENDING APPROVAL</span>
@@ -76,6 +62,20 @@
       <div class="card-value">{{ pendingCount }}</div>
       <div class="card-subtitle" [class.is-warning]="pendingCount > 0">
         <span>{{ pendingCount > 0 ? 'Awaiting manager review' : 'No pending approvals' }}</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Rejected / Inactive -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">REJECTED / OTHER</span>
+        <div class="icon-box icon-rose">
+          <mat-icon>cancel</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ rejectedCount }}</div>
+      <div class="card-subtitle">
+        <span>Declined or cancelled</span>
       </div>
     </div>
   </div>

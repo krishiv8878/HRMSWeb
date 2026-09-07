@@ -134,15 +134,16 @@
     <!-- Row 4: Roles & Designation -->
     <div class="form-row-2">
       <div class="form-group">
-        <label class="field-label">Corporate Designation</label>
+        <label class="field-label">Corporate Designation <span class="required">*</span></label>
         <div class="input-wrapper">
           <mat-icon class="input-icon">work_outline</mat-icon>
-          <input
-            type="text"
-            formControlName="designation"
-            placeholder="e.g. Senior Frontend Engineer"
-            class="custom-input"
-          />
+          <select
+            formControlName="designationId"
+            (change)="onDesignationSelect($event)"
+            class="custom-select"
+          >
+            <option *ngFor="let d of designations" [value]="d.id">{{ d.name }}</option>
+          </select>
         </div>
       </div>
 
@@ -178,6 +179,20 @@
             <mat-option *ngFor="let s of skills" [value]="s.id">{{ s.skillName }}</mat-option>
           </mat-select>
         </div>
+      </div>
+    </div>
+
+    <!-- Row 6: Work Shift Schedule -->
+    <div class="form-group">
+      <label class="field-label">Assigned Work Shift</label>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">schedule</mat-icon>
+        <select formControlName="shiftId" class="custom-select">
+          <option [ngValue]="null">Select Work Shift Schedule (Default / Optional)</option>
+          <option *ngFor="let s of shifts" [ngValue]="s.id">
+            {{ s.shiftName }} ({{ s.startTime }} - {{ s.endTime }})
+          </option>
+        </select>
       </div>
     </div>
 

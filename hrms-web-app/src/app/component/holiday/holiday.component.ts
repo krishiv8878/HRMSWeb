@@ -82,12 +82,13 @@ export class HolidayComponent implements OnInit {
         if (rawList.length > 0) {
           this.allHolidays = rawList.map((item: any, idx: number) => this.mapHolidayItem(item, idx));
         } else {
-          this.allHolidays = this.getDefaultMockHolidays();
+          this.allHolidays = [];
         }
         this.processHolidaysData();
       },
-      error: () => {
-        this.allHolidays = this.getDefaultMockHolidays();
+      error: (err) => {
+        console.error('Error fetching holidays from database:', err);
+        this.allHolidays = [];
         this.processHolidaysData();
       }
     });
@@ -108,21 +109,44 @@ export class HolidayComponent implements OnInit {
     }
   }
 
+  private autoDetectHolidayType(name: string, desc: string): 'NATIONAL' | 'REGIONAL' | 'OPTIONAL' {
+    const text = `${name} ${desc}`.toLowerCase();
+    if (text.includes('optional') || text.includes('floating') || text.includes('restricted')) {
+      return 'OPTIONAL';
+    }
+    if (
+      text.includes('regional') ||
+      text.includes('state') ||
+      text.includes('diwali') ||
+      text.includes('holi') ||
+      text.includes('eid') ||
+      text.includes('festival') ||
+      text.includes('puja') ||
+      text.includes('onam') ||
+      text.includes('pongal') ||
+      text.includes('chath')
+    ) {
+      return 'REGIONAL';
+    }
+    return 'NATIONAL';
+  }
+
   private mapHolidayItem(item: any, idx: number): HolidayItem {
-    const d = item.holidayDate ? new Date(item.holidayDate) : new Date();
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const types: ('NATIONAL' | 'REGIONAL' | 'OPTIONAL')[] = ['NATIONAL', 'REGIONAL', 'OPTIONAL'];
-    
-    const assignedType = item.type || types[idx % 3];
     const holidayDateStr = item.holidayDate || new Date().toISOString().split('T')[0];
+    const d = new Date(holidayDateStr);
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const name = item.holidayName || item.name || 'Company Holiday';
+    const description = item.description || 'Official Organization Holiday';
+
+    const assignedType = item.type || item.Type || item.holidayType || this.autoDetectHolidayType(name, description);
     const daysLeft = this.calculateDaysLeft(holidayDateStr);
 
     return {
-      id: item.id || Math.floor(100 + Math.random() * 900),
-      holidayName: item.holidayName || item.name || 'Company Holiday',
+      id: Number(item.id || (idx + 1)),
+      holidayName: name,
       holidayDate: holidayDateStr,
-      description: item.description || 'Official Organization Holiday',
-      isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+      description: description,
+      isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false',
       isDeleted: Boolean(item.isDeleted),
       type: assignedType,
       dayName: dayNames[d.getDay()] || 'Any',
@@ -130,33 +154,31 @@ export class HolidayComponent implements OnInit {
     };
   }
 
-  private getDefaultMockHolidays(): HolidayItem[] {
-    const yr = this.currentYear;
-    const mockList: HolidayItem[] = [
-      { id: 1, holidayName: "New Year's Day", holidayDate: `${yr}-01-01`, dayName: 'Monday', description: 'Public Holiday', type: 'NATIONAL', isActive: true, isDeleted: false },
-      { id: 2, holidayName: 'Independence Day / Republic Day', holidayDate: `${yr}-01-26`, dayName: 'Monday', description: 'National Holiday', type: 'NATIONAL', isActive: true, isDeleted: false },
-      { id: 3, holidayName: 'Holi / Spring Festival', holidayDate: `${yr}-03-25`, dayName: 'Monday', description: 'Regional Holiday', type: 'REGIONAL', isActive: true, isDeleted: false },
-      { id: 4, holidayName: 'Labor Day', holidayDate: `${yr}-05-01`, dayName: 'Wednesday', description: 'Public Holiday', type: 'NATIONAL', isActive: true, isDeleted: false },
-      { id: 5, holidayName: 'Independence Day Celebration', holidayDate: `${yr}-08-15`, dayName: 'Thursday', description: 'National Holiday', type: 'NATIONAL', isActive: true, isDeleted: false },
-      { id: 6, holidayName: 'Gandhi Jayanti', holidayDate: `${yr}-10-02`, dayName: 'Wednesday', description: 'National Holiday', type: 'NATIONAL', isActive: true, isDeleted: false },
-      { id: 7, holidayName: 'Diwali Festival of Lights', holidayDate: `${yr}-11-01`, dayName: 'Friday', description: 'Festival Holiday', type: 'REGIONAL', isActive: true, isDeleted: false },
-      { id: 8, holidayName: 'Christmas Day', holidayDate: `${yr}-12-25`, dayName: 'Wednesday', description: 'Public Holiday', type: 'NATIONAL', isActive: true, isDeleted: false },
-      { id: 9, holidayName: 'Floating Personal Holiday', holidayDate: `${yr}-11-28`, dayName: 'Thursday', description: 'Optional Holiday', type: 'OPTIONAL', isActive: false, isDeleted: false }
-    ];
-
-    return mockList.map((item) => ({
-      ...item,
-      daysLeft: this.calculateDaysLeft(item.holidayDate)
-    }));
-  }
-
   private processHolidaysData() {
-    // Dynamic counts
-    this.totalHolidaysCount = this.allHolidays.length;
-    this.activeHolidaysCount = this.allHolidays.filter(h => h.isActive !== false).length;
-    this.inactiveHolidaysCount = this.allHolidays.filter(h => h.isActive === false).length;
+    // 1. Compute dynamic available years from database records
+    const yearsSet = new Set<number>([this.currentYear, this.currentYear + 1]);
+    this.allHolidays.forEach(h => {
+      if (h.holidayDate) {
+        const y = new Date(h.holidayDate).getFullYear();
+        if (!isNaN(y) && y > 2000) yearsSet.add(y);
+      }
+    });
+    this.availableYears = Array.from(yearsSet).sort((a, b) => a - b);
 
-    // Dynamically calculate next upcoming holiday (closest active holiday with daysLeft >= 0)
+    // 2. Dynamic counts for selected year
+    const yearHolidays = this.allHolidays.filter(h => {
+      try {
+        return new Date(h.holidayDate).getFullYear().toString() === this.selectedYear;
+      } catch {
+        return true;
+      }
+    });
+
+    this.totalHolidaysCount = yearHolidays.length;
+    this.activeHolidaysCount = yearHolidays.filter(h => h.isActive !== false).length;
+    this.inactiveHolidaysCount = yearHolidays.filter(h => h.isActive === false).length;
+
+    // 3. Dynamically calculate next upcoming holiday (closest active holiday with daysLeft >= 0)
     const upcomingList = this.allHolidays
       .filter(h => h.isActive !== false && (h.daysLeft !== undefined && h.daysLeft >= 0))
       .sort((a, b) => (a.daysLeft || 0) - (b.daysLeft || 0));
@@ -170,6 +192,8 @@ export class HolidayComponent implements OnInit {
         daysLeft: Math.abs(this.allHolidays[0].daysLeft || 0)
       };
       this.allHolidays[0].isNext = true;
+    } else {
+      this.nextHoliday = null;
     }
 
     this.filterHolidays();

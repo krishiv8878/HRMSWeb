@@ -68,21 +68,32 @@ export class DocumentService {
 
   getLoggedInUser(): { name: string; initials: string; avatar?: string } {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      const storedName = localStorage.getItem('UserName') || localStorage.getItem('loggedUser') || localStorage.getItem('name');
+      const fn = (localStorage.getItem('firstName') || '').trim();
+      const ln = (localStorage.getItem('lastName') || '').trim();
+      const combo = (fn || ln) ? `${fn} ${ln}`.trim() : '';
+
+      const storedName = combo ||
+                         localStorage.getItem('userName') ||
+                         localStorage.getItem('fullName') ||
+                         localStorage.getItem('employeeName') ||
+                         localStorage.getItem('UserName') ||
+                         localStorage.getItem('loggedUser') ||
+                         localStorage.getItem('name');
+
       const storedPhoto = localStorage.getItem('profileImage') || localStorage.getItem('userAvatar') || localStorage.getItem('profilePic') || localStorage.getItem('photo');
 
       let avatarUrl: string | undefined = undefined;
       if (storedPhoto) {
-        avatarUrl = storedPhoto.startsWith('http')
+        avatarUrl = storedPhoto.startsWith('http') || storedPhoto.startsWith('data:')
           ? storedPhoto
           : `${this.apiUrl.replace('/api', '')}/ProfileImages/${storedPhoto}`;
       }
 
       const name = storedName || 'Employee';
-      const parts = name.trim().split(' ');
-      const initials = parts.length > 1
+      const parts = name.trim().split(/\s+/);
+      const initials = parts.length > 1 && parts[0] && parts[1]
         ? (parts[0][0] + parts[1][0]).toUpperCase()
-        : parts[0].substring(0, 2).toUpperCase();
+        : (parts[0] ? parts[0].substring(0, 2).toUpperCase() : 'EP');
 
       return { name, initials, avatar: avatarUrl };
     }
@@ -143,12 +154,14 @@ export class DocumentService {
               id: item.id ? String(item.id) : 'doc-' + Math.random(),
               name: item.documentName || item.name || filePath,
               fileType: fileType,
-              category: item.category || 'Employee Docs',
+              category: item.category || item.Category || 'Employee Docs',
               ownerName: empName,
               ownerAvatar: empAvatar,
               ownerInitials: empInitials,
               accessLevel: (item.accessLevel as AccessLevel) || 'Public',
-              lastModified: item.createdDate ? new Date(item.createdDate).toLocaleDateString() : (item.lastModified || new Date().toLocaleDateString()),
+              lastModified: (item.uploadedDate || item.UploadedDate || item.createdDate || item.CreatedDate || item.lastModified) 
+                ? new Date(item.uploadedDate || item.UploadedDate || item.createdDate || item.CreatedDate || item.lastModified).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
               fileSize: item.fileSize || '1.0 MB',
               isActive: item.isActive !== undefined ? Boolean(item.isActive) : true
             };

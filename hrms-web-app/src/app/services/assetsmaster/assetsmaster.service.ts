@@ -11,69 +11,7 @@ export class AssetsmasterService {
   http = inject(HttpClient);
   apiUrl = environment.host;
 
-  private initialAssets: AssetItem[] = [
-    {
-      id: 'AST-1042',
-      modelName: 'MacBook Pro 16"',
-      specifications: 'Laptop • 2023 M2 Max',
-      assetType: 'Laptop',
-      assignedTo: 'Sarah Jenkins',
-      assignedAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120',
-      location: 'NY Office - Floor 4',
-      status: 'Active',
-      lastAudit: 'Oct 12, 2023',
-      isActive: true
-    },
-    {
-      id: 'AST-2199',
-      modelName: 'Dell UltraSharp 32"',
-      specifications: 'Monitor • U3223QE',
-      assetType: 'Monitor',
-      assignedTo: 'Unassigned',
-      assignedInitials: 'UN',
-      location: 'Storage Room B',
-      status: 'Available',
-      lastAudit: 'Nov 01, 2023',
-      isActive: true
-    },
-    {
-      id: 'AST-0931',
-      modelName: 'ThinkPad X1 Carbon',
-      specifications: 'Laptop • Gen 10',
-      assetType: 'Laptop',
-      assignedTo: 'Michael Chang',
-      assignedAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120',
-      location: 'Remote (UK)',
-      status: 'In Repair',
-      lastAudit: 'Sep 15, 2023',
-      isOverdue: true,
-      isActive: false
-    },
-    {
-      id: 'AST-1550',
-      modelName: 'iPad Pro 12.9"',
-      specifications: 'Tablet • 6th Gen',
-      assetType: 'Tablet',
-      assignedTo: 'Emma Watson',
-      assignedAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
-      location: 'SF Office - Floor 2',
-      status: 'Active',
-      lastAudit: 'Oct 28, 2023',
-      isActive: true
-    },
-    {
-      id: 'AST-3012',
-      modelName: 'Herman Miller Aeron',
-      specifications: 'Furniture • Size B',
-      assetType: 'Furniture',
-      assignedTo: 'David Miller',
-      assignedAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120',
-      location: 'NY Office - Desk 42',
-      status: 'Active',
-      lastAudit: 'Jan 10, 2023',
-      isActive: true
-    }
-  ];
+  private initialAssets: AssetItem[] = [];
 
   private assetsSubject = new BehaviorSubject<AssetItem[]>(this.initialAssets);
   assets$: Observable<AssetItem[]> = this.assetsSubject.asObservable();
@@ -91,7 +29,11 @@ export class AssetsmasterService {
     if (!isBrowser) return;
 
     this.http.get<any>(this.apiUrl + `/AssetsMaster/GetAssetsMaster`).pipe(
-      catchError(() => of({ data: [] }))
+      catchError(() => this.http.get<any>(this.apiUrl + `/AssetsMaster/GetAllAssetsMaster`)),
+      catchError((err) => {
+        console.error('Error fetching assets from API:', err);
+        return of({ data: [] });
+      })
     ).subscribe((response: any) => {
       const rawList = Array.isArray(response) ? response : (response?.data || response?.result || []);
       if (Array.isArray(rawList) && rawList.length > 0) {
@@ -104,35 +46,37 @@ export class AssetsmasterService {
             modelName: item.assetsMasterName || item.modelName || 'Hardware Asset',
             specifications: item.description || item.specifications || item.serialNumber || 'Corporate Asset',
             assetType: (item.assetType as AssetType) || 'Laptop',
-            assignedTo: item.assignedTo || 'Sarah Jenkins',
+            assignedTo: item.assignedTo || 'Unassigned',
             location: item.location || 'Main HQ Office',
             status: assetStatus,
             isActive: activeState,
-            lastAudit: item.dateOfPurchase ? new Date(item.dateOfPurchase).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Oct 12, 2023'
+            lastAudit: item.dateOfPurchase ? new Date(item.dateOfPurchase).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'N/A'
           };
         });
 
         this.assetsSubject.next(apiAssets);
-        this.recalculateMetrics();
+      } else {
+        this.assetsSubject.next([]);
       }
+      this.recalculateMetrics();
     });
   }
 
   recalculateMetrics() {
     const assets = this.assetsSubject.value;
-    const total = assets.length || 1248;
+    const total = assets.length;
     const assignedCount = assets.filter(a => a.status === 'Active' || (a.assignedTo && a.assignedTo !== 'Unassigned')).length;
     const repairCount = assets.filter(a => a.status === 'In Repair' || a.isActive === false).length;
     const availableCount = assets.filter(a => a.status === 'Available' || a.assignedTo === 'Unassigned').length;
 
-    const assignedPercent = Math.round((assignedCount / (total || 1)) * 100);
+    const assignedPercent = total > 0 ? Math.round((assignedCount / total) * 100) : 0;
 
     const cards: AssetMetricCard[] = [
       {
         id: 'metric-1',
         title: 'TOTAL ASSETS',
         value: total,
-        subtitle: '↑ +12 this month',
+        subtitle: 'Live database count',
         iconName: 'inventory_2',
         theme: 'blue',
         isPositive: true
@@ -147,9 +91,9 @@ export class AssetsmasterService {
       },
       {
         id: 'metric-3',
-        title: 'IN REPAIR (SOFT-DELETED)',
+        title: 'IN REPAIR (INACTIVE)',
         value: repairCount,
-        subtitle: repairCount > 0 ? `⚠️ ${repairCount} asset(s) currently in repair` : 'All operating normally',
+        subtitle: repairCount > 0 ? `⚠️ ${repairCount} asset(s) currently inactive` : 'All operating normally',
         iconName: 'build',
         theme: 'rose',
         isWarning: repairCount > 0
@@ -245,25 +189,71 @@ export class AssetsmasterService {
     }
   }
 
-  deleteAsset(id: string) {
-    const updated = this.assetsSubject.value.map(a => {
-      if (a.id === id) {
-        return {
-          ...a,
-          status: 'In Repair' as AssetStatus,
-          isActive: false
-        };
+  sendToRepair(id: string) {
+    const current = this.assetsSubject.value;
+    const target = current.find(a => String(a.id) === String(id));
+    const numericId = parseInt(String(id).replace(/\D/g, ''), 10) || Number(id) || 1;
+    const existingAssignedTo = target?.assignedTo || 'Unassigned';
+
+    const payload = {
+      id: numericId,
+      assetsMasterId: numericId,
+      assetsMasterName: target?.modelName || 'Asset',
+      description: target?.specifications || '',
+      status: 'In Repair',
+      assignedTo: existingAssignedTo,
+      location: target?.location || 'Main HQ Office',
+      isActive: true,
+      isDeleted: false
+    };
+
+    this.updateData(payload).subscribe({
+      next: () => {
+        const updated = this.assetsSubject.value.map(a => {
+          if (String(a.id) === String(id)) {
+            return {
+              ...a,
+              status: 'In Repair' as AssetStatus,
+              assignedTo: existingAssignedTo,
+              isActive: true
+            };
+          }
+          return a;
+        });
+        this.assetsSubject.next(updated);
+        this.recalculateMetrics();
+      },
+      error: () => {
+        const updated = this.assetsSubject.value.map(a => {
+          if (String(a.id) === String(id)) {
+            return {
+              ...a,
+              status: 'In Repair' as AssetStatus,
+              assignedTo: existingAssignedTo,
+              isActive: true
+            };
+          }
+          return a;
+        });
+        this.assetsSubject.next(updated);
+        this.recalculateMetrics();
       }
-      return a;
     });
+  }
 
-    this.assetsSubject.next(updated);
-    this.recalculateMetrics();
-
-    const numericId = parseInt(id.replace(/\D/g, ''), 10) || 1;
+  deleteAsset(id: string) {
+    const numericId = parseInt(String(id).replace(/\D/g, ''), 10) || Number(id) || 1;
     this.DeleteData(numericId).subscribe({
-      next: () => console.log('Asset sent to repair via API database'),
-      error: (err) => console.log('API call finished:', err)
+      next: () => {
+        const updated = this.assetsSubject.value.filter(a => String(a.id) !== String(id));
+        this.assetsSubject.next(updated);
+        this.recalculateMetrics();
+      },
+      error: () => {
+        const updated = this.assetsSubject.value.filter(a => String(a.id) !== String(id));
+        this.assetsSubject.next(updated);
+        this.recalculateMetrics();
+      }
     });
   }
 

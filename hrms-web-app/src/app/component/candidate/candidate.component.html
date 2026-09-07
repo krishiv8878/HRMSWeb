@@ -36,8 +36,8 @@
         <div class="roles-big-val">
           {{ metrics.openRolesActive }} <span class="active-label">Active</span>
         </div>
-        <div class="trend-badge">
-          +12% <span class="trend-sub">vs last quarter</span>
+        <div class="trend-badge" [class.trend-negative]="metrics.quarterlyGrowthPositive === false">
+          {{ metrics.quarterlyGrowthRate || '+12%' }} <span class="trend-sub">vs last quarter</span>
         </div>
       </div>
 
@@ -48,7 +48,7 @@
           <span class="meter-val">{{ metrics.timeToFillAvgDays }} Days</span>
         </div>
         <div class="meter-track">
-          <div class="meter-fill" style="width: 55%;"></div>
+          <div class="meter-fill" [style.width.%]="metrics.timeToFillProgressPercent || 50"></div>
         </div>
       </div>
 

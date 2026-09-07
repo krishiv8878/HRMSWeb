@@ -31,14 +31,12 @@
           <th>DOCUMENT NAME</th>
           <th>CATEGORY</th>
           <th>OWNER</th>
-          <th>ACCESS LEVEL</th>
-          <th>STATUS</th>
           <th>LAST MODIFIED</th>
           <th class="text-right">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let doc of paginatedDocuments" [class.is-inactive-row]="doc.isActive === false">
+        <tr *ngFor="let doc of paginatedDocuments">
           <!-- Document Name with Custom Badge & Click to View -->
           <td class="col-name" (click)="onViewDocument(doc)" style="cursor: pointer;">
             <div class="file-name-wrapper">
@@ -73,20 +71,6 @@
             </div>
           </td>
 
-          <!-- Access Level -->
-          <td class="col-access">
-            <span class="access-pill" [ngClass]="getAccessPillClass(doc.accessLevel)">
-              {{ doc.accessLevel }}
-            </span>
-          </td>
-
-          <!-- Active Status Badge Column -->
-          <td class="col-status">
-            <span class="status-badge" [ngClass]="doc.isActive !== false ? 'badge-active' : 'badge-inactive'">
-              {{ doc.isActive !== false ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-
           <!-- Last Modified -->
           <td class="col-date">
             <span class="date-text">{{ doc.lastModified }}</span>
@@ -107,21 +91,13 @@
               <button mat-menu-item (click)="onShareLink(doc)">
                 <mat-icon>share</mat-icon> Share Link
               </button>
-
-              <mat-divider></mat-divider>
-
-              <!-- Action 3: Toggle Active/Inactive Status -->
-              <button mat-menu-item (click)="onToggleActiveStatus(doc)">
-                <mat-icon>{{ doc.isActive !== false ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-                <span>{{ doc.isActive !== false ? 'Set Inactive' : 'Set Active' }}</span>
-              </button>
             </mat-menu>
           </td>
         </tr>
 
         <!-- Empty State -->
         <tr *ngIf="paginatedDocuments.length === 0">
-          <td colspan="7" class="empty-state">
+          <td colspan="5" class="empty-state">
             <div class="empty-box">
               <mat-icon class="empty-icon">folder_open</mat-icon>
               <p *ngIf="documents.length === 0">

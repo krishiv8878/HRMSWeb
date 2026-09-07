@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { DesignationservicesService } from '../../services/designation/designationservices.service';
+import { EmployeeService } from '../../services/employee/employee.service';
 import { DesignationsComponent } from '../../modal/designations/designations.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
@@ -35,6 +36,7 @@ export interface DesignationItem {
 })
 export class DesignationComponent implements OnInit {
   private services = inject(DesignationservicesService);
+  private employeeService = inject(EmployeeService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
 
@@ -43,17 +45,23 @@ export class DesignationComponent implements OnInit {
   allDesignations: DesignationItem[] = [];
   filteredDesignations: DesignationItem[] = [];
   paginatedDesignations: DesignationItem[] = [];
+  employeesList: any[] = [];
 
   // Filter states
   searchQuery: string = '';
   selectedDept: string = 'All';
   selectedStatus: string = 'All';
 
-  // Metrics
+  // 100% Dynamic Metrics
   totalCount: number = 0;
   activeCount: number = 0;
-  departmentsCount: number = 5;
-  ladderLevelsCount: number = 4;
+  departmentsCount: number = 0;
+  topDepartmentsSummary: string = 'Engineering, Product & Design, Human Resources';
+  ladderLevelsCount: number = 0;
+  topLadderSummary: string = 'Entry, Mid, Senior & Leadership';
+  alignmentScore: number = 100;
+  totalEmployeesCount: number = 0;
+  positionedEmployeesCount: number = 0;
 
   // Pagination
   currentPage: number = 1;
@@ -68,6 +76,24 @@ export class DesignationComponent implements OnInit {
   }
 
   getData() {
+    // Load both Designations and Employee workforce to compute real dynamic headcount
+    this.employeeService.getData().subscribe({
+      next: (empRes: any) => {
+        let emps: any[] = [];
+        if (Array.isArray(empRes)) emps = empRes;
+        else if (empRes && Array.isArray(empRes.data)) emps = empRes.data;
+        else if (empRes && Array.isArray(empRes.employeedata?.data)) emps = empRes.employeedata.data;
+        this.employeesList = emps;
+        this.loadDesignationsCatalog();
+      },
+      error: () => {
+        this.employeesList = [];
+        this.loadDesignationsCatalog();
+      }
+    });
+  }
+
+  private loadDesignationsCatalog() {
     this.services.getData().subscribe({
       next: (response: any) => {
         let rawList: any[] = [];
@@ -80,14 +106,14 @@ export class DesignationComponent implements OnInit {
         if (rawList.length > 0) {
           this.allDesignations = rawList.map((item: any, idx: number) => this.mapDesignationItem(item, idx));
         } else {
-          this.allDesignations = this.getDefaultMockDesignations();
+          this.allDesignations = [];
         }
 
         this.processDesignationMetrics();
         this.filterDesignations();
       },
       error: () => {
-        this.allDesignations = this.getDefaultMockDesignations();
+        this.allDesignations = [];
         this.processDesignationMetrics();
         this.filterDesignations();
       }
@@ -95,12 +121,26 @@ export class DesignationComponent implements OnInit {
   }
 
   private mapDesignationItem(item: any, idx: number): DesignationItem {
-    const name = (item.designationName || 'Designation').trim();
-    const { dept, level, icon } = this.categorizeDesignation(name);
-    const count = item.headcount || Math.max(2, Math.floor(32 - (idx * 3)));
+    const name = (item.designationName || item.designation || 'Designation').trim();
+    const { dept: detectedDept, level: detectedLevel, icon } = this.categorizeDesignation(name);
+    const dept = item.departmentCategory || item.DepartmentCategory || item.department || detectedDept;
+    const level = item.careerLevel || item.CareerLevel || detectedLevel;
+    const desigId = Number(item.id || item.designationId || (idx + 1));
+
+    // Dynamic real headcount calculation from employee workforce
+    let count = 0;
+    if (this.employeesList.length > 0) {
+      count = this.employeesList.filter((e: any) => {
+        const desigIdMatch = Number(e.designationId) === desigId && desigId > 0;
+        const desigNameMatch = String(e.designation || '').toLowerCase().trim() === name.toLowerCase();
+        return desigIdMatch || desigNameMatch;
+      }).length;
+    } else {
+      count = item.headcount || 0;
+    }
 
     return {
-      id: Number(item.id || (idx + 1)),
+      id: desigId,
       designationName: name,
       departmentCategory: dept,
       careerLevel: level,
@@ -115,45 +155,55 @@ export class DesignationComponent implements OnInit {
     const lower = name.toLowerCase();
 
     let level = 'Mid Level';
-    if (lower.includes('lead') || lower.includes('principal') || lower.includes('director') || lower.includes('vp') || lower.includes('head')) {
+    if (lower.includes('lead') || lower.includes('principal') || lower.includes('director') || lower.includes('vp') || lower.includes('head') || lower.includes('manager') || lower.includes('chief')) {
       level = 'Leadership';
-    } else if (lower.includes('senior') || lower.includes('sr.') || lower.includes('architect')) {
+    } else if (lower.includes('senior') || lower.includes('sr.') || lower.includes('architect') || lower.includes('specialist')) {
       level = 'Senior Level';
-    } else if (lower.includes('junior') || lower.includes('intern') || lower.includes('associate')) {
+    } else if (lower.includes('junior') || lower.includes('intern') || lower.includes('associate') || lower.includes('trainee')) {
       level = 'Entry Level';
     }
 
-    if (lower.includes('engineer') || lower.includes('developer') || lower.includes('architect') || lower.includes('devops') || lower.includes('qa')) {
+    if (lower.includes('engineer') || lower.includes('developer') || lower.includes('architect') || lower.includes('devops') || lower.includes('qa') || lower.includes('technical') || lower.includes('software')) {
       return { dept: 'Engineering', level, icon: 'engineering' };
     }
-    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('product')) {
+    if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('product') || lower.includes('graphic')) {
       return { dept: 'Product & Design', level, icon: 'palette' };
     }
-    if (lower.includes('hr') || lower.includes('talent') || lower.includes('recruiter') || lower.includes('people')) {
+    if (lower.includes('hr') || lower.includes('talent') || lower.includes('recruiter') || lower.includes('people') || lower.includes('human')) {
       return { dept: 'Human Resources', level, icon: 'badge' };
     }
-    if (lower.includes('market') || lower.includes('sales') || lower.includes('account') || lower.includes('business')) {
+    if (lower.includes('market') || lower.includes('sales') || lower.includes('account') || lower.includes('business') || lower.includes('growth')) {
       return { dept: 'Marketing & Sales', level, icon: 'trending_up' };
     }
 
     return { dept: 'Management', level, icon: 'domain' };
   }
 
-  private getDefaultMockDesignations(): DesignationItem[] {
-    return [
-      { id: 1, designationName: 'Principal Software Architect', departmentCategory: 'Engineering', careerLevel: 'Leadership', headcount: 4, iconName: 'engineering', isActive: true },
-      { id: 2, designationName: 'Senior Frontend Engineer', departmentCategory: 'Engineering', careerLevel: 'Senior Level', headcount: 18, iconName: 'engineering', isActive: true },
-      { id: 3, designationName: 'Lead UI/UX Designer', departmentCategory: 'Product & Design', careerLevel: 'Leadership', headcount: 6, iconName: 'palette', isActive: true },
-      { id: 4, designationName: 'HR Business Partner', departmentCategory: 'Human Resources', careerLevel: 'Senior Level', headcount: 5, iconName: 'badge', isActive: true },
-      { id: 5, designationName: 'DevOps & Cloud Engineer', departmentCategory: 'Engineering', careerLevel: 'Mid Level', headcount: 8, iconName: 'engineering', isActive: true }
-    ];
-  }
-
   private processDesignationMetrics() {
     this.totalCount = this.allDesignations.length;
     this.activeCount = this.allDesignations.filter(d => d.isActive).length;
-    const dSet = new Set(this.allDesignations.map(d => d.departmentCategory));
-    this.departmentsCount = dSet.size;
+
+    // 1. Dynamic Unique Departments Count & Summary
+    const dSet = new Set(this.allDesignations.map(d => d.departmentCategory).filter(d => !!d));
+    this.departmentsCount = dSet.size > 0 ? dSet.size : (this.totalCount > 0 ? 1 : 0);
+    this.topDepartmentsSummary = dSet.size > 0 ? Array.from(dSet).slice(0, 4).join(', ') : 'Engineering, Product & Design, Human Resources';
+
+    // 2. Dynamic Career Ladders Count & Summary
+    const lSet = new Set(this.allDesignations.map(d => d.careerLevel).filter(l => !!l));
+    this.ladderLevelsCount = lSet.size > 0 ? lSet.size : (this.totalCount > 0 ? 1 : 0);
+    this.topLadderSummary = lSet.size > 0 ? Array.from(lSet).join(' • ') : 'Entry, Mid, Senior & Leadership';
+
+    // 3. Dynamic Alignment / Workforce Positioned Score
+    this.totalEmployeesCount = this.employeesList.length;
+    if (this.totalEmployeesCount > 0) {
+      this.positionedEmployeesCount = this.employeesList.filter(e =>
+        (e.designationId && Number(e.designationId) > 0) || (e.designation && String(e.designation).trim().length > 0)
+      ).length;
+      this.alignmentScore = Math.min(100, Math.round((this.positionedEmployeesCount / this.totalEmployeesCount) * 100));
+    } else {
+      this.positionedEmployeesCount = this.totalCount;
+      this.alignmentScore = 100;
+    }
   }
 
   filterDesignations() {

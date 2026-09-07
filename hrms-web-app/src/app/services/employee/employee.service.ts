@@ -3,6 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable, catchError, of, tap } from 'rxjs';
 
+export interface UserProfileInfo {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email?: string;
+  profileImage?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -12,6 +20,53 @@ export class EmployeeService {
 
   private avatarSubject = new BehaviorSubject<string | null>(this.getInitialAvatar());
   avatar$: Observable<string | null> = this.avatarSubject.asObservable();
+
+  private userProfileSubject = new BehaviorSubject<UserProfileInfo>(this.getInitialUserProfile());
+  userProfile$: Observable<UserProfileInfo> = this.userProfileSubject.asObservable();
+
+  private getInitialUserProfile(): UserProfileInfo {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const fn = localStorage.getItem('firstName') || '';
+      const ln = localStorage.getItem('lastName') || '';
+      const storedName = localStorage.getItem('userName') || localStorage.getItem('fullName') || localStorage.getItem('UserName') || `${fn} ${ln}`.trim() || 'User Profile';
+      return {
+        firstName: fn,
+        lastName: ln,
+        fullName: storedName,
+        email: localStorage.getItem('userEmail') || ''
+      };
+    }
+    return { firstName: '', lastName: '', fullName: 'User Profile' };
+  }
+
+  getUserProfile(): UserProfileInfo {
+    return this.userProfileSubject.value;
+  }
+
+  setProfileInfo(firstName: string, lastName: string, fullName?: string, email?: string) {
+    const fn = (firstName || '').trim();
+    const ln = (lastName || '').trim();
+    const computedName = fullName || `${fn} ${ln}`.trim() || 'User Profile';
+
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      if (fn) localStorage.setItem('firstName', fn);
+      if (ln) localStorage.setItem('lastName', ln);
+      if (computedName) {
+        localStorage.setItem('userName', computedName);
+        localStorage.setItem('fullName', computedName);
+        localStorage.setItem('employeeName', computedName);
+        localStorage.setItem('UserName', computedName);
+      }
+      if (email) localStorage.setItem('userEmail', email);
+    }
+
+    this.userProfileSubject.next({
+      firstName: fn,
+      lastName: ln,
+      fullName: computedName,
+      email: email || ''
+    });
+  }
 
   private getInitialAvatar(): string | null {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {

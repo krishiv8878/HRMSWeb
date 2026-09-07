@@ -89,8 +89,22 @@ export class HeaderComponent implements OnInit {
     { id: 'mod-resignation', title: 'Resignation Request', subtitle: 'Submit notice period & exit separation workflow', category: 'Module', icon: 'exit_to_app', route: '/index/resignation' }
   ];
 
+  currentUserName: string = '';
+  currentUserInitials: string = '';
+
   ngOnInit(): void {
     this.loadSearchPools();
+    this.refreshUserInfo();
+
+    this.employeeService.userProfile$.subscribe(() => {
+      this.refreshUserInfo();
+    });
+  }
+
+  refreshUserInfo(): void {
+    const user = this.documentService.getLoggedInUser();
+    this.currentUserName = user.name;
+    this.currentUserInitials = user.initials;
   }
 
   loadSearchPools(): void {
@@ -342,11 +356,11 @@ export class HeaderComponent implements OnInit {
   }
 
   getUserName() {
-    return this.documentService.getLoggedInUser().name;
+    return this.currentUserName || this.documentService.getLoggedInUser().name;
   }
 
   getUserInitials() {
-    return this.documentService.getLoggedInUser().initials;
+    return this.currentUserInitials || this.documentService.getLoggedInUser().initials;
   }
 
   getUserAvatar(): string | undefined {

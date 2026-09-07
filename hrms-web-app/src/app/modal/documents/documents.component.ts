@@ -103,8 +103,8 @@ export class DocumentsComponent implements OnInit {
 
     const formData = new FormData();
     formData.append('documentName', formVal.documentName);
-    formData.append('category', formVal.category);
-    formData.append('accessLevel', formVal.accessLevel);
+    formData.append('category', formVal.category || 'Employee Docs');
+    formData.append('uploadedDate', new Date().toISOString());
     formData.append('file', this.selectedFile);
 
     this.documentService.creatDocument(formData).subscribe({

@@ -167,6 +167,15 @@
       padding: 3px 8px;
       border-radius: 4px;
 
+      &.trend-negative {
+        background-color: #fee2e2;
+        color: #b91c1c;
+
+        .trend-sub {
+          color: #ef4444;
+        }
+      }
+
       .trend-sub {
         font-weight: 500;
         color: #3b82f6;

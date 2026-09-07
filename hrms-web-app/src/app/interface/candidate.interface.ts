@@ -27,7 +27,10 @@ export interface CandidateItem {
 export interface TalentMetrics {
   openRolesActive: number;
   timeToFillAvgDays: number;
+  timeToFillProgressPercent?: number;
   offerAcceptancePercent: number;
+  quarterlyGrowthRate?: string;
+  quarterlyGrowthPositive?: boolean;
   sourcedCount: number;
   screeningCount: number;
   interviewCount: number;

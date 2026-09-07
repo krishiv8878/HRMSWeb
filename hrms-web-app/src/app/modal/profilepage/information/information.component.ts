@@ -175,6 +175,14 @@ export class InformationComponent implements OnInit {
     }
 
     const val = this.profileForm.value;
+    const fn = (val.firstName || '').trim();
+    const ln = (val.lastName || '').trim();
+    const fullName = `${fn} ${ln}`.trim();
+
+    if (fn || ln) {
+      this.services.setProfileInfo(fn, ln, fullName, val.emailAddress || '');
+    }
+
     if (typeof this.selectedImage === 'string' && !val.profileImage) {
       val.profileImage = this.selectedImage;
     }

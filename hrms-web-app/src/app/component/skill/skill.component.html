@@ -51,7 +51,7 @@
       <div class="card-value">{{ categoriesCount }} <small class="unit-text">Domains</small></div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-blue"></span>
-        <span>Frontend, Backend, Cloud & DB</span>
+        <span>{{ topDomainsSummary }}</span>
       </div>
     </div>
 
@@ -66,7 +66,7 @@
       <div class="card-value">{{ coverageRate }}% <small class="unit-text">Mapped</small></div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-green"></span>
-        <span>Workforce-to-skill alignment</span>
+        <span>{{ mappedEmployeesCount }} / {{ totalEmployeesCount }} Team members skilled</span>
       </div>
     </div>
 
@@ -78,10 +78,10 @@
           <mat-icon>trending_up</mat-icon>
         </div>
       </div>
-      <div class="card-value">96.2% <small class="unit-text">Score</small></div>
+      <div class="card-value">{{ activeSkillRate }}% <small class="unit-text">Active</small></div>
       <div class="card-subtitle is-neutral">
         <span class="dot-indicator dot-amber"></span>
-        <span>Standardized enterprise skills</span>
+        <span>{{ activeSkillsCount }} Active • {{ totalSkillsCount - activeSkillsCount }} Inactive</span>
       </div>
     </div>
   </div>

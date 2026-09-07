@@ -1,34 +1,46 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
-import { catchError, of } from 'rxjs';
+import { catchError, Observable, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EmailService {
-  constructor() { }
-
   http = inject(HttpClient);
   apiUrl = environment.host;
 
-  getData() {
-    return this.http.get<any[]>(this.apiUrl + `/LeaveRequest/GetAllLeaveRequest`);
+  getData(): Observable<any> {
+    return this.http.get<any>(this.apiUrl + `/LeaveRequest/GetAllLeaveRequest`).pipe(
+      catchError(() => this.http.get<any>(this.apiUrl + `/LeaveRequest/GetAllEmployeesLeaveRequest`)),
+      catchError(() => this.http.get<any>(this.apiUrl + `/LeaveRequest/GetLeaveRequests`)),
+      catchError((err) => {
+        console.error('Error fetching leave requests from API:', err);
+        return of({ data: [] });
+      })
+    );
   }
 
-  Leavetype(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/LeaveType/AddLeaveType`, data);
+  Leavetype(data: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl + `/LeaveType/AddLeaveType`, data);
   }
 
-  Leaverequest(data: any) {
-    return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/AddLeaveRequest`, data);
+  Leaverequest(data: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl + `/LeaveRequest/AddLeaveRequest`, data).pipe(
+      catchError((err) => {
+        console.error('Error creating leave request:', err);
+        throw err;
+      })
+    );
   }
 
-  approveLeaveRequest(body: any) {
-    return this.http.post<any[]>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, body);
+  approveLeaveRequest(body: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, body).pipe(
+      catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, body))
+    );
   }
 
-  UpdateLeaverequest(data: any) {
+  UpdateLeaverequest(data: any): Observable<any> {
     const numericId = Number(data.id || data.leaveRequestId || 0);
 
     const body = {
@@ -37,8 +49,8 @@ export class EmailService {
       employeeId: Number(data.employeeId || 1),
       leaveTypeId: Number(data.leaveTypeId) || 1,
       leaveMode: data.leaveMode || 'Full Day',
-      startDate: data.startDate,
-      endDate: data.endDate,
+      startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+      endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
       leaveReason: data.leaveReason || '',
       status: data.status || 'Pending',
       isApproved: Boolean(data.isApproved),
@@ -47,41 +59,39 @@ export class EmailService {
       isDeleted: Boolean(data.isDeleted)
     };
 
-    const wrappedBody = {
-      leaveRequest: body,
-      ...body
-    };
-
     return this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest/${numericId}`, body).pipe(
-      catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest/${numericId}`, wrappedBody)),
       catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest`, body)),
       catchError(() => this.http.post<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest`, body)),
       catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/EditLeaveRequest`, body)),
       catchError((err) => {
-        console.error('UpdateLeaverequest API fallback:', err);
+        console.error('UpdateLeaverequest API error:', err);
         return of(body);
       })
     );
   }
 
-  GetAllEmployeesLeaveRequest() {
-    return this.http.get<any[]>(this.apiUrl + `/LeaveRequest/GetAllEmployeesLeaveRequest`);
+  GetAllEmployeesLeaveRequest(): Observable<any> {
+    return this.http.get<any>(this.apiUrl + `/LeaveRequest/GetAllEmployeesLeaveRequest`).pipe(
+      catchError(() => this.http.get<any>(this.apiUrl + `/LeaveRequest/GetAllLeaveRequest`)),
+      catchError((err) => {
+        console.error('Error fetching all employees leave requests:', err);
+        return of({ data: [] });
+      })
+    );
   }
 
-  getAllData() {
+  getAllData(): Observable<any> {
     return this.GetAllEmployeesLeaveRequest();
   }
 
-  DeleteData(ProjectMasterId: any) {
-    const numericId = Number(ProjectMasterId || 0);
-    const body = {
-      id: numericId,
-      leaveRequestId: numericId,
-      isActive: false,
-      isDeleted: true
-    };
-    return this.http.put<any>(this.apiUrl + `/LeaveRequest/UpdateLeaveRequest/${numericId}`, body).pipe(
-      catchError(() => of(null))
+  DeleteData(leaveRequestId: any): Observable<any> {
+    const numericId = Number(leaveRequestId || 0);
+    return this.http.delete<any>(this.apiUrl + `/LeaveRequest/DeleteLeaveRequest?id=${numericId}`).pipe(
+      catchError(() => this.http.delete<any>(this.apiUrl + `/LeaveRequest/DeleteLeaveRequest/${numericId}`)),
+      catchError(() => {
+        const body = { id: numericId, leaveRequestId: numericId, isActive: false, isDeleted: true };
+        return this.UpdateLeaverequest(body);
+      })
     );
   }
 }

@@ -120,26 +120,15 @@ export class LeaverequestComponent implements OnInit {
         if (rawList.length > 0) {
           this.leaveTypes = rawList.map((item: any) => ({
             id: Number(item.id || item.leaveTypeId || 1),
-            leaveTypeName: item.leaveTypeName || item.leaveName || item.type || 'Leave'
+            leaveTypeName: item.type || item.leaveTypeName || item.leaveName || 'Leave'
           }));
         } else {
-          this.leaveTypes = [
-            { id: 1, leaveTypeName: 'Annual Leave' },
-            { id: 2, leaveTypeName: 'Sick Leave' },
-            { id: 3, leaveTypeName: 'Casual Leave' },
-            { id: 4, leaveTypeName: 'Maternity / Paternity Leave' },
-            { id: 5, leaveTypeName: 'Unpaid Leave' }
-          ];
+          this.leaveTypes = [];
         }
       },
-      error: () => {
-        this.leaveTypes = [
-          { id: 1, leaveTypeName: 'Annual Leave' },
-          { id: 2, leaveTypeName: 'Sick Leave' },
-          { id: 3, leaveTypeName: 'Casual Leave' },
-          { id: 4, leaveTypeName: 'Maternity / Paternity Leave' },
-          { id: 5, leaveTypeName: 'Unpaid Leave' }
-        ];
+      error: (err) => {
+        console.error('Error loading leave types from API:', err);
+        this.leaveTypes = [];
       }
     });
   }
@@ -170,15 +159,18 @@ export class LeaverequestComponent implements OnInit {
     const statusVal = formVal.status || 'Pending';
     const isApprovedBool = statusVal === 'Approved';
 
+    const loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
+    const empId = Number(this.data?.employeeId || loggedEmpId || 1);
+
     const payload = {
       id: recordId,
       leaveRequestId: recordId,
-      employeeId: Number(this.data?.employeeId || 1),
+      employeeId: empId,
       leaveTypeId: Number(formVal.leaveTypeId) || 1,
       leaveMode: formVal.leaveMode || 'Full Day',
-      startDate: formVal.startDate,
-      endDate: formVal.endDate,
-      leaveReason: formVal.leaveReason || '',
+      startDate: formVal.startDate ? new Date(formVal.startDate).toISOString() : new Date().toISOString(),
+      endDate: formVal.endDate ? new Date(formVal.endDate).toISOString() : new Date().toISOString(),
+      leaveReason: (formVal.leaveReason || '').trim(),
       status: statusVal,
       isApproved: isApprovedBool,
       approvedBy: isApprovedBool ? (Number(this.data?.approvedBy) || 1) : 0,

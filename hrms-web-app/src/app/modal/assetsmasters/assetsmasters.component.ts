@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogClose, MatDialogRef } from '@angular/material/dialog';
 import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.service';
+import { EmployeeService } from '../../services/employee/employee.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { AssetStatus, AssetType } from '../../interface/asset.interface';
@@ -30,6 +31,7 @@ import { AssetStatus, AssetType } from '../../interface/asset.interface';
 export class AssetsmastersComponent implements OnInit {
   private fb = inject(FormBuilder);
   private services = inject(AssetsmasterService);
+  private employeeService = inject(EmployeeService);
   private toaster = inject(ToastrService);
 
   isEdit = false;
@@ -37,8 +39,7 @@ export class AssetsmastersComponent implements OnInit {
 
   assetTypes: AssetType[] = ['Laptop', 'Monitor', 'Tablet', 'Furniture', 'Peripherals'];
   statusList: AssetStatus[] = ['Active', 'Available', 'In Repair'];
-  locations: string[] = ['NY Office - Floor 4', 'Storage Room B', 'Remote (UK)', 'SF Office - Floor 2', 'NY Office - Desk 42'];
-  employees: string[] = ['Unassigned', 'Sarah Jenkins', 'Michael Chang', 'Emma Watson', 'David Miller'];
+  employees: string[] = ['Unassigned'];
 
   constructor(
     @Optional() private dialogRef?: MatDialogRef<AssetsmastersComponent>,
@@ -55,10 +56,12 @@ export class AssetsmastersComponent implements OnInit {
       specifications: ['', [Validators.required]],
       serialNumber: [defaultSN, [Validators.required]],
       dateOfPurchase: [todayYMD, [Validators.required]],
-      location: ['NY Office - Floor 4', [Validators.required]],
-      assignedTo: ['Sarah Jenkins', [Validators.required]],
+      location: ['', [Validators.required]],
+      assignedTo: ['Unassigned', [Validators.required]],
       status: ['Active', [Validators.required]]
     });
+
+    this.loadLiveEmployees();
 
     if (this.data) {
       this.isEdit = true;
@@ -78,11 +81,37 @@ export class AssetsmastersComponent implements OnInit {
         specifications: this.data.specifications || this.data.description || '',
         serialNumber: this.data.serialNumber || defaultSN,
         dateOfPurchase: purchaseDate,
-        location: this.data.location || 'NY Office - Floor 4',
-        assignedTo: this.data.assignedTo || 'Sarah Jenkins',
+        location: this.data.location || 'Main HQ Office',
+        assignedTo: this.data.assignedTo || 'Unassigned',
         status: this.data.status || 'Active'
       });
     }
+  }
+
+  loadLiveEmployees() {
+    this.employeeService.getData().subscribe({
+      next: (res: any) => {
+        let list: any[] = [];
+        if (Array.isArray(res)) {
+          list = res;
+        } else if (res && Array.isArray(res.data)) {
+          list = res.data;
+        }
+
+        if (list.length > 0) {
+          const names = list.map((e: any) => {
+            const first = e.firstName || e.first_name || '';
+            const last = e.lastName || e.last_name || '';
+            return `${first} ${last}`.trim() || e.emailAddress || 'Employee';
+          }).filter(Boolean);
+
+          this.employees = ['Unassigned', ...Array.from(new Set(names))];
+        }
+      },
+      error: () => {
+        this.employees = ['Unassigned'];
+      }
+    });
   }
 
   submitdata() {

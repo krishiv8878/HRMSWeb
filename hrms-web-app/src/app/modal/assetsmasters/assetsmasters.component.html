@@ -119,9 +119,12 @@
       <label class="field-label">Office Location / Desk <span class="required">*</span></label>
       <div class="input-wrapper">
         <mat-icon class="input-icon">location_on</mat-icon>
-        <select formControlName="location" class="custom-select">
-          <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
-        </select>
+        <input
+          type="text"
+          formControlName="location"
+          placeholder="e.g. Main HQ - Floor 3 / Desk 12, Remote"
+          class="custom-input"
+        />
       </div>
     </div>
 

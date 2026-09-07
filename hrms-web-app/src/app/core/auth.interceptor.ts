@@ -1,8 +1,8 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, of, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -17,6 +17,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   if (shouldSkip) {
     return next(req);
+  }
+
+  // Prevent Node.js SSR prerendering from sending unauthenticated HTTP calls during ng serve/build
+  if (!isBrowser) {
+    return of(new HttpResponse({ status: 200, body: { data: [] } })) as any;
   }
 
   // ----------------------------------------------------

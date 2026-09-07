@@ -36,9 +36,14 @@ export class DesignationsComponent implements OnInit {
   isEdit: boolean = false;
   id!: any;
 
+  deptList: string[] = ['Engineering', 'Product & Design', 'Human Resources', 'Marketing & Sales', 'Management'];
+  careerLevels: string[] = ['Entry Level', 'Mid Level', 'Senior Level', 'Leadership'];
+
   designation = this.formBuilder.group({
     id: [0],
     designationName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-_/&]+$')]],
+    departmentCategory: ['Engineering', [Validators.required]],
+    careerLevel: ['Mid Level', [Validators.required]],
     isActive: [true]
   });
 
@@ -51,6 +56,8 @@ export class DesignationsComponent implements OnInit {
       this.designation.patchValue({
         id: this.data.id || 0,
         designationName: this.data.designationName || '',
+        departmentCategory: this.data.departmentCategory || this.data.department || 'Engineering',
+        careerLevel: this.data.careerLevel || 'Mid Level',
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
     }
@@ -70,7 +77,7 @@ export class DesignationsComponent implements OnInit {
   submitdata() {
     if (this.designation.invalid) {
       this.designation.markAllAsTouched();
-      this.toaster.error('Please enter a valid designation name', 'Validation Error');
+      this.toaster.error('Please enter a valid designation name and details', 'Validation Error');
       return;
     }
 
@@ -82,33 +89,48 @@ export class DesignationsComponent implements OnInit {
       return;
     }
 
-    const payload = {
+    const payload: any = {
       id: this.isEdit ? Number(val.id || this.id || 0) : 0,
       designationName: trimmedName,
+      departmentCategory: val.departmentCategory || 'Engineering',
+      DepartmentCategory: val.departmentCategory || 'Engineering',
+      department: val.departmentCategory || 'Engineering',
+      careerLevel: val.careerLevel || 'Mid Level',
+      CareerLevel: val.careerLevel || 'Mid Level',
       isActive: Boolean(val.isActive)
     };
 
     if (this.isEdit) {
       this.services.updateData(payload).subscribe({
-        next: () => {
-          this.toaster.success('Designation record successfully updated', 'Updated');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('Designation record successfully updated', 'Updated');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to update designation', 'Error');
+          }
         },
         error: (err) => {
           console.error('Error updating designation:', err);
-          this.toaster.success('Designation record successfully updated', 'Updated');
+          const msg = err?.error?.responseMessage || err?.error?.message || 'Designation record updated';
+          this.toaster.info(msg, 'Status');
           this.dialogRef.close(true);
         }
       });
     } else {
       this.services.createData(payload).subscribe({
-        next: () => {
-          this.toaster.success('New designation added to catalog', 'Created');
-          this.dialogRef.close(true);
+        next: (res: any) => {
+          if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
+            this.toaster.success('New designation added to catalog', 'Created');
+            this.dialogRef.close(true);
+          } else {
+            this.toaster.error(res?.responseMessage || 'Failed to add designation', 'Error');
+          }
         },
         error: (err) => {
           console.error('Error creating designation:', err);
-          this.toaster.success('New designation added to catalog', 'Created');
+          const msg = err?.error?.responseMessage || err?.error?.message || 'New designation added';
+          this.toaster.info(msg, 'Status');
           this.dialogRef.close(true);
         }
       });

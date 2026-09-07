@@ -33,7 +33,7 @@
           <span class="metric-number">{{ totalShiftsCount }}</span>
           <span class="trend-badge trend-up">Standardized</span>
         </div>
-        <span class="metric-subtext">Configured Enterprise Slots</span>
+        <span class="metric-subtext">{{ activeShiftsCount }} Active Enterprise Slots</span>
       </div>
       <div class="metric-icon-box icon-purple">
         <mat-icon>calendar_month</mat-icon>
@@ -63,7 +63,7 @@
           <span class="metric-number">{{ nightShiftsCount }}</span>
           <span class="metric-unit">Slots</span>
         </div>
-        <span class="metric-subtext">24/7 Global Client Support</span>
+        <span class="metric-subtext">Evening & Night Rotations</span>
       </div>
       <div class="metric-icon-box icon-indigo">
         <mat-icon>dark_mode</mat-icon>
@@ -78,7 +78,7 @@
           <span class="metric-number">{{ activeRosterRate }}%</span>
           <span class="trend-badge trend-success">Live Ready</span>
         </div>
-        <span class="metric-subtext">Shift Slots in Active Rotation</span>
+        <span class="metric-subtext">{{ assignedEmployeesCount }} / {{ totalEmployeesCount }} Workforce Positioned</span>
       </div>
       <div class="metric-icon-box icon-emerald">
         <mat-icon>check_circle</mat-icon>
@@ -118,9 +118,9 @@
           </select>
         </div>
 
-        <!-- Status Filter -->
+        <!-- Shift Active Status Filter -->
         <div class="filter-dropdown-wrapper">
-          <mat-icon class="filter-icon">filter_alt</mat-icon>
+          <mat-icon class="filter-icon">tune</mat-icon>
           <select
             [(ngModel)]="selectedStatus"
             (ngModelChange)="applyFilter()"
@@ -150,6 +150,7 @@
             <th class="th-time">END TIME</th>
             <th class="th-duration">OPERATING SPAN</th>
             <th class="th-category">TIMING WINDOW</th>
+            <th>ASSIGNED WORKFORCE</th>
             <th class="th-status">ACTIVE STATUS</th>
             <th class="th-actions text-right">ACTIONS</th>
           </tr>
@@ -199,6 +200,14 @@
               <span class="category-tag" [ngClass]="'cat-' + (getShiftCategory(shift.startTime, shift.endTime) === 'Night Shift' ? 'night' : 'day')">
                 <span class="cat-dot"></span>
                 <span>{{ getShiftCategory(shift.startTime, shift.endTime) }}</span>
+              </span>
+            </td>
+
+            <!-- Assigned Workforce Headcount -->
+            <td>
+              <span class="duration-badge" style="background-color: #f1f5f9; color: #334155;">
+                <mat-icon class="dur-icon" style="color: #6366f1;">people</mat-icon>
+                <span>{{ shift.assignedCount || 0 }} Personnel</span>
               </span>
             </td>
 
