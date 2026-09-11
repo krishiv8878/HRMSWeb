@@ -21,10 +21,12 @@ import { DocumentComponent } from './component/document/document.component';
 import { LeaveRequestComponent } from './component/leave-request/leave-request.component';
 import { UserprofileComponent } from './modal/userprofile/userprofile.component';
 import { authGuard } from './auth.guard';
+import { roleGuard } from './core/role.guard';
 import { ResignationComponent } from './modal/resignation/resignation.component';
 import { ResetpasswordComponent } from './modal/resetpassword/resetpassword.component';
 import { ForgotpasswordComponent } from './modal/forgotpassword/forgotpassword.component';
 import { RequestsApprovalsComponent } from './component/requests-approvals/requests-approvals.component';
+import { TimesheetComponent } from './component/timesheet/timesheet.component';
 
 export const routes: Routes = [
     {
@@ -48,7 +50,7 @@ export const routes: Routes = [
                 path: '', redirectTo: 'document', pathMatch: 'full'
             },
             {
-                path: 'home', component: HomeComponent
+                path: 'home', component: HomeComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] }
             },
             {
                 path: 'about', component: AboutComponent
@@ -57,16 +59,16 @@ export const routes: Routes = [
                 path: 'services', component: ServicesComponent
             },
             {
-                path: 'designation', component: DesignationComponent
+                path: 'designation', component: DesignationComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
             },
             {
-                path: 'skill', component: SkillComponent
+                path: 'skill', component: SkillComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
             },
             {
                 path: 'holiday', component: HolidayComponent
             },
             {
-                path: 'candidate', component: CandidateComponent
+                path: 'candidate', component: CandidateComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
             },
             {
                 path: 'assets', component: AssetsmasterComponent
@@ -75,22 +77,22 @@ export const routes: Routes = [
                 path: 'project', component: ProjectmasterComponent
             },
             {
-                path: 'leavetype', component: LeavetypeComponent
+                path: 'leavetype', component: LeavetypeComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
             },
             {
                 path: 'contact', component: ContactComponent
             },
             {
-                path: 'rolemaster', component: RolemasterComponent
+                path: 'rolemaster', component: RolemasterComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin'] }
             },
             {
                 path: 'attendance', component: EmployeeAttendanceComponent
             },
             {
-                path: 'paymentinfo', component: PaymentinfoComponent
+                path: 'paymentinfo', component: PaymentinfoComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
             },
             {
-                path: 'shift', component: ShiftemployeeComponent
+                path: 'shift', component: ShiftemployeeComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
             },
             {
                 path: 'document', component: DocumentComponent
@@ -105,7 +107,10 @@ export const routes: Routes = [
                 path: 'resignation', component: ResignationComponent
             },
             {
-                path: 'request', component: RequestsApprovalsComponent
+                path: 'request', component: RequestsApprovalsComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] }
+            },
+            {
+                path: 'timesheet', component: TimesheetComponent
             }
         ]
     }

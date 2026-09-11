@@ -162,7 +162,10 @@
     <!-- Row 5: Role Permissions & Technical Skills -->
     <div class="form-row-2">
       <div class="form-group">
-        <label class="field-label">Assigned Roles <span class="required">*</span></label>
+        <label class="field-label">
+          Assigned Roles <span class="required">*</span>
+          <span *ngIf="!rbacService.isAdmin()" style="font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 6px;">(Admin only)</span>
+        </label>
         <div class="input-wrapper">
           <mat-icon class="input-icon">security</mat-icon>
           <mat-select formControlName="roleIds" multiple class="custom-mat-select" placeholder="Select roles">
@@ -182,17 +185,31 @@
       </div>
     </div>
 
-    <!-- Row 6: Work Shift Schedule -->
-    <div class="form-group">
-      <label class="field-label">Assigned Work Shift</label>
-      <div class="input-wrapper">
-        <mat-icon class="input-icon">schedule</mat-icon>
-        <select formControlName="shiftId" class="custom-select">
-          <option [ngValue]="null">Select Work Shift Schedule (Default / Optional)</option>
-          <option *ngFor="let s of shifts" [ngValue]="s.id">
-            {{ s.shiftName }} ({{ s.startTime }} - {{ s.endTime }})
-          </option>
-        </select>
+    <!-- Row 6: Work Shift Schedule & Assigned Projects -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Assigned Work Shift</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">schedule</mat-icon>
+          <select formControlName="shiftId" class="custom-select">
+            <option [ngValue]="null">Select Work Shift Schedule</option>
+            <option *ngFor="let s of shifts" [ngValue]="s.id">
+              {{ s.shiftName }} ({{ s.startTime }} - {{ s.endTime }})
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Assigned Projects</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">business_center</mat-icon>
+          <mat-select formControlName="projectIds" multiple class="custom-mat-select" placeholder="Assign projects to employee">
+            <mat-option *ngFor="let p of projects" [value]="p.id || p.projectMasterId">
+              {{ p.projectName || p.name }}
+            </mat-option>
+          </mat-select>
+        </div>
       </div>
     </div>
 

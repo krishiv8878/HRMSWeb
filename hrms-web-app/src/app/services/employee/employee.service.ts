@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, Observable, catchError, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, of, tap, throwError } from 'rxjs';
 
 export interface UserProfileInfo {
   firstName: string;
@@ -23,6 +23,32 @@ export class EmployeeService {
 
   private userProfileSubject = new BehaviorSubject<UserProfileInfo>(this.getInitialUserProfile());
   userProfile$: Observable<UserProfileInfo> = this.userProfileSubject.asObservable();
+
+  constructor() {
+    this.refreshCurrentLoggedInUserAvatar();
+  }
+
+  refreshCurrentLoggedInUserAvatar(): void {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+    const currentEmpId = Number(localStorage.getItem('employeeId')) || 0;
+    if (currentEmpId <= 0) return;
+
+    this.getEmployeeById(currentEmpId).subscribe({
+      next: (res: any) => {
+        const emp = res?.data || res?.result || res;
+        if (emp && emp.profileImage) {
+          this.setProfileAvatar(emp.profileImage);
+        } else {
+          localStorage.removeItem('userAvatar');
+          localStorage.removeItem('profileImage');
+          localStorage.removeItem('profilePic');
+          localStorage.removeItem('uploadedProfileAvatar');
+          this.avatarSubject.next(null);
+        }
+      },
+      error: () => {}
+    });
+  }
 
   private getInitialUserProfile(): UserProfileInfo {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -109,6 +135,15 @@ export class EmployeeService {
     );
   }
 
+  getEmployeeById(id: number | string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/Employee/GetEmployeeById/${id}`).pipe(
+      catchError((err) => {
+        console.error('Error fetching employee by id:', err);
+        return of(null);
+      })
+    );
+  }
+
   getManager(): Observable<any> {
     return this.http.get<any>(this.apiUrl + "/Employee/GetManagers").pipe(
       catchError((err) => {
@@ -118,25 +153,104 @@ export class EmployeeService {
     );
   }
 
+  sanitizeEmployeePayload(raw: any): any {
+    if (!raw || typeof raw !== 'object') return raw;
+    const payload = { ...raw };
+
+    // Sanitize percentage (float? in backend)
+    if (payload.percentage !== undefined && payload.percentage !== null) {
+      if (typeof payload.percentage === 'string') {
+        const match = payload.percentage.match(/[-+]?[0-9]*\.?[0-9]+/);
+        payload.percentage = match ? parseFloat(match[0]) : null;
+      } else if (typeof payload.percentage === 'number') {
+        payload.percentage = isNaN(payload.percentage) ? null : payload.percentage;
+      } else {
+        payload.percentage = null;
+      }
+    }
+
+    // Sanitize yearOfPassing (int? in backend)
+    if (payload.yearOfPassing !== undefined && payload.yearOfPassing !== null) {
+      const parsedYear = parseInt(String(payload.yearOfPassing), 10);
+      payload.yearOfPassing = isNaN(parsedYear) ? null : parsedYear;
+    }
+
+    // Sanitize skills (List<string?>? in backend)
+    if (payload.skills !== undefined && payload.skills !== null) {
+      if (typeof payload.skills === 'string') {
+        const trimmed = payload.skills.trim();
+        payload.skills = trimmed ? trimmed.split(',').map((s: string) => s.trim()).filter(Boolean) : null;
+      } else if (Array.isArray(payload.skills)) {
+        payload.skills = payload.skills.map((s: any) => (s != null ? String(s).trim() : '')).filter((s: string) => s.length > 0);
+      } else {
+        payload.skills = null;
+      }
+    }
+
+    // Sanitize projects (List<string?>? in backend)
+    if (payload.projects !== undefined && payload.projects !== null) {
+      if (typeof payload.projects === 'string') {
+        const trimmed = payload.projects.trim();
+        payload.projects = trimmed ? trimmed.split(',').map((p: string) => p.trim()).filter(Boolean) : null;
+      } else if (Array.isArray(payload.projects)) {
+        payload.projects = payload.projects.map((p: any) => (p != null ? String(p).trim() : '')).filter((p: string) => p.length > 0);
+      } else {
+        payload.projects = null;
+      }
+    }
+
+    // Ensure list IDs are arrays or null
+    if (payload.skillIds !== undefined && !Array.isArray(payload.skillIds)) {
+      payload.skillIds = null;
+    }
+    if (payload.projectIds !== undefined && !Array.isArray(payload.projectIds)) {
+      payload.projectIds = null;
+    }
+    if (payload.roleIds !== undefined && !Array.isArray(payload.roleIds)) {
+      payload.roleIds = null;
+    }
+
+    // Sanitize date fields (DateTime? in backend)
+    const dateFields = ['dateOfJoining', 'dateOfBirth', 'passportIssueDate', 'passportExpiryDate'];
+    for (const field of dateFields) {
+      if (payload[field] !== undefined) {
+        if (!payload[field] || String(payload[field]).trim() === '') {
+          payload[field] = null;
+        } else if (payload[field] instanceof Date) {
+          payload[field] = payload[field].toISOString();
+        }
+      }
+    }
+
+    // Sanitize ID
+    if (payload.id !== undefined && payload.id !== null) {
+      payload.id = Number(payload.id) || 0;
+    }
+
+    // Sanitize ManagerId
+    if (payload.managerId !== undefined && payload.managerId !== null) {
+      const mId = Number(payload.managerId);
+      payload.managerId = !isNaN(mId) && mId > 0 ? mId : null;
+    }
+
+    return payload;
+  }
+
   createData(data: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl + `/Employee/AddEmployee`, data);
+    const payload = this.sanitizeEmployeePayload(data);
+    return this.http.post<any>(this.apiUrl + `/Employee/AddEmployee`, payload);
   }
 
   updateData(data: any): Observable<any> {
-    return this.http.put<any>(this.apiUrl + `/Employee/UpdateEmployee`, data).pipe(
+    const payload = this.sanitizeEmployeePayload(data);
+    return this.http.put<any>(this.apiUrl + `/Employee/UpdateEmployee`, payload).pipe(
       tap(() => {
-        if (data?.profileImage) {
-          this.setProfileAvatar(data.profileImage);
+        const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+        const currentUserId = isBrowser ? Number(localStorage.getItem('employeeId')) : 0;
+        const targetId = Number(payload?.id || payload?.employeeId);
+        if (payload?.profileImage && currentUserId > 0 && targetId === currentUserId) {
+          this.setProfileAvatar(payload.profileImage);
         }
-      }),
-      catchError(() => {
-        return this.http.post<any>(this.apiUrl + `/Employee/UpdateEmployee`, data).pipe(
-          tap(() => {
-            if (data?.profileImage) {
-              this.setProfileAvatar(data.profileImage);
-            }
-          })
-        );
       })
     );
   }
@@ -152,7 +266,8 @@ export class EmployeeService {
     return this.http.post<any>(this.apiUrl + '/Employee/UploadProfileImage', formData).pipe(
       tap((response: any) => {
         const imgName = response?.data || response?.fileName || '';
-        if (imgName) {
+        const currentUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId')) : 0;
+        if (imgName && currentUserId > 0 && Number(employeeId) === currentUserId) {
           this.setProfileAvatar(imgName);
         }
       })

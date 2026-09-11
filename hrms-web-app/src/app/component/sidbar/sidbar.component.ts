@@ -2,11 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { RbacService } from '../../core/rbac.service';
 
 interface MenuItem {
   label: string;
   icon: string;
   route: string;
+  roles?: string[];
 }
 
 interface MenuSection {
@@ -22,25 +24,26 @@ interface MenuSection {
   styleUrl: './sidbar.component.scss'
 })
 export class SidbarComponent implements OnInit {
-  sections: MenuSection[] = [
+  private rawSections: MenuSection[] = [
     {
       items: [
-        { label: 'Home', icon: 'grid_view', route: '/index/home' },
-        { label: 'Candidate', icon: 'person_search', route: '/index/candidate' },
-        { label: 'Skill', icon: 'psychology', route: '/index/skill' },
-        { label: 'Role', icon: 'account_tree', route: '/index/rolemaster' },
-        { label: 'Designation', icon: 'badge', route: '/index/designation' }
+        { label: 'Home', icon: 'grid_view', route: '/index/home', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] },
+        { label: 'Candidate', icon: 'person_search', route: '/index/candidate', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
+        { label: 'Skill', icon: 'psychology', route: '/index/skill', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
+        { label: 'Role', icon: 'account_tree', route: '/index/rolemaster', roles: ['Admin', 'System Admin'] },
+        { label: 'Designation', icon: 'badge', route: '/index/designation', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
       ]
     },
     {
       title: 'WORKFORCE',
       items: [
         { label: 'Time Attendance', icon: 'schedule', route: '/index/attendance' },
-        { label: 'Shift', icon: 'calendar_month', route: '/index/shift' },
+        { label: 'Timesheet', icon: 'more_time', route: '/index/timesheet' },
+        { label: 'Shift', icon: 'calendar_month', route: '/index/shift', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
         { label: 'Holiday', icon: 'event', route: '/index/holiday' },
-        { label: 'Leave', icon: 'event_busy', route: '/index/leavetype' },
+        { label: 'Leave', icon: 'event_busy', route: '/index/leavetype', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
         { label: 'Leave Requests', icon: 'pending_actions', route: '/index/leaveRequest' },
-        { label: 'Request Approvals', icon: 'fact_check', route: '/index/request' }
+        { label: 'Request Approvals', icon: 'fact_check', route: '/index/request', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] }
       ]
     },
     {
@@ -49,18 +52,31 @@ export class SidbarComponent implements OnInit {
         { label: 'Project', icon: 'account_tree', route: '/index/project' },
         { label: 'Assets', icon: 'inventory_2', route: '/index/assets' },
         { label: 'Docs', icon: 'description', route: '/index/document' },
-        { label: 'Payroll', icon: 'payments', route: '/index/paymentinfo' }
+        { label: 'Payroll', icon: 'payments', route: '/index/paymentinfo', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
       ]
     }
   ];
 
+  sections: MenuSection[] = [];
+
+  constructor(public rbacService: RbacService) {}
+
   ngOnInit(): void {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage.getItem("RoleType")?.split(',').some((x): any => x === 'Manager')) {
-      const workforce = this.sections.find(s => s.title === 'WORKFORCE');
-      if (workforce && !workforce.items.some(i => i.route === '/index/request')) {
-        workforce.items.push({ label: 'Request Approvals', icon: 'fact_check', route: '/index/request' });
-      }
-    }
+    this.filterMenu();
+  }
+
+  filterMenu(): void {
+    this.sections = this.rawSections
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => {
+          if (!item.roles || item.roles.length === 0) {
+            return true;
+          }
+          return this.rbacService.hasAnyRole(item.roles);
+        })
+      }))
+      .filter(section => section.items.length > 0);
   }
 
   onQuickAction() {

@@ -25,14 +25,6 @@ export class LeavetypeService {
 
   DeleteData(LeaveTypeId: any) {
     const numericId = Number(LeaveTypeId || 0);
-    const body = {
-      id: numericId,
-      leaveTypeId: numericId,
-      isActive: false,
-      isDeleted: true
-    };
-    return this.http.put<any[]>(this.apiUrl + `/LeaveType/UpdateLeaveType/`, body).pipe(
-      catchError(() => of([]))
-    );
+    return this.http.delete(this.apiUrl + `/LeaveType/DeleteLeaveType?id=` + numericId);
   }
 }

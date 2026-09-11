@@ -10,6 +10,7 @@ import { PaymentinfoService } from '../../services/employeePayment/paymentinfo.s
 import { PaymeenInfoComponent } from '../../modal/paymeen-info/paymeen-info.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { EmployeeService } from '../../services/employee/employee.service';
+import { RbacService } from '../../core/rbac.service';
 
 export interface PaymentItem {
   id: number;
@@ -41,6 +42,7 @@ export interface PaymentItem {
 export class PaymentinfoComponent implements OnInit {
   services = inject(PaymentinfoService);
   employeeService = inject(EmployeeService);
+  rbacService = inject(RbacService);
   router = inject(Router);
   dialog = inject(MatDialog);
   toaster = inject(ToastrService);
@@ -92,7 +94,12 @@ export class PaymentinfoComponent implements OnInit {
           rawList = response.data;
         }
 
-        if (this.employeeId && rawList.length > 0) {
+        // Filter out soft-deleted payment records
+        rawList = rawList.filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== 'true');
+
+        // Only scope down to current user if they are a standard employee without HR or Admin privileges
+        const isAdminOrHR = this.rbacService.isAdmin() || this.rbacService.isHR();
+        if (!isAdminOrHR && this.employeeId && rawList.length > 0) {
           const userSpecific = rawList.filter((item: any) => String(item.employeeId) === String(this.employeeId));
           if (userSpecific.length > 0) {
             rawList = userSpecific;

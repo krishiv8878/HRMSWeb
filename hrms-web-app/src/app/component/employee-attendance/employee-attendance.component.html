@@ -47,8 +47,13 @@
         <span>Export Log</span>
       </button>
 
-      <!-- Request Regularization Button -->
-      <button type="button" class="btn-regularize-action" (click)="openRegularizationModal()">
+      <!-- Request Regularization Button (Hidden if already requested/regularized) -->
+      <button
+        type="button"
+        *ngIf="allRows.length > 0 && allRows[0]?.canRegularize && !allRows[0]?.regularizationStatus"
+        class="btn-regularize-action"
+        (click)="openRegularizationModal(allRows[0])"
+      >
         <mat-icon>edit_calendar</mat-icon>
         <span>Regularize</span>
       </button>
@@ -144,9 +149,10 @@
           <select [(ngModel)]="selectedStatus" (change)="filterAttendance()" class="custom-select">
             <option value="All">All Statuses</option>
             <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="On Leave">On Leave</option>
             <option value="Week Off">Week Off</option>
             <option value="Holiday">Holiday</option>
-            <option value="On Leave">On Leave</option>
           </select>
         </div>
       </div>
@@ -180,16 +186,28 @@
               </div>
             </td>
 
-            <!-- Status Pill -->
+            <!-- Status Pill & Punch Type Differentiation -->
             <td class="col-status">
-              <span class="status-pill" [ngClass]="{
-                'pill-present': row.status === 'Present',
-                'pill-weekend': row.status === 'Week Off',
-                'pill-holiday': row.status === 'Holiday',
-                'pill-leave': row.status === 'On Leave' || row.status === 'Absent'
-              }">
-                {{ row.status }}
-              </span>
+              <div class="status-cell-wrapper">
+                <span class="status-pill" [ngClass]="{
+                  'pill-present': row.status === 'Present',
+                  'pill-weekend': row.status === 'Week Off' || row.isWeekend,
+                  'pill-holiday': row.isHoliday || isHolidayStatus(row.status),
+                  'pill-leave': row.isLeave || isLeaveStatus(row.status),
+                  'pill-absent': row.status === 'Absent'
+                }">
+                  {{ row.status }}
+                </span>
+                <!-- Differentiator: Regularized vs Self Punch -->
+                <span class="badge-punch-type type-regularized" *ngIf="row.isRegularized" title="Approved by Manager via Regularization">
+                  <mat-icon>verified</mat-icon>
+                  <span>Regularized</span>
+                </span>
+                <span class="badge-punch-type type-self" *ngIf="!row.isRegularized && row.clockIn && !row.isWeekend" title="Recorded via Clock In / Clock Out">
+                  <mat-icon>fingerprint</mat-icon>
+                  <span>Self Punch</span>
+                </span>
+              </div>
             </td>
 
             <!-- Check In -->
@@ -204,35 +222,69 @@
 
             <!-- Gross Hours -->
             <td class="col-hours">
-              <span class="hours-badge" *ngIf="!row.isWeekend">{{ row.totalHoursDisplay }}</span>
-              <span class="na-text" *ngIf="row.isWeekend">--</span>
+              <span class="hours-badge" *ngIf="row.status === 'Present'">{{ row.totalHoursDisplay }}</span>
+              <span class="na-text" *ngIf="row.status !== 'Present'">--</span>
             </td>
 
             <!-- Effective Hours -->
             <td class="col-hours">
-              <span class="hours-badge eff-badge" *ngIf="!row.isWeekend">{{ row.effectiveHoursDisplay }}</span>
-              <span class="na-text" *ngIf="row.isWeekend">--</span>
+              <span class="hours-badge eff-badge" *ngIf="row.status === 'Present'">{{ row.effectiveHoursDisplay }}</span>
+              <span class="na-text" *ngIf="row.status !== 'Present'">--</span>
             </td>
 
             <!-- Overtime -->
             <td class="col-overtime">
-              <span class="overtime-tag" *ngIf="!row.isWeekend && row.isOvertime">{{ row.overtimeDisplay }}</span>
-              <span class="na-text" *ngIf="row.isWeekend || !row.isOvertime">--</span>
+              <span class="overtime-tag" *ngIf="row.status === 'Present' && row.isOvertime">{{ row.overtimeDisplay }}</span>
+              <span class="na-text" *ngIf="row.status !== 'Present' || !row.isOvertime">--</span>
             </td>
 
-            <!-- Action: Regularize -->
+            <!-- Action: Regularize (Only re-apply allowed if rejected) -->
             <td class="col-actions text-right">
-              <button
-                type="button"
-                *ngIf="!row.isWeekend"
-                class="btn-regularize-row"
-                (click)="openRegularizationModal(row)"
-                title="Request Regularization for this date"
-              >
-                <mat-icon>edit_calendar</mat-icon>
-                <span>Regularize</span>
-              </button>
-              <span class="na-text" *ngIf="row.isWeekend">--</span>
+              <!-- NA for Weekend, Holiday, Leave -->
+              <span class="na-text" *ngIf="row.isWeekend || row.isHoliday || row.isLeave || isHolidayStatus(row.status) || isLeaveStatus(row.status)">--</span>
+
+              <ng-container *ngIf="!row.isWeekend && !row.isHoliday && !row.isLeave && !isHolidayStatus(row.status) && !isLeaveStatus(row.status)">
+                <!-- Pending: User cannot apply again -->
+                <span class="reg-badge reg-pending" *ngIf="row.regularizationStatus === 'Pending'" title="Regularization request is currently pending manager approval">
+                  <mat-icon>schedule</mat-icon>
+                  <span>Pending Approval</span>
+                </span>
+
+                <!-- Approved: User cannot apply again -->
+                <span class="reg-badge reg-approved" *ngIf="row.regularizationStatus === 'Approved'" title="Attendance regularized and approved by manager">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Regularized</span>
+                </span>
+
+                <!-- Rejected: User CAN re-apply -->
+                <div class="reg-rejected-group" *ngIf="row.regularizationStatus === 'Rejected'">
+                  <span class="reg-badge reg-rejected" [title]="'Rejected: ' + (row.rejectionReason || 'No reason provided')">
+                    <mat-icon>cancel</mat-icon>
+                    <span>Rejected</span>
+                  </span>
+                  <button
+                    type="button"
+                    class="btn-regularize-row btn-reapply"
+                    (click)="openRegularizationModal(row)"
+                    title="Previous request rejected. Click to re-apply."
+                  >
+                    <mat-icon>refresh</mat-icon>
+                    <span>Re-apply</span>
+                  </button>
+                </div>
+
+                <!-- Never applied yet -->
+                <button
+                  type="button"
+                  *ngIf="row.canRegularize && !row.regularizationStatus"
+                  class="btn-regularize-row"
+                  (click)="openRegularizationModal(row)"
+                  title="Request Regularization for this date"
+                >
+                  <mat-icon>edit_calendar</mat-icon>
+                  <span>Regularize</span>
+                </button>
+              </ng-container>
             </td>
           </tr>
 

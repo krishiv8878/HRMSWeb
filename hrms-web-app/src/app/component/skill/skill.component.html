@@ -197,6 +197,9 @@
                 >
                   <mat-icon>{{ skill.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
+                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(skill.id)" title="Delete Skill">
+                  <mat-icon>delete</mat-icon>
+                </button>
               </div>
             </td>
           </tr>

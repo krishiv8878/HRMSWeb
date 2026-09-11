@@ -33,6 +33,10 @@ export class RoleservicesService {
   }
 
   DeleteData(RoleMasterId: any): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + `/RoleMaster/DeleteRole/` + RoleMasterId);
+    return this.http.delete<any>(this.apiUrl + `/RoleMaster/DeleteRole/` + RoleMasterId).pipe(
+      catchError(() => {
+        return this.http.delete<any>(this.apiUrl + `/RoleMaster/DeleteRole?id=` + RoleMasterId);
+      })
+    );
   }
 }

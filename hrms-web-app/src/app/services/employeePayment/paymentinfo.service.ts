@@ -19,6 +19,15 @@ export class PaymentinfoService {
     );
   }
 
+  getByEmployeeId(employeeId: number | string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/EmployeePaymentInfo/GetPaymentInfoByEmployeeId/${employeeId}`).pipe(
+      catchError((err) => {
+        console.error('Error fetching payment info by employee id:', err);
+        return of(null);
+      })
+    );
+  }
+
   createData(data: any): Observable<any> {
     return this.http.post<any>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data).pipe(
       catchError((err) => {
@@ -37,6 +46,10 @@ export class PaymentinfoService {
   }
 
   deleteData(paymentId: any): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo?id=` + paymentId);
+    return this.http.delete<any>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo?id=` + paymentId).pipe(
+      catchError(() => {
+        return this.http.delete<any>(this.apiUrl + `/EmployeePaymentInfo/DeletePaymentInfo/${paymentId}`);
+      })
+    );
   }
 }

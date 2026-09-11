@@ -98,6 +98,9 @@ export class HomeComponent implements OnInit {
           rawList = response.employeedata.data;
         }
 
+        // Filter out soft-deleted employees
+        rawList = rawList.filter((item: any) => !item.isDeleted);
+
         if (rawList.length > 0) {
           this.allEmployees = rawList.map((item: any, idx: number) => this.mapEmployeeItem(item, idx));
         } else {

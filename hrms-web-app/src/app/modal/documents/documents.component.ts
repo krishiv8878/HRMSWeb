@@ -84,6 +84,12 @@ export class DocumentsComponent implements OnInit {
   }
 
   private setFile(file: File) {
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (ext !== '.pdf' && ext !== '.docx') {
+      this.toastr.warning('Only .pdf and .docx files are supported for corporate document uploads.', 'Unsupported File Format');
+      return;
+    }
+
     this.selectedFile = file;
     this.selectedFileName = file.name;
     this.selectedFileSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
@@ -95,13 +101,23 @@ export class DocumentsComponent implements OnInit {
 
   onSubmit() {
     if (this.documentForm.invalid || !this.selectedFile) {
-      this.toastr.warning('Please complete all required fields and select a file.');
+      this.toastr.warning('Please complete all required fields and select a valid file.');
+      return;
+    }
+
+    const ext = this.selectedFile.name.substring(this.selectedFile.name.lastIndexOf('.')).toLowerCase();
+    if (ext !== '.pdf' && ext !== '.docx') {
+      this.toastr.warning('Only .pdf and .docx files are allowed.', 'Invalid File Type');
       return;
     }
 
     const formVal = this.documentForm.value;
+    const loggedId = (typeof localStorage !== 'undefined'
+      ? (localStorage.getItem('employeeId') || localStorage.getItem('userId'))
+      : null) || '1';
 
     const formData = new FormData();
+    formData.append('employeeId', loggedId);
     formData.append('documentName', formVal.documentName);
     formData.append('category', formVal.category || 'Employee Docs');
     formData.append('uploadedDate', new Date().toISOString());
@@ -115,9 +131,8 @@ export class DocumentsComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error uploading document via API:', err);
-        this.toastr.success('Document upload request sent.', 'Notice');
-        this.documentService.fetchDocumentsFromApi();
-        this.dialogRef.close(true);
+        const errMsg = err?.error?.message || err?.error || 'Document upload failed. Ensure server accepts file format.';
+        this.toastr.error(typeof errMsg === 'string' ? errMsg : 'Upload failed', 'Upload Error');
       }
     });
   }

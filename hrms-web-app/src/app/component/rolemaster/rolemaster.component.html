@@ -78,7 +78,7 @@
           <mat-icon>group_work</mat-icon>
         </div>
       </div>
-      <div class="card-value">148 <small class="unit-text">Personnel</small></div>
+      <div class="card-value">{{ totalMappedUsers }} <small class="unit-text">Personnel</small></div>
       <div class="card-subtitle is-neutral">
         <span class="dot-indicator dot-amber"></span>
         <span>Mapped across active roles</span>
@@ -194,6 +194,14 @@
                   [title]="role.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
                 >
                   <mat-icon>{{ role.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action-icon btn-delete"
+                  (click)="Delete(role.id)"
+                  title="Delete Role"
+                >
+                  <mat-icon>delete</mat-icon>
                 </button>
               </div>
             </td>

@@ -15,8 +15,8 @@
         <span>Export Portfolio</span>
       </button>
 
-      <!-- Add Project Button -->
-      <button type="button" class="btn-add-project" (click)="openAddForm()">
+      <!-- Add Project Button (Manager & Admin only) -->
+      <button *ngIf="canManageProjects" type="button" class="btn-add-project" (click)="openAddForm()">
         <mat-icon class="btn-icon">add_task</mat-icon>
         <span>Add Project</span>
       </button>
@@ -143,14 +143,19 @@
         <tbody>
           <tr *ngFor="let proj of paginatedProjects">
             <!-- Project Name & Icon -->
-            <td class="col-project">
+            <td class="col-project" (click)="openProjectDetails(proj)" style="cursor: pointer;" title="View Project Details & Team Squad">
               <div class="project-name-wrapper">
                 <div class="project-icon-badge">
                   <mat-icon>{{ proj.iconName }}</mat-icon>
                 </div>
                 <div class="project-title-group">
                   <span class="project-title">{{ proj.projectName }}</span>
-                  <span class="project-id-tag">PRJ-00{{ proj.id }}</span>
+                  <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="project-id-tag">PRJ-00{{ proj.id }}</span>
+                    <span *ngIf="proj.managerName" class="project-id-tag" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">
+                      {{ proj.managerName }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </td>
@@ -172,12 +177,12 @@
             </td>
 
             <!-- Description -->
-            <td class="col-desc">
+            <td class="col-desc" (click)="openProjectDetails(proj)" style="cursor: pointer;" title="Click to view full scope">
               <span class="desc-text" [title]="proj.description">{{ proj.description }}</span>
             </td>
 
             <!-- Team Spread -->
-            <td class="col-team">
+            <td class="col-team" (click)="openProjectDetails(proj)" style="cursor: pointer;" title="View Squad Members">
               <div class="team-wrapper">
                 <mat-icon class="team-icon">groups</mat-icon>
                 <span>{{ proj.teamSize }} Engineers</span>
@@ -194,7 +199,7 @@
 
             <!-- Actions -->
             <td class="col-actions text-right">
-              <div class="action-btn-group">
+              <div class="action-btn-group" *ngIf="canManageProjects">
                 <button type="button" class="btn-action-icon edit-btn" (click)="Edit(proj)" title="Edit Project Details">
                   <mat-icon>edit</mat-icon>
                 </button>
@@ -208,6 +213,25 @@
                 >
                   <mat-icon>{{ proj.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
+                <button
+                  type="button"
+                  class="btn-action-icon btn-delete"
+                  (click)="Delete(proj.id)"
+                  title="Delete Project"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+              <div class="action-btn-group" *ngIf="isEmployeeOnly">
+                <button
+                  type="button"
+                  class="btn-action-icon edit-btn"
+                  (click)="openProjectDetails(proj)"
+                  title="View Team Members & Project Scope"
+                  style="color: #7c3aed; background-color: #f5f3ff;"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </button>
               </div>
             </td>
           </tr>
@@ -218,7 +242,7 @@
               <div class="empty-box">
                 <mat-icon class="empty-icon">folder_off</mat-icon>
                 <p *ngIf="allProjects.length === 0">
-                  No projects registered in portfolio. Click <strong>'+ Add Project'</strong> above to create your first client initiative.
+                  {{ canManageProjects ? "No projects registered in portfolio. Click '+ Add Project' above to create your first client initiative." : "No client projects are currently assigned to your profile." }}
                 </p>
                 <p *ngIf="allProjects.length > 0">
                   No projects match your search or filter criteria.
