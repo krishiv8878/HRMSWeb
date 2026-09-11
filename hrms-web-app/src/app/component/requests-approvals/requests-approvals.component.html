@@ -91,6 +91,24 @@
         >
           Attendance ({{ attendanceCount }})
         </button>
+
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'document'"
+          (click)="setTab('document')"
+        >
+          Documents ({{ documentCount }})
+        </button>
+
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'timesheet'"
+          (click)="setTab('timesheet')"
+        >
+          Timesheets ({{ timesheetCount }})
+        </button>
       </div>
 
       <!-- Right Search & Dropdown Filter -->
@@ -158,6 +176,7 @@
                 <mat-icon class="badge-icon" *ngIf="item.requestType.includes('SICK') || item.requestType.includes('CL')">medical_services</mat-icon>
                 <mat-icon class="badge-icon" *ngIf="item.requestType.includes('EXPENSE')">receipt_long</mat-icon>
                 <mat-icon class="badge-icon" *ngIf="item.requestType.includes('SHIFT') || item.requestType.includes('CLOCK')">sync_alt</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('Timesheet')">more_time</mat-icon>
                 <span>{{ item.requestType }}</span>
               </span>
             </td>
@@ -188,27 +207,47 @@
             <!-- Actions -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <!-- Approve Button -->
+                <!-- Review Tasks Button (For Timesheets) -->
+                <button
+                  type="button"
+                  class="btn-review"
+                  *ngIf="item.category === 'Timesheet'"
+                  (click)="reviewTimesheet(item)"
+                  title="Review Tasks & Work Done"
+                >
+                  <mat-icon>visibility</mat-icon>
+                  <span>Review Tasks</span>
+                </button>
+
+                <!-- Approve Button (Always shown for Timesheets; when Pending for others) -->
                 <button
                   type="button"
                   class="btn-approve"
+                  *ngIf="item.category === 'Timesheet' || item.status === 'Pending'"
+                  [class.is-active-decision]="item.status === 'Approved'"
                   (click)="approveRequest(item)"
-                  title="Approve Request"
+                  [title]="item.status === 'Approved' ? 'Currently Approved (Click to review/change)' : 'Approve Request'"
                 >
                   <mat-icon>check</mat-icon>
-                  <span>Approve</span>
+                  <span>{{ item.status === 'Approved' ? 'Approved' : 'Approve' }}</span>
                 </button>
 
-                <!-- Reject Button -->
+                <!-- Reject Button (Always shown for Timesheets; when Pending for others) -->
                 <button
                   type="button"
                   class="btn-reject"
+                  *ngIf="item.category === 'Timesheet' || item.status === 'Pending'"
+                  [class.is-active-decision]="item.status === 'Rejected'"
                   (click)="rejectRequest(item)"
-                  title="Reject Request"
+                  [title]="item.status === 'Rejected' ? 'Currently Rejected (Click to review/change)' : 'Reject Request'"
                 >
                   <mat-icon>close</mat-icon>
-                  <span>Reject</span>
+                  <span>{{ item.status === 'Rejected' ? 'Rejected' : 'Reject' }}</span>
                 </button>
+
+                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && item.category !== 'Timesheet'" [ngClass]="item.status === 'Approved' ? 'tag-approved' : 'tag-rejected'">
+                  {{ item.status }}
+                </span>
               </div>
             </td>
           </tr>

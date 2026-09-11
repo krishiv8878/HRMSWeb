@@ -95,13 +95,10 @@ export class ShiftemployeeComponent implements OnInit {
           let assigned = 0;
           if (this.employeesList.length > 0) {
             assigned = this.employeesList.filter((e: any) => {
-              const hasValidId = e.shiftId !== null && e.shiftId !== undefined && String(e.shiftId).trim() !== '' && Number(e.shiftId) > 0;
-              const hasValidName = Boolean(e.shift && String(e.shift).trim() !== '');
-              
-              if (!hasValidId && !hasValidName) return false;
-
-              const idMatch = hasValidId && (Number(e.shiftId) === shiftId || String(e.shiftId).trim() === String(shiftId));
-              const nameMatch = hasValidName && String(e.shift).toLowerCase().trim() === name.toLowerCase();
+              const rawShiftIds = String(e.shiftIds || e.ShiftIds || e.shiftId || e.ShiftId || '').trim();
+              const ids = rawShiftIds.split(',').map((x: string) => x.trim());
+              const idMatch = ids.includes(String(shiftId));
+              const nameMatch = Boolean(e.shift && String(e.shift).toLowerCase().trim() === name.toLowerCase());
               return idMatch || nameMatch;
             }).length;
           }
@@ -152,7 +149,8 @@ export class ShiftemployeeComponent implements OnInit {
 
     this.totalEmployeesCount = this.employeesList.length;
     this.assignedEmployeesCount = this.employeesList.filter((e: any) => {
-      const hasValidId = e.shiftId !== null && e.shiftId !== undefined && String(e.shiftId).trim() !== '' && Number(e.shiftId) > 0;
+      const rawShiftIds = String(e.shiftIds || e.ShiftIds || e.shiftId || e.ShiftId || '').trim();
+      const hasValidId = rawShiftIds !== '' && rawShiftIds !== '0' && rawShiftIds !== 'null' && rawShiftIds !== 'undefined';
       const hasValidName = Boolean(e.shift && String(e.shift).trim() !== '');
       return hasValidId || hasValidName;
     }).length;

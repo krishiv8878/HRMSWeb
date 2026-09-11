@@ -19,8 +19,9 @@ export interface SubmittedLeaveRequest {
   leaveTypeId?: number;
   leaveMode?: string;
   status?: string;
-  isApproved: boolean;
-  approvedBy: number;
+  actionBy?: number;
+  actionDate?: string;
+  rejectionReason?: string;
   isActive?: boolean | number;
   isDeleted?: boolean | number;
 }
@@ -67,10 +68,27 @@ export class LeaveRequestComponent implements OnInit {
   approvedCount: number = 0;
   pendingCount: number = 0;
   rejectedCount: number = 0;
+  availableBalanceDays: number = 0;
 
   ngOnInit() {
     this.loadLeaveTypes();
+    this.loadLeaveBalance();
     this.loadData();
+  }
+
+  loadLeaveBalance() {
+    this.emailService.getEmployeeLeaveBalance().subscribe({
+      next: (res: any) => {
+        const list = res?.data || (Array.isArray(res) ? res : []);
+        if (Array.isArray(list) && list.length > 0) {
+          const totalRemaining = list.reduce((sum: number, item: any) => sum + (Number(item.remainingDays) || 0), 0);
+          this.availableBalanceDays = totalRemaining;
+        }
+      },
+      error: () => {
+        this.availableBalanceDays = 0;
+      }
+    });
   }
 
   loadLeaveTypes() {
@@ -111,16 +129,17 @@ export class LeaveRequestComponent implements OnInit {
           rawList = res.result;
         }
 
+        // Filter out soft-deleted leave requests
+        rawList = rawList.filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== '1');
+
         if (rawList.length > 0) {
           this.allRequests = rawList.map((item: any) => {
             const leaveTypeId = Number(item.leaveTypeId || item.leaveType || 1);
             const matchedType = this.leaveTypes.find(t => t.id === leaveTypeId);
             const typeName = item.leaveTypeName || item.leaveName || item.type || (matchedType ? matchedType.leaveTypeName : 'Standard Leave');
 
-            const approvedByVal = (item.approvedBy !== undefined && item.approvedBy !== null) ? Number(item.approvedBy) : 0;
-            const statusStr = item.status ? String(item.status).trim() : '';
-
-            let isApprovedVal = item.isApproved === true || item.isApproved === 1 || statusStr.toLowerCase() === 'approved';
+            const actionByVal = (item.actionBy !== undefined && item.actionBy !== null) ? Number(item.actionBy) : undefined;
+            const statusStr = item.status ? String(item.status).trim() : 'Pending';
 
             return {
               id: Number(item.id || item.leaveRequestId || item.leaveId || 0),
@@ -131,8 +150,9 @@ export class LeaveRequestComponent implements OnInit {
               leaveTypeId: leaveTypeId,
               leaveMode: item.leaveMode || 'Full Day',
               status: statusStr,
-              isApproved: isApprovedVal,
-              approvedBy: approvedByVal,
+              actionBy: actionByVal,
+              actionDate: item.actionDate,
+              rejectionReason: item.rejectionReason || '',
               isActive: item.isActive !== undefined ? (item.isActive === 1 || item.isActive === true ? 1 : 0) : 1,
               isDeleted: item.isDeleted === 1 || item.isDeleted === true ? 1 : 0
             };
@@ -155,9 +175,9 @@ export class LeaveRequestComponent implements OnInit {
 
   recalculateStats() {
     this.totalCount = this.allRequests.length;
-    this.approvedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Approved' && r.isActive !== false).length;
+    this.approvedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Approved').length;
     this.pendingCount = this.allRequests.filter(r => this.getStatusText(r) === 'Pending').length;
-    this.rejectedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Rejected' || r.isActive === false).length;
+    this.rejectedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Rejected').length;
   }
 
   filterRequests() {
@@ -217,64 +237,17 @@ export class LeaveRequestComponent implements OnInit {
     }
   }
 
-  openApplyLeaveModal(editData?: any) {
+  openApplyLeaveModal() {
     const dialogRef = this.dialog.open(LeaverequestComponent, {
       width: '860px',
       maxWidth: '95vw',
       maxHeight: '90vh',
-      autoFocus: false,
-      data: editData
+      autoFocus: false
     });
 
     dialogRef.afterClosed().subscribe((res: any) => {
       if (res) {
-        // Immediate optimistic in-memory update so table reflects edits instantly!
-        if (typeof res === 'object') {
-          const resId = Number(res.id || res.leaveRequestId || 0);
-          const matchedType = this.leaveTypes.find(t => t.id === Number(res.leaveTypeId));
-          const typeName = matchedType ? matchedType.leaveTypeName : (res.leaveTypeName || 'Annual Leave');
-
-          if (resId > 0) {
-            const idx = this.allRequests.findIndex(r => r.id === resId);
-            if (idx !== -1) {
-              this.allRequests[idx] = {
-                ...this.allRequests[idx],
-                startDate: res.startDate || this.allRequests[idx].startDate,
-                endDate: res.endDate || this.allRequests[idx].endDate,
-                leaveReason: res.leaveReason !== undefined ? res.leaveReason : this.allRequests[idx].leaveReason,
-                leaveTypeId: Number(res.leaveTypeId) || this.allRequests[idx].leaveTypeId,
-                leaveTypeName: typeName,
-                leaveMode: res.leaveMode || this.allRequests[idx].leaveMode,
-                status: res.status || this.allRequests[idx].status,
-                isApproved: Boolean(res.isApproved),
-                approvedBy: Number(res.approvedBy) || 0,
-                isActive: res.isActive !== false ? 1 : 0,
-                isDeleted: res.isDeleted ? 1 : 0
-              };
-            }
-          } else {
-            // New request submitted
-            this.allRequests.unshift({
-              id: Date.now(),
-              startDate: res.startDate || '',
-              endDate: res.endDate || '',
-              leaveReason: res.leaveReason || '',
-              leaveTypeName: typeName,
-              leaveTypeId: Number(res.leaveTypeId) || 1,
-              leaveMode: res.leaveMode || 'Full Day',
-              status: res.status || 'Pending',
-              isApproved: false,
-              approvedBy: 0,
-              isActive: 1,
-              isDeleted: 0
-            });
-          }
-
-          this.recalculateStats();
-          this.filterRequests();
-        }
-
-        // Trigger DB refresh
+        this.loadLeaveBalance();
         this.loadData();
       }
     });
@@ -283,16 +256,14 @@ export class LeaveRequestComponent implements OnInit {
   onExport() {
     if (typeof window === 'undefined') return;
 
-    const headers = ['ID', 'Start Date', 'End Date', 'Leave Type', 'Reason', 'Approval Status', 'Active Status', 'Deleted Status'];
+    const headers = ['ID', 'Start Date', 'End Date', 'Leave Type', 'Reason', 'Status'];
     const rows = this.allRequests.map(r => [
       `"${r.id}"`,
       `"${r.startDate}"`,
       `"${r.endDate}"`,
       `"${r.leaveTypeName || 'Annual Leave'}"`,
       `"${r.leaveReason || ''}"`,
-      `"${this.getStatusText(r)}"`,
-      `"${r.isActive === 1 || r.isActive === true ? 'Active (1)' : 'Inactive (0)'}"`,
-      `"${r.isDeleted === 1 || r.isDeleted === true ? 'Deleted (1)' : 'Not Deleted (0)'}"`
+      `"${this.getStatusText(r)}"`
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
@@ -305,75 +276,6 @@ export class LeaveRequestComponent implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  // Soft-toggle isActive status (Active true / false)
-  onToggleActiveStatus(req: SubmittedLeaveRequest) {
-    const isCurrentlyActive = req.isActive === 1 || req.isActive === true;
-    const nextState = isCurrentlyActive ? false : true;
-    req.isActive = nextState;
-
-    const payload = {
-      ...req,
-      isActive: nextState,
-      isDeleted: req.isDeleted === 1 || req.isDeleted === true
-    };
-
-    this.emailService.UpdateLeaverequest(payload).subscribe({
-      next: () => {
-        this.recalculateStats();
-        this.filterRequests();
-        if (nextState) {
-          this.toastr.success('Leave Request set to Active', 'Status Updated');
-        } else {
-          this.toastr.warning('Leave Request Inactivated', 'Request Inactivated');
-        }
-      },
-      error: () => {
-        this.recalculateStats();
-        this.filterRequests();
-        if (nextState) {
-          this.toastr.success('Leave Request set to Active', 'Status Updated');
-        } else {
-          this.toastr.warning('Leave Request Inactivated', 'Request Inactivated');
-        }
-      }
-    });
-  }
-
-  // Soft-toggle isDeleted status (Delete / Restore toggle button)
-  onToggleDeletedStatus(req: SubmittedLeaveRequest) {
-    const isCurrentlyDeleted = req.isDeleted === 1 || req.isDeleted === true;
-    const nextState = !isCurrentlyDeleted;
-    req.isDeleted = nextState;
-    req.isActive = !nextState;
-
-    const payload = {
-      ...req,
-      isActive: !nextState,
-      isDeleted: nextState
-    };
-
-    this.emailService.UpdateLeaverequest(payload).subscribe({
-      next: () => {
-        this.recalculateStats();
-        this.filterRequests();
-        if (nextState) {
-          this.toastr.warning(`Leave Request #${req.id} marked as Deleted & Inactive`, 'Deleted');
-        } else {
-          this.toastr.success(`Leave Request #${req.id} restored to Active`, 'Restored');
-        }
-      },
-      error: () => {
-        this.recalculateStats();
-        this.filterRequests();
-        if (nextState) {
-          this.toastr.warning(`Leave Request #${req.id} marked as Deleted & Inactive`, 'Deleted');
-        } else {
-          this.toastr.success(`Leave Request #${req.id} restored to Active`, 'Restored');
-        }
-      }
-    });
-  }
-
   getStatusBadgeClass(req: SubmittedLeaveRequest): string {
     const text = this.getStatusText(req);
     if (text === 'Approved') return 'badge-approved';
@@ -383,8 +285,9 @@ export class LeaveRequestComponent implements OnInit {
 
   getStatusText(req: SubmittedLeaveRequest): string {
     const statusStr = (req.status || '').toLowerCase().trim();
-    if (statusStr === 'rejected' || (req.approvedBy !== 0 && req.isApproved === false)) return 'Rejected';
-    if (statusStr === 'approved' || (req.approvedBy !== 0 && req.isApproved === true)) return 'Approved';
+    if (statusStr === 'approved') return 'Approved';
+    if (statusStr === 'rejected') return 'Rejected';
+    if (statusStr === 'cancelled') return 'Cancelled';
     return 'Pending';
   }
 }

@@ -37,7 +37,7 @@ export class EmergencyComponent implements OnInit {
   relationships = ['Spouse', 'Parent / Guardian', 'Sibling', 'Child', 'Partner', 'Friend / Colleague', 'Other'];
 
   contactForm = this.formBuilder.group({
-    id: [localStorage.getItem('employeeId') || ''],
+    id: [typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? localStorage.getItem('employeeId') || '' : ''],
     firstName: [''],
     lastName: [''],
     emailAddress: [''],

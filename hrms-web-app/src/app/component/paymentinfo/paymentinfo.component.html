@@ -205,6 +205,14 @@
                 </button>
                 <button
                   type="button"
+                  class="btn-action-icon btn-delete"
+                  (click)="Delete(pay.id)"
+                  title="Delete Bank Account"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+                <button
+                  type="button"
                   class="btn-action-icon"
                   [class.btn-toggle-off]="pay.isActive !== false"
                   [class.btn-toggle-on]="pay.isActive === false"
@@ -219,7 +227,7 @@
 
           <!-- Empty State -->
           <tr *ngIf="paginatedPayments.length === 0">
-            <td colspan="7" class="empty-state">
+            <td colspan="6" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">credit_card_off</mat-icon>
                 <p *ngIf="allPayments.length === 0">

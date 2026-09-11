@@ -267,13 +267,16 @@
                 >
                   <mat-icon>{{ candidate.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
+                <button type="button" class="btn-action-icon btn-delete" (click)="Delete(candidate.id)" title="Delete Candidate">
+                  <mat-icon>delete</mat-icon>
+                </button>
               </div>
             </td>
           </tr>
 
           <!-- Empty State -->
           <tr *ngIf="paginatedCandidates.length === 0">
-            <td colspan="8" class="empty-state">
+            <td colspan="9" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">person_search</mat-icon>
                 <p *ngIf="allCandidates.length === 0">

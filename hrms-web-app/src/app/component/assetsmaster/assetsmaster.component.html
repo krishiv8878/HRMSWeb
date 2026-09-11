@@ -2,8 +2,8 @@
   <!-- Top Header Title & Actions Area -->
   <div class="dashboard-header">
     <div class="title-group">
-      <h1 class="page-title">Asset Management</h1>
-      <p class="page-subtitle">Track, manage, and audit corporate hardware and software assets.</p>
+      <h1 class="page-title">{{ isAdmin ? 'Asset Management' : 'My Assigned Assets' }}</h1>
+      <p class="page-subtitle">{{ isAdmin ? 'Track, manage, and audit corporate hardware and software assets.' : 'View hardware and equipment assigned to your profile.' }}</p>
     </div>
 
     <!-- Header Action Buttons -->
@@ -14,12 +14,35 @@
         <span>Export</span>
       </button>
 
-      <!-- Add Asset Button -->
-      <button type="button" class="btn-add-asset" (click)="openAddAssetModal()">
+      <!-- Add Asset Button (Admin Only) -->
+      <button *ngIf="isAdmin" type="button" class="btn-add-asset" (click)="openAddAssetModal()">
         <mat-icon class="btn-icon">add</mat-icon>
         <span>Add Asset</span>
       </button>
     </div>
+  </div>
+
+  <!-- Assigned Projects Quick Ribbon (For Employee / Manager) -->
+  <div *ngIf="!isAdmin && assignedProjects.length > 0" class="assigned-projects-banner">
+    <div class="banner-left">
+      <div class="banner-icon-badge">
+        <mat-icon>rocket_launch</mat-icon>
+      </div>
+      <div class="banner-info">
+        <span class="banner-label">Assigned Project Engagements:</span>
+        <div class="project-pills-list">
+          <a *ngFor="let proj of assignedProjects" class="project-pill" [routerLink]="['/index/project']" title="View Project in Portfolio">
+            <mat-icon class="pill-icon">folder_special</mat-icon>
+            <strong>{{ proj.projectName || proj.name }}</strong>
+            <span class="client-tag">({{ proj.clientName || 'Active' }})</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <a [routerLink]="['/index/project']" class="view-all-projects-link">
+      <span>View In Projects</span>
+      <mat-icon>arrow_forward</mat-icon>
+    </a>
   </div>
 
   <!-- Metric Category Cards Grid (4 Column Layout) -->
@@ -32,6 +55,6 @@
 
   <!-- Assets Data Table Component -->
   <div class="table-section mt-4">
-    <app-asset-table [assets]="(assets$ | async) || []"></app-asset-table>
+    <app-asset-table [assets]="(filteredAssets$ | async) || []"></app-asset-table>
   </div>
 </div>

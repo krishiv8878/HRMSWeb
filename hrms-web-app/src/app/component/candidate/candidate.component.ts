@@ -88,17 +88,20 @@ export class CandidateComponent implements OnInit {
           rawList = response.result;
         }
 
+        // Filter out soft-deleted candidates
+        rawList = rawList.filter((item: any) => !item.isDeleted);
+
         if (rawList.length > 0) {
           this.allCandidates = rawList.map((item: any, idx: number) => this.mapCandidateItem(item, idx));
         } else {
-          this.allCandidates = this.getDefaultMockCandidates();
+          this.allCandidates = [];
         }
 
         this.calculatePipelineMetrics();
         this.filterCandidates();
       },
       error: () => {
-        this.allCandidates = this.getDefaultMockCandidates();
+        this.allCandidates = [];
         this.calculatePipelineMetrics();
         this.filterCandidates();
       }

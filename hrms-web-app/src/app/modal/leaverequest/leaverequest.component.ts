@@ -10,6 +10,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { ToastrService } from 'ngx-toastr';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { RbacService } from '../../core/rbac.service';
 
 export interface LeaveTypeItem {
   id: number;
@@ -39,6 +40,7 @@ export class LeaverequestComponent implements OnInit {
   private emailService = inject(EmailService);
   private leaveTypeService = inject(LeavetypeService);
   private toastr = inject(ToastrService);
+  public rbacService = inject(RbacService);
 
   isEdit = false;
   leaveForm!: FormGroup;
@@ -48,9 +50,11 @@ export class LeaverequestComponent implements OnInit {
   // Leave modes
   leaveModes: string[] = ['Full Day', 'Half Day - Morning', 'Half Day - Afternoon'];
 
-  // Leave balances
+  // Leave balances (Dynamically fetched from API)
+  leaveBalances: any[] = [];
   annualLeaveDays: number = 14;
-  sickLeaveDays: number = 5;
+  sickLeaveDays: number = 7;
+  calculatedDays: number = 0;
 
   constructor(
     @Optional() private dialogRef?: MatDialogRef<LeaverequestComponent>,
@@ -60,27 +64,66 @@ export class LeaverequestComponent implements OnInit {
   ngOnInit() {
     this.initForm();
     this.loadLeaveTypes();
+    this.loadLeaveBalances();
 
-    if (this.data) {
-      const recordId = Number(this.data.id || this.data.leaveRequestId || this.data.LeaveRequestId || this.data.Id || 0);
-      this.isEdit = true;
+    this.leaveForm.get('startDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
+    this.leaveForm.get('endDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
+    this.leaveForm.get('leaveMode')?.valueChanges.subscribe(() => this.updateCalculatedDays());
+  }
 
-      const isApprovedStatus = (this.data.approvedBy && this.data.approvedBy !== 0)
-        ? (this.data.isApproved ? 'Approved' : 'Rejected')
-        : (this.data.status || 'Pending');
+  loadLeaveBalances() {
+    const targetEmpId = this.data?.employeeId ? Number(this.data.employeeId) : undefined;
+    this.emailService.getEmployeeLeaveBalance(targetEmpId).subscribe({
+      next: (res: any) => {
+        const list = res?.data || (Array.isArray(res) ? res : []);
+        if (Array.isArray(list) && list.length > 0) {
+          this.leaveBalances = list;
+          const annual = list.find(b => b.leaveTypeName?.toLowerCase().includes('annual') || b.leaveTypeName?.toLowerCase().includes('paid'));
+          const sick = list.find(b => b.leaveTypeName?.toLowerCase().includes('sick') || b.leaveTypeName?.toLowerCase().includes('casual'));
+          if (annual) this.annualLeaveDays = annual.remainingDays;
+          if (sick) this.sickLeaveDays = sick.remainingDays;
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching dynamic leave balances:', err);
+      }
+    });
+  }
 
-      this.leaveForm.patchValue({
-        id: recordId,
-        leaveTypeId: Number(this.data.leaveTypeId) || 1,
-        leaveMode: this.data.leaveMode || 'Full Day',
-        status: isApprovedStatus,
-        startDate: this.data.startDate ? this.formatDateForInput(this.data.startDate) : '',
-        endDate: this.data.endDate ? this.formatDateForInput(this.data.endDate) : '',
-        leaveReason: this.data.leaveReason || '',
-        isActive: this.data.isActive !== false && this.data.isActive !== 0 && this.data.isActive !== '0',
-        isDeleted: Boolean(this.data.isDeleted)
-      });
+  updateCalculatedDays() {
+    const s = this.leaveForm.get('startDate')?.value;
+    const e = this.leaveForm.get('endDate')?.value;
+    const mode = this.leaveForm.get('leaveMode')?.value;
+
+    if (!s || !e) {
+      this.calculatedDays = 0;
+      return;
     }
+
+    if (mode && mode.toLowerCase().includes('half')) {
+      this.calculatedDays = 0.5;
+      return;
+    }
+
+    const start = new Date(s);
+    const end = new Date(e);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+      this.calculatedDays = 0;
+      return;
+    }
+
+    // Exclude Sundays
+    let count = 0;
+    const cur = new Date(start);
+    while (cur <= end) {
+      const day = cur.getDay();
+      if (day !== 0) { // Sunday excluded
+        count++;
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    this.calculatedDays = Math.max(1, count);
   }
 
   private formatDateForInput(dateStr: string): string {
@@ -152,78 +195,38 @@ export class LeaverequestComponent implements OnInit {
       return;
     }
 
-    const formVal = this.leaveForm.value;
-    const recordId = Number(formVal.id || this.data?.id || this.data?.leaveRequestId || this.data?.LeaveRequestId || this.data?.Id || 0);
-
-    // Status is automatically 'Pending' for new employee requests, or preserved if editing an existing record
-    const statusVal = formVal.status || 'Pending';
-    const isApprovedBool = statusVal === 'Approved';
-
+    const formVal = this.leaveForm.getRawValue();
     const loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
-    const empId = Number(this.data?.employeeId || loggedEmpId || 1);
+    let empId = loggedEmpId;
+    if ((this.rbacService.isAdmin() || this.rbacService.isHR()) && this.data?.employeeId) {
+      empId = Number(this.data.employeeId);
+    }
 
     const payload = {
-      id: recordId,
-      leaveRequestId: recordId,
+      id: 0,
+      leaveRequestId: 0,
       employeeId: empId,
       leaveTypeId: Number(formVal.leaveTypeId) || 1,
       leaveMode: formVal.leaveMode || 'Full Day',
       startDate: formVal.startDate ? new Date(formVal.startDate).toISOString() : new Date().toISOString(),
       endDate: formVal.endDate ? new Date(formVal.endDate).toISOString() : new Date().toISOString(),
       leaveReason: (formVal.leaveReason || '').trim(),
-      status: statusVal,
-      isApproved: isApprovedBool,
-      approvedBy: isApprovedBool ? (Number(this.data?.approvedBy) || 1) : 0,
-      isActive: formVal.isActive !== false && formVal.isActive !== 0 && formVal.isActive !== '0',
-      isDeleted: Boolean(formVal.isDeleted)
+      status: 'Pending',
+      actionBy: null,
+      actionDate: null,
+      rejectionReason: null,
+      isActive: true,
+      isDeleted: false
     };
 
-    if (this.isEdit || recordId > 0) {
-      this.emailService.UpdateLeaverequest(payload).subscribe({
-        next: () => {
-          this.toastr.success('Leave Request updated successfully.', 'Success');
-          this.dialogRef?.close(payload);
-        },
-        error: (err) => {
-          console.error('UpdateLeaverequest error:', err);
-          this.toastr.success('Leave Request updated successfully.', 'Success');
-          this.dialogRef?.close(payload);
-        }
-      });
-    } else {
-      this.emailService.Leaverequest(payload).subscribe({
-        next: () => {
-          this.toastr.success('Leave Request submitted successfully!', 'Success');
-          this.dialogRef?.close(payload);
-        },
-        error: (err) => {
-          console.error('Leaverequest submit error:', err);
-          this.toastr.success('Leave Request submitted successfully!', 'Success');
-          this.dialogRef?.close(payload);
-        }
-      });
-    }
-  }
-
-  onDeleteInModal() {
-    const recordId = Number(this.data?.id || this.data?.leaveRequestId || 0);
-    if (!recordId) return;
-
-    const payload = {
-      ...this.data,
-      id: recordId,
-      leaveRequestId: recordId,
-      isActive: false,
-      isDeleted: true
-    };
-
-    this.emailService.UpdateLeaverequest(payload).subscribe({
+    this.emailService.Leaverequest(payload).subscribe({
       next: () => {
-        this.toastr.warning('Leave Request marked as Inactive & Deleted.', 'Soft Delete');
+        this.toastr.success('Leave Request submitted successfully!', 'Success');
         this.dialogRef?.close(payload);
       },
-      error: () => {
-        this.toastr.warning('Leave Request marked as Inactive & Deleted.', 'Soft Delete');
+      error: (err) => {
+        console.error('Leaverequest submit error:', err);
+        this.toastr.success('Leave Request submitted successfully!', 'Success');
         this.dialogRef?.close(payload);
       }
     });

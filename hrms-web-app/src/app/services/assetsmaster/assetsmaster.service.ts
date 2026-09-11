@@ -36,8 +36,12 @@ export class AssetsmasterService {
       })
     ).subscribe((response: any) => {
       const rawList = Array.isArray(response) ? response : (response?.data || response?.result || []);
-      if (Array.isArray(rawList) && rawList.length > 0) {
-        const apiAssets: AssetItem[] = rawList.map((item: any, idx: number) => {
+      const validList = Array.isArray(rawList)
+        ? rawList.filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== 'true')
+        : [];
+
+      if (validList.length > 0) {
+        const apiAssets: AssetItem[] = validList.map((item: any, idx: number) => {
           const activeState = item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false' && item.isActive !== '0';
           const assetStatus: AssetStatus = activeState ? (item.status || 'Active') : 'In Repair';
 
@@ -46,7 +50,8 @@ export class AssetsmasterService {
             modelName: item.assetsMasterName || item.modelName || 'Hardware Asset',
             specifications: item.description || item.specifications || item.serialNumber || 'Corporate Asset',
             assetType: (item.assetType as AssetType) || 'Laptop',
-            assignedTo: item.assignedTo || 'Unassigned',
+            assignedTo: item.assignedTo || item.AssignedTo || 'Unassigned',
+            employeeId: (item.employeeId ?? item.EmployeeId) ? Number(item.employeeId ?? item.EmployeeId) : undefined,
             location: item.location || 'Main HQ Office',
             status: assetStatus,
             isActive: activeState,
@@ -71,21 +76,33 @@ export class AssetsmasterService {
 
     const assignedPercent = total > 0 ? Math.round((assignedCount / total) * 100) : 0;
 
-    const cards: AssetMetricCard[] = [
+    const cards: AssetMetricCard[] = this.getMetricsForAssets(assets, true);
+    this.metricsSubject.next(cards);
+  }
+
+  getMetricsForAssets(assets: AssetItem[], isAdmin: boolean = true): AssetMetricCard[] {
+    const total = assets.length;
+    const assignedCount = assets.filter(a => a.status === 'Active' || (a.assignedTo && a.assignedTo !== 'Unassigned')).length;
+    const repairCount = assets.filter(a => a.status === 'In Repair' || a.isActive === false).length;
+    const availableCount = assets.filter(a => a.status === 'Available' || a.assignedTo === 'Unassigned').length;
+
+    const assignedPercent = total > 0 ? Math.round((assignedCount / total) * 100) : 0;
+
+    return [
       {
         id: 'metric-1',
         title: 'TOTAL ASSETS',
         value: total,
-        subtitle: 'Live database count',
+        subtitle: isAdmin ? 'Live database count' : 'Assigned to your profile',
         iconName: 'inventory_2',
         theme: 'blue',
         isPositive: true
       },
       {
         id: 'metric-2',
-        title: 'ASSIGNED',
+        title: isAdmin ? 'ASSIGNED' : 'ACTIVE',
         value: assignedCount,
-        subtitle: `${assignedPercent}% of total inventory`,
+        subtitle: isAdmin ? `${assignedPercent}% of total inventory` : `${assignedPercent}% currently active`,
         iconName: 'person_outline',
         theme: 'indigo'
       },
@@ -102,13 +119,11 @@ export class AssetsmasterService {
         id: 'metric-4',
         title: 'AVAILABLE',
         value: availableCount,
-        subtitle: 'Ready for deployment',
+        subtitle: isAdmin ? 'Ready for deployment' : 'Ready for use',
         iconName: 'check_circle_outline',
         theme: 'emerald'
       }
     ];
-
-    this.metricsSubject.next(cards);
   }
 
   addAsset(assetData: Partial<AssetItem>): AssetItem {
@@ -309,6 +324,9 @@ export class AssetsmasterService {
 
   DeleteData(AssetsMasterId: any): Observable<any> {
     return this.http.delete<any>(this.apiUrl + `/AssetsMaster/DeleteAssetsMaster?AssetsMasterId=` + AssetsMasterId).pipe(
+      catchError(() => {
+        return this.http.delete<any>(this.apiUrl + `/AssetsMaster/DeleteAssetsMaster/${AssetsMasterId}`);
+      }),
       tap(() => this.fetchAssetsFromApi()),
       catchError((err) => {
         console.error('Error calling DeleteAssetsMaster API:', err);

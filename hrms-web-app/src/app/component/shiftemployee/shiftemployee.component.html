@@ -218,7 +218,7 @@
               </span>
             </td>
 
-            <!-- Actions (Edit & Inactivate Toggle) -->
+            <!-- Actions (Edit, Delete & Inactivate Toggle) -->
             <td class="text-right">
               <div class="action-buttons-group">
                 <button
@@ -228,6 +228,14 @@
                   title="Edit Shift Details"
                 >
                   <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="action-icon-btn delete-btn"
+                  (click)="openDeleteModal(shift)"
+                  title="Delete Shift"
+                >
+                  <mat-icon>delete_outline</mat-icon>
                 </button>
                 <button
                   type="button"
@@ -245,7 +253,7 @@
 
           <!-- Empty State -->
           <tr *ngIf="paginatedShifts.length === 0">
-            <td colspan="7" class="empty-state-cell">
+            <td colspan="8" class="empty-state-cell">
               <div class="empty-state-box">
                 <mat-icon class="empty-icon">schedule</mat-icon>
                 <h3>No Shift Schedules Found</h3>

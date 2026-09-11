@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { ToastrService } from 'ngx-toastr';
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
+import { RbacService } from '../../core/rbac.service';
 
 @Component({
   selector: 'app-rolemasters',
@@ -32,6 +33,7 @@ export class RolemastersComponent implements OnInit {
   private formBuilder = inject(FormBuilder);
   private services = inject(RoleservicesService);
   private toaster = inject(ToastrService);
+  public rbacService = inject(RbacService);
 
   isEdit: boolean = false;
   id!: any;
@@ -68,6 +70,11 @@ export class RolemastersComponent implements OnInit {
   }
 
   submitdata() {
+    if (!this.rbacService.isAdmin()) {
+      this.toaster.error('Only Administrators have permission to modify roles.', 'Access Denied');
+      return;
+    }
+
     if (this.roledateForm.invalid) {
       this.roledateForm.markAllAsTouched();
       this.toaster.error('Please enter a valid role name', 'Validation Error');
@@ -80,6 +87,27 @@ export class RolemastersComponent implements OnInit {
     if (!trimmedName) {
       this.toaster.error('Role name cannot be blank', 'Validation Error');
       return;
+    }
+
+    const existingRoles: any[] = this.data?.existingRoles || [];
+    const isDuplicate = existingRoles.some((r: any) => {
+      const matchName = String(r.roleName || '').toLowerCase().trim() === trimmedName.toLowerCase();
+      const currentId = Number(this.isEdit ? (val.id || this.id || 0) : 0);
+      const matchId = Number(r.id) === currentId && currentId > 0;
+      return matchName && !matchId;
+    });
+
+    if (isDuplicate) {
+      this.toaster.error(`A role with the name '${trimmedName}' already exists.`, 'Duplicate Role');
+      return;
+    }
+
+    const defaultProtectedRoles = ['admin', 'system admin', 'employee'];
+    if (this.isEdit && this.data?.roleName && defaultProtectedRoles.includes(String(this.data.roleName).toLowerCase())) {
+      if (!val.isActive) {
+        this.toaster.error(`System core role '${this.data.roleName}' cannot be deactivated.`, 'Protection Policy');
+        return;
+      }
     }
 
     const payload = {

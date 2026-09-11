@@ -139,7 +139,7 @@
               </span>
             </td>
 
-            <!-- Actions (Edit & Inactivate Toggle) -->
+            <!-- Actions (Edit, Inactivate Toggle, Delete) -->
             <td class="col-actions text-right">
               <button type="button" class="btn-action-icon edit-btn" (click)="Edit(record)" title="Edit Policy">
                 <mat-icon>edit</mat-icon>
@@ -155,6 +155,11 @@
                 [title]="record.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
               >
                 <mat-icon>{{ record.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+              </button>
+
+              <!-- Delete Button -->
+              <button type="button" class="btn-action-icon btn-delete" (click)="openDeleteModal(record)" title="Delete Leave Type">
+                <mat-icon>delete</mat-icon>
               </button>
             </td>
           </tr>

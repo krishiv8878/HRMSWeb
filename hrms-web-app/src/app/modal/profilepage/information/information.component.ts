@@ -45,7 +45,7 @@ export class InformationComponent implements OnInit {
   selectedImage: string | ArrayBuffer | null = null;
 
   profileForm = this.formBuilder.group({
-    id: [localStorage.getItem('employeeId') || ''],
+    id: [typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? localStorage.getItem('employeeId') || '' : ''],
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required, Validators.email]],

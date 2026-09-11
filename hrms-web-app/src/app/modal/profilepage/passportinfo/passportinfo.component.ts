@@ -43,7 +43,7 @@ export class PassportinfoComponent implements OnInit {
   selectedFileName: string = '';
 
   passportForm = this.formBuilder.group({
-    id: [localStorage.getItem('employeeId') || ''],
+    id: [typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? localStorage.getItem('employeeId') || '' : ''],
     firstName: [''],
     lastName: [''],
     emailAddress: [''],

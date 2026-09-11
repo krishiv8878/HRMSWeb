@@ -32,6 +32,10 @@ export class DesignationservicesService {
   }
 
   DeleteData(DesignationId: any): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + `/Designation/DeleteDesignation?DesignationId=` + DesignationId);
+    return this.http.delete<any>(this.apiUrl + `/Designation/DeleteDesignation?DesignationId=` + DesignationId).pipe(
+      catchError(() => {
+        return this.http.delete<any>(this.apiUrl + `/Designation/DeleteDesignation/${DesignationId}`);
+      })
+    );
   }
 }

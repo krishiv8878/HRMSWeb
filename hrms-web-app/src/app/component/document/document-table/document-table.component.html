@@ -31,6 +31,7 @@
           <th>DOCUMENT NAME</th>
           <th>CATEGORY</th>
           <th>OWNER</th>
+          <th>STATUS</th>
           <th>LAST MODIFIED</th>
           <th class="text-right">ACTIONS</th>
         </tr>
@@ -71,6 +72,27 @@
             </div>
           </td>
 
+          <!-- Status -->
+          <td class="col-status">
+            <div class="status-cell-wrapper">
+              <span class="status-badge" [ngClass]="getStatusClass(doc.status)">
+                <mat-icon class="status-icon">{{ getStatusIcon(doc.status) }}</mat-icon>
+                <span>{{ doc.status || 'Approved' }}</span>
+              </span>
+              <button
+                *ngIf="doc.status === 'Rejected' && doc.rejectionReason"
+                type="button"
+                class="reason-btn"
+                [matTooltip]="'Rejection Reason: ' + doc.rejectionReason"
+                matTooltipPosition="above"
+                (click)="onShowRejectionReason(doc)"
+                aria-label="View rejection reason"
+              >
+                <mat-icon class="reason-icon">info</mat-icon>
+              </button>
+            </div>
+          </td>
+
           <!-- Last Modified -->
           <td class="col-date">
             <span class="date-text">{{ doc.lastModified }}</span>
@@ -78,18 +100,76 @@
 
           <!-- Actions Dropdown -->
           <td class="col-actions text-right">
-            <button type="button" class="action-dots-btn" [matMenuTriggerFor]="docMenu" aria-label="Document options">
-              <mat-icon>more_vert</mat-icon>
-            </button>
+            <div class="actions-wrapper">
+              <!-- Inline Quick Approve/Reject for HR & Admin if Pending -->
+              <ng-container *ngIf="(rbacService.isHR() || rbacService.isAdmin()) && doc.status === 'Pending'">
+                <button
+                  type="button"
+                  class="quick-action-btn btn-approve-quick"
+                  matTooltip="Approve Document"
+                  matTooltipPosition="above"
+                  (click)="onApproveDocument(doc)"
+                  aria-label="Approve"
+                >
+                  <mat-icon>check</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="quick-action-btn btn-reject-quick"
+                  matTooltip="Reject Document"
+                  matTooltipPosition="above"
+                  (click)="onRejectDocument(doc)"
+                  aria-label="Reject"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </ng-container>
+
+              <button type="button" class="action-dots-btn" [matMenuTriggerFor]="docMenu" aria-label="Document options">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+            </div>
+
             <mat-menu #docMenu="matMenu" xPosition="before">
+              <!-- HR/Admin Quick Actions -->
+              <ng-container *ngIf="(rbacService.isHR() || rbacService.isAdmin()) && doc.status === 'Pending'">
+                <button mat-menu-item (click)="onApproveDocument(doc)">
+                  <mat-icon style="color: #059669;">check_circle</mat-icon>
+                  <span style="color: #059669; font-weight: 600;">Approve Document</span>
+                </button>
+                <button mat-menu-item (click)="onRejectDocument(doc)">
+                  <mat-icon style="color: #dc2626;">cancel</mat-icon>
+                  <span style="color: #dc2626; font-weight: 600;">Reject Document</span>
+                </button>
+                <mat-divider></mat-divider>
+              </ng-container>
+
+              <button mat-menu-item *ngIf="doc.status === 'Rejected' && doc.rejectionReason" (click)="onShowRejectionReason(doc)">
+                <mat-icon style="color: #e11d48;">info</mat-icon>
+                <span>View Rejection Reason</span>
+              </button>
+
               <!-- Action 1: View Document Modal -->
               <button mat-menu-item (click)="onViewDocument(doc)">
                 <mat-icon>visibility</mat-icon> View Document
               </button>
 
-              <!-- Action 2: Share Link -->
+              <!-- Action 2: Download Document -->
+              <button mat-menu-item (click)="onDownloadDocument(doc)">
+                <mat-icon>download</mat-icon> Download
+              </button>
+
+              <!-- Action 3: Share Link -->
               <button mat-menu-item (click)="onShareLink(doc)">
                 <mat-icon>share</mat-icon> Share Link
+              </button>
+
+              <mat-divider></mat-divider>
+
+              <!-- Action 4: Delete Document -->
+              <button mat-menu-item (click)="onDeleteDocument(doc)">
+                <mat-icon style="color: #dc2626;">delete</mat-icon>
+                <span style="color: #dc2626;">Delete Document</span>
               </button>
             </mat-menu>
           </td>
@@ -97,7 +177,7 @@
 
         <!-- Empty State -->
         <tr *ngIf="paginatedDocuments.length === 0">
-          <td colspan="5" class="empty-state">
+          <td colspan="6" class="empty-state">
             <div class="empty-box">
               <mat-icon class="empty-icon">folder_open</mat-icon>
               <p *ngIf="documents.length === 0">

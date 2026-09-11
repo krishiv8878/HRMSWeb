@@ -1,0 +1,263 @@
+<div class="timesheet-review-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>assignment</mat-icon>
+      </div>
+      <div class="header-text">
+        <div class="title-row">
+          <h2 class="modal-title">Timesheet Review</h2>
+          <span class="period-type-pill">{{ data?.periodType || 'Weekly' }} Timesheet</span>
+          <span class="status-pill" [ngClass]="{
+            'status-approved': data?.status === 'Approved',
+            'status-pending': data?.status === 'Submitted' || data?.status === 'Pending',
+            'status-rejected': data?.status === 'Rejected'
+          }">
+            {{ data?.status || 'Submitted' }}
+          </span>
+        </div>
+        <p class="modal-subtitle">
+          Submitted by <strong class="emp-name">{{ data?.fullName || data?.employeeName || 'Employee' }}</strong>
+          <span class="emp-role" *ngIf="data?.designation || data?.requesterRole"> ({{ data?.designation || data?.requesterRole }})</span>
+          &bull; Period: <span class="period-dates">{{ data?.startDate ? (data.startDate | date:'dd MMM yyyy') : 'Start' }} to {{ data?.endDate ? (data.endDate | date:'dd MMM yyyy') : 'End' }}</span>
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn-close-modal" (click)="close()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Summary KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card card-timesheet-hours">
+      <div class="kpi-icon-box">
+        <mat-icon>schedule</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Task Hours</span>
+        <span class="kpi-val">{{ data?.totalTimesheetHours || 0 }} <small>hrs</small></span>
+      </div>
+    </div>
+
+    <div class="kpi-card card-attendance-hours">
+      <div class="kpi-icon-box">
+        <mat-icon>fingerprint</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Ref. Attendance</span>
+        <span class="kpi-val">{{ data?.totalAttendanceHours || 0 }} <small>hrs</small></span>
+      </div>
+    </div>
+
+    <div class="kpi-card card-task-count">
+      <div class="kpi-icon-box">
+        <mat-icon>task_alt</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Tasks</span>
+        <span class="kpi-val">{{ getTotalTasksCount() }} <small>tasks</small></span>
+      </div>
+    </div>
+
+    <div class="kpi-card card-days-worked">
+      <div class="kpi-icon-box">
+        <mat-icon>calendar_today</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Active Days</span>
+        <span class="kpi-val">{{ getWorkingDaysCount() }} <small>/ {{ daysList.length }} days</small></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day by Day Task Breakdown Section -->
+  <div class="review-body-scrollable">
+    <div class="section-title-bar">
+      <div class="title-with-count">
+        <mat-icon class="section-icon">view_timeline</mat-icon>
+        <span class="section-title">Day-by-Day Detailed Log & Tasks</span>
+      </div>
+      <span class="section-hint">Review tasks done by project and compare against attendance punch timings</span>
+    </div>
+
+    <!-- If Days List is Empty -->
+    <div class="empty-days-box" *ngIf="daysList.length === 0">
+      <mat-icon>event_busy</mat-icon>
+      <p>No day breakdown entries found for this timesheet period.</p>
+    </div>
+
+    <!-- Day Cards List -->
+    <div class="day-cards-list" *ngIf="daysList.length > 0">
+      <div class="day-card" *ngFor="let day of daysList">
+        <!-- Day Header -->
+        <div class="day-header">
+          <div class="day-title-group">
+            <mat-icon class="day-icon">event</mat-icon>
+            <span class="day-date">{{ formatDayHeader(day.date || day.Date, day.dayName || day.DayName) }}</span>
+          </div>
+
+          <!-- Attendance Punch Pill -->
+          <div class="punch-info-group">
+            <span class="punch-pill" *ngIf="(day.clockIn || day.ClockIn) || (day.clockInTime || day.ClockInTime); else noPunch">
+              <mat-icon class="pill-icon">login</mat-icon>
+              <span>{{ formatTime(day.clockIn || day.ClockIn || day.clockInTime || day.ClockInTime) }}</span>
+              <span class="arrow-divider">&rarr;</span>
+              <mat-icon class="pill-icon">logout</mat-icon>
+              <span>{{ formatTime(day.clockOut || day.ClockOut || day.clockOutTime || day.ClockOutTime) || 'In Progress' }}</span>
+              <span class="punch-hrs-tag">({{ day.attendanceHours || day.AttendanceHours || 0 }} hrs)</span>
+              <span class="reg-tag" *ngIf="day.isRegularized || day.IsRegularized">Regularized</span>
+            </span>
+            <ng-template #noPunch>
+              <span class="no-punch-pill">
+                <mat-icon class="pill-icon">alarm_off</mat-icon>
+                <span>No punch recorded</span>
+              </span>
+            </ng-template>
+          </div>
+
+          <!-- Day Task Total Badge -->
+          <div class="day-task-total">
+            <span class="hours-badge" [class.has-hours]="getDayHours(day) > 0">
+              <mat-icon class="badge-mini-icon">timer</mat-icon>
+              <span>{{ getDayHours(day) }} hrs logged</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Day Tasks Content -->
+        <div class="day-tasks-container">
+          <!-- When Tasks Exist -->
+          <div class="tasks-table-wrapper" *ngIf="getDayTasks(day).length > 0">
+            <table class="tasks-table">
+              <thead>
+                <tr>
+                  <th class="col-proj">PROJECT</th>
+                  <th class="col-desc">TASK DESCRIPTION / WORK DONE</th>
+                  <th class="col-hrs text-right">HOURS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let task of getDayTasks(day)">
+                  <td class="col-proj">
+                    <span class="project-tag">
+                      <mat-icon class="tag-icon">folder</mat-icon>
+                      <span>{{ task.projectName || task.ProjectName || 'Project' }}</span>
+                    </span>
+                  </td>
+                  <td class="col-desc">
+                    <div class="task-description-text">
+                      {{ task.taskDescription || task.TaskDescription }}
+                    </div>
+                  </td>
+                  <td class="col-hrs text-right">
+                    <span class="task-hrs-value">{{ task.hours || task.Hours }} hrs</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- When No Tasks Logged -->
+          <div class="no-tasks-row" *ngIf="getDayTasks(day).length === 0">
+            <span class="no-tasks-text">
+              <mat-icon class="muted-icon">remove_circle_outline</mat-icon>
+              No tasks logged for this day
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approved Notice Box (When Already Approved) -->
+    <div class="status-notice-box notice-approved" *ngIf="data?.status === 'Approved' && !showRejectionForm">
+      <div class="notice-content">
+        <mat-icon class="notice-icon text-green">check_circle</mat-icon>
+        <div>
+          <h4 class="notice-title">Timesheet Already Approved</h4>
+          <p class="notice-desc">This timesheet submission has been reviewed and approved. Entries are locked and finalized.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejected Notice Box (When Already Rejected) -->
+    <div class="status-notice-box notice-rejected" *ngIf="data?.status === 'Rejected' && !showRejectionForm">
+      <div class="notice-content">
+        <mat-icon class="notice-icon text-red">highlight_off</mat-icon>
+        <div>
+          <h4 class="notice-title">Timesheet Rejected</h4>
+          <p class="notice-desc">
+            Reason: <strong>"{{ data?.rejectionReason || 'Please adjust hours or task descriptions.' }}"</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejection Remarks Panel (Inline in body when rejecting) -->
+    <div class="rejection-panel" *ngIf="showRejectionForm">
+      <div class="rejection-box">
+        <div class="rejection-header">
+          <mat-icon class="warn-icon">warning_amber</mat-icon>
+          <div>
+            <h4 class="rejection-title">Specify Reason for Rejection</h4>
+            <p class="rejection-hint">
+              This feedback will be provided to {{ data?.fullName || data?.employeeName || 'the employee' }} so they can make corrections and resubmit.
+            </p>
+          </div>
+        </div>
+        <textarea
+          class="rejection-textarea"
+          [(ngModel)]="rejectionReason"
+          rows="3"
+          placeholder="e.g. Please clarify task descriptions for Wednesday, or task hours exceed punch duration..."
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer Actions -->
+  <div class="modal-footer">
+    <!-- Footer When in Rejection Mode -->
+    <div class="footer-actions-rejection" *ngIf="showRejectionForm">
+      <button type="button" class="btn-secondary" (click)="cancelReject()">
+        <mat-icon>arrow_back</mat-icon>
+        <span>Back to Review</span>
+      </button>
+
+      <button type="button" class="btn-confirm-reject" (click)="confirmReject()">
+        <mat-icon>close</mat-icon>
+        <span>Confirm Rejection</span>
+      </button>
+    </div>
+
+    <!-- Standard Footer Actions -->
+    <div class="footer-actions-standard" *ngIf="!showRejectionForm">
+      <button type="button" class="btn-secondary" (click)="close()">
+        <span>Close</span>
+      </button>
+
+      <div class="decision-buttons">
+        <button
+          type="button"
+          class="btn-danger-outline"
+          (click)="openRejectForm()"
+          [title]="data?.status === 'Rejected' ? 'Modify Rejection Reason' : 'Reject Timesheet'"
+        >
+          <mat-icon>close</mat-icon>
+          <span>{{ data?.status === 'Rejected' ? 'Update Rejection' : 'Reject Timesheet' }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-primary-approve"
+          (click)="confirmApprove()"
+          [title]="data?.status === 'Approved' ? 'Currently Approved (Click to re-confirm)' : 'Approve Timesheet'"
+        >
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ data?.status === 'Approved' ? 'Approved' : 'Approve Timesheet' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

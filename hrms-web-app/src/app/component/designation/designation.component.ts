@@ -104,7 +104,9 @@ export class DesignationComponent implements OnInit {
         }
 
         if (rawList.length > 0) {
-          this.allDesignations = rawList.map((item: any, idx: number) => this.mapDesignationItem(item, idx));
+          this.allDesignations = rawList
+            .filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== 'true')
+            .map((item: any, idx: number) => this.mapDesignationItem(item, idx));
         } else {
           this.allDesignations = [];
         }

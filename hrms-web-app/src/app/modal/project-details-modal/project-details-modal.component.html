@@ -1,0 +1,117 @@
+<div class="project-details-card">
+  <!-- Top Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>{{ project.iconName || 'folder_special' }}</mat-icon>
+      </div>
+      <div>
+        <h2>{{ project.projectName }}</h2>
+        <span class="project-code-tag">PRJ-00{{ project.id }}</span>
+      </div>
+    </div>
+    <button type="button" class="close-top-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Content Body -->
+  <div class="details-body">
+    <!-- Meta Summary Banner -->
+    <div class="summary-banner">
+      <div class="meta-item">
+        <span class="meta-label">Client Account</span>
+        <span class="meta-value">
+          <mat-icon class="inline-icon">domain</mat-icon>
+          {{ project.clientName }}
+        </span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Region</span>
+        <span class="meta-value">
+          <mat-icon class="inline-icon">public</mat-icon>
+          {{ project.clientRegion }}
+        </span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Project Manager</span>
+        <span class="meta-value">
+          <mat-icon class="inline-icon">manage_accounts</mat-icon>
+          {{ project.managerName || 'Manager Not Assigned' }}
+        </span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Timeline</span>
+        <span class="meta-value">
+          <mat-icon class="inline-icon">calendar_today</mat-icon>
+          {{ project.startDate ? (project.startDate | date:'mediumDate') : 'TBD' }} - {{ project.endDate ? (project.endDate | date:'mediumDate') : 'Ongoing' }}
+        </span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Delivery Status</span>
+        <span class="status-badge" [ngClass]="project.isActive ? 'badge-active' : 'badge-inactive'">
+          <span class="dot"></span>
+          {{ project.status || (project.isActive ? 'Active' : 'Inactive') }}
+        </span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Team Squad</span>
+        <span class="meta-value">
+          <mat-icon class="inline-icon">groups</mat-icon>
+          {{ teamMembers.length }} Engineers
+        </span>
+      </div>
+    </div>
+
+    <!-- About Project Section -->
+    <div class="detail-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">info</mat-icon>
+        <h3>About Project & Scope</h3>
+      </div>
+      <div class="description-card">
+        <p>{{ project.description || 'No detailed scope description provided for this project initiative.' }}</p>
+      </div>
+    </div>
+
+    <!-- Assigned Team Members Section -->
+    <div class="detail-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">engineering</mat-icon>
+        <h3>Assigned Team Members ({{ teamMembers.length }})</h3>
+      </div>
+
+      <div class="team-grid" *ngIf="teamMembers.length > 0">
+        <div class="member-card" *ngFor="let member of teamMembers">
+          <div class="avatar-box">
+            <img *ngIf="member.profilePic || member.userAvatar || member.profileImage" 
+                 [src]="member.profilePic || member.userAvatar || member.profileImage" 
+                 [alt]="member.fullName || member.firstName" />
+            <div *ngIf="!(member.profilePic || member.userAvatar || member.profileImage)" class="initials-avatar">
+              {{ getInitials(member.fullName || (member.firstName + ' ' + member.lastName)) }}
+            </div>
+          </div>
+          <div class="member-info">
+            <span class="member-name">{{ member.fullName || (member.firstName + ' ' + member.lastName) }}</span>
+            <span class="member-designation">{{ member.designation || member.designationName || 'Team Member' }}</span>
+            <span class="member-email" *ngIf="member.emailAddress || member.email">
+              {{ member.emailAddress || member.email }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-team-box" *ngIf="teamMembers.length === 0">
+        <mat-icon>group_off</mat-icon>
+        <p>No squad members currently assigned to this project.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer Actions -->
+  <div class="modal-footer">
+    <!-- <button type="button" class="btn-close" (click)="closeModal()">
+      Close
+    </button> -->
+  </div>
+</div>

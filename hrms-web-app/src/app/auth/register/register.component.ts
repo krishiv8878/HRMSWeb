@@ -35,7 +35,7 @@ export class RegisterComponent {
     email: ['', [Validators.required, Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern('^[0-9]{10}$')]],
     Address: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-=]+$')]],
-    password: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(16), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
+    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(32), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$')]]
   })
   ngOnInit() { }
   hide: boolean = true;
@@ -73,7 +73,7 @@ export class RegisterComponent {
         email: "Enter Valid Email",
         mobileNumber: "Mobile Number Must Be 10 Digits",
         Address: " Address Is Required",
-        password: "Password Is Required",
+        password: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
       };
 
       for (const field in errorMessages) {
@@ -85,11 +85,17 @@ export class RegisterComponent {
       }
     }
     if (this.registretion.valid) {
-      this.services.createRegister(this.registretion.value).subscribe(() => {
-        console.log(this.registretion.value)
-        this.registretion.reset()
-        this.router.navigateByUrl('login')
-      })
+      this.services.createRegister(this.registretion.value).subscribe({
+        next: () => {
+          this.toaster.success("Registration successful! Please log in.", "Success");
+          this.registretion.reset();
+          this.router.navigateByUrl('login');
+        },
+        error: (err: any) => {
+          const msg = err?.error?.message || "Registration failed. Please verify your details.";
+          this.toaster.error(msg, "Registration Error");
+        }
+      });
     }
   }
 }
