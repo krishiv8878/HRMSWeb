@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { Observable, catchError, of } from 'rxjs';
 
 @Injectable({
@@ -22,12 +22,22 @@ export class ProjectsService {
   }
 
   createData(data: any): Observable<any> {
+    const rawMgr = data.projectManagerId ?? data.managerId ?? data.ProjectManagerId ?? data.ManagerId ?? null;
+    const managerId = (rawMgr !== null && rawMgr !== undefined && rawMgr !== '' && rawMgr !== 'null')
+      ? Number(rawMgr)
+      : null;
+    const validMgrId = (managerId !== null && !isNaN(managerId) && managerId > 0) ? managerId : null;
+
     const body = {
       id: 0,
       projectName: (data.projectName || '').trim(),
       clientName: (data.clientName || '').trim(),
       clientRegion: data.clientRegion || 'Global',
       description: (data.description || '').trim(),
+      projectManagerId: validMgrId,
+      managerId: validMgrId,
+      ProjectManagerId: validMgrId,
+      ManagerId: validMgrId,
       teamSize: Number(data.teamSize || 0),
       status: data.status || 'In Progress',
       startDate: data.startDate || null,
@@ -45,7 +55,12 @@ export class ProjectsService {
   }
 
   updateData(data: any, projectId?: any): Observable<any> {
-    const numericId = Number(projectId || data.id || 0);
+    const numericId = Number(projectId || data.id || data.projectMasterId || 0);
+    const rawMgr = data.projectManagerId ?? data.managerId ?? data.ProjectManagerId ?? data.ManagerId ?? null;
+    const managerId = (rawMgr !== null && rawMgr !== undefined && rawMgr !== '' && rawMgr !== 'null')
+      ? Number(rawMgr)
+      : null;
+    const validMgrId = (managerId !== null && !isNaN(managerId) && managerId > 0) ? managerId : null;
 
     const body = {
       id: numericId,
@@ -54,6 +69,10 @@ export class ProjectsService {
       clientName: (data.clientName || '').trim(),
       clientRegion: data.clientRegion || 'Global',
       description: (data.description || '').trim(),
+      projectManagerId: validMgrId,
+      managerId: validMgrId,
+      ProjectManagerId: validMgrId,
+      ManagerId: validMgrId,
       teamSize: Number(data.teamSize || 0),
       status: data.status || 'In Progress',
       startDate: data.startDate || null,
@@ -62,14 +81,7 @@ export class ProjectsService {
       isDeleted: Boolean(data.isDeleted)
     };
 
-    return this.http.put<any>(`${this.apiUrl}/ProjectMaster/UpdateProjectMaster/${numericId}`, body).pipe(
-      catchError(() => this.http.put<any>(`${this.apiUrl}/ProjectMaster/UpdateProjectMaster`, body)),
-      catchError(() => this.http.post<any>(`${this.apiUrl}/ProjectMaster/UpdateProjectMaster`, body)),
-      catchError((err) => {
-        console.error('Error updating ProjectMaster:', err);
-        return of(body);
-      })
-    );
+    return this.http.put<any>(`${this.apiUrl}/ProjectMaster/UpdateProjectMaster/${numericId}`, body);
   }
 
   DeleteData(projectMasterId: any): Observable<any> {

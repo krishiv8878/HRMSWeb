@@ -242,17 +242,68 @@
   }
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
+.status-cell-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 
+  .reason-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #e11d48;
+    border-radius: 50%;
+    transition: transform 0.15s ease;
+
+    .reason-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      transform: scale(1.15);
+    }
+  }
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+
+  .status-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+
+  &.badge-status-approved,
   &.badge-active {
     background-color: #ecfdf5;
     color: #047857;
     border: 1px solid #a7f3d0;
+  }
+
+  &.badge-status-pending {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+
+  &.badge-status-rejected {
+    background-color: #fff1f2;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
   }
 
   &.badge-inactive {
@@ -265,6 +316,53 @@
 .date-text {
   color: #64748b;
   font-size: 13px;
+}
+
+.actions-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+
+  .quick-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &.btn-approve-quick {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+
+      &:hover {
+        background-color: #059669;
+        color: #ffffff;
+      }
+    }
+
+    &.btn-reject-quick {
+      background-color: #fff1f2;
+      color: #e11d48;
+      border: 1px solid #fecdd3;
+
+      &:hover {
+        background-color: #e11d48;
+        color: #ffffff;
+      }
+    }
+  }
 }
 
 .action-dots-btn {

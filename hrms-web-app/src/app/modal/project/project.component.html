@@ -54,7 +54,7 @@
       </div>
     </div>
 
-    <!-- Row 2: Client Region & Team Size -->
+    <!-- Row 2: Client Region & Status -->
     <div class="form-row-2">
       <div class="form-group">
         <label class="field-label">Client Region / Territory <span class="required">*</span></label>
@@ -67,28 +67,52 @@
       </div>
 
       <div class="form-group">
-        <label class="field-label">Assigned Team Size <span class="required">*</span></label>
+        <label class="field-label">Project Delivery Status <span class="required">*</span></label>
         <div class="input-wrapper">
-          <mat-icon class="input-icon">groups</mat-icon>
-          <input
-            type="number"
-            formControlName="teamSize"
-            placeholder="e.g. 8"
-            min="0"
-            class="custom-input"
-          />
+          <mat-icon class="input-icon">tune</mat-icon>
+          <select formControlName="status" class="custom-select">
+            <option *ngFor="let st of statusOptions" [value]="st">{{ st }}</option>
+          </select>
         </div>
       </div>
     </div>
 
-    <!-- Row 3: Status -->
+    <!-- Row 3: Assigned Project Manager -->
     <div class="form-group">
-      <label class="field-label">Project Delivery Status <span class="required">*</span></label>
+      <label class="field-label">Assigned Project Manager / Lead</label>
       <div class="input-wrapper">
-        <mat-icon class="input-icon">tune</mat-icon>
-        <select formControlName="status" class="custom-select">
-          <option *ngFor="let st of statusOptions" [value]="st">{{ st }}</option>
+        <mat-icon class="input-icon">manage_accounts</mat-icon>
+        <select formControlName="projectManagerId" class="custom-select">
+          <option [ngValue]="null">-- Select Project Manager --</option>
+          <option *ngFor="let mgr of managersList" [ngValue]="mgr.id">{{ mgr.name }}</option>
         </select>
+      </div>
+    </div>
+
+    <!-- Row 4: Timeline (Start Date & Target End Date) -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Project Start Date</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">calendar_today</mat-icon>
+          <input
+            type="date"
+            formControlName="startDate"
+            class="custom-input"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Target Delivery / End Date</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">event</mat-icon>
+          <input
+            type="date"
+            formControlName="endDate"
+            class="custom-input"
+          />
+        </div>
       </div>
     </div>
 

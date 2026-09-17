@@ -102,17 +102,20 @@ export class SkillComponent implements OnInit {
           rawList = response.data;
         }
 
+        // Filter out soft-deleted skills
+        rawList = rawList.filter((item: any) => !item.isDeleted);
+
         if (rawList.length > 0) {
           this.allSkills = rawList.map((item: any, idx: number) => this.mapSkillItem(item, idx));
         } else {
-          this.allSkills = this.getDefaultMockSkills();
+          this.allSkills = [];
         }
 
         this.processSkillMetrics();
         this.filterSkills();
       },
       error: () => {
-        this.allSkills = this.getDefaultMockSkills();
+        this.allSkills = [];
         this.processSkillMetrics();
         this.filterSkills();
       }

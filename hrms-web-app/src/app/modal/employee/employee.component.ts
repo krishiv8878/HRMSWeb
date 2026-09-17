@@ -16,6 +16,8 @@ import { SkillservicesService } from '../../services/skill/skillservices.service
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
 import { DesignationservicesService } from '../../services/designation/designationservices.service';
 import { EmployeeshiftService } from '../../services/shift/employeeshift.service';
+import { ProjectsService } from '../../services/project/projects.service';
+import { RbacService } from '../../core/rbac.service';
 
 @Component({
   selector: 'app-employee',
@@ -46,7 +48,9 @@ export class EmployeeComponent implements OnInit {
   private skillServices = inject(SkillservicesService);
   private designationServices = inject(DesignationservicesService);
   private shiftServices = inject(EmployeeshiftService);
+  private projectsService = inject(ProjectsService);
   private toaster = inject(ToastrService);
+  public rbacService = inject(RbacService);
 
   isEdit: boolean = false;
   emp = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
@@ -54,6 +58,7 @@ export class EmployeeComponent implements OnInit {
   roles: any[] = [];
   managers: any[] = [];
   skills: any[] = [];
+  projects: any[] = [];
   designations: any[] = [];
   shifts: any[] = [];
 
@@ -74,6 +79,7 @@ export class EmployeeComponent implements OnInit {
     roleIds: [<any[]>[1]],
     managerId: [0],
     skillIds: [<any[]>[]],
+    projectIds: [<any[]>[]],
     employeeCode: [0],
     currentAddress: [''],
     permanentAddress: [''],
@@ -106,6 +112,10 @@ export class EmployeeComponent implements OnInit {
         ? this.data.skillIds
         : [];
 
+      const pIds = Array.isArray(this.data.projectIds)
+        ? this.data.projectIds
+        : [];
+
       let desigText = 'Software Engineer';
       if (typeof this.data.designation === 'string' && this.data.designation.trim()) {
         desigText = this.data.designation;
@@ -130,11 +140,16 @@ export class EmployeeComponent implements OnInit {
         roleIds: rIds,
         managerId: (this.data.managerId && Number(this.data.managerId) > 0) ? Number(this.data.managerId) : 0,
         skillIds: sIds,
+        projectIds: pIds,
         employeeCode: this.data.employeeCode || 0,
         currentAddress: this.data.currentAddress || this.data.address || this.data.primaryContactAddress || '',
         permanentAddress: this.data.permanentAddress || this.data.currentAddress || this.data.address || '',
         isActive: this.data.isActive !== false && this.data.isActive !== 0 && this.data.isActive !== 'false'
       });
+    }
+
+    if (!this.rbacService.isAdmin()) {
+      this.Employeeform.get('roleIds')?.disable();
     }
   }
 
@@ -221,6 +236,16 @@ export class EmployeeComponent implements OnInit {
         this.shifts = [];
       }
     });
+
+    this.projectsService.getAllData().subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        this.projects = list.filter((p: any) => !p.isDeleted && p.isActive !== false);
+      },
+      error: () => {
+        this.projects = [];
+      }
+    });
   }
 
   onDesignationSelect(event: any) {
@@ -256,7 +281,7 @@ export class EmployeeComponent implements OnInit {
       return;
     }
 
-    const val = this.Employeeform.value;
+    const val = this.Employeeform.getRawValue();
 
     const clientUrl = typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
@@ -290,6 +315,11 @@ export class EmployeeComponent implements OnInit {
       ? rawSkills.map((s: any) => Number(s))
       : [];
 
+    const rawProjects: any = val.projectIds;
+    const projectIdsArray = (Array.isArray(rawProjects) && rawProjects.length > 0)
+      ? rawProjects.map((p: any) => Number(p))
+      : [];
+
     const existingData = this.data || {};
 
     const payload: any = {
@@ -312,6 +342,7 @@ export class EmployeeComponent implements OnInit {
       roleIds: roleIdsArray,
       managerId: managerIdVal,
       skillIds: skillIdsArray,
+      projectIds: projectIdsArray,
       employeeCode: Number(val.employeeCode || existingData.employeeCode || Math.floor(100000 + Math.random() * 900000)),
       profileCompleted: true,
       clientUrl: clientUrl,
@@ -331,9 +362,8 @@ export class EmployeeComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error updating employee:', err);
-          const msg = err?.error?.responseMessage || err?.error?.message || 'Employee profile updated successfully';
-          this.toaster.success(msg, 'Updated');
-          this.dialogRef.close(true);
+          const msg = err?.error?.message || err?.error?.responseMessage || 'Failed to update employee profile';
+          this.toaster.error(msg, 'Update Error');
         }
       });
     } else {

@@ -1,0 +1,94 @@
+<div class="modal-wrapper">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-avatar">
+        <mat-icon>{{ isEditMode ? 'edit_calendar' : 'add_task' }}</mat-icon>
+      </div>
+      <div>
+        <h2 class="modal-title">{{ isEditMode ? 'Edit Task Entry' : 'Log Project Task' }}</h2>
+        <p class="modal-subtitle">Record project activity for {{ data.entryDate | date:'EEEE, MMM d, y' }}</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Form Body -->
+  <form [formGroup]="taskForm" (ngSubmit)="save()" class="modal-body">
+    <!-- Project Display / Fixed Selection -->
+    <div class="form-group" *ngIf="data?.projectId">
+      <label class="form-label">Project</label>
+      <div class="project-display-box">
+        <mat-icon>business_center</mat-icon>
+        <span class="project-name-text">{{ getProjectDisplayName() }}</span>
+      </div>
+      <input type="hidden" formControlName="projectId" />
+    </div>
+
+    <!-- Project Select (Fallback if no project pre-selected) -->
+    <div class="form-group" *ngIf="!data?.projectId">
+      <label class="form-label" for="projectSelect">Project <span class="required">*</span></label>
+      <select id="projectSelect" formControlName="projectId" class="form-control" [class.is-invalid]="taskForm.get('projectId')?.touched && taskForm.get('projectId')?.invalid">
+        <option value="" disabled>Select assigned project</option>
+        <option *ngFor="let p of projects" [value]="p.id || p.projectMasterId">
+          {{ p.projectName || p.name }} <span *ngIf="p.clientName">({{ p.clientName }})</span>
+        </option>
+      </select>
+      <div *ngIf="taskForm.get('projectId')?.touched && taskForm.get('projectId')?.invalid" class="invalid-feedback">
+        Please choose a project.
+      </div>
+    </div>
+
+    <!-- Hours Spent -->
+    <div class="form-group">
+      <label class="form-label" for="hoursInput">Hours Spent <span class="required">*</span></label>
+      <div class="hours-input-wrapper">
+        <input
+          id="hoursInput"
+          type="number"
+          step="0.25"
+          min="0.25"
+          max="24"
+          formControlName="hours"
+          class="form-control"
+          placeholder="e.g. 4.5"
+          [class.is-invalid]="taskForm.get('hours')?.touched && taskForm.get('hours')?.invalid"
+        />
+        <span class="hours-suffix">hrs</span>
+      </div>
+      <div *ngIf="taskForm.get('hours')?.touched && taskForm.get('hours')?.invalid" class="invalid-feedback">
+        Please provide valid hours (0.25 to 24).
+      </div>
+    </div>
+
+    <!-- Task Description -->
+    <div class="form-group">
+      <label class="form-label" for="descInput">Task Description <span class="required">*</span></label>
+      <textarea
+        id="descInput"
+        rows="4"
+        formControlName="taskDescription"
+        class="form-control textarea"
+        placeholder="Detail what was worked on, modules developed, or bugs addressed..."
+        [class.is-invalid]="taskForm.get('taskDescription')?.touched && taskForm.get('taskDescription')?.invalid"
+      ></textarea>
+      <div class="desc-footer">
+        <span *ngIf="taskForm.get('taskDescription')?.touched && taskForm.get('taskDescription')?.invalid" class="invalid-feedback">
+          Task description is required.
+        </span>
+        <span class="char-counter">{{ taskForm.get('taskDescription')?.value?.length || 0 }} / 500</span>
+      </div>
+    </div>
+
+    <!-- Modal Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cancel()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="taskForm.invalid">
+        <mat-icon>{{ isEditMode ? 'check' : 'add' }}</mat-icon>
+        <span>{{ isEditMode ? 'Update Task' : 'Add Task' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

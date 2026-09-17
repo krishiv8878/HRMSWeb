@@ -473,6 +473,32 @@
                 display: inline-flex;
                 align-items: center;
                 gap: 0.5rem;
+                .btn-review {
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 0.3rem;
+                  padding: 0.4rem 0.85rem;
+                  border-radius: 6px;
+                  font-size: 0.8rem;
+                  font-weight: 600;
+                  border: 1px solid #bfdbfe;
+                  background-color: #eff6ff;
+                  color: #2563eb;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+
+                  mat-icon {
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                  }
+
+                  &:hover {
+                    background-color: #2563eb;
+                    color: #ffffff;
+                    border-color: #2563eb;
+                  }
+                }
 
                 .btn-approve {
                   display: inline-flex;
@@ -495,6 +521,12 @@
                   }
 
                   &:hover {
+                    background-color: #16a34a;
+                    color: #ffffff;
+                    border-color: #16a34a;
+                  }
+
+                  &.is-active-decision {
                     background-color: #16a34a;
                     color: #ffffff;
                     border-color: #16a34a;
@@ -525,6 +557,29 @@
                     background-color: #dc2626;
                     color: #ffffff;
                     border-color: #dc2626;
+                  }
+
+                  &.is-active-decision {
+                    background-color: #dc2626;
+                    color: #ffffff;
+                    border-color: #dc2626;
+                  }
+                }
+
+                .action-status-tag {
+                  font-size: 0.775rem;
+                  font-weight: 600;
+                  padding: 0.3rem 0.65rem;
+                  border-radius: 6px;
+
+                  &.tag-approved {
+                    background-color: #dcfce7;
+                    color: #15803d;
+                  }
+
+                  &.tag-rejected {
+                    background-color: #fee2e2;
+                    color: #b91c1c;
                   }
                 }
               }

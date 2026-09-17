@@ -197,6 +197,14 @@
                 >
                   <mat-icon>{{ desig.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                 </button>
+                <button
+                  type="button"
+                  class="btn-action-icon btn-delete"
+                  (click)="Delete(desig.id)"
+                  title="Delete Designation"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
               </div>
             </td>
           </tr>

@@ -8,7 +8,11 @@ import { ToastrService } from 'ngx-toastr';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
 import { RequestsApprovalsModalComponent } from '../../modal/requests-approvals-modal/requests-approvals-modal.component';
+import { TimesheetReviewModalComponent } from '../../modal/timesheet-review-modal/timesheet-review-modal.component';
 import { EmployeeService } from '../../services/employee/employee.service';
+import { RbacService } from '../../core/rbac.service';
+import { DocumentService } from '../../services/documnets/document.service';
+import { TimesheetService } from '../../services/timesheet/timesheet.service';
 
 export interface ApprovalRequestItem {
   id: number;
@@ -23,10 +27,10 @@ export interface ApprovalRequestItem {
   durationText?: string;
   reasonPreview?: string;
   status: 'Pending' | 'Approved' | 'Rejected';
-  isApproved?: boolean;
-  approvedBy?: number;
+  actionBy?: number;
+  actionDate?: string;
   rawRecord?: any;
-  category: 'Leave' | 'Attendance' | 'Other';
+  category: 'Leave' | 'Attendance' | 'Document' | 'Timesheet' | 'Other';
 }
 
 @Component({
@@ -43,15 +47,18 @@ export interface ApprovalRequestItem {
   styleUrl: './requests-approvals.component.scss'
 })
 export class RequestsApprovalsComponent implements OnInit {
-  service = inject(EmailService);
-  service2 = inject(AttendanceRequestService);
-  employeeService = inject(EmployeeService);
-  dialog = inject(MatDialog);
-  toaster = inject(ToastrService);
+  private service = inject(EmailService);
+  private service2 = inject(AttendanceRequestService);
+  private employeeService = inject(EmployeeService);
+  private rbacService = inject(RbacService);
+  private toaster = inject(ToastrService);
+  private dialog = inject(MatDialog);
+  private documentService = inject(DocumentService);
+  private timesheetService = inject(TimesheetService);
 
   Math = Math;
 
-  activeTab: 'all' | 'leave' | 'attendance' = 'all';
+  activeTab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet' = 'all';
   searchQuery: string = '';
   selectedStatus: string = 'All';
 
@@ -63,6 +70,8 @@ export class RequestsApprovalsComponent implements OnInit {
   totalPendingCount: number = 0;
   leaveCount: number = 0;
   attendanceCount: number = 0;
+  documentCount: number = 0;
+  timesheetCount: number = 0;
   processedTodayCount: number = 0;
   processedTodayPercent: number = 0;
   urgentCount: number = 0;
@@ -82,38 +91,31 @@ export class RequestsApprovalsComponent implements OnInit {
   }
 
   loadAllRequests(): void {
-    this.allRequests = [];
+    const globalAvatar = typeof window !== 'undefined' ? localStorage.getItem('profileImage') : null;
+    const loggedUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
 
     // Fetch Leave Requests from Database
-    this.service.getAllData().subscribe({
-      next: (response: any) => {
+    this.service.GetAllEmployeesLeaveRequest().subscribe({
+      next: (leaveResponse: any) => {
         let rawList: any[] = [];
-        if (Array.isArray(response)) {
-          rawList = response;
-        } else if (response && Array.isArray(response.data)) {
-          rawList = response.data;
-        } else if (response && Array.isArray(response.result)) {
-          rawList = response.result;
-        } else if (response && Array.isArray(response.items)) {
-          rawList = response.items;
-        } else if (response && response.data && Array.isArray(response.data.items)) {
-          rawList = response.data.items;
-        } else if (response && response.data && Array.isArray(response.data.data)) {
-          rawList = response.data.data;
+        if (Array.isArray(leaveResponse)) {
+          rawList = leaveResponse;
+        } else if (leaveResponse && Array.isArray(leaveResponse.data)) {
+          rawList = leaveResponse.data;
         }
 
-        const globalAvatar = this.employeeService.getProfileAvatar();
-        const loggedUserId = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
+        // Filter out soft-deleted leave requests
+        rawList = rawList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
 
         const leaveItems: ApprovalRequestItem[] = rawList.map((x: any, idx: number) => {
           const empName = x.fullName || x.employeeName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
           const leaveTypeName = typeof x.leaveType === 'string' ? x.leaveType : (x.leaveType?.type || x.leaveType?.leaveTypeName || x.leaveTypeName || x.type || 'Annual Leave');
 
-          const approvedByVal = (x.approvedBy !== undefined && x.approvedBy !== null && x.approvedBy !== 0) ? Number(x.approvedBy) : 0;
-          const rawStatus = x.status ? String(x.status).trim().toLowerCase() : '';
-          const isApprovedBool = (x.isApproved === true || x.isApproved === 1 || rawStatus === 'approved');
-          const isRejectedBool = rawStatus === 'rejected' || (approvedByVal > 0 && !isApprovedBool);
-          const statusStr: 'Pending' | 'Approved' | 'Rejected' = isApprovedBool ? 'Approved' : (isRejectedBool ? 'Rejected' : 'Pending');
+          const actionByVal = Number(x.actionBy || 0);
+          const rawStatus = x.status ? String(x.status).trim() : '';
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' = 
+            rawStatus.toLowerCase() === 'approved' ? 'Approved' :
+            (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' : 'Pending');
 
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
@@ -138,8 +140,8 @@ export class RequestsApprovalsComponent implements OnInit {
             durationText: this.formatDateRange(x.startDate, x.endDate),
             reasonPreview: x.leaveReason || x.reason || 'Personal time off request',
             status: statusStr,
-            isApproved: isApprovedBool,
-            approvedBy: approvedByVal,
+            actionBy: actionByVal || undefined,
+            actionDate: x.actionDate,
             category: 'Leave',
             rawRecord: x
           };
@@ -155,10 +157,13 @@ export class RequestsApprovalsComponent implements OnInit {
               attList = attResponse.data;
             }
 
+            // Filter out soft-deleted attendance requests
+            attList = attList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
+
             const attItems: ApprovalRequestItem[] = attList.map((x: any, idx: number) => {
               const empName = x.employeeName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
               const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-              const statusStr: 'Pending' | 'Approved' | 'Rejected' = (x.status === 'Approved' ? 'Approved' : (x.status === 'Rejected' ? 'Rejected' : 'Pending'));
+              const statusStr: 'Pending' | 'Approved' | 'Rejected' = (x.status?.toLowerCase() === 'approved' ? 'Approved' : (x.status?.toLowerCase() === 'rejected' ? 'Rejected' : 'Pending'));
 
               let avatarUrl: string | undefined = undefined;
               if (x.profileImage) {
@@ -181,22 +186,126 @@ export class RequestsApprovalsComponent implements OnInit {
                 durationText: x.requestedDate ? new Date(x.requestedDate).toLocaleDateString('en-GB') : 'Today',
                 reasonPreview: x.reason || 'Attendance adjustment request',
                 status: statusStr,
+                actionBy: x.actionBy || x.lastActionBy || undefined,
+                actionDate: x.actionDate,
                 category: 'Attendance',
                 rawRecord: x
               };
             });
 
-            this.allRequests = [...leaveItems, ...attItems];
-            this.updateMetricsAndFilter();
+            // Fetch Document Requests from Database
+            this.documentService.getAll().subscribe({
+              next: (docResponse: any) => {
+                let docList: any[] = [];
+                if (Array.isArray(docResponse)) {
+                  docList = docResponse;
+                } else if (docResponse && Array.isArray(docResponse.data)) {
+                  docList = docResponse.data;
+                }
+                docList = docList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
+
+                const docItems: ApprovalRequestItem[] = docList.map((x: any, idx: number) => {
+                  const empName = x.employeeName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
+                  const rawStatus = x.status ? String(x.status).trim() : 'Approved';
+                  const statusStr: 'Pending' | 'Approved' | 'Rejected' = 
+                    rawStatus.toLowerCase() === 'pending' ? 'Pending' :
+                    (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' : 'Approved');
+
+                  const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+                  return {
+                    id: Number(x.id || (idx + 500)),
+                    requesterName: empName,
+                    requesterRole: x.category || 'Document Verification',
+                    avatarUrl: undefined,
+                    initials: initials || 'DC',
+                    requestType: x.documentName || 'Document Upload',
+                    startDate: x.uploadedDate,
+                    endDate: x.uploadedDate,
+                    durationText: x.uploadedDate ? new Date(x.uploadedDate).toLocaleDateString('en-GB') : 'Today',
+                    reasonPreview: x.rejectionReason || x.category || 'Uploaded document approval',
+                    status: statusStr,
+                    actionBy: x.actionBy || undefined,
+                    actionDate: x.actionDate,
+                    category: 'Document',
+                    rawRecord: {
+                      ...x,
+                      documentName: x.documentName,
+                      fullName: empName,
+                      requestType: 'Document Verification',
+                      reason: x.category
+                    }
+                  };
+                });
+
+                const combinedSoFar = [...leaveItems, ...attItems, ...docItems];
+
+                // Fetch Timesheets for Manager
+                this.timesheetService.getPendingApprovals().subscribe({
+                  next: (tsResponse: any) => {
+                    let tsList: any[] = [];
+                    if (Array.isArray(tsResponse)) {
+                      tsList = tsResponse;
+                    } else if (tsResponse && Array.isArray(tsResponse.data)) {
+                      tsList = tsResponse.data;
+                    }
+
+                    const tsItems: ApprovalRequestItem[] = tsList.map((ts: any) => {
+                      const empName = ts.employeeName || 'Employee';
+                      const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+                      const statusStr: 'Pending' | 'Approved' | 'Rejected' =
+                        ts.status === 'Approved' ? 'Approved' :
+                        (ts.status === 'Rejected' ? 'Rejected' : 'Pending');
+
+                      return {
+                        id: Number(ts.timesheetId),
+                        requesterName: empName,
+                        requesterRole: `Timesheet (${ts.periodType})`,
+                        avatarUrl: undefined,
+                        initials: initials || 'TS',
+                        requestType: `${ts.periodType} Timesheet`,
+                        startDate: ts.startDate,
+                        endDate: ts.endDate,
+                        durationText: `${ts.totalTimesheetHours} hrs (Ref Punch: ${ts.totalAttendanceHours} hrs)`,
+                        reasonPreview: `Period: ${ts.startDate?.substring(0,10)} to ${ts.endDate?.substring(0,10)} | ${ts.days?.length || 0} days recorded`,
+                        status: statusStr,
+                        actionBy: ts.actionBy,
+                        actionDate: ts.actionDate,
+                        category: 'Timesheet',
+                        rawRecord: {
+                          ...ts,
+                          fullName: empName,
+                          requestType: `${ts.periodType} Timesheet`,
+                          startDate: ts.startDate,
+                          endDate: ts.endDate,
+                          category: 'Timesheet'
+                        }
+                      };
+                    });
+
+                    this.allRequests = [...combinedSoFar, ...tsItems];
+                    this.updateMetricsAndFilter();
+                  },
+                  error: () => {
+                    this.allRequests = combinedSoFar;
+                    this.updateMetricsAndFilter();
+                  }
+                });
+              },
+              error: () => {
+                this.allRequests = [...leaveItems, ...attItems];
+                this.updateMetricsAndFilter();
+              }
+            });
           },
-          error: (err) => {
+          error: (err: any) => {
             console.error('Error fetching attendance requests from DB:', err);
             this.allRequests = [...leaveItems];
             this.updateMetricsAndFilter();
           }
         });
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error fetching leave requests from DB:', err);
         this.allRequests = [];
         this.updateMetricsAndFilter();
@@ -223,6 +332,8 @@ export class RequestsApprovalsComponent implements OnInit {
 
     this.leaveCount = this.allRequests.filter(r => r.category === 'Leave').length;
     this.attendanceCount = this.allRequests.filter(r => r.category === 'Attendance').length;
+    this.documentCount = this.allRequests.filter(r => r.category === 'Document').length;
+    this.timesheetCount = this.allRequests.filter(r => r.category === 'Timesheet').length;
 
     const processedList = this.allRequests.filter(r => r.status !== 'Pending');
     this.processedTodayCount = processedList.length;
@@ -256,7 +367,7 @@ export class RequestsApprovalsComponent implements OnInit {
     this.filterRequests();
   }
 
-  setTab(tab: 'all' | 'leave' | 'attendance'): void {
+  setTab(tab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet'): void {
     this.activeTab = tab;
     this.currentPage = 1;
     this.filterRequests();
@@ -269,6 +380,10 @@ export class RequestsApprovalsComponent implements OnInit {
       result = result.filter(r => r.category === 'Leave');
     } else if (this.activeTab === 'attendance') {
       result = result.filter(r => r.category === 'Attendance');
+    } else if (this.activeTab === 'document') {
+      result = result.filter(r => r.category === 'Document');
+    } else if (this.activeTab === 'timesheet') {
+      result = result.filter(r => r.category === 'Timesheet');
     }
 
     if (this.selectedStatus !== 'All') {
@@ -323,24 +438,82 @@ export class RequestsApprovalsComponent implements OnInit {
     }
   }
 
+  reviewTimesheet(item: ApprovalRequestItem, initialAction?: 'approve' | 'reject'): void {
+    if (!this.rbacService.isAdmin() && !this.rbacService.isHR() && !this.rbacService.isManager()) {
+      this.toaster.error('Only Managers, HR, and Administrators can review timesheets.', 'Access Denied');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(TimesheetReviewModalComponent, {
+      width: '880px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      data: {
+        ...item.rawRecord,
+        fullName: item.requesterName,
+        requesterRole: item.requesterRole,
+        initialAction: initialAction
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((res: any) => {
+      if (!res) return;
+
+      const tsId = Number(item.id || item.rawRecord?.timesheetId);
+      if (res.action === 'approve') {
+        this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Approved' }).subscribe({
+          next: () => {
+            this.toaster.success(`Timesheet for ${item.requesterName} Approved`, 'Approved');
+            this.loadAllRequests();
+          },
+          error: (err: any) => {
+            const msg = err?.error?.message || 'Failed to approve timesheet';
+            this.toaster.error(msg, 'Approval Error');
+          }
+        });
+      } else if (res.action === 'reject') {
+        const reason = res.rejectionReason || '';
+        this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Rejected', rejectionReason: reason }).subscribe({
+          next: () => {
+            this.toaster.warning(`Timesheet for ${item.requesterName} Rejected`, 'Rejected');
+            this.loadAllRequests();
+          },
+          error: (err: any) => {
+            const msg = err?.error?.message || 'Failed to reject timesheet';
+            this.toaster.error(msg, 'Rejection Error');
+          }
+        });
+      }
+    });
+  }
+
   approveRequest(item: ApprovalRequestItem): void {
+    if (item.category === 'Timesheet') {
+      this.reviewTimesheet(item, 'approve');
+      return;
+    }
+
+    if (!this.rbacService.isAdmin() && !this.rbacService.isHR() && !this.rbacService.isManager()) {
+      this.toaster.error('Only Managers, HR, and Administrators can approve requests.', 'Access Denied');
+      return;
+    }
+
     const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
       width: '420px',
       data: { ...item.rawRecord, isApproved: true }
     });
 
-    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
-      if (confirmed) {
+    dialogRef.afterClosed().subscribe((res: any) => {
+      const isConfirmed = res === true || res?.confirmed === true;
+      if (isConfirmed) {
         const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
 
         if (item.category === 'Leave') {
           const payload = {
             id: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
             leaveRequestId: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
-            isApproved: true,
-            approvedBy: loggedManagerId,
-            approvedDate: new Date().toISOString(),
-            status: 'Approved'
+            status: 'Approved',
+            actionBy: loggedManagerId
           };
 
           this.service.approveLeaveRequest(payload).subscribe({
@@ -353,22 +526,56 @@ export class RequestsApprovalsComponent implements OnInit {
               this.loadAllRequests();
             }
           });
+        } else if (item.category === 'Document') {
+          const docId = Number(item.id || item.rawRecord?.id);
+          this.documentService.approveOrRejectDocument(docId, 'Approved').subscribe({
+            next: () => {
+              this.toaster.success(`Document "${item.requestType}" for ${item.requesterName} Approved`, 'Approved');
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to approve document';
+              this.toaster.error(msg, 'Approval Error');
+            }
+          });
+        } else if (item.category === 'Timesheet') {
+          const tsId = Number(item.id || item.rawRecord?.timesheetId);
+          this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Approved' }).subscribe({
+            next: () => {
+              this.toaster.success(`Timesheet for ${item.requesterName} Approved`, 'Approved');
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to approve timesheet';
+              this.toaster.error(msg, 'Approval Error');
+            }
+          });
         } else {
+          const raw = item.rawRecord || {};
           const payload = {
-            ...item.rawRecord,
+            id: Number(item.id || raw.id),
+            employeeId: Number(raw.employeeId || 0),
+            employeeName: item.requesterName || raw.employeeName || 'Employee',
+            requestType: raw.requestType || 'Regularization',
+            requestedDate: raw.requestedDate || new Date().toISOString(),
+            requestedBy: Number(raw.requestedBy || raw.employeeId || 0),
+            reason: raw.reason || '',
             status: 'Approved',
-            isApproved: true,
-            approvedBy: loggedManagerId,
-            approvedDate: new Date().toISOString()
+            actionBy: loggedManagerId,
+            lastActionBy: loggedManagerId,
+            actionDate: new Date().toISOString(),
+            clockIn: raw.clockIn || raw.clockInTime || new Date().toISOString(),
+            clockOut: raw.clockOut || raw.clockOutTime || new Date().toISOString(),
+            managerId: Number(raw.managerId || loggedManagerId)
           };
           this.service2.updateData(payload).subscribe({
             next: () => {
               this.toaster.success(`Attendance request for ${item.requesterName} Approved`, 'Approved');
               this.loadAllRequests();
             },
-            error: () => {
-              this.toaster.success(`Attendance request for ${item.requesterName} Approved`, 'Approved');
-              this.loadAllRequests();
+            error: (err: any) => {
+              console.error('Error approving attendance request:', err);
+              this.toaster.error(`Failed to approve attendance request`, 'Error');
             }
           });
         }
@@ -377,23 +584,34 @@ export class RequestsApprovalsComponent implements OnInit {
   }
 
   rejectRequest(item: ApprovalRequestItem): void {
+    if (item.category === 'Timesheet') {
+      this.reviewTimesheet(item, 'reject');
+      return;
+    }
+
+    if (!this.rbacService.isAdmin() && !this.rbacService.isHR() && !this.rbacService.isManager()) {
+      this.toaster.error('Only Managers, HR, and Administrators can reject requests.', 'Access Denied');
+      return;
+    }
+
     const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
       width: '420px',
       data: { ...item.rawRecord, isApproved: false }
     });
 
-    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
-      if (confirmed) {
+    dialogRef.afterClosed().subscribe((res: any) => {
+      const isConfirmed = res === true || res?.confirmed === true;
+      if (isConfirmed) {
         const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
+        const reason = res?.rejectionReason || '';
 
         if (item.category === 'Leave') {
           const payload = {
             id: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
             leaveRequestId: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
-            isApproved: false,
-            approvedBy: loggedManagerId,
-            approvedDate: new Date().toISOString(),
-            status: 'Rejected'
+            status: 'Rejected',
+            actionBy: loggedManagerId,
+            rejectionReason: reason
           };
 
           this.service.approveLeaveRequest(payload).subscribe({
@@ -406,22 +624,57 @@ export class RequestsApprovalsComponent implements OnInit {
               this.loadAllRequests();
             }
           });
+        } else if (item.category === 'Document') {
+          const docId = Number(item.id || item.rawRecord?.id);
+          this.documentService.approveOrRejectDocument(docId, 'Rejected', reason).subscribe({
+            next: () => {
+              this.toaster.warning(`Document "${item.requestType}" for ${item.requesterName} Rejected`, 'Rejected');
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to reject document';
+              this.toaster.error(msg, 'Rejection Error');
+            }
+          });
+        } else if (item.category === 'Timesheet') {
+          const tsId = Number(item.id || item.rawRecord?.timesheetId);
+          this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Rejected', rejectionReason: reason }).subscribe({
+            next: () => {
+              this.toaster.warning(`Timesheet for ${item.requesterName} Rejected`, 'Rejected');
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to reject timesheet';
+              this.toaster.error(msg, 'Rejection Error');
+            }
+          });
         } else {
+          const raw = item.rawRecord || {};
           const payload = {
-            ...item.rawRecord,
+            id: Number(item.id || raw.id),
+            employeeId: Number(raw.employeeId || 0),
+            employeeName: item.requesterName || raw.employeeName || 'Employee',
+            requestType: raw.requestType || 'Regularization',
+            requestedDate: raw.requestedDate || new Date().toISOString(),
+            requestedBy: Number(raw.requestedBy || raw.employeeId || 0),
+            reason: raw.reason || '',
             status: 'Rejected',
-            isApproved: false,
-            approvedBy: loggedManagerId,
-            approvedDate: new Date().toISOString()
+            actionBy: loggedManagerId,
+            lastActionBy: loggedManagerId,
+            actionDate: new Date().toISOString(),
+            rejectionReason: reason,
+            clockIn: raw.clockIn || raw.clockInTime || new Date().toISOString(),
+            clockOut: raw.clockOut || raw.clockOutTime || new Date().toISOString(),
+            managerId: Number(raw.managerId || loggedManagerId)
           };
           this.service2.updateData(payload).subscribe({
             next: () => {
               this.toaster.warning(`Attendance request for ${item.requesterName} Rejected`, 'Rejected');
               this.loadAllRequests();
             },
-            error: () => {
-              this.toaster.warning(`Attendance request for ${item.requesterName} Rejected`, 'Rejected');
-              this.loadAllRequests();
+            error: (err: any) => {
+              console.error('Error rejecting attendance request:', err);
+              this.toaster.error(`Failed to reject attendance request`, 'Error');
             }
           });
         }

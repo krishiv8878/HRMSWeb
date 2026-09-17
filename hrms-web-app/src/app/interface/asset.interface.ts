@@ -14,6 +14,7 @@ export interface AssetItem {
   lastAudit: string;      // e.g. Oct 12, 2023
   isOverdue?: boolean;
   isActive?: boolean;
+  employeeId?: number;
 }
 
 export interface AssetMetricCard {

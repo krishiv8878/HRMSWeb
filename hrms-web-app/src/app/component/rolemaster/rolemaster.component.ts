@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
+import { EmployeeService } from '../../services/employee/employee.service';
 import { RolemastersComponent } from '../../modal/rolemasters/rolemasters.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
@@ -35,6 +36,7 @@ export interface RoleItem {
 })
 export class RolemasterComponent implements OnInit {
   private services = inject(RoleservicesService);
+  private employeeService = inject(EmployeeService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
 
@@ -43,6 +45,7 @@ export class RolemasterComponent implements OnInit {
   allRoles: RoleItem[] = [];
   filteredRoles: RoleItem[] = [];
   paginatedRoles: RoleItem[] = [];
+  employeesList: any[] = [];
 
   // Filters
   searchQuery: string = '';
@@ -54,6 +57,7 @@ export class RolemasterComponent implements OnInit {
   activeRolesCount: number = 0;
   levelsCount: number = 4;
   complianceRate: number = 100;
+  totalMappedUsers: number = 0;
 
   // Pagination
   currentPage: number = 1;
@@ -68,6 +72,23 @@ export class RolemasterComponent implements OnInit {
   }
 
   getData() {
+    this.employeeService.getData().subscribe({
+      next: (empRes: any) => {
+        let emps: any[] = [];
+        if (Array.isArray(empRes)) emps = empRes;
+        else if (empRes && Array.isArray(empRes.data)) emps = empRes.data;
+        else if (empRes && Array.isArray(empRes.employeedata?.data)) emps = empRes.employeedata.data;
+        this.employeesList = emps;
+        this.loadRolesCatalog();
+      },
+      error: () => {
+        this.employeesList = [];
+        this.loadRolesCatalog();
+      }
+    });
+  }
+
+  private loadRolesCatalog() {
     this.services.getAllData().subscribe({
       next: (response: any) => {
         let rawList: any[] = [];
@@ -77,8 +98,12 @@ export class RolemasterComponent implements OnInit {
           rawList = response.data;
         }
 
-        if (rawList.length > 0) {
-          this.allRoles = rawList.map((item: any, idx: number) => this.mapRoleItem(item, idx));
+        const validList = rawList.filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== 'true');
+
+        if (validList.length > 0) {
+          this.allRoles = validList.map((item: any, idx: number) => this.mapRoleItem(item, idx));
+        } else if (rawList.length > 0) {
+          this.allRoles = [];
         } else {
           this.allRoles = this.getDefaultMockRoles();
         }
@@ -97,7 +122,18 @@ export class RolemasterComponent implements OnInit {
   private mapRoleItem(item: any, idx: number): RoleItem {
     const name = (item.roleName || 'Role').trim();
     const { level, scope, icon } = this.categorizeRole(name);
-    const assigned = item.assignedUsersCount || Math.max(3, Math.floor(45 - (idx * 6)));
+    
+    let assigned = item.assignedUsersCount || 0;
+    if (!assigned && this.employeesList.length > 0) {
+      assigned = this.employeesList.filter((e: any) => {
+        const rNameMatch = String(e.role || e.roleName || e.Role || '').toLowerCase().trim() === name.toLowerCase();
+        const rIdMatch = Number(e.roleId || e.RoleId) === Number(item.id);
+        return rNameMatch || rIdMatch;
+      }).length;
+    }
+    if (!assigned) {
+      assigned = Math.max(1, Math.floor(45 - (idx * 6)));
+    }
 
     return {
       id: Number(item.id || (idx + 1)),
@@ -141,6 +177,9 @@ export class RolemasterComponent implements OnInit {
     this.activeRolesCount = this.allRoles.filter(r => r.isActive).length;
     const lSet = new Set(this.allRoles.map(r => r.accessLevel));
     this.levelsCount = lSet.size;
+    this.totalMappedUsers = this.employeesList.length > 0
+      ? this.employeesList.length
+      : this.allRoles.reduce((sum, r) => sum + (r.assignedUsersCount || 0), 0);
   }
 
   filterRoles() {
@@ -205,6 +244,12 @@ export class RolemasterComponent implements OnInit {
   }
 
   onToggleActive(role: RoleItem) {
+    const defaultProtectedRoles = ['admin', 'system admin', 'employee'];
+    if (role.isActive && defaultProtectedRoles.includes(role.roleName.toLowerCase().trim())) {
+      this.toaster.error(`System core role '${role.roleName}' is protected and cannot be deactivated.`, 'Protection Policy');
+      return;
+    }
+
     role.isActive = !role.isActive;
 
     const payload = {
@@ -236,7 +281,8 @@ export class RolemasterComponent implements OnInit {
 
   openAddForm() {
     const dialogRef = this.dialog.open(RolemastersComponent, {
-      width: '520px'
+      width: '520px',
+      data: { existingRoles: this.allRoles }
     });
 
     dialogRef.afterClosed().subscribe((res) => {
@@ -249,7 +295,7 @@ export class RolemasterComponent implements OnInit {
   Edit(data: any) {
     const dialogRef = this.dialog.open(RolemastersComponent, {
       width: '520px',
-      data: data.rawRecord || data
+      data: { ...(data.rawRecord || data), existingRoles: this.allRoles }
     });
 
     dialogRef.afterClosed().subscribe((res) => {
@@ -260,6 +306,13 @@ export class RolemasterComponent implements OnInit {
   }
 
   Delete(roleId: any) {
+    const roleItem = this.allRoles.find(r => r.id === roleId);
+    const defaultProtectedRoles = ['admin', 'system admin', 'employee'];
+    if (roleItem && defaultProtectedRoles.includes(roleItem.roleName.toLowerCase().trim())) {
+      this.toaster.error(`System core role '${roleItem.roleName}' is protected and cannot be deleted.`, 'Action Forbidden');
+      return;
+    }
+
     const dialogRef = this.dialog.open(DeleteModalComponent, {
       width: '380px',
       data: { id: roleId }

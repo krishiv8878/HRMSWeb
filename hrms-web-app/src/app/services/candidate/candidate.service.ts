@@ -41,6 +41,9 @@ export class CandidateService {
   }
 
   DeleteData(candidateId: any): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + `/Candidate/DeleteCandidate?candidateId=` + candidateId);
+    const id = Number(candidateId || 0);
+    return this.http.delete<any>(this.apiUrl + `/Candidate/DeleteCandidate/${id}`).pipe(
+      catchError(() => this.http.delete<any>(this.apiUrl + `/Candidate/DeleteCandidate?candidateId=${id}`))
+    );
   }
 }

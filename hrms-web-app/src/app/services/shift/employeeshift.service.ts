@@ -42,15 +42,7 @@ export class EmployeeshiftService {
   }
 
   updateData(data: any, shiftId: any) {
-    return this.http.put<any>(this.apiUrl + `/Shift/UpdateShift/` + shiftId, data).pipe(
-      catchError(() => {
-        return this.http.put<any>(this.apiUrl + `/Shift/UpdateShift`, data).pipe(
-          catchError(() => {
-            return this.http.post<any>(this.apiUrl + `/Shift/UpdateShift`, data);
-          })
-        );
-      })
-    );
+    return this.http.put<any>(this.apiUrl + `/Shift/UpdateShift/` + shiftId, data);
   }
 
   deleteData(shiftId: any) {

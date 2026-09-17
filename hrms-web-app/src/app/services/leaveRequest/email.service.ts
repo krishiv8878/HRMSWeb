@@ -35,8 +35,24 @@ export class EmailService {
   }
 
   approveLeaveRequest(body: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, body).pipe(
-      catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, body))
+    const payload = {
+      id: Number(body.id || body.leaveRequestId || 0),
+      status: body.status || 'Approved',
+      actionBy: Number(body.actionBy || 0),
+      rejectionReason: body.rejectionReason || ''
+    };
+    return this.http.post<any>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, payload).pipe(
+      catchError(() => this.http.put<any>(this.apiUrl + `/LeaveRequest/ApproveLeaveRequest`, payload))
+    );
+  }
+
+  getEmployeeLeaveBalance(employeeId?: number): Observable<any> {
+    const param = employeeId ? `/${employeeId}` : '';
+    return this.http.get<any>(this.apiUrl + `/LeaveRequest/GetEmployeeLeaveBalance${param}`).pipe(
+      catchError((err) => {
+        console.error('Error fetching employee leave balances:', err);
+        return of({ data: [] });
+      })
     );
   }
 
@@ -53,8 +69,9 @@ export class EmailService {
       endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
       leaveReason: data.leaveReason || '',
       status: data.status || 'Pending',
-      isApproved: Boolean(data.isApproved),
-      approvedBy: Number(data.approvedBy) || 0,
+      actionBy: Number(data.actionBy || 0),
+      actionDate: data.actionDate || null,
+      rejectionReason: data.rejectionReason || '',
       isActive: data.isActive !== false && data.isActive !== 0 && data.isActive !== '0',
       isDeleted: Boolean(data.isDeleted)
     };
@@ -86,8 +103,8 @@ export class EmailService {
 
   DeleteData(leaveRequestId: any): Observable<any> {
     const numericId = Number(leaveRequestId || 0);
-    return this.http.delete<any>(this.apiUrl + `/LeaveRequest/DeleteLeaveRequest?id=${numericId}`).pipe(
-      catchError(() => this.http.delete<any>(this.apiUrl + `/LeaveRequest/DeleteLeaveRequest/${numericId}`)),
+    return this.http.delete<any>(this.apiUrl + `/LeaveRequest/DeleteLeaveRequest/${numericId}`).pipe(
+      catchError(() => this.http.delete<any>(this.apiUrl + `/LeaveRequest/DeleteLeaveRequest?id=${numericId}`)),
       catchError(() => {
         const body = { id: numericId, leaveRequestId: numericId, isActive: false, isDeleted: true };
         return this.UpdateLeaverequest(body);

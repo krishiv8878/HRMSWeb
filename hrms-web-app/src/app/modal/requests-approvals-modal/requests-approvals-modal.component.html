@@ -26,9 +26,19 @@
         <span class="value font-bold">{{ data?.fullName || data?.employeeName || data?.employee?.firstName || 'Employee' }}</span>
       </div>
 
+      <div class="card-row" *ngIf="data?.documentName">
+        <span class="label">Document:</span>
+        <span class="value font-bold" style="color: #2563eb;">{{ data.documentName }}</span>
+      </div>
+
+      <div class="card-row" *ngIf="data?.category === 'Timesheet' || data?.timesheetId">
+        <span class="label">Timesheet Hours:</span>
+        <span class="value font-bold" style="color: #2563eb;">{{ data?.totalTimesheetHours }} hrs (Attendance Ref: {{ data?.totalAttendanceHours }} hrs)</span>
+      </div>
+
       <div class="card-row" *ngIf="data?.leaveType || data?.requestType">
         <span class="label">Request Type:</span>
-        <span class="type-pill">{{ data?.leaveType || data?.requestType }}</span>
+        <span class="type-pill">{{ data?.leaveType?.type || data?.requestType }}</span>
       </div>
 
       <div class="card-row" *ngIf="data?.startDate || data?.requestedDate">
@@ -50,6 +60,19 @@
       <p class="notice-text">
         Are you sure you want to <strong>{{ data?.isApproved ? 'APPROVE' : 'REJECT' }}</strong> this request? An automated notification will be updated for the employee.
       </p>
+    </div>
+
+    <!-- Rejection Remarks Field -->
+    <div class="form-group-remarks" *ngIf="!data?.isApproved" style="margin-top: 14px;">
+      <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">
+        Reason for Rejection (Optional)
+      </label>
+      <textarea
+        [(ngModel)]="rejectionReason"
+        rows="2"
+        placeholder="Provide notes or clarification regarding this rejection..."
+        style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px; box-sizing: border-box; resize: vertical; outline: none;"
+      ></textarea>
     </div>
   </div>
 

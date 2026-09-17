@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, catchError, Observable, of, tap, throwError } from 'rxjs';
-import { DocumentCategory, DocumentItem, AccessLevel, FileType } from '../../interface/document.interface';
+import { DocumentCategory, DocumentItem, AccessLevel, FileType, DocumentStatus } from '../../interface/document.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -127,11 +127,12 @@ export class DocumentService {
           rawList = response.result;
         }
 
+        const validList = rawList.filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== 'true');
         const loggedUser = this.getLoggedInUser();
         let apiDocs: DocumentItem[] = [];
 
-        if (rawList.length > 0) {
-          apiDocs = rawList.map((item: any) => {
+        if (validList.length > 0) {
+          apiDocs = validList.map((item: any) => {
             const filePath = item.filePath || item.documentName || item.name || 'Document';
             const ext = filePath.split('.').pop()?.toLowerCase() || 'pdf';
             let fileType: FileType = 'pdf';
@@ -150,6 +151,14 @@ export class DocumentService {
               ? (parts[0][0] + parts[1][0]).toUpperCase()
               : parts[0].substring(0, 2).toUpperCase();
 
+            let status: DocumentStatus = 'Approved';
+            if (item.status) {
+              const rawStatus = String(item.status).trim();
+              if (rawStatus.toLowerCase() === 'pending') status = 'Pending';
+              else if (rawStatus.toLowerCase() === 'rejected') status = 'Rejected';
+              else if (rawStatus.toLowerCase() === 'approved') status = 'Approved';
+            }
+
             return {
               id: item.id ? String(item.id) : 'doc-' + Math.random(),
               name: item.documentName || item.name || filePath,
@@ -163,9 +172,16 @@ export class DocumentService {
                 ? new Date(item.uploadedDate || item.UploadedDate || item.createdDate || item.CreatedDate || item.lastModified).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                 : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
               fileSize: item.fileSize || '1.0 MB',
-              isActive: item.isActive !== undefined ? Boolean(item.isActive) : true
+              isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+              status: status,
+              rejectionReason: item.rejectionReason || item.RejectionReason || undefined,
+              actionBy: item.actionBy || item.ActionBy || undefined,
+              actionDate: item.actionDate || item.ActionDate || undefined,
+              employeeId: item.employeeId || item.EmployeeId || undefined
             };
           });
+        } else if (rawList.length > 0) {
+          apiDocs = [];
         } else {
           apiDocs = this.getDefaultFallbackDocs();
         }
@@ -261,11 +277,34 @@ export class DocumentService {
     return targetActiveState;
   }
 
-  deleteDocument(id: string) {
-    this.toggleDocumentActive(id);
+  deleteDocument(id: string): Observable<any> {
+    const numericId = parseInt(id.replace(/\D/g, ''), 10) || Number(id) || 0;
+    return this.http.delete<any>(`${this.apiUrl}/EmployeeDocument/DeleteDocument/${numericId}`).pipe(
+      catchError(() => this.http.delete<any>(`${this.apiUrl}/EmployeeDocument/DeleteDocument?id=${numericId}`)),
+      tap(() => {
+        const updated = this.documentsSubject.value.filter(d => d.id !== id);
+        this.documentsSubject.next(updated);
+        this.recalculateCategoryCounts(updated);
+      })
+    );
   }
 
   viewDocument(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/EmployeeDocument/view/${id}`, { responseType: 'blob' });
+  }
+
+  approveOrRejectDocument(id: number | string, status: 'Approved' | 'Rejected', rejectionReason?: string): Observable<any> {
+    const numericId = typeof id === 'number' ? id : parseInt(String(id).replace(/\D/g, ''), 10) || 0;
+    const payload = {
+      id: numericId,
+      status: status,
+      rejectionReason: status === 'Rejected' ? (rejectionReason || null) : null
+    };
+
+    return this.http.post<any>(`${this.apiUrl}/EmployeeDocument/ApproveOrRejectDocument`, payload).pipe(
+      tap(() => {
+        this.fetchDocumentsFromApi();
+      })
+    );
   }
 }

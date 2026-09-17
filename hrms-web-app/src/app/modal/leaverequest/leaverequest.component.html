@@ -6,8 +6,8 @@
         <mat-icon>event_busy</mat-icon>
       </div>
       <div class="header-text">
-        <h2 class="modal-title">{{ isEdit ? 'Edit Leave Request' : 'Submit Leave Request' }}</h2>
-        <p class="modal-subtitle">Submit or modify formal request for time off and personal leaves.</p>
+        <h2 class="modal-title">Submit Leave Request</h2>
+        <p class="modal-subtitle">Submit formal request for time off and personal leaves.</p>
       </div>
     </div>
     <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
@@ -78,6 +78,14 @@
         </div>
       </div>
 
+      <!-- Duration Preview Banner -->
+      <div class="duration-banner" *ngIf="calculatedDays > 0">
+        <mat-icon class="duration-icon">schedule</mat-icon>
+        <span class="duration-text">
+          Calculated Duration: <strong>{{ calculatedDays }} {{ calculatedDays === 1 ? 'day' : 'days' }}</strong> (excluding non-working days)
+        </span>
+      </div>
+
       <!-- Reason Textarea -->
       <div class="form-group">
         <label class="field-label">Reason / Justification</label>
@@ -119,8 +127,8 @@
           Cancel
         </button>
         <button type="submit" class="btn-submit">
-          <mat-icon>{{ isEdit ? 'save' : 'send' }}</mat-icon>
-          <span>{{ isEdit ? 'Save Changes' : 'Submit Request' }}</span>
+          <mat-icon>send</mat-icon>
+          <span>Submit Request</span>
         </button>
       </div>
     </form>
@@ -134,25 +142,41 @@
         </div>
 
         <div class="balance-list">
-          <div class="balance-item">
-            <div class="leave-type-info">
-              <div class="icon-avatar icon-annual">
-                <mat-icon>beach_access</mat-icon>
+          <ng-container *ngIf="leaveBalances.length > 0; else fallbackBalances">
+            <div class="balance-item" *ngFor="let b of leaveBalances">
+              <div class="leave-type-info">
+                <div class="icon-avatar" [ngClass]="b.leaveTypeName.toLowerCase().includes('sick') ? 'icon-sick' : 'icon-annual'">
+                  <mat-icon>{{ b.leaveTypeName.toLowerCase().includes('sick') ? 'medical_services' : 'beach_access' }}</mat-icon>
+                </div>
+                <span class="leave-name">{{ b.leaveTypeName }}</span>
               </div>
-              <span class="leave-name">Annual Leave</span>
+              <span class="days-pill" [ngClass]="b.leaveTypeName.toLowerCase().includes('sick') ? 'pill-rose' : 'pill-blue'">
+                {{ b.remainingDays }} / {{ b.totalQuota }} days
+              </span>
             </div>
-            <span class="days-pill pill-blue">{{ annualLeaveDays }} days</span>
-          </div>
+          </ng-container>
 
-          <div class="balance-item">
-            <div class="leave-type-info">
-              <div class="icon-avatar icon-sick">
-                <mat-icon>medical_services</mat-icon>
+          <ng-template #fallbackBalances>
+            <div class="balance-item">
+              <div class="leave-type-info">
+                <div class="icon-avatar icon-annual">
+                  <mat-icon>beach_access</mat-icon>
+                </div>
+                <span class="leave-name">Annual Leave</span>
               </div>
-              <span class="leave-name">Sick Leave</span>
+              <span class="days-pill pill-blue">{{ annualLeaveDays }} days</span>
             </div>
-            <span class="days-pill pill-rose">{{ sickLeaveDays }} days</span>
-          </div>
+
+            <div class="balance-item">
+              <div class="leave-type-info">
+                <div class="icon-avatar icon-sick">
+                  <mat-icon>medical_services</mat-icon>
+                </div>
+                <span class="leave-name">Sick Leave</span>
+              </div>
+              <span class="days-pill pill-rose">{{ sickLeaveDays }} days</span>
+            </div>
+          </ng-template>
         </div>
       </div>
 

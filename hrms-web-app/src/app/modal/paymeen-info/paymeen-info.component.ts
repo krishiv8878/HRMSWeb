@@ -9,6 +9,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { PaymentinfoService } from '../../services/employeePayment/paymentinfo.service';
+import { RbacService } from '../../core/rbac.service';
 
 @Component({
   selector: 'app-paymeen-info',
@@ -32,6 +33,7 @@ export class PaymeenInfoComponent implements OnInit {
   private formBuilder = inject(FormBuilder);
   private services = inject(PaymentinfoService);
   private toaster = inject(ToastrService);
+  public rbacService = inject(RbacService);
 
   isEdit: boolean = false;
   id!: any;
@@ -49,16 +51,17 @@ export class PaymeenInfoComponent implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
   ngOnInit() {
-    const userId = localStorage.getItem('employeeId');
+    const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+    const userId = isBrowser ? localStorage.getItem('employeeId') : null;
     if (this.data) {
-      this.isEdit = true;
-      this.id = this.data.id;
+      this.isEdit = Boolean(this.data.id && Number(this.data.id) > 0 && !this.data.isMock);
+      this.id = this.isEdit ? Number(this.data.id) : 0;
       this.paymentinfo.patchValue({
-        id: this.data.id || 0,
+        id: this.id,
         employeeId: this.data.employeeId || Number(userId || 1),
         bankName: this.data.bankName || '',
         ifscCode: (this.data.ifscCode || '').toUpperCase(),
-        accountNumber: this.data.accountNumber || '',
+        accountNumber: this.data.accountNumber ? String(this.data.accountNumber) : '',
         nameOnAccount: this.data.nameOnAccount || '',
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
@@ -99,15 +102,25 @@ export class PaymeenInfoComponent implements OnInit {
       return;
     }
 
-    const val = this.paymentinfo.value;
-    const userId = localStorage.getItem('employeeId');
+    const val = this.paymentinfo.getRawValue();
+    const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+    const userId = isBrowser ? localStorage.getItem('employeeId') : null;
+
+    let targetEmpId = Number(val.employeeId || userId || 1);
+    if (!this.rbacService.isAdmin() && !this.rbacService.isHR()) {
+      targetEmpId = Number(userId || 1);
+      if (this.data && this.data.employeeId && Number(this.data.employeeId) !== Number(userId)) {
+        this.toaster.error('You are not authorized to modify payment records for other employees.', 'Access Denied');
+        return;
+      }
+    }
 
     const payload = {
       id: this.isEdit ? Number(val.id || this.id || 0) : 0,
-      employeeId: Number(val.employeeId || userId || 1),
+      employeeId: targetEmpId,
       bankName: (val.bankName || '').trim(),
       ifscCode: (val.ifscCode || '').trim().toUpperCase(),
-      accountNumber: String(val.accountNumber || '').trim(),
+      accountNumber: Number(val.accountNumber) || 0,
       nameOnAccount: (val.nameOnAccount || '').trim(),
       isActive: Boolean(val.isActive)
     };
@@ -120,8 +133,7 @@ export class PaymeenInfoComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error updating bank info:', err);
-          this.toaster.success('Bank payment account successfully updated', 'Updated');
-          this.dialogRef.close(true);
+          this.toaster.error(err?.error?.message || 'Failed to update bank payment account', 'Update Error');
         }
       });
     } else {
@@ -132,8 +144,7 @@ export class PaymeenInfoComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error creating bank info:', err);
-          this.toaster.success('New bank account added for payroll direct deposit', 'Created');
-          this.dialogRef.close(true);
+          this.toaster.error(err?.error?.message || 'Failed to add bank payment account', 'Creation Error');
         }
       });
     }

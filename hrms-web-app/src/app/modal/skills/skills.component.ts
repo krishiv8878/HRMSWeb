@@ -115,7 +115,7 @@ export class SkillsComponent implements OnInit {
         next: (res: any) => {
           const raw = Array.isArray(res) ? res : (res?.data || []);
           const isDuplicate = raw.some((x: any) =>
-            (x.skillName || '').trim().toLowerCase() === trimmedName.toLowerCase()
+            !x.isDeleted && (x.skillName || '').trim().toLowerCase() === trimmedName.toLowerCase()
           );
 
           if (isDuplicate) {

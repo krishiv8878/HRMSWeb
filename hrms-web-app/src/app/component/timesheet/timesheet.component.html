@@ -1,0 +1,235 @@
+<div class="timesheet-container">
+  <!-- Top Navigation & Actions Bar -->
+  <div class="header-card">
+    <div class="header-left">
+      <div class="title-group">
+        <h1 class="page-title">Timesheet Management</h1>
+        <p class="page-subtitle">Log project tasks, verify attendance reference hours, and submit weekly/monthly timesheets.</p>
+      </div>
+
+      <!-- Top-Level Project Selector -->
+      <div class="top-project-selector">
+        <label for="topProjectSelect" class="project-label">
+          <mat-icon>business_center</mat-icon>
+          <span>Project:</span>
+        </label>
+        <select
+          id="topProjectSelect"
+          class="top-project-dropdown"
+          [(ngModel)]="selectedProjectId"
+          (ngModelChange)="onProjectChange()"
+        >
+          <option [ngValue]="null" disabled>Select Project</option>
+          <option *ngFor="let p of projects" [ngValue]="p.id || p.projectMasterId">
+            {{ p.projectName || p.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- Period Selector Toggle (Weekly / Monthly) -->
+      <div class="period-toggle-group">
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="periodType === 'Weekly'"
+          (click)="setPeriodType('Weekly')"
+        >
+          Weekly
+        </button>
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="periodType === 'Monthly'"
+          (click)="setPeriodType('Monthly')"
+        >
+          Monthly
+        </button>
+      </div>
+
+      <!-- Date Navigator -->
+      <div class="date-navigator">
+        <button type="button" class="nav-arrow-btn" (click)="navigatePeriod(-1)" title="Previous Period">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <span class="period-label">
+          {{ currentStartDate | date:'MMM d' }} – {{ currentEndDate | date:'MMM d, yyyy' }}
+        </span>
+        <button
+          type="button"
+          class="nav-arrow-btn"
+          [disabled]="isCurrentOrFuturePeriod"
+          (click)="navigatePeriod(1)"
+          title="Next Period"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+        <button
+          type="button"
+          class="btn-current"
+          [disabled]="isCurrentOrFuturePeriod"
+          (click)="goToCurrent()"
+        >
+          Current
+        </button>
+      </div>
+
+      <!-- Submit Action Button -->
+      <button
+        type="button"
+        class="btn-submit"
+        *ngIf="canEdit"
+        [disabled]="isSubmitting || !timesheetData || timesheetData.totalTimesheetHours === 0"
+        (click)="submitTimesheet()"
+      >
+        <mat-icon>send</mat-icon>
+        <span>{{ isSubmitting ? 'Submitting...' : 'Submit Timesheet' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Status / Alert Banner -->
+  <div class="status-banner" *ngIf="timesheetData" [ngClass]="'status-' + (timesheetData.status | lowercase)">
+    <div class="status-content">
+      <div class="status-pill">
+        <mat-icon *ngIf="timesheetData.status === 'Draft'">edit_note</mat-icon>
+        <mat-icon *ngIf="timesheetData.status === 'Submitted'">hourglass_top</mat-icon>
+        <mat-icon *ngIf="timesheetData.status === 'Approved'">check_circle</mat-icon>
+        <mat-icon *ngIf="timesheetData.status === 'Rejected'">cancel</mat-icon>
+        <span>Status: {{ timesheetData.status }}</span>
+      </div>
+
+      <div class="status-details">
+        <span *ngIf="timesheetData.status === 'Draft'">
+          Your entries are currently in <strong>Draft</strong> mode. Add or modify your tasks, then click <strong>Submit Timesheet</strong>.
+        </span>
+        <span *ngIf="timesheetData.status === 'Submitted'">
+          Submitted on <strong>{{ timesheetData.submittedDate | date:'medium' }}</strong>. Awaiting review from your manager <strong>{{ timesheetData.managerName || 'Reporting Manager' }}</strong>.
+        </span>
+        <span *ngIf="timesheetData.status === 'Approved'">
+          Approved on <strong>{{ timesheetData.submittedDate | date:'mediumDate' }}</strong> by <strong>{{ timesheetData.managerName || 'Manager' }}</strong>.
+        </span>
+        <span *ngIf="timesheetData.status === 'Rejected'" class="rejection-text">
+          Timesheet was rejected. Reason: <strong>"{{ timesheetData.rejectionReason || 'Please adjust hours or tasks.' }}"</strong>. You may edit your entries and resubmit.
+        </span>
+      </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="period-metrics">
+      <div class="metric-chip">
+        <span class="chip-label">Task Hours {{ selectedProject ? '(' + (selectedProject.projectName || selectedProject.name) + ')' : '' }}:</span>
+        <span class="chip-val">{{ filteredTotalHours | number:'1.1-2' }}h</span>
+      </div>
+      <div class="metric-chip chip-attendance">
+        <span class="chip-label">Attendance Ref:</span>
+        <span class="chip-val">{{ timesheetData.totalAttendanceHours | number:'1.1-2' }}h</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-icon class="spin-icon">sync</mat-icon>
+    <span>Loading timesheet details...</span>
+  </div>
+
+  <!-- Timesheet Days Grid / Table -->
+  <div class="days-list-wrapper" *ngIf="!isLoading && timesheetData">
+    <div *ngFor="let day of timesheetData.days" class="day-card" [class.is-today]="day.isShiftInProgress">
+      <!-- Day Header Row -->
+      <div class="day-header">
+        <div class="day-meta">
+          <span class="day-name">{{ day.dayOfWeek }}</span>
+          <span class="day-date">{{ day.date | date:'MMM d, yyyy' }}</span>
+        </div>
+
+        <!-- Attendance Reference Badge -->
+        <div class="day-attendance-badge">
+          <div *ngIf="day.isShiftInProgress" class="badge-punch in-progress">
+            <mat-icon class="pulse-dot">fiber_manual_record</mat-icon>
+            <span>Shift In Progress (Clock-in: {{ day.clockInTime }})</span>
+          </div>
+
+          <div *ngIf="!day.isShiftInProgress && day.clockInTime" class="badge-punch recorded">
+            <mat-icon>access_time</mat-icon>
+            <span>Punched: {{ day.clockInTime }} - {{ day.clockOutTime || '--' }} ({{ day.attendanceHours | number:'1.1-2' }} hrs)</span>
+            <span *ngIf="day.isRegularized" class="reg-pill">Regularized</span>
+          </div>
+
+          <div *ngIf="!day.isShiftInProgress && !day.clockInTime" class="badge-punch no-punch">
+            <mat-icon>schedule_send</mat-icon>
+            <span>No punch logged</span>
+          </div>
+
+          <div class="day-total-chip">
+            Logged: <strong>{{ getDayTotalHours(day) | number:'1.1-2' }}h</strong>
+          </div>
+        </div>
+
+        <!-- Add Task Action -->
+        <button
+          type="button"
+          class="btn-add-task"
+          *ngIf="canEdit && !isFutureDay(day.date)"
+          (click)="openAddTaskModal(day)"
+        >
+          <mat-icon>add</mat-icon>
+          <span>Add Task</span>
+        </button>
+        <span class="badge-future" *ngIf="isFutureDay(day.date)">Upcoming</span>
+      </div>
+
+      <!-- Tasks List for Day -->
+      <div class="tasks-container">
+        <!-- Empty Day State -->
+        <div
+          *ngIf="getDayTasks(day).length === 0"
+          class="empty-tasks-card"
+          [class.clickable]="canEdit && !isFutureDay(day.date)"
+          (click)="canEdit && !isFutureDay(day.date) && openAddTaskModal(day)"
+        >
+          <div class="empty-icon-circle">
+            <mat-icon>{{ isFutureDay(day.date) ? 'schedule' : 'playlist_add' }}</mat-icon>
+          </div>
+          <div class="empty-text-wrap">
+            <span class="empty-title">
+              {{ isFutureDay(day.date) ? 'Upcoming Date' : 'No project tasks recorded for this date.' }}
+            </span>
+            <span class="empty-sub" *ngIf="canEdit && !isFutureDay(day.date)">
+              {{ selectedProject ? ('Click to add task for ' + (selectedProject.projectName || selectedProject.name)) : 'Select a project from the top dropdown to log tasks.' }}
+            </span>
+            <span class="empty-sub" *ngIf="isFutureDay(day.date)">
+              Tasks cannot be logged for future dates.
+            </span>
+          </div>
+        </div>
+
+        <!-- Task Item Row -->
+        <div *ngFor="let t of getDayTasks(day)" class="task-item-row" [class.clickable]="canEdit" (click)="canEdit && openEditTaskModal(t, day)">
+          <div class="task-info">
+            <div class="project-tag">
+              <mat-icon>business_center</mat-icon>
+              <span>{{ t.projectName }}</span>
+            </div>
+            <p class="task-desc">{{ t.taskDescription }}</p>
+          </div>
+
+          <div class="task-actions-wrapper">
+            <span class="task-hours-badge">{{ t.hours | number:'1.1-2' }} hrs</span>
+            <button
+              type="button"
+              class="task-delete-btn"
+              *ngIf="canEdit"
+              (click)="deleteTask(t, $event)"
+              title="Delete task entry"
+            >
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

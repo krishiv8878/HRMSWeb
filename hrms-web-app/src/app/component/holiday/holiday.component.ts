@@ -7,6 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { ToastrService } from 'ngx-toastr';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { HolidaysComponent } from '../../modal/holidays/holidays.component';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { RbacService } from '../../core/rbac.service';
 
 export interface HolidayItem {
   id: number;
@@ -38,6 +40,11 @@ export class HolidayComponent implements OnInit {
   private services = inject(HolidayservicesService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
+  public rbacService = inject(RbacService);
+
+  get canManageHoliday(): boolean {
+    return this.rbacService.isAdmin() || this.rbacService.isHR();
+  }
 
   Math = Math;
 
@@ -78,6 +85,9 @@ export class HolidayComponent implements OnInit {
         } else if (response && Array.isArray(response.data)) {
           rawList = response.data;
         }
+
+        // Filter out deleted holidays
+        rawList = rawList.filter((item: any) => !item.isDeleted);
 
         if (rawList.length > 0) {
           this.allHolidays = rawList.map((item: any, idx: number) => this.mapHolidayItem(item, idx));
@@ -277,6 +287,11 @@ export class HolidayComponent implements OnInit {
   }
 
   openHolidayForm(data?: any) {
+    if (!this.canManageHoliday) {
+      this.toaster.warning('Only HR and Administrators can add or edit holidays.', 'Permission Denied');
+      return;
+    }
+
     const dialogRef = this.dialog.open(HolidaysComponent, {
       width: '540px',
       data
@@ -289,7 +304,42 @@ export class HolidayComponent implements OnInit {
     });
   }
 
+  openDeleteModal(holiday: HolidayItem) {
+    if (!this.canManageHoliday) {
+      this.toaster.warning('Only HR and Administrators can delete holidays.', 'Permission Denied');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '400px',
+      data: {
+        title: 'Delete Holiday',
+        message: `Are you sure you want to delete the holiday '${holiday.holidayName}'?`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
+        this.services.DeleteHoliday(holiday.id).subscribe({
+          next: () => {
+            this.toaster.success(`Holiday '${holiday.holidayName}' deleted successfully`, 'Deleted');
+            this.getHoliday();
+          },
+          error: (err) => {
+            console.error('Error deleting holiday:', err);
+            this.toaster.error('Failed to delete holiday', 'Error');
+          }
+        });
+      }
+    });
+  }
+
   onToggleActiveStatus(holiday: HolidayItem) {
+    if (!this.canManageHoliday) {
+      this.toaster.warning('Only HR and Administrators can modify holiday status.', 'Permission Denied');
+      return;
+    }
+
     const nextState = holiday.isActive ? false : true;
     holiday.isActive = nextState;
 

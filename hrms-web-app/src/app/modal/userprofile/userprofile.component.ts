@@ -86,95 +86,128 @@ export class UserprofileComponent implements OnInit {
     const userId = this.getStorage('employeeId');
     const storedName = this.getStorage('UserName') || 'Sarah Jenkins';
 
-    this.services.getData().subscribe({
-      next: (response: any) => {
-        let rawList: any[] = [];
-        if (Array.isArray(response)) {
-          rawList = response;
-        } else if (response && Array.isArray(response.data)) {
-          rawList = response.data;
-        }
-
-        if (userId && rawList.length > 0) {
-          this.employedata = rawList.find((emp: any) => emp.id == userId);
-        }
-
-        if (!this.employedata && rawList.length > 0) {
-          this.employedata = rawList[0];
-        }
-
-        if (!this.employedata) {
-          this.employedata = this.getDefaultMockProfile(storedName);
-        }
-
-        if (this.employedata?.profileImage) {
-          const apiBase = (this.services as any).apiUrl || '';
-          this.profileImageUrl = this.employedata.profileImage.startsWith('http') || this.employedata.profileImage.startsWith('data:')
-            ? this.employedata.profileImage
-            : apiBase.replace('/api', '') + '/ProfileImages/' + this.employedata.profileImage;
-          this.services.setProfileAvatar(this.profileImageUrl);
-        } else if (!this.profileImageUrl) {
-          const globalAv = this.services.getProfileAvatar();
-          if (globalAv) {
-            this.profileImageUrl = globalAv;
-          }
-        }
-
-        this.loadSkills();
-        this.loadBankInfo();
-      },
-      error: () => {
+    const handleProfileResult = (emp: any) => {
+      if (emp) {
+        this.employedata = emp;
+      } else {
         this.employedata = this.getDefaultMockProfile(storedName);
-        this.loadSkills();
-        this.loadBankInfo();
       }
-    });
+
+      if (this.employedata?.profileImage) {
+        const apiBase = (this.services as any).apiUrl || '';
+        this.profileImageUrl = this.employedata.profileImage.startsWith('http') || this.employedata.profileImage.startsWith('data:')
+          ? this.employedata.profileImage
+          : apiBase.replace('/api', '') + '/ProfileImages/' + this.employedata.profileImage;
+        this.services.setProfileAvatar(this.profileImageUrl);
+      } else if (!this.profileImageUrl) {
+        const globalAv = this.services.getProfileAvatar();
+        if (globalAv) {
+          this.profileImageUrl = globalAv;
+        }
+      }
+
+      this.loadSkills();
+      this.loadBankInfo();
+    };
+
+    if (userId) {
+      this.services.getEmployeeById(userId).subscribe({
+        next: (res: any) => {
+          const emp = res?.data || res;
+          if (emp && emp.id) {
+            handleProfileResult(emp);
+          } else {
+            // fallback to list if user has permission
+            this.services.getData().subscribe({
+              next: (listRes: any) => {
+                const list = Array.isArray(listRes) ? listRes : (listRes?.data || []);
+                const found = list.find((e: any) => e.id == userId);
+                handleProfileResult(found);
+              },
+              error: () => handleProfileResult(null)
+            });
+          }
+        },
+        error: () => {
+          this.services.getData().subscribe({
+            next: (listRes: any) => {
+              const list = Array.isArray(listRes) ? listRes : (listRes?.data || []);
+              const found = list.find((e: any) => e.id == userId);
+              handleProfileResult(found);
+            },
+            error: () => handleProfileResult(null)
+          });
+        }
+      });
+    } else {
+      this.services.getData().subscribe({
+        next: (response: any) => {
+          const list = Array.isArray(response) ? response : (response?.data || []);
+          handleProfileResult(list.length > 0 ? list[0] : null);
+        },
+        error: () => handleProfileResult(null)
+      });
+    }
   }
 
   private loadBankInfo() {
     const userId = this.getStorage('employeeId');
 
-    this.paymentservices.getAllData().subscribe({
-      next: (response: any) => {
-        let rawList: any[] = [];
-        if (Array.isArray(response)) {
-          rawList = response;
-        } else if (response && Array.isArray(response.data)) {
-          rawList = response.data;
-        }
-
-        if (userId && rawList.length > 0) {
-          this.paymentdata = rawList.find((pay: any) => pay.employeeId == userId);
-        }
-
-        if (!this.paymentdata && rawList.length > 0) {
-          this.paymentdata = rawList[0];
-        }
-
-        if (!this.paymentdata) {
-          this.paymentdata = {
-            id: 1,
-            nameOnAccount: `${this.employedata?.firstName || 'Sarah'} ${this.employedata?.lastName || 'Jenkins'}`,
-            accountNumber: '4829104928194',
-            bankName: 'JPMorgan Chase Bank, N.A.',
-            ifscCode: 'CHASUS33',
-            branch: 'New York Financial Center',
-            isVerified: true
-          };
-        }
-      },
-      error: () => {
+    const handleBankResult = (pay: any) => {
+      if (pay) {
+        this.paymentdata = pay;
+      } else {
         this.paymentdata = {
-          id: 1,
+          id: 0,
+          employeeId: Number(userId || 0),
           nameOnAccount: `${this.employedata?.firstName || 'Sarah'} ${this.employedata?.lastName || 'Jenkins'}`,
           accountNumber: '4829104928194',
           bankName: 'JPMorgan Chase Bank, N.A.',
           ifscCode: 'CHASUS33',
           branch: 'New York Financial Center',
-          isVerified: true
+          isVerified: true,
+          isMock: true
         };
       }
-    });
+    };
+
+    if (userId) {
+      this.paymentservices.getByEmployeeId(userId).subscribe({
+        next: (res: any) => {
+          const pay = res?.data || res;
+          if (pay && (pay.employeeId || pay.id)) {
+            handleBankResult(pay);
+          } else {
+            this.paymentservices.getAllData().subscribe({
+              next: (allRes: any) => {
+                const list = Array.isArray(allRes) ? allRes : (allRes?.data || []);
+                const found = list.find((p: any) => p.employeeId == userId);
+                handleBankResult(found);
+              },
+              error: () => handleBankResult(null)
+            });
+          }
+        },
+        error: () => {
+          this.paymentservices.getAllData().subscribe({
+            next: (allRes: any) => {
+              const list = Array.isArray(allRes) ? allRes : (allRes?.data || []);
+              const found = list.find((p: any) => p.employeeId == userId);
+              handleBankResult(found);
+            },
+            error: () => handleBankResult(null)
+          });
+        }
+      });
+    } else {
+      this.paymentservices.getAllData().subscribe({
+        next: (response: any) => {
+          const list = Array.isArray(response) ? response : (response?.data || []);
+          handleBankResult(list.length > 0 ? list[0] : null);
+        },
+        error: () => handleBankResult(null)
+      });
+    }
   }
 
   private loadSkills() {
@@ -208,7 +241,7 @@ export class UserprofileComponent implements OnInit {
       department: 'Engineering & Cloud Architecture',
       currentAddress: '742 Evergreen Terrace, Suite 400, New York, NY 10001',
       permanentAddress: '1204 Pine Ridge Road, Boston, MA 02108',
-      skills: 'Angular, TypeScript, .NET Core, Microservices, Azure, Docker, System Design',
+      skills: ['Angular', 'TypeScript', '.NET Core', 'Microservices', 'Azure', 'Docker', 'System Design'],
       isActive: true,
       managerName: 'Alexander Vance (VP Engineering)',
       primaryContactName: 'Robert Jenkins',
@@ -223,8 +256,8 @@ export class UserprofileComponent implements OnInit {
       secondaryContactAddress: '1204 Pine Ridge Road, Boston, MA 02108',
       degree: 'Master of Science in Computer Science',
       university: 'Massachusetts Institute of Technology (MIT)',
-      yearOfPassing: '2016',
-      percentage: '3.92 GPA / Magna Cum Laude',
+      yearOfPassing: 2016,
+      percentage: 88.5,
       companyName: 'Nexient Global Solutions',
       experienceDuration: '5 Years 8 Months',
       experienceLocation: 'Boston, MA',

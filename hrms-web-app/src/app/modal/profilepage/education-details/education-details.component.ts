@@ -144,12 +144,18 @@ export class EducationDetailsComponent implements OnInit {
     const key = 'profile_educations_' + (this.data?.id || 'default');
     this.setStorage(key, JSON.stringify(validEntries));
 
+    let numPct: number | null = null;
+    if (primary.percentage !== undefined && primary.percentage !== null) {
+      const match = String(primary.percentage).match(/[-+]?[0-9]*\.?[0-9]+/);
+      numPct = match ? parseFloat(match[0]) : null;
+    }
+
     const payload = {
       ...this.data,
       degree: primary.degree,
       university: primary.university,
-      yearOfPassing: primary.yearOfPassing,
-      percentage: primary.percentage
+      yearOfPassing: primary.yearOfPassing ? parseInt(String(primary.yearOfPassing), 10) || null : null,
+      percentage: numPct
     };
 
     this.services.updateData(payload).subscribe({

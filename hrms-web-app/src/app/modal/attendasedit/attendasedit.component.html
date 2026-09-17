@@ -77,12 +77,23 @@
       </div>
     </div>
 
+    <!-- Status Notice Banner if Already Requested -->
+    <div class="alert-banner warning" *ngIf="!canSubmit">
+      <mat-icon>info</mat-icon>
+      <span>A regularization request for this date is already <strong>{{ currentStatus || data?.regularizationStatus }}</strong>. You can only submit a new request if the previous one was rejected.</span>
+    </div>
+
+    <div class="alert-banner error-banner" *ngIf="canSubmit && (currentStatus === 'Rejected' || data?.regularizationStatus === 'Rejected')">
+      <mat-icon>error_outline</mat-icon>
+      <span>Previous request was <strong>Rejected</strong>: {{ rejectionReason || data?.rejectionReason || 'No reason provided' }}. You may adjust your punch times and submit again.</span>
+    </div>
+
     <!-- Modal Footer Actions -->
     <div class="modal-footer">
       <button type="button" class="btn-cancel" (click)="closeDialog()">
-        Cancel
+        {{ canSubmit ? 'Cancel' : 'Close' }}
       </button>
-      <button type="submit" class="btn-submit">
+      <button type="submit" class="btn-submit" *ngIf="canSubmit" [disabled]="!attendaseform.valid">
         <mat-icon>send</mat-icon>
         Submit Request
       </button>

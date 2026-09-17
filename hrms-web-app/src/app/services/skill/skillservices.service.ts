@@ -32,6 +32,9 @@ export class SkillservicesService {
   }
 
   DeleteSkill(skillId: any): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + `/Skill/DeleteSkill?skillId=` + skillId);
+    const id = Number(skillId || 0);
+    return this.http.delete<any>(this.apiUrl + `/Skill/DeleteSkill?skillId=` + id).pipe(
+      catchError(() => this.http.delete<any>(this.apiUrl + `/Skill/DeleteSkill/${id}`))
+    );
   }
 }

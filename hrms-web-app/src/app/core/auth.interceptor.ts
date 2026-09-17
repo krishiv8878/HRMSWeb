@@ -60,17 +60,19 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // ----------------------------------------------------
-  // 2. Handle 401 & 403 HTTP Error Responses → Auto Logout
+  // 2. Handle 401 Unauthorized → Auto Logout
   // ----------------------------------------------------
   return next(req).pipe(
     catchError((error) => {
-      if (error.status === 401 || error.status === 403) {
+      if (error.status === 401) {
         if (isBrowser && window.location.pathname !== '/login') {
-          console.log("❌ 401/403 Unauthorized — Session Expired Auto Logout");
+          console.log("❌ 401 Unauthorized — Session Expired Auto Logout");
           localStorage.clear();
           toster.error('Session is expired !', 'Session Expired');
           router.navigate(['/login']);
         }
+      } else if (error.status === 403) {
+        console.warn("🔒 403 Forbidden — Access Denied for URL:", req.url);
       }
 
       return throwError(() => error);

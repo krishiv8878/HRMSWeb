@@ -11,6 +11,8 @@ import { AssetItem, AssetStatus } from '../../../interface/asset.interface';
 import { AssetsmasterService } from '../../../services/assetsmaster/assetsmaster.service';
 import { AssetDetailsComponent } from '../../../modal/asset-details/asset-details.component';
 import { AssetsmastersComponent } from '../../../modal/assetsmasters/assetsmasters.component';
+import { DeleteModalComponent } from '../../delete-modal/delete-modal.component';
+import { RbacService } from '../../../core/rbac.service';
 
 @Component({
   selector: 'app-asset-table',
@@ -33,6 +35,11 @@ export class AssetTableComponent implements OnInit, OnChanges {
   private assetService = inject(AssetsmasterService);
   private toastr = inject(ToastrService);
   private dialog = inject(MatDialog);
+  private rbacService = inject(RbacService);
+
+  get isAdmin(): boolean {
+    return this.rbacService.isAdmin();
+  }
 
   searchQuery: string = '';
   selectedCategory: string = 'All';
@@ -149,6 +156,7 @@ export class AssetTableComponent implements OnInit, OnChanges {
   }
 
   openEditAsset(asset: AssetItem) {
+    if (!this.isAdmin) return;
     const dialogRef = this.dialog.open(AssetsmastersComponent, {
       width: '560px',
       data: asset
@@ -162,18 +170,30 @@ export class AssetTableComponent implements OnInit, OnChanges {
   }
 
   onSendForDeployment(id: string) {
+    if (!this.isAdmin) return;
     this.assetService.sendForDeployment(id);
     this.toastr.success(`Asset ${id} sent for deployment! Status set to 'Available'`, 'Ready for Deployment');
   }
 
   onSendToRepair(id: string) {
+    if (!this.isAdmin) return;
     this.assetService.sendToRepair(id);
     this.toastr.warning(`Asset ${id} status updated to 'In Repair'`, 'Sent to Repair');
   }
 
   onDelete(id: string) {
-    this.assetService.deleteAsset(id);
-    this.toastr.error(`Asset ${id} removed from database`, 'Asset Deleted');
+    if (!this.isAdmin) return;
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '380px',
+      data: { id }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.assetService.deleteAsset(id);
+        this.toastr.success(`Asset record ${id} removed from database`, 'Asset Deleted');
+      }
+    });
   }
 
   getStatusPillClass(status: AssetStatus): string {

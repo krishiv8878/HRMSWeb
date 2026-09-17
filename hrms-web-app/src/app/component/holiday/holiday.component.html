@@ -12,7 +12,7 @@
         <mat-icon class="btn-icon">upload</mat-icon>
         <span>Export List</span>
       </button>
-      <button type="button" class="btn-add-holiday" (click)="openHolidayForm()">
+      <button type="button" class="btn-add-holiday" *ngIf="canManageHoliday" (click)="openHolidayForm()">
         <mat-icon class="btn-icon">add</mat-icon>
         <span>Add Holiday</span>
       </button>
@@ -110,7 +110,7 @@
             <th>DAY</th>
             <th>TYPE</th>
             <th>STATUS</th>
-            <th class="text-right">ACTIONS</th>
+            <th class="text-right" *ngIf="canManageHoliday">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -151,8 +151,8 @@
               </span>
             </td>
 
-            <!-- Actions (Edit & Inactivate Toggle) -->
-            <td class="col-actions text-right">
+            <!-- Actions (Edit, Inactivate Toggle, Delete) -->
+            <td class="col-actions text-right" *ngIf="canManageHoliday">
               <!-- Edit Button -->
               <button type="button" class="btn-action-icon edit-btn" (click)="openHolidayForm(h)" title="Edit Holiday">
                 <mat-icon>edit</mat-icon>
@@ -169,12 +169,17 @@
               >
                 <mat-icon>{{ h.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
               </button>
+
+              <!-- Delete Button -->
+              <button type="button" class="btn-action-icon btn-delete" (click)="openDeleteModal(h)" title="Delete Holiday">
+                <mat-icon>delete</mat-icon>
+              </button>
             </td>
           </tr>
 
           <!-- Empty State -->
           <tr *ngIf="paginatedHolidays.length === 0">
-            <td colspan="7" class="empty-state">
+            <td [attr.colspan]="canManageHoliday ? 7 : 6" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">event_busy</mat-icon>
                 <p *ngIf="allHolidays.length === 0">

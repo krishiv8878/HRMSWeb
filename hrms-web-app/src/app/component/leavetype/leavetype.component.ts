@@ -7,6 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { LeaveComponent } from '../../modal/leave/leave.component';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 export interface LeaveTypeRecord {
   id: number;
@@ -69,6 +70,9 @@ export class LeavetypeComponent implements OnInit {
         } else if (res && Array.isArray(res.data)) {
           rawList = res.data;
         }
+
+        // Filter out soft-deleted leave types
+        rawList = rawList.filter((item: any) => !item.isDeleted);
 
         if (rawList.length > 0) {
           this.allLeaveTypes = rawList.map((item: any, idx: number) => ({
@@ -179,6 +183,31 @@ export class LeavetypeComponent implements OnInit {
     dialogRef.afterClosed().subscribe((res) => {
       if (res) {
         this.getAllData();
+      }
+    });
+  }
+
+  openDeleteModal(record: LeaveTypeRecord) {
+    const dialogRef = this.dialog.open(DeleteModalComponent, {
+      width: '400px',
+      data: {
+        title: 'Delete Leave Type',
+        message: `Are you sure you want to delete the leave type '${record.type}'?`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
+        this.leaveService.DeleteData(record.id).subscribe({
+          next: () => {
+            this.toastr.success(`Leave type '${record.type}' deleted successfully`, 'Deleted');
+            this.getAllData();
+          },
+          error: (err) => {
+            console.error('Error deleting leave type:', err);
+            this.toastr.error('Failed to delete leave type', 'Error');
+          }
+        });
       }
     });
   }

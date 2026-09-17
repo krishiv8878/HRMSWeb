@@ -23,17 +23,17 @@
 
   <!-- Metric Category Cards Grid (4 Column Layout) -->
   <div class="metrics-cards-grid">
-    <!-- Card 1: Total Requests -->
+    <!-- Card 1: Available Leave Balance -->
     <div class="metric-card">
       <div class="card-header">
-        <span class="card-title">TOTAL REQUESTS</span>
+        <span class="card-title">AVAILABLE BALANCE</span>
         <div class="icon-box icon-blue">
-          <mat-icon>event_note</mat-icon>
+          <mat-icon>account_balance_wallet</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ totalCount }}</div>
+      <div class="card-value">{{ availableBalanceDays }} <small style="font-size: 13px; font-weight: 500; color: #64748b;">days</small></div>
       <div class="card-subtitle">
-        <span>Recorded in database</span>
+        <span>Across {{ totalCount }} total requests</span>
       </div>
     </div>
 
@@ -65,17 +65,17 @@
       </div>
     </div>
 
-    <!-- Card 4: Rejected / Inactive -->
+    <!-- Card 4: Rejected Leaves -->
     <div class="metric-card">
       <div class="card-header">
-        <span class="card-title">REJECTED / OTHER</span>
+        <span class="card-title">REJECTED</span>
         <div class="icon-box icon-rose">
           <mat-icon>cancel</mat-icon>
         </div>
       </div>
       <div class="card-value">{{ rejectedCount }}</div>
       <div class="card-subtitle">
-        <span>Declined or cancelled</span>
+        <span>Declined requests</span>
       </div>
     </div>
   </div>
@@ -130,13 +130,11 @@
             <th>TO</th>
             <th>LEAVE TYPE</th>
             <th>REASON</th>
-            <th>APPROVAL</th>
-            <th>ACTIVE STATUS</th>
-            <th class="text-right">ACTIONS</th>
+            <th>STATUS</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let req of paginatedRequests" [class.is-inactive-row]="req.isActive === false">
+          <tr *ngFor="let req of paginatedRequests">
             <!-- From Date -->
             <td class="col-date">
               <span class="date-text">{{ req.startDate | date:'dd MMM yyyy' }}</span>
@@ -155,46 +153,22 @@
             <!-- Reason -->
             <td class="col-reason">
               <span class="reason-text">{{ req.leaveReason || 'Time off request' }}</span>
+              <div *ngIf="req.rejectionReason && getStatusText(req) === 'Rejected'" style="font-size: 11px; color: #dc2626; margin-top: 3px;">
+                <strong>Declined:</strong> {{ req.rejectionReason }}
+              </div>
             </td>
 
-            <!-- Approval Status Badge -->
+            <!-- Status Badge -->
             <td class="col-status">
               <span class="status-badge" [ngClass]="getStatusBadgeClass(req)">
                 {{ getStatusText(req) }}
               </span>
             </td>
-
-            <!-- Active Status (Display Only Badge) -->
-            <td class="col-active">
-              <span class="active-badge" [ngClass]="req.isActive !== false ? 'badge-active' : 'badge-inactive'">
-                {{ req.isActive !== false ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-
-            <!-- Actions (Edit & Inactivate Toggle) -->
-            <td class="col-actions text-right">
-              <!-- Edit Button -->
-              <button type="button" class="btn-action-icon edit-btn" (click)="openApplyLeaveModal(req)" title="Edit Request">
-                <mat-icon>edit</mat-icon>
-              </button>
-
-              <!-- Inactivate / Activate Toggle Button -->
-              <button
-                type="button"
-                class="btn-action-icon"
-                [class.btn-toggle-off]="req.isActive !== false"
-                [class.btn-toggle-on]="req.isActive === false"
-                (click)="onToggleActiveStatus(req)"
-                [title]="req.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
-              >
-                <mat-icon>{{ req.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-              </button>
-            </td>
           </tr>
 
           <!-- Empty State -->
           <tr *ngIf="paginatedRequests.length === 0">
-            <td colspan="7" class="empty-state">
+            <td colspan="5" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">event_busy</mat-icon>
                 <p *ngIf="allRequests.length === 0">

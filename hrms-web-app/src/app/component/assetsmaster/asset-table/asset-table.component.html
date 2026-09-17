@@ -133,23 +133,25 @@
               <button mat-menu-item (click)="openViewDetails(asset)">
                 <mat-icon>visibility</mat-icon> View Details
               </button>
-              <button mat-menu-item (click)="openEditAsset(asset)">
-                <mat-icon>edit</mat-icon> Edit Asset
-              </button>
-              <button mat-menu-item (click)="openEditAsset(asset)">
-                <mat-icon>person_add</mat-icon> Assign Employee
-              </button>
-              <mat-divider></mat-divider>
-              <button mat-menu-item (click)="onSendToRepair(asset.id)">
-                <mat-icon style="color: #d97706;">build</mat-icon> Send to Repair
-              </button>
-              <button mat-menu-item (click)="onSendForDeployment(asset.id)">
-                <mat-icon style="color: #059669;">rocket_launch</mat-icon> Send for Deployment (Available)
-              </button>
-              <mat-divider></mat-divider>
-              <button mat-menu-item class="delete-action" (click)="onDelete(asset.id)">
-                <mat-icon style="color: #dc2626;">delete_forever</mat-icon> Delete Asset
-              </button>
+              <ng-container *ngIf="isAdmin">
+                <button mat-menu-item (click)="openEditAsset(asset)">
+                  <mat-icon>edit</mat-icon> Edit Asset
+                </button>
+                <button mat-menu-item (click)="openEditAsset(asset)">
+                  <mat-icon>person_add</mat-icon> Assign Employee
+                </button>
+                <mat-divider></mat-divider>
+                <button mat-menu-item (click)="onSendToRepair(asset.id)">
+                  <mat-icon style="color: #d97706;">build</mat-icon> Send to Repair
+                </button>
+                <button mat-menu-item (click)="onSendForDeployment(asset.id)">
+                  <mat-icon style="color: #059669;">rocket_launch</mat-icon> Send for Deployment (Available)
+                </button>
+                <mat-divider></mat-divider>
+                <button mat-menu-item class="delete-action" (click)="onDelete(asset.id)">
+                  <mat-icon style="color: #dc2626;">delete_forever</mat-icon> Delete Asset
+                </button>
+              </ng-container>
             </mat-menu>
           </td>
         </tr>
@@ -160,7 +162,7 @@
             <div class="empty-box">
               <mat-icon class="empty-icon">inventory_2</mat-icon>
               <p *ngIf="assets.length === 0">
-                No corporate assets found. Click <strong>'+ Add Asset'</strong> above to create your first asset entry.
+                {{ isAdmin ? "No corporate assets found. Click '+ Add Asset' above to create your first asset entry." : "No corporate assets are currently assigned to your profile." }}
               </p>
               <p *ngIf="assets.length > 0">
                 No matching assets found for your search or filters.

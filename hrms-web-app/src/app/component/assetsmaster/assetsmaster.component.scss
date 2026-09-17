@@ -115,3 +115,138 @@
 .table-section {
   width: 100%;
 }
+
+.assigned-projects-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.06);
+
+  .banner-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .banner-icon-badge {
+    width: 38px;
+    height: 38px;
+    background: #3b82f6;
+    color: #ffffff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .banner-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .banner-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .project-pills-list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .project-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px solid #93c5fd;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: #1d4ed8;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+
+      .pill-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: #2563eb;
+      }
+
+      .client-tag {
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      &:hover {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #1d4ed8;
+        transform: translateY(-1px);
+
+        .pill-icon,
+        .client-tag {
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  .view-all-projects-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2563eb;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      transition: transform 0.15s ease;
+    }
+
+    &:hover {
+      background-color: #dbeafe;
+
+      mat-icon {
+        transform: translateX(3px);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    .view-all-projects-link {
+      align-self: flex-end;
+    }
+  }
+}

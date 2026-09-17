@@ -12,6 +12,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { ResignationService } from '../../services/Resignation/resignation.service';
+import { EmployeeService } from '../../services/employee/employee.service';
 
 @Component({
   selector: 'app-resignation',
@@ -36,6 +37,7 @@ import { ResignationService } from '../../services/Resignation/resignation.servi
 export class ResignationComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<ResignationComponent>);
   private services = inject(ResignationService);
+  private employeeService = inject(EmployeeService);
   private formBuilder = inject(FormBuilder);
   private toaster = inject(ToastrService);
 
@@ -70,13 +72,33 @@ export class ResignationComponent implements OnInit {
   });
 
   ngOnInit() {
-    const storedUser = localStorage.getItem('UserName');
+    const userProfile = this.employeeService.getUserProfile();
+    const storedUser = localStorage.getItem('UserName') || localStorage.getItem('fullName') || userProfile.fullName;
     this.currentUserName = storedUser && storedUser !== 'null' ? storedUser : 'Sarah Jenkins';
 
     this.resignationForm.patchValue({
       employeeName: this.currentUserName,
-      managerName: 'Alex Mercer (Engineering Director)'
+      managerName: 'Reporting Manager (Department Head)'
     });
+
+    const empId = localStorage.getItem('employeeId');
+    if (empId) {
+      this.employeeService.getEmployeeById(empId).subscribe({
+        next: (res: any) => {
+          const emp = res?.data || res;
+          if (emp) {
+            const empName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+            if (empName) {
+              this.currentUserName = empName;
+              this.resignationForm.patchValue({ employeeName: empName });
+            }
+            if (emp.managerName) {
+              this.resignationForm.patchValue({ managerName: emp.managerName });
+            }
+          }
+        }
+      });
+    }
 
     this.updateLastWorkingDay();
 

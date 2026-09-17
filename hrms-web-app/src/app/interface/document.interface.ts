@@ -10,6 +10,8 @@ export interface DocumentCategory {
   theme: 'blue' | 'emerald' | 'indigo' | 'rose';
 }
 
+export type DocumentStatus = 'Pending' | 'Approved' | 'Rejected';
+
 export interface DocumentItem {
   id: string;
   name: string;
@@ -24,4 +26,9 @@ export interface DocumentItem {
   file?: File;
   fileUrl?: string;
   isActive?: boolean;
+  status?: DocumentStatus;
+  rejectionReason?: string;
+  actionBy?: number;
+  actionDate?: string;
+  employeeId?: number;
 }
