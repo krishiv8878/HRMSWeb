@@ -21,6 +21,13 @@ export interface TimesheetDayView {
   tasks: TimesheetTaskItem[];
   totalDayTaskHours?: number;
   dayTotalHours?: number;
+  isHoliday?: boolean;
+  holidayName?: string | null;
+  isOptionalHoliday?: boolean;
+  isLeave?: boolean;
+  leaveTypeName?: string | null;
+  isWeekend?: boolean;
+  isPriorToJoining?: boolean;
 }
 
 export interface TimesheetView {

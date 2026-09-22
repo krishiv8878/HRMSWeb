@@ -431,4 +431,56 @@ export class HolidayComponent implements OnInit {
     URL.revokeObjectURL(url);
     this.toaster.success(`Holiday Schedule for ${this.selectedYear} exported successfully!`, 'Export Complete');
   }
+
+  isCopyingHolidays: boolean = false;
+
+  onCopyHolidaysToNextYear() {
+    if (!this.canManageHoliday) return;
+    const srcYear = Number(this.selectedYear);
+    if (!srcYear || isNaN(srcYear)) {
+      this.toaster.warning('Please select a specific year to copy holidays from.', 'Invalid Year');
+      return;
+    }
+    const targetYear = srcYear + 1;
+
+    const holidaysInYear = this.allHolidays.filter(h => {
+      try {
+        return new Date(h.holidayDate).getFullYear() === srcYear && !h.isDeleted;
+      } catch {
+        return false;
+      }
+    });
+
+    if (holidaysInYear.length === 0) {
+      this.toaster.warning(`No active holidays found in ${srcYear} to copy.`, 'No Holidays');
+      return;
+    }
+
+    const confirmed = confirm(
+      `Copy all ${holidaysInYear.length} holidays from ${srcYear} to ${targetYear}?\n\n` +
+      `Dates will be carried forward to ${targetYear} with the same names and types. Any duplicate holidays already existing in ${targetYear} will be preserved.`
+    );
+
+    if (!confirmed) return;
+
+    this.isCopyingHolidays = true;
+    this.services.copyHolidaysToYear(srcYear, targetYear).subscribe({
+      next: (res: any) => {
+        this.isCopyingHolidays = false;
+        const count = res?.data?.copiedCount ?? holidaysInYear.length;
+        this.toaster.success(`${count} holidays copied to ${targetYear} successfully!`, 'Holidays Roll-Forward');
+
+        if (!this.availableYears.includes(targetYear)) {
+          this.availableYears.push(targetYear);
+          this.availableYears.sort((a, b) => a - b);
+        }
+        this.selectedYear = targetYear.toString();
+        this.getHoliday();
+      },
+      error: (err: any) => {
+        this.isCopyingHolidays = false;
+        this.toaster.error(err?.error?.message || `Failed to copy holidays to ${targetYear}.`, 'Error');
+      }
+    });
+  }
 }

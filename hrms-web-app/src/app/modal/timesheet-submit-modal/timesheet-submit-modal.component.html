@@ -1,0 +1,69 @@
+﻿<div class="submit-modal-container">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>send</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Submit Timesheet</h2>
+        <p class="modal-subtitle">Review submission summary before sending to your manager.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Modal Body -->
+  <div class="modal-body">
+    <!-- Period Summary Card -->
+    <div class="period-summary-card">
+      <div class="summary-row">
+        <span class="label">Timesheet Period:</span>
+        <span class="value font-semibold">{{ data.periodType }} ({{ data.startDate | date:'dd MMM yyyy' }} – {{ data.endDate | date:'dd MMM yyyy' }})</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Total Logged Tasks:</span>
+        <span class="value font-bold text-primary">{{ data.totalHours | number:'1.1-2' }} hrs</span>
+      </div>
+      <div class="summary-row" *ngIf="data.attendanceHours">
+        <span class="label">Reference Attendance:</span>
+        <span class="value">{{ data.attendanceHours | number:'1.1-2' }} hrs</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Reporting Manager:</span>
+        <span class="value">{{ data.managerName || 'Assigned Manager' }}</span>
+      </div>
+    </div>
+
+    <!-- Active Shift Notice (if shift in progress) -->
+    <div class="shift-notice-box" *ngIf="data.isShiftInProgress">
+      <mat-icon>info</mat-icon>
+      <div class="notice-text">
+        <strong>Shift Currently In Progress</strong>
+        <p>Today's shift ({{ data.activeShiftDate }}) is active. Standard shift hours are included now and will automatically sync with your actual punch-out timestamp.</p>
+      </div>
+    </div>
+
+    <!-- Submission Notice Box -->
+    <div class="submission-notice-box">
+      <mat-icon>verified</mat-icon>
+      <div class="notice-text">
+        <strong>Lock Upon Submission</strong>
+        <p>Once submitted, this timesheet will be locked under review. Your manager will review and approve or reject your entries.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="onCancel()">
+      Cancel
+    </button>
+    <button type="button" class="btn-confirm-submit" (click)="onConfirm()">
+      <mat-icon>send</mat-icon>
+      <span>Confirm & Submit</span>
+    </button>
+  </div>
+</div>

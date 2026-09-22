@@ -218,6 +218,99 @@
   }
 }
 
+.status-cell-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.active-ticket-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  .chip-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+
+  &.badge-dispatched {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    animation: pulse-border 2s infinite ease-in-out;
+  }
+
+  &.badge-delivered {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+  }
+
+  &.badge-repair {
+    background-color: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+  }
+
+  &.badge-approved {
+    background-color: #f5f3ff;
+    color: #6d28d9;
+    border-color: #ddd6fe;
+  }
+
+  &.badge-submitted {
+    background-color: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+  }
+
+  &.badge-rejected {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+    font-weight: 700;
+
+    .chip-icon {
+      color: #ef4444;
+    }
+  }
+
+  &.badge-default {
+    background-color: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
 .audit-date {
   color: #64748b;
   font-size: 13px;

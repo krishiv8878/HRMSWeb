@@ -137,7 +137,7 @@ export class SkillComponent implements OnInit {
         return false;
       }).length;
     } else {
-      assigned = item.assignedCount || Math.max(2, Math.floor(18 - (idx * 2)));
+      assigned = item.assignedCount || 0;
     }
 
     // Dynamic Proficiency Benchmark calculation: prioritize DB property or workforce utilization
@@ -187,14 +187,7 @@ export class SkillComponent implements OnInit {
   }
 
   private getDefaultMockSkills(): SkillItem[] {
-    return [
-      { id: 1, skillName: 'Angular & TypeScript', category: 'Frontend', iconName: 'code', assignedCount: 24, proficiencyLevel: 'Expert', isActive: true },
-      { id: 2, skillName: 'ASP.NET Core & C#', category: 'Backend', iconName: 'dns', assignedCount: 22, proficiencyLevel: 'Expert', isActive: true },
-      { id: 3, skillName: 'Microsoft SQL Server', category: 'Database', iconName: 'storage', assignedCount: 19, proficiencyLevel: 'Advanced', isActive: true },
-      { id: 4, skillName: 'Microsoft Azure Cloud', category: 'Cloud & DevOps', iconName: 'cloud_queue', assignedCount: 16, proficiencyLevel: 'Advanced', isActive: true },
-      { id: 5, skillName: 'Figma & Design Systems', category: 'Design & UX', iconName: 'palette', assignedCount: 12, proficiencyLevel: 'Expert', isActive: true },
-      { id: 6, skillName: 'Agile & Scrum Leadership', category: 'Leadership', iconName: 'groups', assignedCount: 15, proficiencyLevel: 'Advanced', isActive: true }
-    ];
+    return [];
   }
 
   private processSkillMetrics() {

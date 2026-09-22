@@ -111,4 +111,12 @@ export class EmailService {
       })
     );
   }
+
+  cancelLeave(leaveRequestId: number, reason?: string): Observable<any> {
+    const payload = {
+      leaveRequestId: Number(leaveRequestId),
+      reason: reason || 'Cancelled by Employee'
+    };
+    return this.http.post<any>(this.apiUrl + `/LeaveRequest/CancelLeaveRequest`, payload);
+  }
 }

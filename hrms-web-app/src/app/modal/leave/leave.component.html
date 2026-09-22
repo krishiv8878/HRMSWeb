@@ -26,10 +26,32 @@
           type="text"
           formControlName="type"
           (keypress)="allowOnlyLetters($event)"
-          placeholder="e.g. Earned Leave, Casual Leave, Maternity Leave"
+          placeholder="e.g. Earned Leave, Casual Leave, Sick Leave, Maternity Leave"
           class="custom-input"
         />
       </div>
+    </div>
+
+    <!-- Allowed Days / Quota without LOP -->
+    <div class="form-group">
+      <div class="label-row">
+        <label class="field-label">Allowed Days / Quota (Days without LOP) <span class="required">*</span></label>
+        <span class="field-hint">e.g. 10 days</span>
+      </div>
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">event_available</mat-icon>
+        <input
+          type="number"
+          min="0"
+          max="365"
+          formControlName="allowedDays"
+          placeholder="e.g. 10 (without loss of pay)"
+          class="custom-input"
+        />
+      </div>
+      <p class="field-helper-text">
+        Employees receive this quota per year without Loss of Pay. Days requested beyond this limit (or if set to 0) will be considered Loss of Pay (LOP).
+      </p>
     </div>
 
     <!-- Description -->

@@ -145,7 +145,7 @@ export class DocumentService {
               ? `${this.apiUrl.replace('/api', '')}/ProfileImages/${item.profileImage}`
               : loggedUser.avatar;
 
-            const empName = item.employeeName || item.ownerName || loggedUser.name;
+            const empName = item.employeeName || item.uploadedByName || item.ownerName || (item.employeeId ? ('Employee #' + item.employeeId) : loggedUser.name);
             const parts = empName.trim().split(' ');
             const empInitials = parts.length > 1
               ? (parts[0][0] + parts[1][0]).toUpperCase()

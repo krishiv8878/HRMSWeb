@@ -96,8 +96,10 @@
         <label class="field-label">Assigned Employee <span class="required">*</span></label>
         <div class="input-wrapper">
           <mat-icon class="input-icon">person</mat-icon>
-          <select formControlName="assignedTo" class="custom-select">
-            <option *ngFor="let emp of employees" [value]="emp">{{ emp }}</option>
+          <select formControlName="employeeId" class="custom-select">
+            <option *ngFor="let emp of employees" [ngValue]="emp.id">
+              {{ emp.name }}
+            </option>
           </select>
         </div>
       </div>

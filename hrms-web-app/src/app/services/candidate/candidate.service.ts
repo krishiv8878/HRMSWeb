@@ -24,16 +24,7 @@ export class CandidateService {
   }
 
   updateData(data: any): Observable<any> {
-    const id = data.id || data.candidateId || 0;
-    return this.http.put<any>(this.apiUrl + `/Candidate/UpdateCandidate`, data).pipe(
-      catchError(() => {
-        return this.http.put<any>(this.apiUrl + `/Candidate/UpdateCandidate/${id}`, data).pipe(
-          catchError(() => {
-            return this.http.post<any>(this.apiUrl + `/Candidate/UpdateCandidate`, data);
-          })
-        );
-      })
-    );
+    return this.http.put<any>(this.apiUrl + `/Candidate/UpdateCandidate`, data);
   }
 
   UpdateData(data: any, id?: any): Observable<any> {
@@ -45,5 +36,9 @@ export class CandidateService {
     return this.http.delete<any>(this.apiUrl + `/Candidate/DeleteCandidate/${id}`).pipe(
       catchError(() => this.http.delete<any>(this.apiUrl + `/Candidate/DeleteCandidate?candidateId=${id}`))
     );
+  }
+
+  onboardCandidate(data: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl + `/Candidate/OnboardCandidate`, data);
   }
 }

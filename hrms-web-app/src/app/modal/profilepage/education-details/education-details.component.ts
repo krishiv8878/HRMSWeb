@@ -79,31 +79,19 @@ export class EducationDetailsComponent implements OnInit {
       if (this.data && (this.data.degree || this.data.university)) {
         this.educationList = [
           {
-            degree: this.data.degree || 'Master of Science in Computer Science',
-            university: this.data.university || 'Massachusetts Institute of Technology (MIT)',
-            yearOfPassing: this.data.yearOfPassing || '2016',
-            percentage: this.data.percentage || '3.92 GPA / Magna Cum Laude'
-          },
-          {
-            degree: 'Bachelor of Science in Information Technology',
-            university: 'Boston University College of Engineering',
-            yearOfPassing: '2014',
-            percentage: '3.85 GPA / First Class with Distinction'
+            degree: this.data.degree || '',
+            university: this.data.university || '',
+            yearOfPassing: this.data.yearOfPassing ? String(this.data.yearOfPassing) : '',
+            percentage: this.data.percentage ? String(this.data.percentage) : ''
           }
         ];
       } else {
         this.educationList = [
           {
-            degree: 'Master of Science in Computer Science',
-            university: 'Massachusetts Institute of Technology (MIT)',
-            yearOfPassing: '2016',
-            percentage: '3.92 GPA / Magna Cum Laude'
-          },
-          {
-            degree: 'Bachelor of Science in Information Technology',
-            university: 'Boston University College of Engineering',
-            yearOfPassing: '2014',
-            percentage: '3.85 GPA / First Class with Distinction'
+            degree: '',
+            university: '',
+            yearOfPassing: '',
+            percentage: ''
           }
         ];
       }

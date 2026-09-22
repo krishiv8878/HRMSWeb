@@ -25,40 +25,67 @@
         <input
           matInput
           [matDatepicker]="picker"
+          [min]="minDate"
+          [max]="maxDate"
           formControlName="selectedDate"
           class="custom-input"
+          placeholder="Select date to regularize"
         />
         <mat-datepicker-toggle matSuffix [for]="picker" class="picker-toggle"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
       </div>
     </div>
 
+    <!-- Verified In-Punch Banner when clockIn already exists -->
+    <div class="existing-clockin-banner" *ngIf="hasExistingClockIn">
+      <div class="banner-left">
+        <mat-icon class="verified-icon">check_circle</mat-icon>
+        <div class="banner-text">
+          <span class="banner-label">Clock-In Verified</span>
+          <strong class="banner-time">{{ existingClockInDisplay || attendaseform.getRawValue().clockIn }}</strong>
+        </div>
+      </div>
+      <span class="banner-hint">Your arrival punch is locked. Please specify your Clock-Out time below.</span>
+    </div>
+
     <!-- Time Adjustments Row -->
     <div class="form-divider">
-      <span>PUNCH TIME ADJUSTMENT</span>
+      <span>{{ hasExistingClockIn ? 'SPECIFY DEPARTURE TIME' : 'PUNCH TIME ADJUSTMENT' }}</span>
     </div>
 
     <div class="form-row-2">
       <div class="form-group">
-        <label class="field-label">Adjusted In-Time <span class="required">*</span></label>
+        <label class="field-label">
+          Clock-In Time
+          <span class="badge-locked" *ngIf="hasExistingClockIn">
+            <mat-icon>lock</mat-icon> Verified
+          </span>
+          <span class="required" *ngIf="!hasExistingClockIn">*</span>
+        </label>
         <div class="input-wrapper">
           <mat-icon class="input-icon">login</mat-icon>
           <input
             type="time"
             formControlName="clockIn"
             class="custom-input"
+            [class.is-locked]="hasExistingClockIn"
+            [readonly]="hasExistingClockIn"
           />
         </div>
       </div>
 
       <div class="form-group">
-        <label class="field-label">Adjusted Out-Time <span class="required">*</span></label>
+        <label class="field-label">
+          Clock-Out Time <span class="required">*</span>
+          <span class="badge-action-target" *ngIf="hasExistingClockIn">Required</span>
+        </label>
         <div class="input-wrapper">
           <mat-icon class="input-icon">logout</mat-icon>
           <input
             type="time"
             formControlName="clockOut"
             class="custom-input"
+            [class.highlight-input]="hasExistingClockIn"
           />
         </div>
       </div>

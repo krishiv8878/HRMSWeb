@@ -221,7 +221,68 @@
       </div>
     </div>
 
-    <!-- Row 7: Active Checkbox -->
+    <!-- Section: Interview & Assessment -->
+    <div class="form-divider">
+      <span>INTERVIEWER ASSIGNMENT & REMARKS (OPTIONAL)</span>
+    </div>
+
+    <!-- Row 7: Interviewer & Recommendation -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Assigned Interviewer</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">person_outline</mat-icon>
+          <select formControlName="interviewerId" class="custom-select">
+            <option [ngValue]="null">Select active employee as interviewer...</option>
+            <option *ngFor="let emp of employees" [ngValue]="emp.id">
+              {{ emp.firstName }} {{ emp.lastName }} ({{ emp.designation || emp.rolenames || 'Employee' }})
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Recommendation / Outcome</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">recommend</mat-icon>
+          <select formControlName="interviewRecommendation" class="custom-select">
+            <option *ngFor="let rec of recommendationOptions" [value]="rec">{{ rec }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 8: Interviewer Remarks & Rating -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Technical Rating (1 to 5 Stars)</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">star</mat-icon>
+          <select formControlName="interviewRating" class="custom-select">
+            <option [value]="5">5 Stars (Exceptional Match)</option>
+            <option [value]="4">4 Stars (Strong Competence)</option>
+            <option [value]="3">3 Stars (Meets Expectations)</option>
+            <option [value]="2">2 Stars (Needs Improvement)</option>
+            <option [value]="1">1 Star (Unsatisfactory)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Interviewer Remarks / Feedback</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">rate_review</mat-icon>
+          <input
+            type="text"
+            formControlName="interviewerRemarks"
+            placeholder="e.g. Strong in Angular and C#, good problem solver"
+            class="custom-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 9: Active Checkbox -->
     <div class="form-group-checkbox">
       <label class="checkbox-label">
         <input type="checkbox" formControlName="isActive" class="custom-checkbox" />

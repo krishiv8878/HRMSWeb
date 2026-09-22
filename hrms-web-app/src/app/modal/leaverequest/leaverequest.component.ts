@@ -17,6 +17,7 @@ export interface LeaveTypeItem {
   leaveTypeName: string;
   leaveName?: string;
   type?: string;
+  allowedDays?: number;
 }
 
 @Component({
@@ -56,6 +57,13 @@ export class LeaverequestComponent implements OnInit {
   sickLeaveDays: number = 7;
   calculatedDays: number = 0;
 
+  // Loss of Pay (LOP) tracking
+  selectedLeaveRemaining: number | null = null;
+  selectedLeaveQuota: number | null = null;
+  selectedLeaveName: string = '';
+  lopDays: number = 0;
+  isFullLop: boolean = false;
+
   constructor(
     @Optional() private dialogRef?: MatDialogRef<LeaverequestComponent>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: any
@@ -66,6 +74,7 @@ export class LeaverequestComponent implements OnInit {
     this.loadLeaveTypes();
     this.loadLeaveBalances();
 
+    this.leaveForm.get('leaveTypeId')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('startDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('endDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('leaveMode')?.valueChanges.subscribe(() => this.updateCalculatedDays());
@@ -82,6 +91,7 @@ export class LeaverequestComponent implements OnInit {
           const sick = list.find(b => b.leaveTypeName?.toLowerCase().includes('sick') || b.leaveTypeName?.toLowerCase().includes('casual'));
           if (annual) this.annualLeaveDays = annual.remainingDays;
           if (sick) this.sickLeaveDays = sick.remainingDays;
+          this.recalculateLop();
         }
       },
       error: (err) => {
@@ -97,11 +107,13 @@ export class LeaverequestComponent implements OnInit {
 
     if (!s || !e) {
       this.calculatedDays = 0;
+      this.recalculateLop();
       return;
     }
 
     if (mode && mode.toLowerCase().includes('half')) {
       this.calculatedDays = 0.5;
+      this.recalculateLop();
       return;
     }
 
@@ -109,6 +121,7 @@ export class LeaverequestComponent implements OnInit {
     const end = new Date(e);
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
       this.calculatedDays = 0;
+      this.recalculateLop();
       return;
     }
 
@@ -124,6 +137,47 @@ export class LeaverequestComponent implements OnInit {
     }
 
     this.calculatedDays = Math.max(1, count);
+    this.recalculateLop();
+  }
+
+  recalculateLop() {
+    const selectedTypeId = Number(this.leaveForm.get('leaveTypeId')?.value);
+    if (!selectedTypeId) {
+      this.selectedLeaveRemaining = null;
+      this.selectedLeaveQuota = null;
+      this.selectedLeaveName = '';
+      this.lopDays = 0;
+      this.isFullLop = false;
+      return;
+    }
+
+    const matchedBalance = this.leaveBalances.find(b => Number(b.leaveTypeId) === selectedTypeId);
+    const matchedType = this.leaveTypes.find(t => t.id === selectedTypeId);
+
+    if (matchedBalance) {
+      this.selectedLeaveRemaining = Number(matchedBalance.remainingDays ?? 0);
+      this.selectedLeaveQuota = Number(matchedBalance.totalQuota ?? 0);
+      this.selectedLeaveName = matchedBalance.leaveTypeName || '';
+    } else if (matchedType) {
+      this.selectedLeaveRemaining = Number(matchedType.allowedDays ?? 0);
+      this.selectedLeaveQuota = Number(matchedType.allowedDays ?? 0);
+      this.selectedLeaveName = matchedType.leaveTypeName;
+    } else {
+      this.selectedLeaveRemaining = null;
+      this.selectedLeaveQuota = null;
+      this.selectedLeaveName = '';
+    }
+
+    if (this.selectedLeaveQuota === 0) {
+      this.isFullLop = true;
+      this.lopDays = this.calculatedDays;
+    } else if (this.selectedLeaveRemaining !== null) {
+      this.isFullLop = false;
+      this.lopDays = Math.max(0, this.calculatedDays - this.selectedLeaveRemaining);
+    } else {
+      this.isFullLop = false;
+      this.lopDays = 0;
+    }
   }
 
   private formatDateForInput(dateStr: string): string {
@@ -163,7 +217,8 @@ export class LeaverequestComponent implements OnInit {
         if (rawList.length > 0) {
           this.leaveTypes = rawList.map((item: any) => ({
             id: Number(item.id || item.leaveTypeId || 1),
-            leaveTypeName: item.type || item.leaveTypeName || item.leaveName || 'Leave'
+            leaveTypeName: item.type || item.leaveTypeName || item.leaveName || 'Leave',
+            allowedDays: item.allowedDays !== undefined && item.allowedDays !== null ? Number(item.allowedDays) : 0
           }));
         } else {
           this.leaveTypes = [];

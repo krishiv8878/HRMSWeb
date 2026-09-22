@@ -42,6 +42,7 @@ export class LeaveComponent implements OnInit {
         id: this.data.id || this.data.leaveTypeId || 0,
         type: this.data.type || this.data.leaveTypeName || this.data.leaveName || '',
         description: this.data.description || '',
+        allowedDays: this.data.allowedDays !== undefined && this.data.allowedDays !== null ? Number(this.data.allowedDays) : 0,
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
     }
@@ -52,6 +53,7 @@ export class LeaveComponent implements OnInit {
       id: [0],
       type: ['', [Validators.required, Validators.minLength(2)]],
       description: ['', [Validators.required, Validators.minLength(3)]],
+      allowedDays: [10, [Validators.required, Validators.min(0)]],
       isActive: [true, [Validators.required]]
     });
   }
@@ -66,7 +68,7 @@ export class LeaveComponent implements OnInit {
   onSubmit() {
     if (this.leaveForm.invalid) {
       this.leaveForm.markAllAsTouched();
-      this.toastr.warning('Please enter valid leave type name and description.');
+      this.toastr.warning('Please enter valid leave type details and allowed days.');
       return;
     }
 
@@ -78,6 +80,7 @@ export class LeaveComponent implements OnInit {
       leaveTypeName: formVal.type,
       leaveName: formVal.type,
       description: formVal.description,
+      allowedDays: Number(formVal.allowedDays !== undefined && formVal.allowedDays !== null ? formVal.allowedDays : 0),
       isActive: formVal.isActive !== false
     };
 

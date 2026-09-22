@@ -6,18 +6,17 @@
       <p class="page-subtitle">Track, request, and manage employee time off.</p>
     </div>
 
-    <!-- Header Action Buttons: Export & + Apply Leave -->
+    <!-- Header Action Buttons: + Apply Leave (Self Only) or Supervisor Mode Pill -->
     <div class="action-buttons">
-      <!-- Export Button with Upward Reversed Arrow -->
-      <button type="button" class="btn-export" (click)="onExport()">
-        <mat-icon class="btn-icon">upload</mat-icon>
-        <span>Export</span>
-      </button>
-
-      <button type="button" class="btn-apply-leave" (click)="openApplyLeaveModal()">
+      <button *ngIf="!isViewingOtherEmployee" type="button" class="btn-apply-leave" (click)="openApplyLeaveModal()">
         <mat-icon class="btn-icon">add</mat-icon>
         <span>Apply Leave</span>
       </button>
+
+      <div *ngIf="isViewingOtherEmployee" class="supervisor-mode-pill" title="Supervisor Audit Mode: Applying and canceling leaves on behalf of another employee is disabled.">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span>AUDIT VIEW: {{ selectedEmployeeName || 'Selected Employee' }}</span>
+      </div>
     </div>
   </div>
 
@@ -131,6 +130,7 @@
             <th>LEAVE TYPE</th>
             <th>REASON</th>
             <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -164,11 +164,26 @@
                 {{ getStatusText(req) }}
               </span>
             </td>
+
+            <!-- Actions Column -->
+            <td class="col-actions text-right">
+              <button
+                *ngIf="canCancelLeave(req)"
+                type="button"
+                class="btn-cancel-leave-action"
+                (click)="onCancelLeave(req)"
+                title="Cancel this leave request and restore quota"
+              >
+                <mat-icon>cancel</mat-icon>
+                <span>Cancel</span>
+              </button>
+              <span *ngIf="!canCancelLeave(req)" class="text-muted-dash">--</span>
+            </td>
           </tr>
 
           <!-- Empty State -->
           <tr *ngIf="paginatedRequests.length === 0">
-            <td colspan="5" class="empty-state">
+            <td colspan="6" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">event_busy</mat-icon>
                 <p *ngIf="allRequests.length === 0">

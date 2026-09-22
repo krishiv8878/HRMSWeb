@@ -86,6 +86,34 @@
         </span>
       </div>
 
+      <!-- LOP Warning / Status Banner -->
+      <div class="lop-notice-banner" *ngIf="calculatedDays > 0 && selectedLeaveQuota !== null" [class.is-lop]="lopDays > 0" [class.is-covered]="lopDays === 0">
+        <div class="lop-icon-wrap">
+          <mat-icon>{{ lopDays > 0 ? 'warning_amber' : 'verified' }}</mat-icon>
+        </div>
+        <div class="lop-text-wrap">
+          <span class="lop-title" *ngIf="isFullLop">
+            Loss of Pay (LOP) Policy Notice
+          </span>
+          <span class="lop-title" *ngIf="!isFullLop && lopDays > 0">
+            Leave Quota Exceeded: {{ lopDays }} Day{{ lopDays > 1 ? 's' : '' }} will be Loss of Pay (LOP)
+          </span>
+          <span class="lop-title" *ngIf="!isFullLop && lopDays === 0">
+            Within Paid Leave Quota (0 Days LOP)
+          </span>
+
+          <p class="lop-desc" *ngIf="isFullLop">
+            {{ selectedLeaveName }} has 0 paid quota days. All <strong>{{ calculatedDays }} day{{ calculatedDays > 1 ? 's' : '' }}</strong> will be treated as Loss of Pay (unpaid leave).
+          </p>
+          <p class="lop-desc" *ngIf="!isFullLop && lopDays > 0">
+            You have <strong>{{ selectedLeaveRemaining }} day{{ selectedLeaveRemaining !== 1 ? 's' : '' }}</strong> remaining out of your {{ selectedLeaveQuota }}-day quota for {{ selectedLeaveName }}. Applying for {{ calculatedDays }} days results in <strong>{{ lopDays }} day{{ lopDays > 1 ? 's' : '' }} Loss of Pay (LOP)</strong>.
+          </p>
+          <p class="lop-desc" *ngIf="!isFullLop && lopDays === 0">
+            This request is completely covered by your remaining <strong>{{ selectedLeaveRemaining }} day{{ selectedLeaveRemaining !== 1 ? 's' : '' }}</strong> balance (no salary deduction).
+          </p>
+        </div>
+      </div>
+
       <!-- Reason Textarea -->
       <div class="form-group">
         <label class="field-label">Reason / Justification</label>

@@ -1,8 +1,20 @@
 <div class="profile-dashboard-container">
+  <!-- Top Navigation Return Banner (When inspecting another employee) -->
+  <div class="directory-return-banner" *ngIf="isViewingOtherEmployee">
+    <button type="button" class="btn-back-directory" (click)="backToDirectory()">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Back to Employee Directory</span>
+    </button>
+    <div class="active-record-pill">
+      <span class="active-dot"></span>
+      <span>Viewing Personnel Record: <strong>{{ employedata?.firstName }} {{ employedata?.lastName }}</strong> (ID: #{{ employedata?.id }})</span>
+    </div>
+  </div>
+
   <!-- Top Header Section -->
   <div class="header-section">
     <div class="title-group">
-      <h1 class="page-title">Employee 360° Profile Hub</h1>
+      <h1 class="page-title">{{ isViewingOtherEmployee ? (employedata?.firstName + ' ' + employedata?.lastName + ' – 360° Profile') : 'Employee 360° Profile Hub' }}</h1>
       <p class="page-subtitle">
         Comprehensive workforce dossier, credentials, compensation setup, and professional history.
       </p>
@@ -47,31 +59,31 @@
         </div>
 
         <div class="identity-role-row">
-          <span class="designation-title">{{ employedata?.designation || 'Principal Solutions Architect' }}</span>
+          <span class="designation-title">{{ employedata?.designation || 'Staff Member' }}</span>
           <span class="divider-bullet">•</span>
-          <span class="dept-badge">{{ employedata?.department || 'Engineering & Cloud Architecture' }}</span>
-          <span class="divider-bullet">•</span>
-          <span class="code-badge">{{ employedata?.employeeCode || ('EMP-00' + employedata?.id) }}</span>
+          <span class="dept-badge">{{ employedata?.department || 'General Workforce' }}</span>
+          <span class="divider-bullet" *ngIf="employedata?.employeeCode || employedata?.id">•</span>
+          <span class="code-badge" *ngIf="employedata?.employeeCode || employedata?.id">{{ employedata?.employeeCode || ('EMP-00' + employedata?.id) }}</span>
         </div>
 
         <!-- Hero Quick Stats Chips -->
         <div class="quick-stats-strip">
-          <div class="stat-chip">
+          <div class="stat-chip" *ngIf="employedata?.emailAddress">
             <mat-icon class="chip-icon">email</mat-icon>
             <span>{{ employedata?.emailAddress }}</span>
           </div>
 
-          <div class="stat-chip">
+          <div class="stat-chip" *ngIf="employedata?.mobileNumber">
             <mat-icon class="chip-icon">phone</mat-icon>
             <span>{{ employedata?.mobileNumber }}</span>
           </div>
 
-          <div class="stat-chip">
+          <div class="stat-chip" *ngIf="employedata?.currentAddress">
             <mat-icon class="chip-icon">location_on</mat-icon>
-            <span>{{ employedata?.currentAddress ? (employedata?.currentAddress.split(',')[0]) : 'HQ Office' }}</span>
+            <span>{{ employedata?.currentAddress.split(',')[0] }}</span>
           </div>
 
-          <div class="stat-chip">
+          <div class="stat-chip" *ngIf="employedata?.dateOfJoining">
             <mat-icon class="chip-icon">event</mat-icon>
             <span>Joined {{ employedata?.dateOfJoining | date:'dd MMM yyyy' }}</span>
           </div>
@@ -163,46 +175,56 @@
         </div>
       </div>
 
-      <div class="card-body-stacked">
+      <div *ngIf="employedata?.primaryContactName" class="card-body-stacked">
         <!-- Primary Contact -->
         <div class="sub-contact-block">
           <div class="sub-contact-header">
             <span class="badge-contact-tier tier-primary">PRIMARY CONTACT</span>
-            <span class="contact-rel">{{ employedata?.primaryContactRelationship || 'Spouse' }}</span>
+            <span class="contact-rel">{{ employedata?.primaryContactRelationship || 'Primary Responder' }}</span>
           </div>
           <div class="contact-details-grid">
             <div class="data-item">
               <span class="data-label">Full Name</span>
-              <span class="data-value font-semibold">{{ employedata?.primaryContactName || 'Robert Jenkins' }}</span>
+              <span class="data-value font-semibold">{{ employedata?.primaryContactName }}</span>
             </div>
             <div class="data-item">
               <span class="data-label">Emergency Phone</span>
-              <span class="data-value text-blue">{{ employedata?.primaryContactPhone || '+1 (555) 876-5432' }}</span>
+              <span class="data-value text-blue">{{ employedata?.primaryContactPhone || '—' }}</span>
             </div>
             <div class="data-item span-2">
               <span class="data-label">Email Address</span>
-              <span class="data-value">{{ employedata?.primaryEmailAddress || 'robert.jenkins@example.com' }}</span>
+              <span class="data-value">{{ employedata?.primaryEmailAddress || '—' }}</span>
             </div>
           </div>
         </div>
 
         <!-- Secondary Contact -->
-        <div class="sub-contact-block">
+        <div class="sub-contact-block" *ngIf="employedata?.secondaryContactName">
           <div class="sub-contact-header">
             <span class="badge-contact-tier tier-secondary">SECONDARY CONTACT</span>
-            <span class="contact-rel">{{ employedata?.secondaryContactRelationship || 'Parent / Relative' }}</span>
+            <span class="contact-rel">{{ employedata?.secondaryContactRelationship || 'Secondary Responder' }}</span>
           </div>
           <div class="contact-details-grid">
             <div class="data-item">
               <span class="data-label">Full Name</span>
-              <span class="data-value font-semibold">{{ employedata?.secondaryContactName || 'Eleanor Vance' }}</span>
+              <span class="data-value font-semibold">{{ employedata?.secondaryContactName }}</span>
             </div>
             <div class="data-item">
               <span class="data-label">Emergency Phone</span>
-              <span class="data-value text-blue">{{ employedata?.secondaryContactPhone || '+1 (555) 345-6789' }}</span>
+              <span class="data-value text-blue">{{ employedata?.secondaryContactPhone || '—' }}</span>
             </div>
           </div>
         </div>
+      </div>
+
+      <div *ngIf="!employedata?.primaryContactName" class="empty-section-state">
+        <mat-icon class="empty-icon text-red">emergency</mat-icon>
+        <p class="empty-title">No Emergency Contacts Registered</p>
+        <p class="empty-sub">Designated emergency responders and family contacts have not been configured yet.</p>
+        <button type="button" class="btn-empty-action" (click)="contact(employedata)">
+          <mat-icon>add</mat-icon>
+          <span>Add Emergency Contacts</span>
+        </button>
       </div>
     </div>
 
@@ -230,27 +252,37 @@
         </div>
       </div>
 
-      <div class="card-body-stacked">
+      <div *ngIf="getEducationsList().length > 0" class="card-body-stacked">
         <div *ngFor="let edu of getEducationsList(); let i = index" class="sub-timeline-block">
           <div class="sub-timeline-header">
             <div class="degree-title-group">
               <span class="tier-indicator tier-purple">#{{ i + 1 }}</span>
-              <span class="item-primary-title">{{ edu.degree }}</span>
+              <span class="item-primary-title">{{ edu.degree || 'Degree' }}</span>
             </div>
-            <span class="year-pill">{{ edu.yearOfPassing }}</span>
+            <span *ngIf="edu.yearOfPassing" class="year-pill">{{ edu.yearOfPassing }}</span>
           </div>
 
           <div class="timeline-meta-row">
-            <div class="meta-item">
+            <div class="meta-item" *ngIf="edu.university">
               <mat-icon class="meta-icon">account_balance</mat-icon>
               <span>{{ edu.university }}</span>
             </div>
-            <div class="meta-item meta-score">
+            <div class="meta-item meta-score" *ngIf="edu.percentage">
               <mat-icon class="meta-icon">military_tech</mat-icon>
               <span class="text-emerald font-semibold">{{ edu.percentage }}</span>
             </div>
           </div>
         </div>
+      </div>
+
+      <div *ngIf="getEducationsList().length === 0" class="empty-section-state">
+        <mat-icon class="empty-icon text-purple">school</mat-icon>
+        <p class="empty-title">No Academic Qualifications Added</p>
+        <p class="empty-sub">Academic degrees, universities, and graduation records have not been recorded yet.</p>
+        <button type="button" class="btn-empty-action" (click)="education(employedata)">
+          <mat-icon>add</mat-icon>
+          <span>Add Academic Credentials</span>
+        </button>
       </div>
     </div>
 
@@ -278,7 +310,7 @@
         </div>
       </div>
 
-      <div class="card-body-stacked">
+      <div *ngIf="getExperiencesList().length > 0" class="card-body-stacked">
         <div *ngFor="let exp of getExperiencesList(); let i = index" class="sub-timeline-block">
           <div class="sub-timeline-header">
             <div class="degree-title-group">
@@ -286,11 +318,11 @@
               <span class="item-primary-title">{{ exp.companyName }}</span>
               <span *ngIf="exp.designation" class="role-inline-tag">{{ exp.designation }}</span>
             </div>
-            <span class="duration-pill">{{ exp.experienceDuration }}</span>
+            <span *ngIf="exp.experienceDuration" class="duration-pill">{{ exp.experienceDuration }}</span>
           </div>
 
-          <div class="timeline-meta-row">
-            <div class="meta-item" *ngIf="exp.experienceLocation">
+          <div class="timeline-meta-row" *ngIf="exp.experienceLocation">
+            <div class="meta-item">
               <mat-icon class="meta-icon">location_on</mat-icon>
               <span>{{ exp.experienceLocation }}</span>
             </div>
@@ -301,9 +333,101 @@
           </p>
         </div>
       </div>
+
+      <div *ngIf="getExperiencesList().length === 0" class="empty-section-state">
+        <mat-icon class="empty-icon text-amber">work_history</mat-icon>
+        <p class="empty-title">No Prior Career Experience Added</p>
+        <p class="empty-sub">Prior employers, industry experience, and professional tenure have not been recorded yet.</p>
+        <button type="button" class="btn-empty-action" (click)="experience(employedata)">
+          <mat-icon>add</mat-icon>
+          <span>Add Work History</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Card 5: Direct Deposit & Payroll Banking -->
+    <!-- Card 5: Compensation & Annual CTC Breakdown -->
+    <div class="section-card compensation-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-emerald">
+            <mat-icon>payments</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Compensation & Annual CTC Breakdown</h3>
+            <p>Annual cost-to-company, statutory allowances, and take-home metrics</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <span class="badge-ctc-pill" *ngIf="ctcBreakdown?.annualCtc">{{ formatLpa(ctcBreakdown?.annualCtc) }}</span>
+          <button
+            *ngIf="isAdminOrHr"
+            type="button"
+            class="btn-card-edit btn-ctc-edit"
+            (click)="editCtcBreakdown()"
+            title="Edit Compensation & CTC Breakdown"
+          >
+            <mat-icon>{{ ctcBreakdown ? 'edit' : 'add' }}</mat-icon>
+            <span class="btn-text">{{ ctcBreakdown ? 'Edit CTC' : 'Configure CTC' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="ctcBreakdown && ctcBreakdown.annualCtc">
+        <div class="ctc-summary-banner">
+          <div class="banner-stat">
+            <span class="stat-title">Annual Gross CTC</span>
+            <span class="stat-amt font-mono">{{ formatCurrency(ctcBreakdown?.annualCtc) }}</span>
+            <span class="stat-sub">{{ formatLpa(ctcBreakdown?.annualCtc) }} Total Cost</span>
+          </div>
+          <div class="banner-divider"></div>
+          <div class="banner-stat">
+            <span class="stat-title">Gross Monthly Pay</span>
+            <span class="stat-amt font-mono">{{ formatCurrency(ctcBreakdown?.grossMonthlySalary || (ctcBreakdown?.basicSalary + ctcBreakdown?.hra + ctcBreakdown?.specialAllowance)) }}</span>
+            <span class="stat-sub">Before statutory deductions</span>
+          </div>
+          <div class="banner-divider"></div>
+          <div class="banner-stat highlight-emerald">
+            <span class="stat-title">Net Take-Home (Monthly)</span>
+            <span class="stat-amt font-mono text-emerald">{{ formatCurrency(ctcBreakdown?.netMonthlySalary) }}</span>
+            <span class="stat-sub">In-hand monthly bank deposit</span>
+          </div>
+        </div>
+
+        <div class="card-body-grid">
+          <div class="data-item">
+            <span class="data-label">Basic Salary (50%)</span>
+            <span class="data-value font-mono font-semibold">{{ formatCurrency(ctcBreakdown?.basicSalary) }} /mo</span>
+          </div>
+
+          <div class="data-item">
+            <span class="data-label">House Rent Allowance (HRA 20%)</span>
+            <span class="data-value font-mono font-semibold">{{ formatCurrency(ctcBreakdown?.hra) }} /mo</span>
+          </div>
+
+          <div class="data-item">
+            <span class="data-label">Special / Flexible Allowance</span>
+            <span class="data-value font-mono font-semibold">{{ formatCurrency(ctcBreakdown?.specialAllowance) }} /mo</span>
+          </div>
+
+          <div class="data-item">
+            <span class="data-label">Provident Fund (PF Deduction)</span>
+            <span class="data-value font-mono text-red font-semibold">- {{ formatCurrency(ctcBreakdown?.pfDeduction) }} /mo</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!ctcBreakdown || !ctcBreakdown.annualCtc" class="empty-section-state">
+        <mat-icon class="empty-icon text-emerald">payments</mat-icon>
+        <p class="empty-title">Compensation Structure Not Configured</p>
+        <p class="empty-sub">Annual cost-to-company (CTC) and monthly statutory allowances have not been configured for this employee yet.</p>
+        <button *ngIf="isAdminOrHr" type="button" class="btn-empty-action" (click)="editCtcBreakdown()">
+          <mat-icon>payments</mat-icon>
+          <span>Configure CTC Breakdown</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 6: Direct Deposit & Payroll Banking -->
     <div class="section-card">
       <div class="card-header">
         <div class="header-left">
@@ -322,7 +446,7 @@
         </div>
       </div>
 
-      <div class="card-body-grid">
+      <div *ngIf="paymentdata && paymentdata.accountNumber" class="card-body-grid">
         <div class="data-item">
           <span class="data-label">Account Holder Name</span>
           <span class="data-value font-semibold">{{ paymentdata?.nameOnAccount || (employedata?.firstName + ' ' + employedata?.lastName) }}</span>
@@ -330,13 +454,13 @@
 
         <div class="data-item">
           <span class="data-label">Financial Institution</span>
-          <span class="data-value">{{ paymentdata?.bankName || 'JPMorgan Chase Bank, N.A.' }}</span>
+          <span class="data-value">{{ paymentdata?.bankName || '—' }}</span>
         </div>
 
         <div class="data-item">
           <span class="data-label">Account Number (Encrypted)</span>
           <div class="account-reveal-group">
-            <span class="data-value font-mono">{{ getMaskedAccount(paymentdata?.accountNumber || '4829104928194') }}</span>
+            <span class="data-value font-mono">{{ getMaskedAccount(paymentdata?.accountNumber) }}</span>
             <button type="button" class="btn-eye-toggle" (click)="toggleAccountSecret()" title="Toggle Reveal Account Number">
               <mat-icon>{{ showAccountSecret ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
@@ -344,8 +468,8 @@
         </div>
 
         <div class="data-item">
-          <span class="data-label">IFSC / Swift Routing Code</span>
-          <span class="data-value font-mono text-blue font-semibold">{{ paymentdata?.ifscCode || 'CHASUS33' }}</span>
+          <span class="data-label">IFSC / Routing Code</span>
+          <span class="data-value font-mono text-blue font-semibold">{{ paymentdata?.ifscCode || '—' }}</span>
         </div>
 
         <div class="data-item span-2">
@@ -356,9 +480,78 @@
           </span>
         </div>
       </div>
+
+      <div *ngIf="!paymentdata || !paymentdata.accountNumber" class="empty-section-state">
+        <mat-icon class="empty-icon text-emerald">account_balance</mat-icon>
+        <p class="empty-title">No Banking Coordinates Configured</p>
+        <p class="empty-sub">Direct deposit bank account credentials have not been configured for automated salary disbursement.</p>
+        <button type="button" class="btn-empty-action" (click)="bankinfo(paymentdata)">
+          <mat-icon>add</mat-icon>
+          <span>Configure Bank Details</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Card 6: Passport & Statutory ID -->
+    <!-- Card 7: Salary Disbursements & Payslips History -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-emerald">
+            <mat-icon>receipt_long</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Salary Disbursements & Payslips</h3>
+            <p>Monthly salary credit receipts, transaction UTR records, and official payslips</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <span class="badge-ctc-pill" *ngIf="disbursementsList.length > 0">{{ disbursementsList.length }} Credited</span>
+        </div>
+      </div>
+
+      <div *ngIf="disbursementsList.length > 0" class="disbursements-table-wrapper">
+        <table class="disbursement-history-table">
+          <thead>
+            <tr>
+              <th>Disbursement Month</th>
+              <th>Credited Date</th>
+              <th>Transaction Ref / UTR</th>
+              <th>Net Credited</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let disb of disbursementsList">
+              <td class="font-semibold">{{ disb.month }}</td>
+              <td>{{ disb.paymentDate }}</td>
+              <td><span class="font-mono text-muted">{{ disb.transactionRef || '—' }}</span></td>
+              <td class="font-mono font-bold text-emerald">{{ formatCurrency(disb.netSalary) }}</td>
+              <td>
+                <span class="badge-status-credited">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Credited</span>
+                </span>
+              </td>
+              <td class="text-right">
+                <button type="button" class="btn-view-slip" (click)="viewPayslip(disb)" title="View & Download Official Payslip">
+                  <mat-icon>receipt</mat-icon>
+                  <span>View Payslip</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="disbursementsList.length === 0" class="empty-section-state">
+        <mat-icon class="empty-icon text-emerald">receipt_long</mat-icon>
+        <p class="empty-title">No Salary Disbursements Recorded Yet</p>
+        <p class="empty-sub">Monthly salary credit records and downloadable payslips will appear here once payroll disbursements are marked by HR/Finance.</p>
+      </div>
+    </div>
+
+    <!-- Card 8: Passport & Statutory ID -->
     <div class="section-card">
       <div class="card-header">
         <div class="header-left">
@@ -377,34 +570,44 @@
         </div>
       </div>
 
-      <div class="card-body-grid">
+      <div *ngIf="employedata?.passportNumber" class="card-body-grid">
         <div class="data-item">
           <span class="data-label">Passport Number</span>
-          <span class="data-value font-mono font-semibold">{{ employedata?.passportNumber || 'N849201948' }}</span>
+          <span class="data-value font-mono font-semibold">{{ employedata?.passportNumber }}</span>
         </div>
 
         <div class="data-item">
           <span class="data-label">Country of Citizenship</span>
-          <span class="data-value">{{ employedata?.nationality || 'United States' }}</span>
+          <span class="data-value">{{ employedata?.nationality || 'Not Specified' }}</span>
         </div>
 
         <div class="data-item">
           <span class="data-label">Issue Date</span>
-          <span class="data-value">{{ (employedata?.passportIssueDate | date:'dd MMM yyyy') || '12 Apr 2020' }}</span>
+          <span class="data-value">{{ (employedata?.passportIssueDate | date:'dd MMM yyyy') || '—' }}</span>
         </div>
 
         <div class="data-item">
           <span class="data-label">Expiration Date</span>
-          <span class="data-value">{{ (employedata?.passportExpiryDate | date:'dd MMM yyyy') || '11 Apr 2030' }}</span>
+          <span class="data-value">{{ (employedata?.passportExpiryDate | date:'dd MMM yyyy') || '—' }}</span>
         </div>
 
         <div class="data-item span-2">
           <span class="data-label">Document Scan Copy Status</span>
           <span class="badge-doc-verified">
-            <mat-icon>check_circle</mat-icon>
-            <span>{{ employedata?.passportScanCopy || 'Encrypted Digital Copy Archived on File' }}</span>
+            <mat-icon>{{ employedata?.passportScanCopy ? 'check_circle' : 'pending' }}</mat-icon>
+            <span>{{ employedata?.passportScanCopy ? 'Verified Digital Copy on File' : 'Pending Document Upload' }}</span>
           </span>
         </div>
+      </div>
+
+      <div *ngIf="!employedata?.passportNumber" class="empty-section-state">
+        <mat-icon class="empty-icon text-indigo">badge</mat-icon>
+        <p class="empty-title">No Passport Information Submitted</p>
+        <p class="empty-sub">Statutory international travel credentials and passport compliance documents have not been submitted.</p>
+        <button type="button" class="btn-empty-action" (click)="passportinfo(employedata)">
+          <mat-icon>add</mat-icon>
+          <span>Add Passport Details</span>
+        </button>
       </div>
     </div>
   </div>
@@ -422,11 +625,15 @@
       </button>
     </div>
 
-    <div class="skills-tag-cloud">
+    <div class="skills-tag-cloud" *ngIf="getSkillsArray().length > 0">
       <span *ngFor="let s of getSkillsArray()" class="skill-tag-pill">
         <span class="pill-dot"></span>
         <span>{{ s }}</span>
       </span>
+    </div>
+
+    <div class="skills-empty-state" *ngIf="getSkillsArray().length === 0">
+      <span>No technical competencies recorded yet. Click 'Manage Skills' to add competencies.</span>
     </div>
   </div>
 </div>

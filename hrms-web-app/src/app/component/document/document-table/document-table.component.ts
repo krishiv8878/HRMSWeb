@@ -40,6 +40,13 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
   private searchSub?: Subscription;
 
   searchQuery: string = '';
+  selectedStatus: string = 'All';
+  selectedCategory: string = 'All';
+  selectedOwner: string = 'All';
+
+  categoryOptions: string[] = ['All'];
+  ownerOptions: string[] = ['All'];
+
   filteredDocuments: DocumentItem[] = [];
 
   // Pagination State
@@ -50,6 +57,7 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
   paginatedDocuments: DocumentItem[] = [];
 
   ngOnInit() {
+    this.updateFilterOptions();
     this.filterDocuments();
 
     this.searchSub = this.documentService.searchQuery$.subscribe(query => {
@@ -64,16 +72,37 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['documents']) {
+      this.updateFilterOptions();
       this.filterDocuments();
     }
   }
 
+  updateFilterOptions() {
+    const cats = Array.from(new Set(this.documents.map(d => d.category).filter(Boolean))).sort();
+    this.categoryOptions = ['All', ...cats];
+
+    const owners = Array.from(new Set(this.documents.map(d => d.ownerName).filter(Boolean))).sort();
+    this.ownerOptions = ['All', ...owners];
+  }
+
   filterDocuments() {
-    if (!this.searchQuery || !this.searchQuery.trim()) {
-      this.filteredDocuments = [...this.documents];
-    } else {
+    let result = [...this.documents];
+
+    if (this.selectedStatus !== 'All') {
+      result = result.filter(doc => (doc.status || 'Approved').toLowerCase() === this.selectedStatus.toLowerCase());
+    }
+
+    if (this.selectedCategory !== 'All') {
+      result = result.filter(doc => doc.category === this.selectedCategory);
+    }
+
+    if (this.selectedOwner !== 'All') {
+      result = result.filter(doc => doc.ownerName === this.selectedOwner);
+    }
+
+    if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
-      this.filteredDocuments = this.documents.filter(doc =>
+      result = result.filter(doc =>
         doc.name.toLowerCase().includes(q) ||
         doc.category.toLowerCase().includes(q) ||
         doc.ownerName.toLowerCase().includes(q) ||
@@ -82,6 +111,7 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
       );
     }
 
+    this.filteredDocuments = result;
     this.currentPage = 1;
     this.updatePagination();
   }
@@ -244,10 +274,10 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   onShowRejectionReason(doc: DocumentItem) {
-    const reason = doc.rejectionReason || 'No specific rejection reason provided.';
-    this.toastr.info(reason, `Rejection Reason for "${doc.name}"`, {
-      timeOut: 7000,
-      closeButton: true
+    this.dialog.open(DocumentDetailsComponent, {
+      width: '760px',
+      maxHeight: '90vh',
+      data: doc
     });
   }
 

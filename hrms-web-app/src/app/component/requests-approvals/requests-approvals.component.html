@@ -2,116 +2,255 @@
   <!-- Top Title Header Area -->
   <div class="header-section">
     <div class="title-group">
-      <h1 class="page-title">Request Approvals</h1>
-      <p class="page-subtitle">
-        Review and manage pending employee requests requiring your authorization. Prioritize items marked as urgent to maintain SLA compliance.
+      <h1 class="page-title">{{ isApprover ? 'Requests & Approvals Hub' : 'My Requests' }}</h1>
+      <p class="page-subtitle" *ngIf="isApprover">
+        Structured approvals hub. Select a category card to triage pending authorizations with tailored domain workflows.
+      </p>
+      <p class="page-subtitle" *ngIf="!isApprover">
+        Track your submitted leaves, attendance adjustments, timesheets, hardware requests, and personal records.
       </p>
     </div>
   </div>
 
-  <!-- Metric Category Cards Grid (3 Columns Layout matching mockup) -->
-  <div class="metrics-cards-grid">
-    <!-- Card 1: TOTAL PENDING -->
-    <div class="metric-card">
-      <div class="card-header">
-        <span class="card-title">TOTAL PENDING</span>
-        <div class="icon-box icon-blue">
-          <mat-icon>inbox</mat-icon>
+  <!-- Category Hub Cards (Option A Redesign) -->
+  <div class="category-hub-grid">
+    <!-- Card 1: Action Required (Pending Inbox) -->
+    <div
+      class="hub-card hub-urgent"
+      [class.active-card]="activeCategory === 'action_required'"
+      (click)="setCategory('action_required')"
+    >
+      <div class="hub-header">
+        <span class="hub-label">ACTION REQUIRED</span>
+        <div class="hub-icon-box icon-urgent">
+          <mat-icon>bolt</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ totalPendingCount }}</div>
-      <div class="card-subtitle is-urgent">
-        <span class="dot-urgent"></span>
-        <span>{{ urgentCount }} require immediate attention</span>
+      <div class="hub-value">{{ totalPendingCount }}</div>
+      <div class="hub-meta is-urgent">
+        <span class="dot-urgent" *ngIf="totalPendingCount > 0"></span>
+        <span>{{ totalPendingCount > 0 ? (totalPendingCount + ' awaiting decision') : 'All caught up' }}</span>
       </div>
     </div>
 
-    <!-- Card 2: AVG. TURNAROUND (100% Dynamic Real-Time) -->
-    <div class="metric-card">
-      <div class="card-header">
-        <span class="card-title">AVG. TURNAROUND</span>
-        <div class="icon-box icon-green">
+    <!-- Card 2: Leave & Attendance -->
+    <div
+      class="hub-card"
+      [class.active-card]="activeCategory === 'time_attendance'"
+      (click)="setCategory('time_attendance')"
+    >
+      <div class="hub-header">
+        <span class="hub-label">LEAVE & ATTENDANCE</span>
+        <div class="hub-icon-box icon-leave">
+          <mat-icon>beach_access</mat-icon>
+        </div>
+      </div>
+      <div class="hub-value">{{ totalLeaveAttendanceCount }}</div>
+      <div class="hub-meta">
+        <span class="pending-pill" *ngIf="pendingLeaveAttendanceCount > 0">{{ pendingLeaveAttendanceCount }} Pending</span>
+        <span class="total-text" *ngIf="pendingLeaveAttendanceCount === 0">0 Pending</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Weekly Timesheets -->
+    <div
+      class="hub-card"
+      [class.active-card]="activeCategory === 'timesheet'"
+      (click)="setCategory('timesheet')"
+    >
+      <div class="hub-header">
+        <span class="hub-label">TIMESHEETS</span>
+        <div class="hub-icon-box icon-timesheet">
           <mat-icon>schedule</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ avgTurnaroundText }} <small class="unit-text">hrs</small></div>
-      <div class="card-subtitle is-trend-up">
-        <mat-icon class="trend-icon">trending_down</mat-icon>
-        <span>{{ processedTodayCount > 0 ? 'Live average turnaround time' : 'Awaiting request actions' }}</span>
+      <div class="hub-value">{{ totalTimesheetCount }}</div>
+      <div class="hub-meta">
+        <span class="pending-pill" *ngIf="pendingTimesheetCount > 0">{{ pendingTimesheetCount }} Pending</span>
+        <span class="total-text" *ngIf="pendingTimesheetCount === 0">0 Pending</span>
       </div>
     </div>
 
-    <!-- Card 3: PROCESSED TODAY -->
-    <div class="metric-card">
-      <div class="card-header">
-        <span class="card-title">PROCESSED TODAY</span>
-        <div class="icon-box icon-purple">
-          <mat-icon>check_circle_outline</mat-icon>
+    <!-- Card 4: Assets & Hardware -->
+    <div
+      class="hub-card"
+      [class.active-card]="activeCategory === 'asset'"
+      (click)="setCategory('asset')"
+    >
+      <div class="hub-header">
+        <span class="hub-label">HARDWARE ASSETS</span>
+        <div class="hub-icon-box icon-asset">
+          <mat-icon>devices</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ processedTodayCount }}</div>
-      <div class="card-progress-bar">
-        <div class="progress-track">
-          <div class="progress-fill" [style.width.%]="processedTodayPercent"></div>
+      <div class="hub-value">{{ totalAssetCount }}</div>
+      <div class="hub-meta">
+        <span class="pending-pill" *ngIf="pendingAssetCount > 0">{{ pendingAssetCount }} Active</span>
+        <span class="total-text" *ngIf="pendingAssetCount === 0">0 Active</span>
+      </div>
+    </div>
+
+    <!-- Card 5: Documents, Banking & HR -->
+    <div
+      class="hub-card"
+      [class.active-card]="activeCategory === 'hr_banking'"
+      (click)="setCategory('hr_banking')"
+    >
+      <div class="hub-header">
+        <span class="hub-label">DOCUMENTS & BANKING</span>
+        <div class="hub-icon-box icon-hr">
+          <mat-icon>folder_shared</mat-icon>
         </div>
-        <span class="progress-percent">{{ processedTodayPercent }}%</span>
+      </div>
+      <div class="hub-value">{{ totalHrBankingCount }}</div>
+      <div class="hub-meta">
+        <span class="pending-pill" *ngIf="pendingHrBankingCount > 0">{{ pendingHrBankingCount }} Pending</span>
+        <span class="total-text" *ngIf="pendingHrBankingCount === 0">0 Pending</span>
       </div>
     </div>
   </div>
 
-  <!-- Requests Card Box Container -->
+  <!-- Workspace Card Container -->
   <div class="table-card-container">
-    <!-- Filter Pills & Search Controls Bar -->
+    <!-- Controls Bar: Category-Specific Sub-Pills & Search / Filters -->
     <div class="table-header-bar">
-      <!-- Left Filter Pills -->
+      <!-- Sub-Pills tailored to Active Category -->
       <div class="filter-pills-group">
-        <button
-          type="button"
-          class="pill-btn"
-          [class.active]="activeTab === 'all'"
-          (click)="setTab('all')"
-        >
-          All Requests ({{ allRequests.length }})
-        </button>
+        <!-- If Action Required (Universal Pending) -->
+        <ng-container *ngIf="activeCategory === 'action_required'">
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'all'"
+            (click)="setSubTab('all')"
+          >
+            All Pending ({{ totalPendingCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'leave'"
+            (click)="setSubTab('leave')"
+            *ngIf="pendingLeaveAttendanceCount > 0"
+          >
+            Leaves ({{ pendingLeaveAttendanceCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'timesheet'"
+            (click)="setSubTab('timesheet')"
+            *ngIf="pendingTimesheetCount > 0"
+          >
+            Timesheets ({{ pendingTimesheetCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'asset'"
+            (click)="setSubTab('asset')"
+            *ngIf="pendingAssetCount > 0"
+          >
+            Assets ({{ pendingAssetCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'document'"
+            (click)="setSubTab('document')"
+            *ngIf="pendingHrBankingCount > 0"
+          >
+            HR & Banking ({{ pendingHrBankingCount }})
+          </button>
+        </ng-container>
 
-        <button
-          type="button"
-          class="pill-btn"
-          [class.active]="activeTab === 'leave'"
-          (click)="setTab('leave')"
-        >
-          Leave ({{ leaveCount }})
-        </button>
+        <!-- If Time & Attendance -->
+        <ng-container *ngIf="activeCategory === 'time_attendance'">
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'all'"
+            (click)="setSubTab('all')"
+          >
+            All Time & Leave ({{ totalLeaveAttendanceCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'leave'"
+            (click)="setSubTab('leave')"
+          >
+            Leaves ({{ leaveCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'attendance'"
+            (click)="setSubTab('attendance')"
+          >
+            Attendance Regularization ({{ attendanceCount }})
+          </button>
+        </ng-container>
 
-        <button
-          type="button"
-          class="pill-btn"
-          [class.active]="activeTab === 'attendance'"
-          (click)="setTab('attendance')"
-        >
-          Attendance ({{ attendanceCount }})
-        </button>
+        <!-- If Timesheet -->
+        <ng-container *ngIf="activeCategory === 'timesheet'">
+          <button
+            type="button"
+            class="pill-btn active"
+          >
+            All Weekly Timesheets ({{ timesheetCount }})
+          </button>
+        </ng-container>
 
-        <button
-          type="button"
-          class="pill-btn"
-          [class.active]="activeTab === 'document'"
-          (click)="setTab('document')"
-        >
-          Documents ({{ documentCount }})
-        </button>
+        <!-- If Asset -->
+        <ng-container *ngIf="activeCategory === 'asset'">
+          <button
+            type="button"
+            class="pill-btn active"
+          >
+            All Hardware Tickets ({{ assetTicketCount }})
+          </button>
+        </ng-container>
 
-        <button
-          type="button"
-          class="pill-btn"
-          [class.active]="activeTab === 'timesheet'"
-          (click)="setTab('timesheet')"
-        >
-          Timesheets ({{ timesheetCount }})
-        </button>
+        <!-- If HR, Documents & Banking -->
+        <ng-container *ngIf="activeCategory === 'hr_banking'">
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'all'"
+            (click)="setSubTab('all')"
+          >
+            All HR Items ({{ totalHrBankingCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'document'"
+            (click)="setSubTab('document')"
+          >
+            Documents ({{ documentCount }})
+          </button>
+          <button
+            *ngIf="isBankingApprover"
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'banking'"
+            (click)="setSubTab('banking')"
+          >
+            Banking ({{ bankingCount }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="activeSubTab === 'interview'"
+            (click)="setSubTab('interview')"
+          >
+            Interviews ({{ interviewCount }})
+          </button>
+        </ng-container>
       </div>
 
-      <!-- Right Search & Dropdown Filter -->
+      <!-- Right Search & Dropdown Filters -->
       <div class="controls-right-group">
         <div class="search-box">
           <mat-icon class="search-icon">search</mat-icon>
@@ -124,44 +263,47 @@
           />
         </div>
 
-        <div class="filter-dropdown">
+        <div class="filter-dropdown" *ngIf="employeeOptions.length > 1">
+          <select [(ngModel)]="selectedEmployee" (change)="filterRequests()" class="custom-select">
+            <option value="All">Employee: All</option>
+            <option *ngFor="let emp of employeeOptions" [value]="emp">{{ emp }}</option>
+          </select>
+        </div>
+
+        <div class="filter-dropdown" *ngIf="activeCategory !== 'action_required'">
           <select [(ngModel)]="selectedStatus" (change)="filterRequests()" class="custom-select">
             <option value="All">Status: All</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
         </div>
       </div>
     </div>
 
-    <!-- Requests Data Table -->
+    <!-- Data Tables Tailored by Domain -->
     <div class="table-responsive">
-      <table class="approvals-table">
+
+      <!-- ================= TABLE 1: ACTION REQUIRED (Pending Inbox View) ================= -->
+      <table class="approvals-table" *ngIf="activeCategory === 'action_required'">
         <thead>
           <tr>
             <th>REQUESTER</th>
-            <th>TYPE</th>
+            <th>CATEGORY & TYPE</th>
             <th>DETAILS & DURATION</th>
             <th>REASON PREVIEW</th>
             <th>STATUS</th>
-            <th class="text-right">ACTIONS</th>
+            <th class="text-right">QUICK ACTION</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of paginatedRequests">
-            <!-- Requester Avatar & Name -->
-            <td class="col-requester">
+            <!-- Requester -->
+            <td class="col-requester" (click)="onRowClick(item)" style="cursor: pointer;" title="Click to view details">
               <div class="user-avatar-group">
-                <img
-                  *ngIf="item.avatarUrl"
-                  [src]="item.avatarUrl"
-                  [alt]="item.requesterName"
-                  class="user-avatar-img"
-                />
-                <div *ngIf="!item.avatarUrl" class="avatar-circle">
-                  {{ item.initials || 'EM' }}
-                </div>
+                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.requesterName" class="user-avatar-img" />
+                <div *ngIf="!item.avatarUrl" class="avatar-circle">{{ item.initials || 'EM' }}</div>
                 <div class="user-info">
                   <span class="user-name">{{ item.requesterName }}</span>
                   <span class="user-role">{{ item.requesterRole || 'Employee' }}</span>
@@ -169,16 +311,12 @@
               </div>
             </td>
 
-            <!-- Type Badge -->
+            <!-- Category & Type -->
             <td class="col-type">
-              <span class="type-badge" [ngClass]="getTypeBadgeClass(item.requestType)">
-                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('ANNUAL') || item.requestType.includes('LEAVE') || item.requestType.includes('PL')">flight_takeoff</mat-icon>
-                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('SICK') || item.requestType.includes('CL')">medical_services</mat-icon>
-                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('EXPENSE')">receipt_long</mat-icon>
-                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('SHIFT') || item.requestType.includes('CLOCK')">sync_alt</mat-icon>
-                <mat-icon class="badge-icon" *ngIf="item.requestType.includes('Timesheet')">more_time</mat-icon>
-                <span>{{ item.requestType }}</span>
-              </span>
+              <div class="category-type-wrapper">
+                <span class="domain-tag domain-{{ item.category.toLowerCase() }}">{{ item.category }}</span>
+                <span class="type-badge" [ngClass]="getTypeBadgeClass(item.requestType)">{{ item.requestType }}</span>
+              </div>
             </td>
 
             <!-- Details & Duration -->
@@ -188,64 +326,378 @@
 
             <!-- Reason Preview -->
             <td class="col-reason">
-              <span class="reason-text" [title]="item.reasonPreview">
-                {{ item.reasonPreview }}
+              <span class="reason-text" [title]="item.reasonPreview">{{ item.reasonPreview }}</span>
+            </td>
+
+            <!-- Status -->
+            <td class="col-status">
+              <span class="status-badge badge-pending">Pending</span>
+            </td>
+
+            <!-- Quick Actions -->
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <!-- Asset Tracker -->
+                <button type="button" class="btn-review" *ngIf="item.category === 'Asset'" (click)="viewAssetDetails(item)">
+                  <mat-icon>local_shipping</mat-icon>
+                  <span>Track Ticket</span>
+                </button>
+
+                <!-- Review Timesheet -->
+                <button type="button" class="btn-review" *ngIf="item.category === 'Timesheet'" (click)="reviewTimesheet(item)">
+                  <mat-icon>visibility</mat-icon>
+                  <span>Review Tasks</span>
+                </button>
+
+                <!-- Interview Evaluation -->
+                <button type="button" class="btn-review btn-review-interview" *ngIf="item.category === 'Interview'" (click)="openInterviewAction(item)">
+                  <mat-icon>rate_review</mat-icon>
+                  <span>Conduct & Evaluate</span>
+                </button>
+
+                <!-- Approve / Reject for Time, Leaves, Documents, Banking -->
+                <ng-container *ngIf="isApprover && item.category !== 'Asset' && item.category !== 'Interview'">
+                  <button type="button" class="btn-approve" (click)="approveRequest(item)" title="Approve Request">
+                    <mat-icon>check</mat-icon>
+                    <span>Approve</span>
+                  </button>
+                  <button type="button" class="btn-reject" (click)="rejectRequest(item)" title="Reject Request">
+                    <mat-icon>close</mat-icon>
+                    <span>Reject</span>
+                  </button>
+                </ng-container>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRequests.length === 0">
+            <td colspan="6" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon text-green">check_circle_outline</mat-icon>
+                <h3>All Caught Up!</h3>
+                <p>There are no pending authorization requests requiring your attention right now.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ================= TABLE 2: LEAVE & ATTENDANCE VIEW ================= -->
+      <table class="approvals-table" *ngIf="activeCategory === 'time_attendance'">
+        <thead>
+          <tr>
+            <th>EMPLOYEE</th>
+            <th>LEAVE / ATTENDANCE TYPE</th>
+            <th>DATES & TIMINGS</th>
+            <th>DURATION</th>
+            <th>REASON PREVIEW</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedRequests">
+            <td class="col-requester" (click)="onRowClick(item)" style="cursor: pointer;" title="Click to view details">
+              <div class="user-avatar-group">
+                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.requesterName" class="user-avatar-img" />
+                <div *ngIf="!item.avatarUrl" class="avatar-circle">{{ item.initials || 'EM' }}</div>
+                <div class="user-info">
+                  <span class="user-name">{{ item.requesterName }}</span>
+                  <span class="user-role">{{ item.requesterRole || 'Employee' }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td class="col-type">
+              <span class="type-badge" [ngClass]="getTypeBadgeClass(item.requestType)">
+                <mat-icon class="badge-icon" *ngIf="item.category === 'Leave'">flight_takeoff</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.category === 'Attendance'">schedule</mat-icon>
+                <span>{{ item.requestType }}</span>
               </span>
             </td>
 
-            <!-- Status Badge -->
+            <td class="col-details">
+              <span class="duration-text">{{ item.durationText || 'N/A' }}</span>
+            </td>
+
+            <td class="col-duration">
+              <span class="meta-pill" *ngIf="item.category === 'Leave'">
+                {{ item.startDate && item.endDate ? formatDateRange(item.startDate, item.endDate) : 'Leave' }}
+              </span>
+              <span class="meta-pill" *ngIf="item.category === 'Attendance'">
+                {{ item.durationText || 'Single Day' }}
+              </span>
+            </td>
+
+            <td class="col-reason">
+              <span class="reason-text" [title]="item.reasonPreview">{{ item.reasonPreview }}</span>
+            </td>
+
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="{
+                'badge-approved': item.status === 'Approved',
+                'badge-pending': item.status === 'Pending',
+                'badge-rejected': item.status === 'Rejected',
+                'badge-cancelled': item.status === 'Cancelled'
+              }">{{ item.status }}</span>
+            </td>
+
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <!-- Cancel Leave Action -->
+                <button type="button" class="btn-cancel-leave" *ngIf="canCancelLeave(item)" (click)="cancelLeave(item)">
+                  <mat-icon>cancel</mat-icon>
+                  <span>Cancel Leave</span>
+                </button>
+
+                <!-- Approver Actions -->
+                <ng-container *ngIf="isApprover">
+                  <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)">
+                    <mat-icon>check</mat-icon>
+                    <span>Approve</span>
+                  </button>
+                  <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)">
+                    <mat-icon>close</mat-icon>
+                    <span>Reject</span>
+                  </button>
+                </ng-container>
+
+                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && !canCancelLeave(item)" [ngClass]="item.status === 'Approved' ? 'tag-approved' : (item.status === 'Cancelled' ? 'tag-cancelled' : 'tag-rejected')">
+                  {{ item.status }}
+                </span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRequests.length === 0">
+            <td colspan="7" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">beach_access</mat-icon>
+                <p>No leave or attendance records match your filter criteria.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ================= TABLE 3: TIMESHEETS VIEW ================= -->
+      <table class="approvals-table" *ngIf="activeCategory === 'timesheet'">
+        <thead>
+          <tr>
+            <th>EMPLOYEE</th>
+            <th>PERIOD / WORK WEEK</th>
+            <th>TOTAL LOGGED HOURS</th>
+            <th>SUBMISSION STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedRequests">
+            <td class="col-requester" (click)="onRowClick(item)" style="cursor: pointer;" title="Click to view timesheet">
+              <div class="user-avatar-group">
+                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.requesterName" class="user-avatar-img" />
+                <div *ngIf="!item.avatarUrl" class="avatar-circle">{{ item.initials || 'EM' }}</div>
+                <div class="user-info">
+                  <span class="user-name">{{ item.requesterName }}</span>
+                  <span class="user-role">{{ item.requesterRole || 'Employee' }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td class="col-details">
+              <span class="period-badge">
+                <mat-icon class="badge-icon">date_range</mat-icon>
+                <span>{{ item.durationText || 'Weekly Period' }}</span>
+              </span>
+            </td>
+
+            <td class="col-type">
+              <span class="hours-badge">
+                <mat-icon class="badge-icon">schedule</mat-icon>
+                <strong>{{ item.rawRecord?.totalHours ?? 40 }}</strong> hrs logged
+              </span>
+            </td>
+
             <td class="col-status">
               <span class="status-badge" [ngClass]="{
                 'badge-approved': item.status === 'Approved',
                 'badge-pending': item.status === 'Pending',
                 'badge-rejected': item.status === 'Rejected'
-              }">
-                {{ item.status }}
-              </span>
+              }">{{ item.status }}</span>
             </td>
 
-            <!-- Actions -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <!-- Review Tasks Button (For Timesheets) -->
-                <button
-                  type="button"
-                  class="btn-review"
-                  *ngIf="item.category === 'Timesheet'"
-                  (click)="reviewTimesheet(item)"
-                  title="Review Tasks & Work Done"
-                >
+                <button type="button" class="btn-review" (click)="reviewTimesheet(item)" title="Review Task Breakdown">
                   <mat-icon>visibility</mat-icon>
                   <span>Review Tasks</span>
                 </button>
 
-                <!-- Approve Button (Always shown for Timesheets; when Pending for others) -->
-                <button
-                  type="button"
-                  class="btn-approve"
-                  *ngIf="item.category === 'Timesheet' || item.status === 'Pending'"
-                  [class.is-active-decision]="item.status === 'Approved'"
-                  (click)="approveRequest(item)"
-                  [title]="item.status === 'Approved' ? 'Currently Approved (Click to review/change)' : 'Approve Request'"
-                >
-                  <mat-icon>check</mat-icon>
-                  <span>{{ item.status === 'Approved' ? 'Approved' : 'Approve' }}</span>
+                <ng-container *ngIf="isApprover">
+                  <button type="button" class="btn-approve" [class.is-active-decision]="item.status === 'Approved'" (click)="approveRequest(item)">
+                    <mat-icon>check</mat-icon>
+                    <span>{{ item.status === 'Approved' ? 'Approved' : 'Approve' }}</span>
+                  </button>
+                  <button type="button" class="btn-reject" [class.is-active-decision]="item.status === 'Rejected'" (click)="rejectRequest(item)">
+                    <mat-icon>close</mat-icon>
+                    <span>{{ item.status === 'Rejected' ? 'Rejected' : 'Reject' }}</span>
+                  </button>
+                </ng-container>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRequests.length === 0">
+            <td colspan="5" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">schedule</mat-icon>
+                <p>No timesheet records match your filter criteria.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ================= TABLE 4: ASSETS & HARDWARE VIEW ================= -->
+      <table class="approvals-table" *ngIf="activeCategory === 'asset'">
+        <thead>
+          <tr>
+            <th>REQUESTER</th>
+            <th>HARDWARE ASSET</th>
+            <th>TICKET TYPE & DEFECT</th>
+            <th>LOGISTICS / TRACKING</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedRequests">
+            <td class="col-requester" (click)="onRowClick(item)" style="cursor: pointer;" title="Click to view ticket">
+              <div class="user-avatar-group">
+                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.requesterName" class="user-avatar-img" />
+                <div *ngIf="!item.avatarUrl" class="avatar-circle">{{ item.initials || 'EM' }}</div>
+                <div class="user-info">
+                  <span class="user-name">{{ item.requesterName }}</span>
+                  <span class="user-role">{{ item.requesterRole || 'Employee' }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td class="col-type">
+              <span class="asset-model-tag">
+                <mat-icon class="badge-icon">laptop_mac</mat-icon>
+                <span>{{ item.requestType }}</span>
+              </span>
+            </td>
+
+            <td class="col-reason">
+              <span class="reason-text" [title]="item.reasonPreview">{{ item.reasonPreview }}</span>
+            </td>
+
+            <td class="col-details">
+              <span class="duration-text">{{ item.durationText || 'Standard Logistics' }}</span>
+            </td>
+
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="{
+                'badge-approved': item.status === 'Approved',
+                'badge-pending': item.status === 'Pending',
+                'badge-rejected': item.status === 'Rejected'
+              }">{{ item.status }}</span>
+            </td>
+
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-review" (click)="viewAssetDetails(item)" title="View Ticket & Tracking Lifecycle">
+                  <mat-icon>local_shipping</mat-icon>
+                  <span>Track Ticket</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRequests.length === 0">
+            <td colspan="6" class="empty-state">
+              <div class="empty-box">
+                <mat-icon class="empty-icon">devices</mat-icon>
+                <p>No hardware service tickets found.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ================= TABLE 5: DOCUMENTS, BANKING & HR VIEW ================= -->
+      <table class="approvals-table" *ngIf="activeCategory === 'hr_banking'">
+        <thead>
+          <tr>
+            <th>EMPLOYEE</th>
+            <th>CATEGORY</th>
+            <th>DOCUMENT / ACCOUNT DETAILS</th>
+            <th>SUBMISSION DATE</th>
+            <th>STATUS</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedRequests">
+            <td class="col-requester" (click)="onRowClick(item)" style="cursor: pointer;" title="Click to view details">
+              <div class="user-avatar-group">
+                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.requesterName" class="user-avatar-img" />
+                <div *ngIf="!item.avatarUrl" class="avatar-circle">{{ item.initials || 'EM' }}</div>
+                <div class="user-info">
+                  <span class="user-name">{{ item.requesterName }}</span>
+                  <span class="user-role">{{ item.requesterRole || 'Employee' }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td class="col-type">
+              <span class="domain-tag domain-{{ item.category.toLowerCase() }}">{{ item.category }}</span>
+            </td>
+
+            <td class="col-reason">
+              <div class="hr-item-desc">
+                <strong>{{ item.requestType }}</strong>
+                <span class="reason-text" [title]="item.reasonPreview">{{ item.reasonPreview }}</span>
+              </div>
+            </td>
+
+            <td class="col-details">
+              <span class="duration-text">{{ item.durationText || 'Recent' }}</span>
+            </td>
+
+            <td class="col-status">
+              <span class="status-badge" [ngClass]="{
+                'badge-approved': item.status === 'Approved',
+                'badge-pending': item.status === 'Pending',
+                'badge-rejected': item.status === 'Rejected'
+              }">{{ item.status }}</span>
+            </td>
+
+            <td class="col-actions text-right">
+              <div class="action-btn-group">
+                <button type="button" class="btn-review btn-review-interview" *ngIf="item.category === 'Interview'" (click)="openInterviewAction(item)">
+                  <mat-icon>rate_review</mat-icon>
+                  <span>{{ item.status === 'Pending' ? 'Evaluate' : 'View' }}</span>
                 </button>
 
-                <!-- Reject Button (Always shown for Timesheets; when Pending for others) -->
-                <button
-                  type="button"
-                  class="btn-reject"
-                  *ngIf="item.category === 'Timesheet' || item.status === 'Pending'"
-                  [class.is-active-decision]="item.status === 'Rejected'"
-                  (click)="rejectRequest(item)"
-                  [title]="item.status === 'Rejected' ? 'Currently Rejected (Click to review/change)' : 'Reject Request'"
-                >
-                  <mat-icon>close</mat-icon>
-                  <span>{{ item.status === 'Rejected' ? 'Rejected' : 'Reject' }}</span>
-                </button>
+                <ng-container *ngIf="isApprover && item.category !== 'Interview'">
+                  <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)">
+                    <mat-icon>check</mat-icon>
+                    <span>Approve</span>
+                  </button>
+                  <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)">
+                    <mat-icon>close</mat-icon>
+                    <span>Reject</span>
+                  </button>
+                </ng-container>
 
-                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && item.category !== 'Timesheet'" [ngClass]="item.status === 'Approved' ? 'tag-approved' : 'tag-rejected'">
+                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && item.category !== 'Interview'" [ngClass]="item.status === 'Approved' ? 'tag-approved' : 'tag-rejected'">
                   {{ item.status }}
                 </span>
               </div>
@@ -256,18 +708,14 @@
           <tr *ngIf="paginatedRequests.length === 0">
             <td colspan="6" class="empty-state">
               <div class="empty-box">
-                <mat-icon class="empty-icon">inbox</mat-icon>
-                <p *ngIf="allRequests.length === 0">
-                  No approval requests found in the database.
-                </p>
-                <p *ngIf="allRequests.length > 0">
-                  No approval requests match your search and filter criteria.
-                </p>
+                <mat-icon class="empty-icon">folder_shared</mat-icon>
+                <p>No document or banking verification records found.</p>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
+
     </div>
 
     <!-- Table Pagination Footer -->

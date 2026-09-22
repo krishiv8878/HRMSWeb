@@ -1,0 +1,809 @@
+<div class="asset-tracking-modal">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge" [ngClass]="request.requestType.toLowerCase()">
+        <mat-icon>{{ request.requestType === 'Return' ? 'keyboard_return' : (request.requestType === 'Replacement' ? 'swap_horiz' : 'build') }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <div class="title-with-badge">
+          <h2 class="modal-title">{{ request.requestType }} Ticket #{{ request.id }}</h2>
+          <span class="status-pill" [ngClass]="'status-' + request.status.toLowerCase().replace(' ', '-')">
+            {{ request.status }}
+          </span>
+        </div>
+        <p class="modal-subtitle">Tracking end-to-end logistics, servicing milestones, and delivery confirmation.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="onClose()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-body-scroll">
+    <!-- Asset Context Bar -->
+    <div class="asset-summary-bar">
+      <div class="summary-item">
+        <span class="label">EQUIPMENT</span>
+        <span class="value">{{ data.asset.modelName }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="label">SERIAL NUMBER</span>
+        <span class="value font-mono">{{ data.asset.serialNumber || 'SN-N/A' }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="label">ASSIGNED TO</span>
+        <span class="value">{{ request.employeeName || data.asset.assignedTo }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="label">REQUEST DATE</span>
+        <span class="value">{{ request.createdDate ? (request.createdDate | date:'mediumDate') : 'N/A' }}</span>
+      </div>
+    </div>
+
+    <!-- Admin Lifecycle Action Operations Panel (Visible to Admins) -->
+    <div *ngIf="isAdmin" class="admin-workflow-card">
+      <div class="admin-card-header">
+        <div class="admin-card-title">
+          <div class="shield-badge">
+            <mat-icon>admin_panel_settings</mat-icon>
+          </div>
+          <div>
+            <h4 class="m-0">IT Admin Action Panel</h4>
+            <p class="m-0">Advance status or manage logistics for this service ticket.</p>
+          </div>
+        </div>
+        <span class="current-status-tag">Status: {{ request.status }}</span>
+      </div>
+
+      <!-- Action Buttons Row (When No Form Expanded) -->
+      <div class="admin-buttons-row" *ngIf="!activeAdminAction">
+        <!-- If Requested / Submitted: Approve or Reject -->
+        <ng-container *ngIf="request.status.toLowerCase().includes('requested') || request.status.toLowerCase().includes('submitted') || request.status.toLowerCase().includes('initiated')">
+          <button type="button" class="admin-action-btn btn-approve" (click)="openAdminAction('approve')">
+            <mat-icon>thumb_up</mat-icon> Approve Request
+          </button>
+          <button type="button" class="admin-action-btn btn-reject" (click)="openAdminAction('reject')">
+            <mat-icon>cancel</mat-icon> Reject Request
+          </button>
+        </ng-container>
+
+        <!-- If Approved & Awaiting Handover from Employee (Not yet handed over or shipped) -->
+        <ng-container *ngIf="request.status.toLowerCase().includes('approved') && !request.status.toLowerCase().includes('transit') && !request.status.toLowerCase().includes('pickup') && !request.status.toLowerCase().includes('desk') && !request.status.toLowerCase().includes('handover')">
+          <!-- Schedule reverse courier pickup from employee -->
+          <button
+            type="button"
+            class="admin-action-btn btn-pickup"
+            (click)="openAdminAction('pickup')"
+          >
+            <mat-icon>schedule</mat-icon> Schedule Reverse Courier Pickup
+          </button>
+
+          <!-- Acknowledge direct in-person IT desk handover (Admin initiating) -->
+          <button
+            type="button"
+            class="admin-action-btn btn-desk-handover"
+            (click)="openAdminAction('desk_handover_receive')"
+          >
+            <mat-icon>desk</mat-icon> In-Person IT Desk Handover
+          </button>
+        </ng-container>
+
+        <!-- If Employee Handed Over at IT Desk (Awaiting Admin Desk Receipt Acknowledgment) -->
+        <ng-container *ngIf="isAwaitingDeskHandoverAck || request.status.toLowerCase().includes('desk') || request.status.toLowerCase().includes('handover')">
+          <button
+            type="button"
+            class="admin-action-btn btn-repair"
+            (click)="openAdminAction('desk_handover_receive')"
+            [disabled]="isProcessingAction"
+          >
+            <mat-icon>verified</mat-icon> Acknowledge In-Person Desk Handover Received
+          </button>
+        </ng-container>
+
+        <!-- If In Transit via Courier or Pickup Scheduled (Awaiting Courier Arrival at IT) -->
+        <ng-container *ngIf="!isDirectDeskHandover && (request.status.toLowerCase().includes('transit') || request.status.toLowerCase().includes('pickup')) && !request.status.toLowerCase().includes('received') && !request.status.toLowerCase().includes('repair') && !request.status.toLowerCase().includes('dispatch')">
+          <!-- Mark received at IT for Repair / Replacement -->
+          <button
+            *ngIf="request.requestType !== 'Return'"
+            type="button"
+            class="admin-action-btn btn-repair"
+            (click)="sendToRepairVendor()"
+            [disabled]="isProcessingAction"
+          >
+            <mat-icon>build</mat-icon> Acknowledge Device Received at IT
+          </button>
+
+          <!-- For Return: Mark received by Admin -->
+          <button
+            *ngIf="request.requestType === 'Return'"
+            type="button"
+            class="admin-action-btn btn-receive-admin"
+            (click)="markReturnReceived()"
+            [disabled]="isProcessingAction"
+          >
+            <mat-icon>inventory</mat-icon> Acknowledge Device Received at IT
+          </button>
+        </ng-container>
+
+        <!-- If In Repair: Dispatch Repaired Asset to Employee -->
+        <ng-container *ngIf="request.status.toLowerCase().includes('in repair') || request.status.toLowerCase().includes('repaired')">
+          <button type="button" class="admin-action-btn btn-dispatch" (click)="openAdminAction('dispatch')">
+            <mat-icon>local_shipping</mat-icon> Dispatch Repaired Device
+          </button>
+        </ng-container>
+
+        <!-- If Dispatched: Admin Can Mark as Delivered -->
+        <ng-container *ngIf="request.status.toLowerCase().includes('dispatch') && !request.status.toLowerCase().includes('deliver')">
+          <button type="button" class="admin-action-btn btn-deliver" (click)="markAsDelivered()" [disabled]="isProcessingAction">
+            <mat-icon>markunread_mailbox</mat-icon> Mark Delivered (Courier Confirmed)
+          </button>
+        </ng-container>
+
+        <!-- Return Workflow: Inspect & Complete Return -->
+        <ng-container *ngIf="request.requestType === 'Return' && request.status.toLowerCase().includes('received') && !request.status.toLowerCase().includes('completed')">
+          <button type="button" class="admin-action-btn btn-qa" (click)="openAdminAction('qa')">
+            <mat-icon>verified</mat-icon> Conduct QA Inspection & Accept Return
+          </button>
+        </ng-container>
+      </div>
+
+      <!-- Inline Dispatch Parcel Form Panel -->
+      <div *ngIf="activeAdminAction === 'dispatch'" class="admin-action-panel dispatch-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon class="panel-icon">local_shipping</mat-icon>
+            <h5>Dispatch Repaired / Replacement Equipment</h5>
+          </div>
+          <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="panel-body">
+          <div class="modern-mode-selector mb-3">
+            <div
+              class="mode-card"
+              [class.active]="adminDispatchMode === 'Courier Dispatch'"
+              (click)="adminDispatchMode = 'Courier Dispatch'"
+            >
+              <div class="mode-icon-circle">
+                <mat-icon>local_shipping</mat-icon>
+              </div>
+              <div class="mode-info">
+                <span class="mode-name">Courier Dispatch</span>
+                <span class="mode-hint">Ship via BlueDart, DTDC, etc.</span>
+              </div>
+              <div class="mode-radio-dot"></div>
+            </div>
+
+            <div
+              class="mode-card"
+              [class.active]="adminDispatchMode === 'Direct IT Desk Handover'"
+              (click)="adminDispatchMode = 'Direct IT Desk Handover'"
+            >
+              <div class="mode-icon-circle">
+                <mat-icon>desk</mat-icon>
+              </div>
+              <div class="mode-info">
+                <span class="mode-name">Direct IT Desk Handover</span>
+                <span class="mode-hint">In-person desk collection</span>
+              </div>
+              <div class="mode-radio-dot"></div>
+            </div>
+          </div>
+
+          <div class="panel-grid-2" *ngIf="adminDispatchMode === 'Courier Dispatch'">
+            <div class="panel-field">
+              <label>Courier Partner <span class="required">*</span></label>
+              <select [(ngModel)]="adminCourierPartner" class="panel-select">
+                <option *ngFor="let c of courierOptions" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="panel-field">
+              <label>AWB / Tracking Number <span class="required">*</span></label>
+              <input
+                type="text"
+                [(ngModel)]="adminTrackingNumber"
+                placeholder="e.g. BD-982348123"
+                class="panel-input"
+              />
+            </div>
+          </div>
+
+          <div class="panel-grid-2" *ngIf="adminDispatchMode === 'Direct IT Desk Handover'">
+            <div class="panel-field full-width">
+              <label>Handover Desk / Receiver Acknowledgment (Optional)</label>
+              <input
+                type="text"
+                [(ngModel)]="adminTrackingNumber"
+                placeholder="e.g. Handed over directly at 2nd Floor IT Helpdesk (Optional)"
+                class="panel-input"
+              />
+            </div>
+          </div>
+
+          <div class="panel-field mt-2">
+            <label>Dispatch Note / Logistics Remarks</label>
+            <input type="text" [(ngModel)]="adminRemarks" placeholder="e.g. Dispatched with charger and packaging" class="panel-input" />
+          </div>
+          <div class="panel-footer-actions">
+            <button type="button" class="btn-cancel-action" (click)="closeAdminAction()">Cancel</button>
+            <button type="button" class="btn-submit-action btn-dispatch-submit" (click)="confirmDispatch()" [disabled]="isProcessingAction">
+              <mat-icon>send</mat-icon> {{ isProcessingAction ? 'Dispatching...' : 'Confirm & Dispatch' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline Schedule Reverse Pickup Panel -->
+      <div *ngIf="activeAdminAction === 'pickup'" class="admin-action-panel pickup-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon class="panel-icon text-indigo">schedule</mat-icon>
+            <h5>Schedule Reverse Courier Pickup from Employee</h5>
+          </div>
+          <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="panel-body">
+          <p class="qa-notice mb-2">Book a corporate courier pickup agent to collect the equipment directly from the employee's location.</p>
+          <div class="panel-grid-2">
+            <div class="panel-field">
+              <label>Courier / Logistics Partner <span class="required">*</span></label>
+              <select [(ngModel)]="adminCourierPartner" class="panel-select">
+                <option *ngFor="let c of courierOptions" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="panel-field">
+              <label>Pickup Request / Waybill # <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="adminTrackingNumber" placeholder="e.g. PU-8823194" class="panel-input" />
+            </div>
+          </div>
+          <div class="panel-field mt-2">
+            <label>Pickup Instructions / Scheduled Date</label>
+            <input type="text" [(ngModel)]="adminRemarks" placeholder="e.g. Courier agent will visit employee location tomorrow 10am-2pm" class="panel-input" />
+          </div>
+          <div class="panel-footer-actions">
+            <button type="button" class="btn-cancel-action" (click)="closeAdminAction()">Cancel</button>
+            <button type="button" class="btn-submit-action btn-pickup-submit" (click)="schedulePickup()" [disabled]="isProcessingAction">
+              <mat-icon>local_shipping</mat-icon> {{ isProcessingAction ? 'Scheduling...' : 'Confirm Pickup Scheduled' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline In-Person Desk Handover Receive Panel -->
+      <div *ngIf="activeAdminAction === 'desk_handover_receive'" class="admin-action-panel desk-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon class="panel-icon text-indigo">desk</mat-icon>
+            <h5>Acknowledge In-Person IT Desk Handover</h5>
+          </div>
+          <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="panel-body">
+          <p class="qa-notice mb-2">Record that the employee has physically brought and handed over the device in person at the IT helpdesk. <strong>No courier or AWB tracking required.</strong></p>
+          <div class="panel-field">
+            <label>IT Desk Location / Receiving Person (Optional)</label>
+            <input type="text" [(ngModel)]="adminTrackingNumber" placeholder="e.g. Received at Main Office IT Helpdesk, 2nd Floor" class="panel-input" />
+          </div>
+          <div class="panel-field mt-2">
+            <label>Initial Physical Condition / Remarks (Optional)</label>
+            <input type="text" [(ngModel)]="adminRemarks" placeholder="e.g. Device received with charger, physical condition intact" class="panel-input" />
+          </div>
+          <div class="panel-footer-actions">
+            <button type="button" class="btn-cancel-action" (click)="closeAdminAction()">Cancel</button>
+            <button type="button" class="btn-submit-action btn-desk-submit" (click)="acknowledgeDeskHandoverReceive()" [disabled]="isProcessingAction">
+              <mat-icon>check_circle</mat-icon> {{ isProcessingAction ? 'Recording...' : 'Confirm Handover Received & Proceed' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline Approve Form Panel -->
+      <div *ngIf="activeAdminAction === 'approve'" class="admin-action-panel approve-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon class="panel-icon text-green">thumb_up</mat-icon>
+            <h5>Approve Service Request</h5>
+          </div>
+          <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="panel-body">
+          <div class="panel-field">
+            <label>Approval Remarks / Assignment Notes (Optional)</label>
+            <input type="text" [(ngModel)]="adminRemarks" placeholder="e.g. Approved. Technician assigned for diagnostics." class="panel-input" />
+          </div>
+          <div class="panel-footer-actions">
+            <button type="button" class="btn-cancel-action" (click)="closeAdminAction()">Cancel</button>
+            <button type="button" class="btn-submit-action btn-approve-submit" (click)="approveRequest()" [disabled]="isProcessingAction">
+              <mat-icon>check_circle</mat-icon> {{ isProcessingAction ? 'Approving...' : 'Confirm Approval' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline Reject Form Panel -->
+      <div *ngIf="activeAdminAction === 'reject'" class="admin-action-panel reject-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon class="panel-icon text-red">cancel</mat-icon>
+            <h5>Reject Request</h5>
+          </div>
+          <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="panel-body">
+          <div class="panel-field">
+            <label>Reason for Rejection <span class="required">*</span></label>
+            <textarea [(ngModel)]="rejectionReason" rows="2" placeholder="Explain reason for rejecting this request..." class="panel-textarea"></textarea>
+          </div>
+          <div class="panel-footer-actions">
+            <button type="button" class="btn-cancel-action" (click)="closeAdminAction()">Cancel</button>
+            <button type="button" class="btn-submit-action btn-reject-submit" (click)="confirmReject()" [disabled]="isProcessingAction">
+              <mat-icon>block</mat-icon> {{ isProcessingAction ? 'Rejecting...' : 'Reject Request' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline Return QA Inspection Panel -->
+      <div *ngIf="activeAdminAction === 'qa'" class="admin-action-panel qa-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <mat-icon class="panel-icon text-purple">verified</mat-icon>
+            <h5>QA Inspection Checklist & Complete Handover</h5>
+          </div>
+          <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="panel-body">
+          <p class="qa-notice">Verifying device condition will complete this ticket and restore the asset to the <strong>Available</strong> inventory pool.</p>
+          <div class="qa-checklist-grid">
+            <label class="qa-check-item">
+              <input type="checkbox" [(ngModel)]="qaPhysicalConditionOk" />
+              <span>Physical body & display undamaged</span>
+            </label>
+            <label class="qa-check-item">
+              <input type="checkbox" [(ngModel)]="qaAccessoriesReturned" />
+              <span>Charger, cables, and accessories returned</span>
+            </label>
+            <label class="qa-check-item">
+              <input type="checkbox" [(ngModel)]="qaPowerOnWorking" />
+              <span>Powers on and passes hardware diagnostics</span>
+            </label>
+            <label class="qa-check-item">
+              <input type="checkbox" [(ngModel)]="qaDataWiped" />
+              <span>Company data wiped / factory reset completed</span>
+            </label>
+          </div>
+          <div class="panel-field mt-3">
+            <label>Inspection Notes & Condition Remarks</label>
+            <input type="text" [(ngModel)]="qaInspectionRemarks" placeholder="e.g. Device verified in excellent condition. Ready for redeployment." class="panel-input" />
+          </div>
+          <div class="panel-footer-actions">
+            <button type="button" class="btn-cancel-action" (click)="closeAdminAction()">Cancel</button>
+            <button type="button" class="btn-submit-action btn-qa-submit" (click)="completeReturnInspection()" [disabled]="isProcessingAction">
+              <mat-icon>check_circle</mat-icon> {{ isProcessingAction ? 'Completing...' : 'Accept Return & Mark Asset Available' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prominent Rejection Notice Card (When Request was Rejected) -->
+    <div *ngIf="request.status.toLowerCase().includes('reject')" class="rejection-alert-card">
+      <div class="rejection-card-left">
+        <div class="rejection-circle-icon">
+          <mat-icon>block</mat-icon>
+        </div>
+        <div class="rejection-content">
+          <div class="rejection-title-badge-row">
+            <h4 class="rejection-header-title">{{ request.requestType || 'Service' }} Request Rejected</h4>
+            <span class="rejection-status-tag">Status: Rejected</span>
+          </div>
+          <p class="rejection-subtext">
+            This request was reviewed and rejected by IT Administration. The equipment remains assigned to you and is maintained as <strong>Active</strong>.
+          </p>
+          <div class="rejection-details-box">
+            <div class="rejection-reason-row">
+              <span class="reason-title">Official Reason for Rejection:</span>
+              <p class="reason-value">{{ request.adminRemarks || request.reason || 'No detailed remarks recorded by administrator.' }}</p>
+            </div>
+            <div class="rejection-meta-row" *ngIf="request.updatedDate">
+              <span>Decision Timestamp: <strong>{{ request.updatedDate | date:'medium' }}</strong></span>
+            </div>
+          </div>
+          <p class="rejection-help-text">
+            If you need to submit a revised service request or provide updated diagnostics, you may raise a new ticket anytime from the Assets page.
+          </p>
+
+          <!-- Ticket Close Action Row -->
+          <div class="rejection-action-row mt-3">
+            <button
+              *ngIf="!request.status.toLowerCase().includes('closed')"
+              type="button"
+              class="btn-close-ticket"
+              (click)="closeRejectedTicket()"
+              [disabled]="isClosingTicket"
+            >
+              <mat-icon>{{ isClosingTicket ? 'hourglass_top' : 'archive' }}</mat-icon>
+              <span>{{ isClosingTicket ? 'Closing Ticket...' : (isAdmin ? 'Close & Archive Ticket' : 'Acknowledge Decision & Close Ticket') }}</span>
+            </button>
+
+            <span *ngIf="request.status.toLowerCase().includes('closed')" class="ticket-closed-tag">
+              <mat-icon>check_circle</mat-icon> Ticket Closed & Archived
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Direct IT Desk Handover Banner (When Employee chose In-Person Handover) -->
+    <div *ngIf="!isAdmin && (isAwaitingDeskHandoverAck || request.status.toLowerCase().includes('desk') || request.status.toLowerCase().includes('handover'))" class="action-confirmation-banner desk-handover-banner">
+      <div class="banner-left">
+        <div class="pulse-icon-circle green-pulse">
+          <mat-icon>desk</mat-icon>
+        </div>
+        <div class="banner-text">
+          <h4 class="banner-title">Handed Over in Person at IT Helpdesk</h4>
+          <p class="banner-desc">
+            You have submitted this equipment directly at the IT Helpdesk. <strong>Handover Reference:</strong> <code>{{ request.trackingNumber || 'DESK-HANDOVER' }}</code>.
+          </p>
+          <p class="banner-desc mt-1">
+            The IT Helpdesk technician will inspect your device at the desk and acknowledge receipt to begin service.
+          </p>
+        </div>
+      </div>
+      <div class="banner-right">
+        <button
+          type="button"
+          class="btn-confirm-desk-arrival"
+          (click)="confirmEmployeeDeskHandoverReceived()"
+          [disabled]="isProcessingAction"
+          title="Click to confirm IT Helpdesk technician has received the device"
+        >
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ isProcessingAction ? 'Confirming...' : 'Confirm IT Accepted Device' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Employee Courier Dispatched Banner (When Employee shipped via Courier) -->
+    <div *ngIf="!isAdmin && isAwaitingCourierInTransit" class="action-confirmation-banner courier-sent-banner">
+      <div class="banner-left">
+        <div class="pulse-icon-circle blue-pulse">
+          <mat-icon>local_shipping</mat-icon>
+        </div>
+        <div class="banner-text">
+          <h4 class="banner-title">Dispatched to IT Helpdesk via Courier</h4>
+          <p class="banner-desc">
+            Device shipped via <strong>{{ request.courierPartner }}</strong> (AWB: <code>{{ request.trackingNumber }}</code>).
+          </p>
+          <p class="banner-desc mt-1">
+            Awaiting parcel delivery and IT Helpdesk receipt confirmation.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prominent Reverse Courier Pickup Confirmation (ONLY When Admin Booked Courier Pickup) -->
+    <div *ngIf="canEmployeeConfirmPickup" class="action-confirmation-banner pickup-confirm-banner">
+      <div class="banner-left">
+        <div class="pulse-icon-circle purple-pulse">
+          <mat-icon>schedule</mat-icon>
+        </div>
+        <div class="banner-text">
+          <h4 class="banner-title">Courier Pickup Scheduled by Company</h4>
+          <p class="banner-desc">
+            A courier pickup agent has been scheduled via <strong>{{ request.courierPartner || 'Logistics Partner' }}</strong> (Pickup Request / AWB: <code>{{ request.trackingNumber || 'N/A' }}</code>).
+          </p>
+          <p class="banner-desc mt-1">
+            Once the courier agent arrives and collects the package from you, click below to confirm pickup.
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="btn-confirm-pickup"
+        (click)="confirmEmployeePickup()"
+        [disabled]="isConfirmingPickup"
+      >
+        <mat-icon *ngIf="!isConfirmingPickup">check_circle</mat-icon>
+        <span>{{ isConfirmingPickup ? 'Updating...' : 'Confirm Handed to Courier Agent' }}</span>
+      </button>
+    </div>
+
+    <!-- Employee Dispatch / Drop-off Action Banner (When Approved and awaiting shipment) -->
+    <div *ngIf="canEmployeeSendDevice" class="action-confirmation-banner handover-banner">
+      <div class="banner-left">
+        <div class="pulse-icon-circle blue-pulse">
+          <mat-icon>local_shipping</mat-icon>
+        </div>
+        <div class="banner-text">
+          <h4 class="banner-title">Request Approved — Ready to Send / Handover</h4>
+          <p class="banner-desc">
+            Your {{ request.requestType || 'service' }} request has been approved by IT. Please send the device via courier or hand it over directly at the IT helpdesk.
+          </p>
+        </div>
+      </div>
+      <button
+        *ngIf="!isEmployeeHandoverOpen"
+        type="button"
+        class="btn-send-handover"
+        (click)="openEmployeeHandover()"
+      >
+        <mat-icon>send</mat-icon>
+        <span>Send / Handover Device</span>
+      </button>
+    </div>
+
+    <!-- Inline Employee Handover Form -->
+    <div *ngIf="canEmployeeSendDevice && isEmployeeHandoverOpen" class="employee-handover-card">
+      <div class="handover-card-header">
+        <div class="handover-header-title">
+          <mat-icon class="handover-icon">local_shipping</mat-icon>
+          <h5>Submit Logistics / Handover Details</h5>
+        </div>
+        <button type="button" class="btn-panel-close" (click)="closeEmployeeHandover()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="handover-card-body">
+        <div class="handover-mode-selection">
+          <label class="selection-label">Handover Method <span class="required">*</span></label>
+          <div class="modern-mode-selector mb-3">
+            <div
+              class="mode-card"
+              [class.active]="employeeHandoverMode === 'Courier Dispatch'"
+              (click)="employeeHandoverMode = 'Courier Dispatch'"
+            >
+              <div class="mode-icon-circle">
+                <mat-icon>local_shipping</mat-icon>
+              </div>
+              <div class="mode-info">
+                <span class="mode-name">Courier / Delivery Service</span>
+                <span class="mode-hint">Ship device to IT department</span>
+              </div>
+              <div class="mode-radio-dot"></div>
+            </div>
+
+            <div
+              class="mode-card"
+              [class.active]="employeeHandoverMode === 'Direct IT Desk Handover'"
+              (click)="employeeHandoverMode = 'Direct IT Desk Handover'"
+            >
+              <div class="mode-icon-circle">
+                <mat-icon>desk</mat-icon>
+              </div>
+              <div class="mode-info">
+                <span class="mode-name">In-Person IT Desk Drop-off</span>
+                <span class="mode-hint">Handover directly at IT Helpdesk</span>
+              </div>
+              <div class="mode-radio-dot"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="handover-grid" *ngIf="employeeHandoverMode === 'Courier Dispatch'">
+          <div class="handover-field">
+            <label>Courier Partner <span class="required">*</span></label>
+            <select [(ngModel)]="employeeCourierPartner" class="handover-select">
+              <option *ngFor="let c of courierOptions" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+          <div class="handover-field">
+            <label>AWB / Tracking Number <span class="required">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="employeeTrackingNumber"
+              placeholder="e.g. BD-892348123"
+              class="handover-input"
+            />
+          </div>
+        </div>
+
+        <div class="handover-grid" *ngIf="employeeHandoverMode === 'Direct IT Desk Handover'">
+          <div class="handover-field full-width">
+            <label>IT Desk Location / Person Handed To (Optional)</label>
+            <input
+              type="text"
+              [(ngModel)]="employeeTrackingNumber"
+              placeholder="e.g. Handed over to Alex at 2nd Floor IT Desk (Optional)"
+              class="handover-input"
+            />
+          </div>
+        </div>
+
+        <div class="handover-field mt-2">
+          <label>Additional Notes / Remarks (Optional)</label>
+          <input
+            type="text"
+            [(ngModel)]="employeeHandoverNotes"
+            placeholder="e.g. Packed in original box with charger"
+            class="handover-input"
+          />
+        </div>
+
+        <div class="handover-card-footer">
+          <button type="button" class="btn-cancel-action" (click)="closeEmployeeHandover()">Cancel</button>
+          <button
+            type="button"
+            class="btn-submit-action btn-handover-submit"
+            (click)="submitEmployeeHandover()"
+            [disabled]="isProcessingAction"
+          >
+            <mat-icon>send</mat-icon>
+            {{ isProcessingAction ? 'Submitting...' : 'Confirm Device Sent' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prominent Employee Confirmation Card (When Dispatched / Delivered) -->
+    <div *ngIf="canEmployeeConfirmReceipt" class="action-confirmation-banner">
+      <div class="banner-left">
+        <div class="pulse-icon-circle">
+          <mat-icon>markunread_mailbox</mat-icon>
+        </div>
+        <div class="banner-text">
+          <h4 class="banner-title">Parcel Dispatched / Delivered!</h4>
+          <p class="banner-desc">
+            Your equipment is either in transit or has arrived. Please inspect the package and click below to confirm delivery and verify device functionality.
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="btn-confirm-receipt"
+        (click)="confirmReceived()"
+        [disabled]="isConfirmingReceipt"
+      >
+        <mat-icon *ngIf="!isConfirmingReceipt">check_circle</mat-icon>
+        <span>{{ isConfirmingReceipt ? 'Confirming...' : 'Mark as Received & Working' }}</span>
+      </button>
+    </div>
+
+    <!-- Visual Stepper Progress Bar -->
+    <div class="section-card">
+      <h3 class="section-title">
+        <mat-icon class="sec-icon">timeline</mat-icon>
+        <span>Lifecycle Progress Stepper</span>
+      </h3>
+
+      <div class="stepper-horizontal">
+        <div
+          *ngFor="let step of timelineSteps; let idx = index; let last = last"
+          class="stepper-step"
+          [class.completed]="step.isCompleted && !step.isRejected"
+          [class.current]="step.isCurrent && !step.isRejected"
+          [class.rejected]="step.isRejected"
+        >
+          <!-- Step Indicator Node -->
+          <div class="step-node-wrapper">
+            <div class="step-circle">
+              <mat-icon>{{ step.isRejected ? 'close' : (step.isCompleted ? 'check' : step.icon) }}</mat-icon>
+            </div>
+            <div *ngIf="!last" class="step-connector"></div>
+          </div>
+
+          <!-- Step Label -->
+          <div class="step-label-group">
+            <span class="step-name">{{ step.title }}</span>
+            <span class="step-subtitle">{{ step.subtitle }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logistics & Courier Ribbon (If Dispatched) -->
+    <div *ngIf="request.courierPartner || request.trackingNumber" class="section-card logistics-card">
+      <h3 class="section-title">
+        <mat-icon class="sec-icon">local_shipping</mat-icon>
+        <span>Logistics & Parcel Dispatch Information</span>
+      </h3>
+      <div class="logistics-grid">
+        <div class="log-item">
+          <span class="log-label">Courier Partner</span>
+          <span class="log-val">
+            <mat-icon class="mini-icon">airport_shuttle</mat-icon>
+            <strong>{{ request.courierPartner }}</strong>
+          </span>
+        </div>
+        <div class="log-item">
+          <span class="log-label">AWB Tracking Number</span>
+          <span class="log-val font-mono tracking-pill">
+            {{ request.trackingNumber }}
+          </span>
+        </div>
+        <div class="log-item" *ngIf="request.dispatchedDate">
+          <span class="log-label">Dispatched Date</span>
+          <span class="log-val">{{ request.dispatchedDate | date:'medium' }}</span>
+        </div>
+        <div class="log-item" *ngIf="request.deliveredDate">
+          <span class="log-label">Delivered Date</span>
+          <span class="log-val text-emerald">{{ request.deliveredDate | date:'medium' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issue Reason & Description Card -->
+    <div class="section-card">
+      <h3 class="section-title">
+        <mat-icon class="sec-icon">description</mat-icon>
+        <span>Request Details & Defect Diagnosis</span>
+      </h3>
+      <div class="details-content">
+        <div class="detail-row">
+          <span class="d-label">Primary Reason:</span>
+          <span class="d-val"><strong>{{ request.reason }}</strong></span>
+        </div>
+        <div class="detail-row">
+          <span class="d-label">Urgency / Priority:</span>
+          <span class="priority-badge" [ngClass]="'priority-' + (request.priority || 'medium').toLowerCase()">
+            {{ request.priority || 'Medium' }}
+          </span>
+        </div>
+        <div class="detail-block">
+          <span class="d-label">Description / Problem Statement:</span>
+          <p class="description-box">{{ request.description }}</p>
+        </div>
+        <div class="detail-block" *ngIf="request.adminRemarks">
+          <span class="d-label text-blue">IT / Admin Feedback:</span>
+          <p class="admin-remarks-box">{{ request.adminRemarks }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photos of Defect / Condition -->
+    <div *ngIf="parsedImageUrls.length > 0" class="section-card">
+      <h3 class="section-title">
+        <mat-icon class="sec-icon">photo_library</mat-icon>
+        <span>Attached Defect & Device Condition Photos ({{ parsedImageUrls.length }})</span>
+      </h3>
+      <div class="image-gallery-grid">
+        <div
+          *ngFor="let img of parsedImageUrls"
+          class="gallery-thumb"
+          (click)="openImageModal(img)"
+          title="Click to expand"
+        >
+          <img [src]="img" alt="Device Condition Photo" />
+          <div class="zoom-overlay">
+            <mat-icon>zoom_in</mat-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complete Activity Timeline Logs -->
+    <div class="section-card">
+      <h3 class="section-title">
+        <mat-icon class="sec-icon">history</mat-icon>
+        <span>Activity & Status Change History</span>
+      </h3>
+      <div class="timeline-logs-list">
+        <div *ngFor="let log of request.logs" class="log-entry">
+          <div class="log-bullet"></div>
+          <div class="log-content">
+            <div class="log-top">
+              <span class="log-status-tag">{{ log.toStatus }}</span>
+              <span class="log-author">{{ log.actionByName || 'System' }}</span>
+              <span class="log-time">{{ log.createdDate | date:'short' }}</span>
+            </div>
+            <p *ngIf="log.remarks" class="log-remarks">{{ log.remarks }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="modal-footer">
+    <!-- <button type="button" class="btn-close" (click)="onClose()">Close</button> -->
+  </div>
+
+  <!-- Fullscreen Lightbox Modal for Photos -->
+  <div *ngIf="selectedImageModal" class="image-lightbox" (click)="closeImageModal()">
+    <div class="lightbox-container" (click)="$event.stopPropagation()">
+      <img [src]="selectedImageModal" alt="Defect Photo Full" class="lightbox-img" />
+      <button type="button" class="btn-lightbox-close" (click)="closeImageModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

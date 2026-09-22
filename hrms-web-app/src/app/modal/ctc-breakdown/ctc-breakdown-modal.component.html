@@ -1,0 +1,139 @@
+﻿<div class="ctc-modal-container">
+  <!-- Header -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon>payments</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Compensation & CTC Breakdown</h2>
+        <p class="modal-subtitle">Configure annual package and monthly payroll allowances for {{ data?.employee?.firstName }} {{ data?.employee?.lastName }}</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close-header" (click)="closeModal()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="ctcForm" (ngSubmit)="saveCtcBreakdown()" class="ctc-form">
+    <div class="modal-body-scrollable">
+
+      <!-- Annual CTC Input Box -->
+      <div class="ctc-input-box">
+        <div class="ctc-input-col">
+          <div class="label-row">
+            <label class="ctc-main-label">Annual CTC (Cost to Company)</label>
+            <span class="lpa-pill">{{ formatLpa(annualCtcNumber) }}</span>
+          </div>
+          <div class="currency-input-group">
+            <span class="currency-prefix">₹</span>
+            <input
+              type="number"
+              formControlName="annualCtc"
+              (input)="onAnnualCtcInput($event)"
+              class="form-input font-bold ctc-primary-input"
+              placeholder="1200000"
+              min="50000"
+            />
+          </div>
+          <span class="helper-text">Changes dynamically adjust monthly Basic (50%), HRA (20%), and Allowances.</span>
+        </div>
+
+        <div class="ctc-highlight-stat">
+          <span class="stat-label">Net Monthly Take-Home</span>
+          <span class="stat-value font-mono">{{ formatCurrency(netMonthly) }}</span>
+          <span class="stat-sub">In-hand bank deposit</span>
+        </div>
+      </div>
+
+      <!-- Payroll Breakdown Table -->
+      <div class="payroll-breakdown-table">
+        <div class="breakdown-header-row">
+          <span>Salary Component</span>
+          <span>Monthly (₹)</span>
+          <span class="text-right">Annual (₹)</span>
+        </div>
+
+        <!-- Basic Salary -->
+        <div class="breakdown-item-row">
+          <div class="component-desc">
+            <span class="name">Basic Salary</span>
+            <span class="note">50% statutory baseline</span>
+          </div>
+          <div class="input-cell">
+            <input type="number" formControlName="basicSalary" (input)="onComponentInput()" class="table-input" />
+          </div>
+          <div class="annual-cell text-right">
+            {{ formatCurrency(basicMonthly * 12) }}
+          </div>
+        </div>
+
+        <!-- HRA -->
+        <div class="breakdown-item-row">
+          <div class="component-desc">
+            <span class="name">House Rent Allowance (HRA)</span>
+            <span class="note">20% tax-exempt eligible</span>
+          </div>
+          <div class="input-cell">
+            <input type="number" formControlName="hra" (input)="onComponentInput()" class="table-input" />
+          </div>
+          <div class="annual-cell text-right">
+            {{ formatCurrency(hraMonthly * 12) }}
+          </div>
+        </div>
+
+        <!-- Special Allowance -->
+        <div class="breakdown-item-row">
+          <div class="component-desc">
+            <span class="name">Special & Flexible Allowances</span>
+            <span class="note">Flexible benefit pool</span>
+          </div>
+          <div class="input-cell">
+            <input type="number" formControlName="specialAllowance" (input)="onComponentInput()" class="table-input" />
+          </div>
+          <div class="annual-cell text-right">
+            {{ formatCurrency(specialAllowanceMonthly * 12) }}
+          </div>
+        </div>
+
+        <!-- PF Deduction -->
+        <div class="breakdown-item-row deduction-row">
+          <div class="component-desc">
+            <span class="name text-red">Provident Fund (PF Deduction)</span>
+            <span class="note">12% of basic salary</span>
+          </div>
+          <div class="input-cell">
+            <input type="number" formControlName="pfDeduction" (input)="onComponentInput()" class="table-input" />
+          </div>
+          <div class="annual-cell text-right text-red">
+            - {{ formatCurrency(pfMonthly * 12) }}
+          </div>
+        </div>
+
+        <!-- Gross & Net Summaries -->
+        <div class="breakdown-summary-row gross-row">
+          <span class="summary-label">Gross Monthly Pay</span>
+          <span class="summary-val font-mono">{{ formatCurrency(grossMonthly) }}</span>
+          <span class="summary-annual text-right font-mono">{{ formatCurrency(grossMonthly * 12) }}</span>
+        </div>
+
+        <div class="breakdown-summary-row net-row">
+          <span class="summary-label text-emerald font-bold">Net In-Hand (Take-Home)</span>
+          <span class="summary-val font-mono text-emerald font-bold">{{ formatCurrency(netMonthly) }}</span>
+          <span class="summary-annual text-right font-mono text-emerald font-bold">{{ formatCurrency(netMonthly * 12) }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">Cancel</button>
+      <button type="submit" class="btn-save-ctc" [disabled]="isSaving || ctcForm.invalid">
+        <mat-icon *ngIf="!isSaving">save</mat-icon>
+        <span *ngIf="isSaving" class="spinner-border"></span>
+        <span>{{ isSaving ? 'Saving...' : 'Save CTC Breakdown' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

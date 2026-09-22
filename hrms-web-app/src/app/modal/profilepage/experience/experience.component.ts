@@ -82,43 +82,25 @@ export class ExperienceComponent implements OnInit {
       if (this.data && this.data.companyName) {
         this.experienceList = [
           {
-            companyName: this.data.companyName || 'Nexient Global Solutions',
-            designation: this.data.designation || 'Lead Cloud & Systems Architect',
+            companyName: this.data.companyName,
+            designation: this.data.designation || '',
             experienceStartDate: null,
             experienceEndDate: null,
-            experienceDuration: this.data.experienceDuration || '5 Years 8 Months',
-            experienceLocation: this.data.experienceLocation || 'Boston, MA',
-            responsibilities: this.data.responsibilities || 'Led cross-functional cloud transformation, microservices migration, CI/CD pipeline automation, and team mentoring.'
-          },
-          {
-            companyName: 'Vertex Interactive Systems',
-            designation: 'Senior Full Stack Developer',
-            experienceStartDate: null,
-            experienceEndDate: null,
-            experienceDuration: '3 Years 2 Months',
-            experienceLocation: 'Cambridge, MA',
-            responsibilities: 'Engineered high-throughput REST APIs in .NET Core, architected Angular client portals, and optimized SQL Server database indices.'
+            experienceDuration: this.data.experienceDuration || '',
+            experienceLocation: this.data.experienceLocation || '',
+            responsibilities: this.data.responsibilities || ''
           }
         ];
       } else {
         this.experienceList = [
           {
-            companyName: 'Nexient Global Solutions',
-            designation: 'Lead Cloud & Systems Architect',
+            companyName: '',
+            designation: '',
             experienceStartDate: null,
             experienceEndDate: null,
-            experienceDuration: '5 Years 8 Months',
-            experienceLocation: 'Boston, MA',
-            responsibilities: 'Led cross-functional cloud transformation, microservices migration, CI/CD pipeline automation, and team mentoring.'
-          },
-          {
-            companyName: 'Vertex Interactive Systems',
-            designation: 'Senior Full Stack Developer',
-            experienceStartDate: null,
-            experienceEndDate: null,
-            experienceDuration: '3 Years 2 Months',
-            experienceLocation: 'Cambridge, MA',
-            responsibilities: 'Engineered high-throughput REST APIs in .NET Core, architected Angular client portals, and optimized SQL Server database indices.'
+            experienceDuration: '',
+            experienceLocation: '',
+            responsibilities: ''
           }
         ];
       }

@@ -1,19 +1,31 @@
-<aside class="sidebar-container">
+<aside class="sidebar-container" [class.is-collapsed]="isCollapsed" ngSkipHydration>
   <!-- Brand Logo & Header -->
   <div class="brand-header">
-    <div class="logo-box">
+    <div class="logo-box" (click)="onLogoClick()" [title]="isCollapsed ? 'Expand Sidebar' : 'KHRMS'">
       <img src="assets/images/ki-logo.jpg" alt="KHRMS Logo" class="brand-logo-img" />
     </div>
-    <div class="brand-info">
+    <div class="brand-info" *ngIf="!isCollapsed">
       <h1 class="brand-name">KHRMS</h1>
       <span class="brand-subtitle">Management Suite</span>
     </div>
+
+    <!-- Shrink / Expand Toggle Button -->
+    <button
+      type="button"
+      class="sidebar-toggle-btn"
+      (click)="toggleSidebar()"
+      [title]="isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'"
+      aria-label="Toggle Sidebar"
+    >
+      <mat-icon>{{ isCollapsed ? 'menu' : 'menu_open' }}</mat-icon>
+    </button>
   </div>
 
   <!-- Navigation Menu List -->
   <div class="nav-wrapper">
     <div *ngFor="let section of sections" class="nav-section">
-      <div *ngIf="section.title" class="section-title">{{ section.title }}</div>
+      <div *ngIf="section.title && !isCollapsed" class="section-title">{{ section.title }}</div>
+      <div *ngIf="section.title && isCollapsed" class="section-divider"></div>
       <nav class="nav-list">
         <a
           *ngFor="let item of section.items"
@@ -21,29 +33,28 @@
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: false }"
           class="nav-item"
+          [matTooltip]="isCollapsed ? item.label : ''"
+          matTooltipPosition="right"
+          matTooltipClass="sidebar-tooltip"
         >
           <span class="active-indicator"></span>
           <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-label" *ngIf="!isCollapsed">{{ item.label }}</span>
         </a>
       </nav>
     </div>
   </div>
 
-  <!-- Sidebar Footer (Hidden Quick Action, Settings, and Info buttons) -->
-  <div class="sidebar-footer" style="display: none;">
-    <button type="button" class="quick-action-btn" (click)="onQuickAction()">
-      <mat-icon class="quick-icon">add</mat-icon>
-      <span>Quick Action</span>
+  <!-- Sidebar Footer with Collapse Toggle Option -->
+  <div class="sidebar-footer" *ngIf="isCollapsed">
+    <button
+      type="button"
+      class="expand-icon-btn"
+      (click)="toggleSidebar()"
+      title="Expand Sidebar"
+      aria-label="Expand Sidebar"
+    >
+      <mat-icon>chevron_right</mat-icon>
     </button>
-
-    <div class="footer-icons-row">
-      <button type="button" class="footer-btn" aria-label="Settings">
-        <mat-icon>settings</mat-icon>
-      </button>
-      <button type="button" class="footer-btn" aria-label="Help">
-        <mat-icon>help_outline</mat-icon>
-      </button>
-    </div>
   </div>
 </aside>

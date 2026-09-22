@@ -1,0 +1,69 @@
+<div class="cancel-modal-container">
+  <!-- Modal Header Bar with Dark Slate Gradient -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>event_busy</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Cancel Leave Request</h2>
+        <p class="modal-subtitle">Review and confirm cancellation of this scheduled leave.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Modal Body with generous padding and clean hierarchy -->
+  <div class="modal-body">
+    <!-- Leave Summary Card -->
+    <div class="leave-summary-card">
+      <div class="summary-row">
+        <span class="label">Leave Type:</span>
+        <span class="value font-semibold">{{ data.leaveTypeName || 'Leave' }}</span>
+      </div>
+      <div class="summary-row" *ngIf="data.startDate">
+        <span class="label">Dates:</span>
+        <span class="value font-mono">{{ data.startDate | date:'dd MMM yyyy' }} <span *ngIf="data.endDate && data.endDate !== data.startDate">– {{ data.endDate | date:'dd MMM yyyy' }}</span></span>
+      </div>
+      <div class="summary-row" *ngIf="data.reason">
+        <span class="label">Initial Reason:</span>
+        <span class="value text-muted">"{{ data.reason }}"</span>
+      </div>
+    </div>
+
+    <!-- Balance Restoration Notice Box -->
+    <div class="restore-notice-box">
+      <mat-icon>verified</mat-icon>
+      <div class="notice-text">
+        <strong>Automatic Quota Restoration</strong>
+        <p>Your leave quota balance will be automatically restored immediately upon cancellation.</p>
+      </div>
+    </div>
+
+    <!-- Reason Input Field -->
+    <div class="reason-input-group">
+      <label for="cancelReasonInput" class="input-label">Reason for Cancellation (Optional)</label>
+      <textarea
+        id="cancelReasonInput"
+        [(ngModel)]="cancellationReason"
+        placeholder="Provide notes or clarification for cancelling this leave..."
+        rows="3"
+        class="reason-textarea"
+      ></textarea>
+    </div>
+  </div>
+
+  <!-- Distinct Modal Footer Bar with light background and clear border -->
+  <div class="modal-footer">
+    <button type="button" class="btn-secondary" (click)="onCancel()">
+      Keep Leave
+    </button>
+    <button type="button" class="btn-confirm-cancel" (click)="onConfirm()">
+      <mat-icon>cancel</mat-icon>
+      <span>Confirm Cancellation</span>
+    </button>
+  </div>
+</div>
+

@@ -15,6 +15,9 @@ export class AssetsmasterService {
 
   private assetsSubject = new BehaviorSubject<AssetItem[]>(this.initialAssets);
   assets$: Observable<AssetItem[]> = this.assetsSubject.asObservable();
+  get currentAssets(): AssetItem[] {
+    return this.assetsSubject.value;
+  }
 
   private metricsSubject = new BehaviorSubject<AssetMetricCard[]>([]);
   metrics$: Observable<AssetMetricCard[]> = this.metricsSubject.asObservable();
@@ -49,6 +52,8 @@ export class AssetsmasterService {
             id: item.assetsMasterId ? String(item.assetsMasterId) : (item.id ? String(item.id) : `AST-${1000 + idx}`),
             modelName: item.assetsMasterName || item.modelName || 'Hardware Asset',
             specifications: item.description || item.specifications || item.serialNumber || 'Corporate Asset',
+            serialNumber: item.serialNumber || item.SerialNumber || '',
+            dateOfPurchase: item.dateOfPurchase || item.DateOfPurchase || '',
             assetType: (item.assetType as AssetType) || 'Laptop',
             assignedTo: item.assignedTo || item.AssignedTo || 'Unassigned',
             employeeId: (item.employeeId ?? item.EmployeeId) ? Number(item.employeeId ?? item.EmployeeId) : undefined,
@@ -140,8 +145,11 @@ export class AssetsmasterService {
       id: assetData.id || nextId,
       modelName: assetData.modelName || 'New Hardware Asset',
       specifications: assetData.specifications || `${assetData.assetType || 'Laptop'} • Corporate Unit`,
+      serialNumber: assetData.serialNumber,
+      dateOfPurchase: assetData.dateOfPurchase,
       assetType: assetData.assetType || 'Laptop',
       assignedTo: isUnassigned ? 'Unassigned' : assetData.assignedTo,
+      employeeId: assetData.employeeId ? Number(assetData.employeeId) : undefined,
       assignedInitials: isUnassigned ? 'UN' : undefined,
       assignedAvatar: !isUnassigned ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120' : undefined,
       location: assetData.location || 'NY Office - Floor 4',
@@ -175,6 +183,7 @@ export class AssetsmasterService {
         return {
           ...a,
           status: 'Available' as AssetStatus,
+          employeeId: undefined,
           assignedTo: 'Unassigned',
           assignedInitials: 'UN',
           assignedAvatar: undefined,
@@ -195,6 +204,7 @@ export class AssetsmasterService {
         id: numericId,
         assetsMasterName: target.modelName,
         status: 'Available',
+        employeeId: null,
         assignedTo: 'Unassigned',
         isActive: true
       }).subscribe({
@@ -209,6 +219,7 @@ export class AssetsmasterService {
     const target = current.find(a => String(a.id) === String(id));
     const numericId = parseInt(String(id).replace(/\D/g, ''), 10) || Number(id) || 1;
     const existingAssignedTo = target?.assignedTo || 'Unassigned';
+    const existingEmployeeId = target?.employeeId || null;
 
     const payload = {
       id: numericId,
@@ -216,6 +227,7 @@ export class AssetsmasterService {
       assetsMasterName: target?.modelName || 'Asset',
       description: target?.specifications || '',
       status: 'In Repair',
+      employeeId: existingEmployeeId,
       assignedTo: existingAssignedTo,
       location: target?.location || 'Main HQ Office',
       isActive: true,
@@ -229,6 +241,7 @@ export class AssetsmasterService {
             return {
               ...a,
               status: 'In Repair' as AssetStatus,
+              employeeId: existingEmployeeId ? Number(existingEmployeeId) : undefined,
               assignedTo: existingAssignedTo,
               isActive: true
             };
@@ -244,6 +257,7 @@ export class AssetsmasterService {
             return {
               ...a,
               status: 'In Repair' as AssetStatus,
+              employeeId: existingEmployeeId ? Number(existingEmployeeId) : undefined,
               assignedTo: existingAssignedTo,
               isActive: true
             };

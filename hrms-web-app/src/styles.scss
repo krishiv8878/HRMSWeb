@@ -59,3 +59,16 @@ body {
   --ag-font-size: 17px;
   --ag-font-family: Roboto;
 }
+
+/* Clean container styling for custom dialogs to eliminate default mat-dialog padding */
+.mat-mdc-dialog-container:has(app-cancel-leave-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(app-timesheet-submit-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.cancel-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.submit-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.approval-modal-container) .mdc-dialog__surface,
+.custom-clean-dialog .mat-mdc-dialog-container .mdc-dialog__surface,
+.custom-clean-dialog .mdc-dialog__surface {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}

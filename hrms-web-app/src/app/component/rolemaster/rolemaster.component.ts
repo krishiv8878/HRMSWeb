@@ -102,17 +102,15 @@ export class RolemasterComponent implements OnInit {
 
         if (validList.length > 0) {
           this.allRoles = validList.map((item: any, idx: number) => this.mapRoleItem(item, idx));
-        } else if (rawList.length > 0) {
-          this.allRoles = [];
         } else {
-          this.allRoles = this.getDefaultMockRoles();
+          this.allRoles = [];
         }
 
         this.processRoleMetrics();
         this.filterRoles();
       },
       error: () => {
-        this.allRoles = this.getDefaultMockRoles();
+        this.allRoles = [];
         this.processRoleMetrics();
         this.filterRoles();
       }
@@ -130,9 +128,6 @@ export class RolemasterComponent implements OnInit {
         const rIdMatch = Number(e.roleId || e.RoleId) === Number(item.id);
         return rNameMatch || rIdMatch;
       }).length;
-    }
-    if (!assigned) {
-      assigned = Math.max(1, Math.floor(45 - (idx * 6)));
     }
 
     return {
@@ -164,12 +159,7 @@ export class RolemasterComponent implements OnInit {
   }
 
   private getDefaultMockRoles(): RoleItem[] {
-    return [
-      { id: 1, roleName: 'Super Admin', accessLevel: 'System Admin', assignedUsersCount: 3, securityScope: 'Full System, Configuration & Global Governance', iconName: 'admin_panel_settings', isActive: true },
-      { id: 2, roleName: 'HR Director', accessLevel: 'HR Operations', assignedUsersCount: 6, securityScope: 'Talent Acquisition, Payroll, Compliance & Leaves', iconName: 'badge', isActive: true },
-      { id: 3, roleName: 'Engineering Manager', accessLevel: 'Management', assignedUsersCount: 14, securityScope: 'Team Hierarchy, Approvals, Appraisals & Timesheets', iconName: 'supervisor_account', isActive: true },
-      { id: 4, roleName: 'General Employee', accessLevel: 'Employee', assignedUsersCount: 112, securityScope: 'Self Service, Attendance Punch, Leave & Reimbursement', iconName: 'person', isActive: true }
-    ];
+    return [];
   }
 
   private processRoleMetrics() {
@@ -281,7 +271,8 @@ export class RolemasterComponent implements OnInit {
 
   openAddForm() {
     const dialogRef = this.dialog.open(RolemastersComponent, {
-      width: '520px',
+      width: '880px',
+      maxWidth: '95vw',
       data: { existingRoles: this.allRoles }
     });
 
@@ -294,7 +285,8 @@ export class RolemasterComponent implements OnInit {
 
   Edit(data: any) {
     const dialogRef = this.dialog.open(RolemastersComponent, {
-      width: '520px',
+      width: '880px',
+      maxWidth: '95vw',
       data: { ...(data.rawRecord || data), existingRoles: this.allRoles }
     });
 

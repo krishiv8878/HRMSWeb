@@ -1,0 +1,192 @@
+<div class="salary-slip-modal-container">
+  <!-- Modal Actions Header (Hidden in Print) -->
+  <div class="slip-modal-top-bar no-print">
+    <div class="bar-title">
+      <mat-icon>receipt</mat-icon>
+      <span>Employee Salary Statement</span>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="btn-print" (click)="printSlip()">
+        <mat-icon>print</mat-icon>
+        <span>Print / Save as PDF</span>
+      </button>
+      <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close modal">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Printable Salary Slip Document Sheet -->
+  <div class="payslip-sheet" id="printablePayslip">
+    <!-- Company Header Block -->
+    <div class="company-header">
+      <div class="company-brand">
+        <div class="company-logo-badge">
+          <mat-icon>corporate_fare</mat-icon>
+        </div>
+        <div class="company-text">
+          <h1 class="company-name">KRISHIV INNOVATIONS PRIVATE LIMITED</h1>
+          <p class="company-sub">CIN: U72200MH2023PTC123456 • ISO 9001:2015 Certified</p>
+          <p class="company-addr">Tech Park Avenue, Phase 2, Hinjewadi, Pune, Maharashtra 411057</p>
+        </div>
+      </div>
+      <div class="payslip-badge-box">
+        <span class="sheet-title">PAYSLIP</span>
+        <span class="sheet-period">{{ disbursement.monthYear }}</span>
+      </div>
+    </div>
+
+    <!-- Employee & Banking Information Summary Grid -->
+    <div class="payslip-section-card">
+      <div class="info-grid">
+        <!-- Col 1: Personnel Info -->
+        <div class="info-col">
+          <div class="data-row">
+            <span class="label">Employee Name:</span>
+            <span class="val font-bold">{{ employee?.firstName }} {{ employee?.lastName }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">Employee Code:</span>
+            <span class="val font-mono">EMP-{{ (employee?.id + '').padStart(4, '0') }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">Designation:</span>
+            <span class="val">{{ employee?.designation || 'Software Engineer' }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">Department:</span>
+            <span class="val">{{ employee?.branch || 'Engineering & Technology' }}</span>
+          </div>
+        </div>
+
+        <!-- Col 2: Employment & Banking Coordinates -->
+        <div class="info-col">
+          <div class="data-row">
+            <span class="label">Date of Joining:</span>
+            <span class="val">{{ employee?.dateOfJoining ? (employee.dateOfJoining | date:'mediumDate') : '—' }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">Bank Name:</span>
+            <span class="val">{{ bankInfo?.bankName || 'Direct Deposit' }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">Bank Account:</span>
+            <span class="val font-mono">•••• {{ (bankInfo?.accountNumber + '').slice(-4) || 'Direct Deposit' }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">IFSC Code:</span>
+            <span class="val font-mono text-blue">{{ bankInfo?.ifscCode || '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Earnings & Deductions Dual Table -->
+    <div class="breakdown-tables-wrapper">
+      <!-- Left Table: Earnings -->
+      <div class="table-side earnings-side">
+        <div class="side-header">
+          <span>EARNINGS / ALLOWANCES</span>
+          <span>AMOUNT (₹)</span>
+        </div>
+        <div class="side-row">
+          <span class="item-name">Basic Salary</span>
+          <span class="item-val">{{ formatCurrency(disbursement.basicSalary) }}</span>
+        </div>
+        <div class="side-row">
+          <span class="item-name">House Rent Allowance (HRA)</span>
+          <span class="item-val">{{ formatCurrency(disbursement.hra) }}</span>
+        </div>
+        <div class="side-row">
+          <span class="item-name">Special Allowance</span>
+          <span class="item-val">{{ formatCurrency(disbursement.specialAllowance) }}</span>
+        </div>
+        <div class="side-row" *ngIf="disbursement.bonusAmount && disbursement.bonusAmount > 0">
+          <span class="item-name">Performance Bonus / Incentive</span>
+          <span class="item-val text-green">+ {{ formatCurrency(disbursement.bonusAmount) }}</span>
+        </div>
+        <div class="side-total-row total-earnings">
+          <span>GROSS EARNINGS</span>
+          <span>{{ formatCurrency(totalEarnings) }}</span>
+        </div>
+      </div>
+
+      <!-- Right Table: Deductions -->
+      <div class="table-side deductions-side">
+        <div class="side-header">
+          <span>DEDUCTIONS</span>
+          <span>AMOUNT (₹)</span>
+        </div>
+        <div class="side-row">
+          <span class="item-name">Provident Fund (Employee PF 12%)</span>
+          <span class="item-val">{{ formatCurrency(disbursement.pfDeduction) }}</span>
+        </div>
+        <div class="side-row" *ngIf="disbursement.additionalDeductions && disbursement.additionalDeductions > 0">
+          <span class="item-name">
+            Additional Deductions
+            <small *ngIf="disbursement.deductionReason" class="ded-note">({{ disbursement.deductionReason }})</small>
+          </span>
+          <span class="item-val text-red">{{ formatCurrency(disbursement.additionalDeductions) }}</span>
+        </div>
+        <div class="side-row" *ngIf="!disbursement.additionalDeductions">
+          <span class="item-name text-muted">Loss of Pay (LOP) / Leave Deductions</span>
+          <span class="item-val text-muted">₹ 0</span>
+        </div>
+        <div class="side-total-row total-deductions">
+          <span>TOTAL DEDUCTIONS</span>
+          <span>{{ formatCurrency(totalDeductions) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Net Payable Salary Banner -->
+    <div class="net-payable-banner">
+      <div class="banner-left">
+        <span class="net-label">NET TAKE-HOME PAYABLE:</span>
+        <span class="net-words">{{ netPayableWords }}</span>
+      </div>
+      <div class="banner-right">
+        <span class="net-figure">{{ formatCurrency(disbursement.netSalaryCredited) }}</span>
+      </div>
+    </div>
+
+    <!-- Disbursement Audit & Verification Details -->
+    <div class="disbursement-audit-card">
+      <div class="audit-item">
+        <span class="audit-lbl">Disbursement Status:</span>
+        <span class="status-pill status-credited">
+          <mat-icon>verified</mat-icon>
+          <span>PAID & CREDITED</span>
+        </span>
+      </div>
+      <div class="audit-item">
+        <span class="audit-lbl">Payment Mode:</span>
+        <span class="audit-val">{{ disbursement.paymentMode }}</span>
+      </div>
+      <div class="audit-item">
+        <span class="audit-lbl">Transaction Reference:</span>
+        <span class="audit-val font-mono text-blue">{{ disbursement.transactionRef }}</span>
+      </div>
+      <div class="audit-item">
+        <span class="audit-lbl">Disbursement Date:</span>
+        <span class="audit-val">{{ disbursement.creditDate | date:'mediumDate' }}</span>
+      </div>
+    </div>
+
+    <!-- Footer Notes & Signatures -->
+    <div class="payslip-footer">
+      <div class="footer-left">
+        <p class="disclaimer-text">
+          <strong>Note:</strong> This is an electronically generated salary slip from Krishiv HRMS Payroll Engine and does not require an inked physical signature. For queries regarding deductions or tax calculations, please reach out to <a [href]="'mailto:payroll@krishivinnovations.com'">payroll&#64;krishivinnovations.com</a>.
+        </p>
+      </div>
+      <div class="footer-right">
+        <div class="seal-placeholder">
+          <mat-icon class="seal-icon">verified_user</mat-icon>
+          <span class="seal-text">KRISHIV INNOVATIONS</span>
+          <span class="seal-sub">PAYROLL VERIFIED</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

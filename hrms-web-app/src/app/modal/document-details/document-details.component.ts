@@ -4,10 +4,11 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { DocumentItem } from '../../interface/document.interface';
 import { DocumentService } from '../../services/documnets/document.service';
+import { DocumentsComponent } from '../documents/documents.component';
 
 @Component({
   selector: 'app-document-details',
@@ -22,6 +23,7 @@ export class DocumentDetailsComponent implements OnInit, OnDestroy {
   private toastr = inject(ToastrService);
   private sanitizer = inject(DomSanitizer);
   private documentService = inject(DocumentService);
+  private dialog = inject(MatDialog);
 
   safePreviewUrl: SafeResourceUrl | null = null;
   rawFileUrl: string | null = null;
@@ -115,5 +117,23 @@ export class DocumentDetailsComponent implements OnInit, OnDestroy {
       case 'Private': return 'pill-private';
       default: return 'pill-private';
     }
+  }
+
+  onReupload() {
+    this.dialogRef.close();
+    const uploadRef = this.dialog.open(DocumentsComponent, {
+      width: '560px',
+      data: {
+        documentName: this.data.name,
+        category: this.data.category,
+        reuploadDocId: this.data.id
+      }
+    });
+
+    uploadRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.documentService.fetchDocumentsFromApi();
+      }
+    });
   }
 }

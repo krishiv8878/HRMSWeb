@@ -1,0 +1,573 @@
+<div class="email-templates-dashboard">
+  <!-- Top Header Section -->
+  <div class="header-section">
+    <div class="title-group">
+      <h1 class="page-title">Email Templates & Notification Engine</h1>
+      <p class="page-subtitle">
+        Design corporate HTML email notifications, configure automated trigger categories, and manage workforce communication templates.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <!-- Add Type Button -->
+      <button type="button" class="btn-secondary-action" (click)="openCreateType()">
+        <mat-icon class="btn-icon">category</mat-icon>
+        <span>+ Add Category Type</span>
+      </button>
+
+      <!-- Design Template Button -->
+      <button type="button" class="btn-primary-action" (click)="openCreateTemplate()">
+        <mat-icon class="btn-icon">palette</mat-icon>
+        <span>+ Design Email Template</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Metric Statistics Cards -->
+  <div class="metrics-cards-grid">
+    <!-- Total Templates -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">CONFIGURED TEMPLATES</span>
+        <div class="icon-box icon-blue">
+          <mat-icon>mail</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ templates.length }}</div>
+      <div class="card-subtitle">
+        <span>Active notification layouts in database</span>
+      </div>
+    </div>
+
+    <!-- Active Automated Triggers -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">AUTOMATED TRIGGER BINDINGS</span>
+        <div class="icon-box icon-purple">
+          <mat-icon>bolt</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ activeTriggersCount }} / {{ triggerEvents.length }}</div>
+      <div class="card-subtitle">
+        <span>System events with active template bindings</span>
+      </div>
+    </div>
+
+    <!-- Coverage Rate -->
+    <div class="metric-card">
+      <div class="card-header">
+        <span class="card-title">TEMPLATE COVERAGE</span>
+        <div class="icon-box icon-green">
+          <mat-icon>done_all</mat-icon>
+        </div>
+      </div>
+      <div class="card-value">{{ coveragePercent }}%</div>
+      <div class="card-subtitle">
+        <span>Categories with active templates</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Card Workspace -->
+  <div class="workspace-card">
+    <!-- Controls Bar (Tabs & Search/Filter) -->
+    <div class="workspace-header-bar">
+      <!-- Left Tabs -->
+      <div class="nav-pills-group">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'triggers'"
+          (click)="activeTab = 'triggers'"
+        >
+          <mat-icon class="pill-icon">bolt</mat-icon>
+          <span>Automated Trigger Bindings ({{ triggerEvents.length }})</span>
+        </button>
+
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'templates'"
+          (click)="activeTab = 'templates'"
+        >
+          <mat-icon class="pill-icon">mark_email_read</mat-icon>
+          <span>Email Templates ({{ templates.length }})</span>
+        </button>
+
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="activeTab === 'types'"
+          (click)="activeTab = 'types'"
+        >
+          <mat-icon class="pill-icon">category</mat-icon>
+          <span>Trigger Categories / Types ({{ templateTypes.length }})</span>
+        </button>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="controls-right">
+        <!-- Search Input -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            placeholder="Search templates, triggers, or variables..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Filter by Trigger Category Dropdown (Only in Triggers Tab) -->
+        <div class="filter-dropdown" *ngIf="activeTab === 'triggers' && triggerCategories.length > 1">
+          <select [(ngModel)]="selectedTriggerCategoryFilter" class="custom-select">
+            <option *ngFor="let cat of triggerCategories" [value]="cat">{{ cat === 'All' ? 'All Event Modules' : cat }}</option>
+          </select>
+        </div>
+
+        <!-- Filter by Category Dropdown (Only in Templates Tab) -->
+        <div class="filter-dropdown" *ngIf="activeTab === 'templates' && templateTypes.length > 0">
+          <select [(ngModel)]="selectedTypeFilter" class="custom-select">
+            <option value="All">All Categories</option>
+            <option *ngFor="let t of templateTypes" [value]="t.id">{{ t.templateType }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 1: EMAIL TEMPLATES GRID ================= -->
+    <div class="tab-content" *ngIf="activeTab === 'templates'">
+      <div class="templates-grid" *ngIf="filteredTemplates.length > 0">
+        <div *ngFor="let t of filteredTemplates" class="template-card">
+          <!-- Card Top Bar with Type & View Toggle -->
+          <div class="card-top-bar">
+            <div class="type-badge-box">
+              <span class="type-badge">{{ getTypeName(t.emailTemplateTypeId) }}</span>
+            </div>
+
+            <!-- Mini View Mode Switcher: Design vs HTML Code -->
+            <div class="card-mode-switcher">
+              <button
+                type="button"
+                class="mode-pill-btn"
+                [class.active]="getCardViewMode(t.id) === 'design'"
+                (click)="setCardViewMode(t.id, 'design', $event)"
+                title="View Visual Design"
+              >
+                <mat-icon class="pill-icon">palette</mat-icon>
+                <span>Design</span>
+              </button>
+              <button
+                type="button"
+                class="mode-pill-btn"
+                [class.active]="getCardViewMode(t.id) === 'code'"
+                (click)="setCardViewMode(t.id, 'code', $event)"
+                title="View HTML Source Code"
+              >
+                <mat-icon class="pill-icon">code</mat-icon>
+                <span>Code</span>
+              </button>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="card-actions-quick">
+              <button type="button" class="btn-icon-action" (click)="openQuickPreview(t, $event)" title="Live Email Client Simulator">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button type="button" class="btn-icon-action" (click)="openEditTemplate(t)" title="Edit in Designer">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button type="button" class="btn-icon-action btn-danger" (click)="deleteTemplate(t)" title="Delete Template">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card Body: VIEW 1 - VISUAL EMAIL DESIGN PREVIEW -->
+          <div
+            class="card-body-preview-design"
+            *ngIf="getCardViewMode(t.id) === 'design'"
+            (click)="openEditTemplate(t)"
+            title="Click to launch Visual Designer"
+          >
+            <div class="mini-browser-chrome">
+              <div class="mini-dots">
+                <span class="mini-dot r"></span>
+                <span class="mini-dot y"></span>
+                <span class="mini-dot g"></span>
+              </div>
+              <span class="mini-subject">Subject: {{ getTypeName(t.emailTemplateTypeId) }}</span>
+            </div>
+            <div class="mini-iframe-wrap">
+              <iframe
+                [srcdoc]="getPreviewSrcdoc(t.templateHtml)"
+                class="mini-preview-iframe"
+                sandbox="allow-same-origin"
+              ></iframe>
+              <div class="iframe-hover-hint">
+                <mat-icon class="hint-icon">edit</mat-icon>
+                <span>Click to Customize</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Body: VIEW 2 - HTML SOURCE CODE VIEW -->
+          <div class="card-body-preview-code" *ngIf="getCardViewMode(t.id) === 'code'">
+            <div class="code-header-bar">
+              <span class="code-meta">HTML SOURCE ({{ (t.templateHtml || '').length }} chars)</span>
+              <button type="button" class="btn-copy-code" (click)="copyCode(t.templateHtml, $event)">
+                <mat-icon>content_copy</mat-icon>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div class="code-scroll-box">
+              <pre class="html-pre"><code>{{ t.templateHtml || '&lt;!-- Empty Template Content --&gt;' }}</code></pre>
+            </div>
+          </div>
+
+          <!-- Card Footer -->
+          <div class="card-footer-info">
+            <div class="footer-meta-tags">
+              <span class="meta-date">ID: #{{ t.id }}</span>
+              <span class="meta-chars">{{ (t.templateHtml || '').length }} chars</span>
+            </div>
+            <div class="footer-btn-group">
+              <button type="button" class="btn-footer-action" (click)="openCodeEditor(t, $event)" title="Edit HTML source code">
+                <mat-icon>code</mat-icon>
+                <span>Code</span>
+              </button>
+              <button type="button" class="btn-open-designer" (click)="openEditTemplate(t)" title="Launch Visual Canvas">
+                <mat-icon>design_services</mat-icon>
+                <span>Designer</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state-box" *ngIf="filteredTemplates.length === 0">
+        <div class="empty-icon-circle">
+          <mat-icon>mail</mat-icon>
+        </div>
+        <h3 class="empty-title">No Email Templates Found</h3>
+        <p class="empty-desc">
+          {{ templates.length === 0 ? 'You have not designed any corporate email templates yet. Click below to open the designer and select a starter preset!' : 'No templates match your search or filter.' }}
+        </p>
+        <button type="button" class="btn-primary-action" (click)="openCreateTemplate()" *ngIf="templates.length === 0">
+          <mat-icon class="btn-icon">palette</mat-icon>
+          <span>Design First Email Template</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= TAB 2: TRIGGER CATEGORIES / TYPES TABLE ================= -->
+    <div class="tab-content" *ngIf="activeTab === 'types'">
+      <div class="table-responsive" *ngIf="filteredTypes.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>CATEGORY / TRIGGER TYPE</th>
+              <th>DESCRIPTION / AUTOMATION SCENARIO</th>
+              <th>CONFIGURED TEMPLATES</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let type of filteredTypes">
+              <td class="col-id">
+                <span class="id-pill">#{{ type.id }}</span>
+              </td>
+
+              <td class="col-name">
+                <div class="type-name-box">
+                  <div class="type-icon-circle">
+                    <mat-icon>tune</mat-icon>
+                  </div>
+                  <strong>{{ type.templateType }}</strong>
+                </div>
+              </td>
+
+              <td class="col-desc">
+                <span class="desc-text">{{ type.description }}</span>
+              </td>
+
+              <td class="col-count">
+                <span class="count-pill" [class.has-template]="getTemplateCountForType(type.id) > 0">
+                  <mat-icon class="pill-dot">{{ getTemplateCountForType(type.id) > 0 ? 'check_circle' : 'pending' }}</mat-icon>
+                  <span>{{ getTemplateCountForType(type.id) }} Template{{ getTemplateCountForType(type.id) === 1 ? '' : 's' }}</span>
+                </span>
+              </td>
+
+              <td class="col-actions text-right">
+                <div class="table-action-group">
+                  <button
+                    type="button"
+                    class="btn-table-action"
+                    (click)="openCreateTemplate(type.id)"
+                    title="Create Email Template for this category"
+                  >
+                    <mat-icon>add</mat-icon>
+                    <span>Design Template</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-table-icon"
+                    (click)="openEditType(type)"
+                    title="Edit Category Name & Description"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-table-icon btn-danger"
+                    (click)="deleteType(type)"
+                    title="Delete Category"
+                  >
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state-box" *ngIf="filteredTypes.length === 0">
+        <div class="empty-icon-circle">
+          <mat-icon>category</mat-icon>
+        </div>
+        <h3 class="empty-title">No Trigger Categories Found</h3>
+        <p class="empty-desc">Create categories like "Leave Approval", "Welcome Onboarding", or "Payslip Notification" to group automated emails.</p>
+        <button type="button" class="btn-primary-action" (click)="openCreateType()">
+          <mat-icon class="btn-icon">add</mat-icon>
+          <span>Create First Category</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: AUTOMATED TRIGGER BINDINGS ================= -->
+    <div class="tab-content" *ngIf="activeTab === 'triggers'">
+      <!-- Information Banner -->
+      <div class="trigger-banner">
+        <div class="banner-left">
+          <div class="banner-icon-box">
+            <mat-icon>bolt</mat-icon>
+          </div>
+          <div class="banner-text">
+            <h3 class="banner-title">Automated Event Registry & Dynamic Notification Bindings</h3>
+            <p class="banner-desc">
+              Assign any designed email template to backend business events without changing C# service code.
+              KHRMS normalizes dynamic tokens (supporting both <code>{{ '{{Key}}' }}</code> and legacy <code>#KEY#</code>), resolves property aliases, and dispatches automated emails.
+            </p>
+          </div>
+        </div>
+        <div class="banner-actions">
+          <button type="button" class="btn-sync-events" (click)="seedDefaultTriggers()" title="Synchronize default system events">
+            <mat-icon>sync</mat-icon>
+            <span>Sync System Events</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Triggers Grid -->
+      <div class="triggers-grid" *ngIf="filteredTriggers.length > 0">
+        <div *ngFor="let trigger of filteredTriggers" class="trigger-card" [class.is-disabled]="!trigger.isEnabled">
+          <!-- Card Top Bar -->
+          <div class="trigger-card-top">
+            <div class="trigger-meta-header">
+              <span class="category-tag">{{ trigger.category }}</span>
+              <span class="event-code-tag" (click)="copyVariableTag(trigger.eventCode, $event)" title="Click to copy event code">
+                <code>{{ trigger.eventCode }}</code>
+              </span>
+            </div>
+
+            <!-- Toggle switch for enabling/disabling notification -->
+            <div class="trigger-toggle-wrap">
+              <label class="switch-toggle" [title]="trigger.isEnabled ? 'Notification Enabled' : 'Notification Disabled'">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="trigger.isEnabled"
+                  (change)="onTriggerToggle(trigger)"
+                />
+                <span class="slider round"></span>
+              </label>
+              <span class="toggle-status-label" [class.active]="trigger.isEnabled">
+                {{ trigger.isEnabled ? 'Active' : 'Disabled' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Card Body -->
+          <div class="trigger-card-body">
+            <h3 class="trigger-name">{{ trigger.eventName }}</h3>
+            <p class="trigger-desc">{{ trigger.description }}</p>
+
+            <!-- Subject Preview -->
+            <div class="subject-preview-box">
+              <span class="subject-label">Subject Line:</span>
+              <span class="subject-val">{{ trigger.defaultSubject }}</span>
+            </div>
+
+            <!-- Template Assignment Dropdown -->
+            <div class="binding-assignment-section">
+              <label class="assignment-label">
+                <mat-icon class="label-icon">mark_email_read</mat-icon>
+                <span>Assigned Visual Email Template:</span>
+              </label>
+
+              <div class="binding-dropdown-group">
+                <select
+                  [ngModel]="trigger.activeTemplateId"
+                  (ngModelChange)="onBindingChange(trigger, $event)"
+                  class="trigger-binding-select"
+                  [class.unbound]="!trigger.activeTemplateId"
+                >
+                  <option [ngValue]="null">-- Not Bound (No Email Sent) --</option>
+                  <option *ngFor="let t of templates" [ngValue]="t.id">
+                    Template #{{ t.id }} - {{ getTypeName(t.emailTemplateTypeId) }}
+                  </option>
+                </select>
+
+                <button
+                  type="button"
+                  class="btn-mini-design"
+                  (click)="openCreateTemplate()"
+                  title="Design a new template in canvas"
+                >
+                  <mat-icon>add_circle_outline</mat-icon>
+                  <span>New</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Variables Tokens Supported -->
+            <div class="variables-section" *ngIf="trigger.parsedVariables && trigger.parsedVariables.length > 0">
+              <div class="variables-header">
+                <span class="vars-title">Available Tokens (Click to Copy):</span>
+              </div>
+              <div class="tokens-chips-wrap">
+                <button
+                  type="button"
+                  *ngFor="let v of trigger.parsedVariables"
+                  class="token-chip"
+                  (click)="copyVariableTag(v.key, $event)"
+                  [title]="v.description + ' (Sample: ' + v.sample + ')'"
+                >
+                  <span class="bracket">{{ '{{' }}</span>
+                  <span class="key-name">{{ v.key }}</span>
+                  <span class="bracket">{{ '}}' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trigger Card Footer Actions -->
+          <div class="trigger-card-footer">
+            <div class="footer-status-pill">
+              <mat-icon class="status-icon" [class.success]="trigger.isEnabled && trigger.activeTemplateId" [class.warning]="trigger.isEnabled && !trigger.activeTemplateId">
+                {{ (trigger.isEnabled && trigger.activeTemplateId) ? 'check_circle' : (!trigger.isEnabled ? 'do_not_disturb_on' : 'warning') }}
+              </mat-icon>
+              <span>{{ (trigger.isEnabled && trigger.activeTemplateId) ? 'Ready to Dispatch' : (!trigger.isEnabled ? 'Trigger Disabled' : 'No Template Bound') }}</span>
+            </div>
+
+            <div class="footer-btn-actions">
+              <button
+                type="button"
+                class="btn-test-email"
+                (click)="openTestModal(trigger, $event)"
+                title="Send live test email with realistic sample data"
+              >
+                <mat-icon>send</mat-icon>
+                <span>Send Test</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state-box" *ngIf="filteredTriggers.length === 0">
+        <div class="empty-icon-circle">
+          <mat-icon>bolt</mat-icon>
+        </div>
+        <h3 class="empty-title">No System Triggers Found</h3>
+        <p class="empty-desc">No events match your search query or filter. Click below to reload default triggers.</p>
+        <button type="button" class="btn-primary-action" (click)="seedDefaultTriggers()">
+          <mat-icon class="btn-icon">sync</mat-icon>
+          <span>Sync Default Trigger Events</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Test Email Dialog Modal -->
+  <div class="test-modal-backdrop" *ngIf="testModalOpen" (click)="closeTestModal()">
+    <div class="test-modal-card" (click)="$event.stopPropagation()">
+      <div class="test-modal-header">
+        <div class="modal-title-box">
+          <div class="test-icon-box">
+            <mat-icon>forward_to_inbox</mat-icon>
+          </div>
+          <div>
+            <h3 class="test-modal-title">Dispatch Live Test Email</h3>
+            <p class="test-modal-subtitle">{{ selectedTestTrigger?.eventName }} ({{ selectedTestTrigger?.eventCode }})</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeTestModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="test-modal-body">
+        <div class="test-info-box">
+          <mat-icon class="info-icon">info</mat-icon>
+          <div class="info-text">
+            This will render the assigned template (or default fallback layout) with realistic sample data and deliver it to your inbox via the backend SMTP service.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Recipient Email Address <span class="required">*</span></label>
+          <input
+            type="email"
+            class="form-input"
+            [(ngModel)]="testRecipientEmail"
+            placeholder="e.g. yourname@company.com"
+            (keydown.enter)="executeSendTest()"
+          />
+        </div>
+
+        <div class="sample-tokens-preview" *ngIf="selectedTestTrigger?.parsedVariables?.length">
+          <span class="preview-label">Sample Data Included in Dispatch:</span>
+          <div class="preview-tags-list">
+            <div class="preview-tag-item" *ngFor="let v of selectedTestTrigger?.parsedVariables">
+              <strong>{{ '{{' + v.key + '}}' }}:</strong>
+              <span>{{ v.sample }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeTestModal()" [disabled]="isSendingTest">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="executeSendTest()"
+          [disabled]="isSendingTest || !testRecipientEmail"
+        >
+          <mat-icon class="btn-icon" *ngIf="!isSendingTest">send</mat-icon>
+          <span>{{ isSendingTest ? 'Sending Test...' : 'Send Live Email' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

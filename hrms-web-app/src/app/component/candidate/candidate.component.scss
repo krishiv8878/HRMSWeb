@@ -548,6 +548,27 @@
     font-size: 11.5px;
     font-weight: 600;
 
+    &.stage-onboarded {
+      background-color: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+      font-weight: 700;
+    }
+
+    &.stage-selected {
+      background-color: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      font-weight: 700;
+    }
+
+    &.stage-offer-accepted {
+      background-color: #f0fdfa;
+      color: #0f766e;
+      border: 1px solid #99f6e4;
+      font-weight: 700;
+    }
+
     &.stage-tech-interview {
       background-color: #eff6ff;
       color: #1d4ed8;
@@ -711,6 +732,26 @@
         height: 18px;
       }
 
+      &.btn-interview {
+        color: #4f46e5;
+
+        &:hover {
+          background-color: #eef2ff;
+          border-color: #c7d2fe;
+          color: #3730a3;
+        }
+      }
+
+      &.btn-hire {
+        color: #059669;
+
+        &:hover {
+          background-color: #ecfdf5;
+          border-color: #a7f3d0;
+          color: #047857;
+        }
+      }
+
       &.edit-btn:hover {
         background-color: #eff6ff;
         border-color: #bfdbfe;
@@ -733,6 +774,27 @@
         background-color: #fee2e2;
         border-color: #fecaca;
         color: #dc2626;
+      }
+    }
+
+    .badge-onboarded-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        color: #10b981;
       }
     }
   }
@@ -871,3 +933,233 @@
     }
   }
 }
+
+/* Interviewer Tag & Action Button */
+.interviewer-mini-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 2px 7px;
+  border-radius: 12px;
+  margin-top: 5px;
+  font-size: 11px;
+  color: #334155;
+  font-weight: 500;
+  max-width: 140px;
+
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+    color: #64748b;
+  }
+
+  .int-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .star-pill {
+    background: #fef3c7;
+    color: #b45309;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+}
+
+.btn-interview {
+  color: #7c3aed !important;
+  background: #f5f3ff !important;
+  border: 1px solid #ddd6fe !important;
+
+  &:hover {
+    background: #ede9fe !important;
+    color: #6d28d9 !important;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
+  }
+
+  &.btn-interview-assigned {
+    background: #7c3aed !important;
+    color: #ffffff !important;
+    border-color: #6d28d9 !important;
+    box-shadow: 0 2px 5px rgba(124, 58, 237, 0.35) !important;
+
+    &:hover {
+      background: #6d28d9 !important;
+      box-shadow: 0 3px 8px rgba(124, 58, 237, 0.5) !important;
+    }
+  }
+}
+
+/* Assigned to You Indicator in Tag */
+.interviewer-mini-tag.assigned-to-you {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  font-weight: 600;
+
+  mat-icon {
+    color: #2563eb;
+  }
+
+  .you-badge {
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+}
+
+.interviewer-mini-tag.tag-pending-hr {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #c2410c;
+  font-weight: 600;
+
+  mat-icon {
+    color: #ea580c;
+  }
+}
+
+/* Assigned Interviews Notification Banner */
+.assigned-interviews-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.06);
+
+  .alert-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .alert-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #dbeafe;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      .alert-icon {
+        color: #2563eb;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    .alert-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      strong {
+        font-size: 13.5px;
+        color: #1e3a8a;
+      }
+
+      span {
+        font-size: 12px;
+        color: #475569;
+      }
+    }
+  }
+
+  .alert-right {
+    flex-shrink: 0;
+
+    .btn-filter-assigned {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      background: #ffffff;
+      border: 1px solid #93c5fd;
+      color: #1d4ed8;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.15s ease;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      &:hover {
+        background: #dbeafe;
+        border-color: #60a5fa;
+      }
+
+      &.btn-active-assigned {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #1d4ed8;
+      }
+    }
+  }
+}
+
+/* Assigned to Me Filter Pill in Controls Bar */
+.btn-assigned-pill {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  mat-icon {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+    color: #64748b;
+  }
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #1e293b;
+  }
+
+  &.active {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+
+    mat-icon {
+      color: #2563eb;
+    }
+  }
+}

@@ -4,6 +4,10 @@
   height: 100vh;
   overflow: hidden;
   background-color: #f8fafc;
+
+  app-sidbar {
+    flex-shrink: 0;
+  }
 }
 
 .main-layout-container {

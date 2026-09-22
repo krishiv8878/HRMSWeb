@@ -1,0 +1,197 @@
+<div class="ticket-history-container">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-title-box">
+      <div class="header-icon-badge">
+        <mat-icon>history_edu</mat-icon>
+      </div>
+      <div>
+        <h2 class="modal-title">{{ data.isAdmin ? 'Asset Service Tickets & History' : 'My Service Requests History' }}</h2>
+        <p class="modal-subtitle">
+          {{ data.isAdmin ? 'Audit and track all corporate hardware repair, replacement, and return service tickets.' : 'Review your past and active hardware service tickets, rejection details, and logistics.' }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn-close-modal" (click)="close()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Search and Tabs Bar -->
+  <div class="controls-bar">
+    <!-- Status Filter Tabs -->
+    <div class="status-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'all'"
+        (click)="setTab('all')"
+      >
+        <span>All Tickets</span>
+        <span class="count-badge">{{ totalCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'open'"
+        (click)="setTab('open')"
+      >
+        <span>Open / Active</span>
+        <span class="count-badge count-open">{{ openCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'completed'"
+        (click)="setTab('completed')"
+      >
+        <span>Completed</span>
+        <span class="count-badge count-completed">{{ completedCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'rejected'"
+        (click)="setTab('rejected')"
+      >
+        <span>Rejected</span>
+        <span class="count-badge count-rejected">{{ rejectedCount }}</span>
+      </button>
+    </div>
+
+    <!-- Filters & Search Group -->
+    <div class="filters-search-group">
+      <!-- Employee Filter (Admin) -->
+      <div class="filter-employee-box" *ngIf="data.isAdmin && employeeOptions.length > 0">
+        <mat-icon class="filter-icon">person</mat-icon>
+        <select [(ngModel)]="selectedEmployee" (ngModelChange)="applyFilters()" class="employee-select" title="Filter by employee">
+          <option value="All">All Employees</option>
+          <option *ngFor="let emp of employeeOptions" [value]="emp">{{ emp }}</option>
+        </select>
+      </div>
+
+      <!-- Search Input -->
+      <div class="search-box">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="applyFilters()"
+          placeholder="Search ticket #, asset, requester, tracking..."
+          class="search-input"
+        />
+        <button *ngIf="searchQuery" type="button" class="btn-clear-search" (click)="searchQuery = ''; applyFilters()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tickets Table / List -->
+  <div class="modal-table-scroll">
+    <table class="tickets-table" *ngIf="filteredTickets.length > 0">
+      <thead>
+        <tr>
+          <th>TICKET #</th>
+          <th>DATE</th>
+          <th>ASSET</th>
+          <th *ngIf="data.isAdmin">REQUESTER</th>
+          <th>TYPE</th>
+          <th>STATUS</th>
+          <th>LOGISTICS / REMARKS</th>
+          <th class="text-right">ACTION</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of filteredTickets" [class.row-rejected]="t.status.toLowerCase().includes('reject')">
+          <!-- Ticket ID -->
+          <td class="col-ticket-id">
+            <span class="ticket-id-tag">#{{ t.id }}</span>
+          </td>
+
+          <!-- Date -->
+          <td class="col-date">
+            <span class="date-text">{{ t.createdDate | date:'mediumDate' }}</span>
+          </td>
+
+          <!-- Asset Model -->
+          <td class="col-asset">
+            <div class="asset-info">
+              <span class="asset-name">{{ t.assetModel || t.assetName || ('Asset #' + t.assetId) }}</span>
+              <span class="asset-sub">ID: {{ t.assetId }}</span>
+            </div>
+          </td>
+
+          <!-- Requester (Admin Only) -->
+          <td class="col-requester" *ngIf="data.isAdmin">
+            <span class="emp-name">{{ t.employeeName || 'Employee #' + t.employeeId }}</span>
+          </td>
+
+          <!-- Request Type -->
+          <td class="col-type">
+            <span class="type-pill" [class.type-repair]="t.requestType === 'Repair'" [class.type-replacement]="t.requestType === 'Replacement'" [class.type-return]="t.requestType === 'Return'">
+              {{ t.requestType }}
+            </span>
+          </td>
+
+          <!-- Status -->
+          <td class="col-status">
+            <span class="status-pill" [ngClass]="getStatusClass(t.status)">
+              <mat-icon class="pill-icon">{{ getStatusIcon(t.status) }}</mat-icon>
+              <span>{{ t.status }}</span>
+            </span>
+          </td>
+
+          <!-- Logistics / Remarks -->
+          <td class="col-remarks">
+            <div class="remarks-box">
+              <span *ngIf="t.status.toLowerCase().includes('reject')" class="rejection-text">
+                <strong>Rejected:</strong> {{ t.adminRemarks || t.reason || 'No remarks provided' }}
+              </span>
+              <span *ngIf="!t.status.toLowerCase().includes('reject') && t.trackingNumber" class="tracking-text">
+                <mat-icon class="mini-icon">local_shipping</mat-icon>
+                <span>{{ t.courierPartner || 'Logistics' }}: <code>{{ t.trackingNumber }}</code></span>
+              </span>
+              <span *ngIf="!t.status.toLowerCase().includes('reject') && !t.trackingNumber" class="notes-text">
+                {{ t.reason || t.description || 'Standard service request' }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Action -->
+          <td class="col-action text-right">
+            <button
+              type="button"
+              class="btn-view-ticket"
+              (click)="openTicketDetails(t)"
+              [title]="'View full lifecycle & tracking for ticket #' + t.id"
+            >
+              <mat-icon>timeline</mat-icon>
+              <span>{{ t.status.toLowerCase().includes('reject') ? 'View Reason' : 'View Lifecycle' }}</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div class="empty-tickets" *ngIf="filteredTickets.length === 0">
+      <div class="empty-icon-box">
+        <mat-icon>assignment_late</mat-icon>
+      </div>
+      <h4>No service tickets found</h4>
+      <p *ngIf="searchQuery">No tickets match your search query "{{ searchQuery }}".</p>
+      <p *ngIf="!searchQuery && activeTab !== 'all'">No tickets found under the "{{ activeTab }}" filter.</p>
+      <p *ngIf="!searchQuery && activeTab === 'all'">No hardware service or return requests have been recorded yet.</p>
+    </div>
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="modal-footer">
+    <span class="footer-count">Showing {{ filteredTickets.length }} of {{ totalCount }} total tickets</span>
+    <button type="button" class="btn-footer-close" (click)="close()">Close</button>
+  </div>
+</div>

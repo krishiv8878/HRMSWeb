@@ -3,11 +3,13 @@
   <div class="modal-header">
     <div class="header-left">
       <div class="icon-badge">
-        <mat-icon>{{ isEdit ? 'account_balance' : 'add_card' }}</mat-icon>
+        <mat-icon>{{ !isAdminOrHr ? 'forward_to_inbox' : (isEdit ? 'account_balance' : 'add_card') }}</mat-icon>
       </div>
       <div class="header-text">
-        <h2 class="modal-title">{{ isEdit ? 'Edit Banking Details' : 'Add Direct Deposit Account' }}</h2>
-        <p class="modal-subtitle">Configure banking institution, IFSC routing, and payroll disbursement.</p>
+        <h2 class="modal-title">{{ !isAdminOrHr ? (isEdit ? 'Request Bank Details Update' : 'Submit Bank Account for Approval') : (isEdit ? 'Edit Banking Details' : 'Add Direct Deposit Account') }}</h2>
+        <p class="modal-subtitle">
+          {{ !isAdminOrHr ? 'Bank account changes require approval from HR and Management before updating payroll.' : 'Configure banking institution, IFSC routing, and payroll disbursement.' }}
+        </p>
       </div>
     </div>
     <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
@@ -17,6 +19,38 @@
 
   <!-- Form Body -->
   <form [formGroup]="paymentinfo" (ngSubmit)="submitdata()" class="payment-form-body">
+    <!-- Notice for Employees & Managers -->
+    <div class="approval-notice-banner" *ngIf="!isAdminOrHr">
+      <mat-icon class="notice-icon">verified_user</mat-icon>
+      <div class="notice-text">
+        <strong>Governance & Verification:</strong> To protect your payroll disbursements, bank account details cannot be changed directly. Your request will be sent to HR for verification and approval.
+      </div>
+    </div>
+
+    <!-- Employee Selection Row for HR / Admin -->
+    <div class="form-group span-full" *ngIf="isAdminOrHr">
+      <label class="field-label">Assigned Employee <span class="required">*</span></label>
+      <div class="input-wrapper" *ngIf="!isEdit">
+        <mat-icon class="input-icon">person_search</mat-icon>
+        <select formControlName="employeeId" class="custom-select" (change)="onEmployeeChange($event)">
+          <option [ngValue]="0" disabled>Select an active employee for bank coordinates</option>
+          <option *ngFor="let emp of employeesList" [ngValue]="emp.id">
+            {{ emp.firstName }} {{ emp.lastName }} (EMP-{{ (emp.id + '').padStart(4, '0') }}) {{ configuredEmployeeIds.has(emp.id) ? '• [Bank Configured]' : '• [⚠️ Pending Setup]' }}
+          </option>
+        </select>
+      </div>
+      <div class="locked-employee-card" *ngIf="isEdit">
+        <mat-icon class="lock-icon">lock</mat-icon>
+        <div class="locked-text">
+          <span class="locked-name">{{ selectedEmployeeName || ('Employee #' + paymentinfo.get('employeeId')?.value) }}</span>
+          <span class="locked-sub">Employee ID: #{{ paymentinfo.get('employeeId')?.value }}</span>
+        </div>
+      </div>
+      <span class="error-text" *ngIf="getControl('employeeId')?.touched && (getControl('employeeId')?.invalid || getControl('employeeId')?.value === 0)">
+        Please select an employee to assign these banking details.
+      </span>
+    </div>
+
     <!-- Row 1: Bank Name & IFSC Code -->
     <div class="form-row-2">
       <div class="form-group">
@@ -92,8 +126,8 @@
       </div>
     </div>
 
-    <!-- Active Direct Deposit Status Checkbox Card -->
-    <div class="form-group-checkbox">
+    <!-- Active Direct Deposit Status Checkbox Card (Admin / HR only) -->
+    <div class="form-group-checkbox" *ngIf="isAdminOrHr">
       <label class="checkbox-label">
         <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
         <span class="label-title">Primary Direct Deposit Disbursement Account</span>
@@ -107,8 +141,8 @@
         Cancel
       </button>
       <button type="submit" class="btn-submit">
-        <mat-icon>{{ isEdit ? 'save' : 'add_circle' }}</mat-icon>
-        <span>{{ isEdit ? 'Update Account' : 'Save Bank Account' }}</span>
+        <mat-icon>{{ !isAdminOrHr ? 'send' : (isEdit ? 'save' : 'add_circle') }}</mat-icon>
+        <span>{{ !isAdminOrHr ? 'Submit Request to HR/Manager' : (isEdit ? 'Update Account' : 'Save Bank Account') }}</span>
       </button>
     </div>
   </form>

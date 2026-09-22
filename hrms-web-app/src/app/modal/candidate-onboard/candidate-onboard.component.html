@@ -1,0 +1,333 @@
+<div class="onboard-modal-container">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon>how_to_reg</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Hire & Onboard Candidate</h2>
+        <p class="modal-subtitle">Convert applicant into employee, configure compensation CTC breakdown, and provision portal credentials.</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close-header" (click)="closeModal()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Modal Body: Success State -->
+  <div class="modal-body success-state-body" *ngIf="onboardSuccess">
+    <div class="success-illustration">
+      <div class="success-icon-bubble">
+        <mat-icon>verified</mat-icon>
+      </div>
+      <h3>Employee Onboarding Successful!</h3>
+      <p class="success-desc">
+        <strong>{{ createdResponse?.fullName }}</strong> has been added to the Employee Directory and user account has been provisioned.
+      </p>
+    </div>
+
+    <!-- Credentials Card -->
+    <div class="credentials-summary-card">
+      <div class="summary-row">
+        <span class="label">System Employee ID:</span>
+        <span class="value font-mono">#{{ createdResponse?.employeeId }}</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Portal Username:</span>
+        <span class="value font-semibold text-blue">{{ createdResponse?.email }}</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Initial Password:</span>
+        <span class="value font-mono text-emerald font-bold">{{ createdResponse?.temporaryPassword }}</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Email Notification:</span>
+        <span class="value">
+          <span class="status-tag tag-success" *ngIf="createdResponse?.emailSent">
+            <mat-icon class="inline-icon">mark_email_read</mat-icon> Dispatched to Inbox
+          </span>
+          <span class="status-tag tag-neutral" *ngIf="!createdResponse?.emailSent">
+            <mat-icon class="inline-icon">info</mat-icon> Credentials Ready to Share
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="success-actions-strip">
+      <button type="button" class="btn-copy-creds" (click)="copyCredentials()">
+        <mat-icon>content_copy</mat-icon>
+        <span>Copy Credentials</span>
+      </button>
+      <button type="button" class="btn-view-profile" (click)="viewNewEmployee()">
+        <mat-icon>account_circle</mat-icon>
+        <span>View Employee Profile</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Body: Form -->
+  <form [formGroup]="onboardForm" (ngSubmit)="submitOnboarding()" *ngIf="!onboardSuccess" class="onboard-form">
+    <div class="modal-body-scrollable">
+
+      <!-- Candidate Banner -->
+      <div class="candidate-banner-strip">
+        <div class="avatar-circle">
+          {{ candidate.initials || ((candidate.firstName[0] || 'C') + (candidate.lastName[0] || 'D')) }}
+        </div>
+        <div class="banner-info">
+          <div class="name-row">
+            <span class="candidate-full-name">{{ candidate.fullName || (candidate.firstName + ' ' + candidate.lastName) }}</span>
+            <span class="badge-stage-pill">{{ candidate.stage || 'Selected' }}</span>
+          </div>
+          <span class="candidate-sub-meta">
+            {{ candidate.appliedRole }} • {{ candidate.emailAddress }} • {{ candidate.mobileNumber }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Section 1: Candidate Baseline Information -->
+      <div class="form-section-group">
+        <div class="section-group-header">
+          <mat-icon class="section-icon">badge</mat-icon>
+          <h3>1. Personal & Contact Dossier</h3>
+        </div>
+        <div class="grid-row grid-2">
+          <div class="form-field-wrapper">
+            <label class="field-label">First Name <span class="required">*</span></label>
+            <input type="text" formControlName="firstName" class="form-input" placeholder="First Name" />
+          </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Last Name <span class="required">*</span></label>
+            <input type="text" formControlName="lastName" class="form-input" placeholder="Last Name" />
+          </div>
+        </div>
+
+        <div class="grid-row grid-2">
+          <div class="form-field-wrapper">
+            <label class="field-label">Primary Corporate Email <span class="required">*</span></label>
+            <input type="email" formControlName="emailAddress" class="form-input" placeholder="user@company.com" />
+          </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Mobile Number <span class="required">*</span></label>
+            <input type="tel" formControlName="mobileNumber" class="form-input" placeholder="10-digit number" maxlength="10" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Organizational Placement -->
+      <div class="form-section-group">
+        <div class="section-group-header">
+          <mat-icon class="section-icon">apartment</mat-icon>
+          <h3>2. Employment & Organizational Hierarchy</h3>
+        </div>
+
+        <div class="grid-row grid-2">
+          <div class="form-field-wrapper">
+            <label class="field-label">Official Designation <span class="required">*</span></label>
+            <select formControlName="designationId" (change)="onDesignationChange($event)" class="form-select">
+              <option *ngFor="let des of designationsList" [value]="des.id">{{ des.designationName }}</option>
+            </select>
+          </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Department <span class="required">*</span></label>
+            <select formControlName="department" class="form-select">
+              <option *ngFor="let dept of departmentsList" [value]="dept">{{ dept }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-row grid-3">
+          <div class="form-field-wrapper">
+            <label class="field-label">Reporting Manager</label>
+            <select formControlName="managerId" class="form-select">
+              <option [value]="0">-- None / Senior Leadership --</option>
+              <option *ngFor="let m of managersList" [value]="m.id">{{ m.firstName }} {{ m.lastName }} ({{ m.designation || 'Manager' }})</option>
+            </select>
+          </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Work Shift</label>
+            <select formControlName="shiftId" class="form-select">
+              <option *ngFor="let s of shiftsList" [value]="s.id">{{ s.shiftName }} ({{ s.startTime }} - {{ s.endTime }})</option>
+            </select>
+          </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Portal Role</label>
+            <select formControlName="roleName" class="form-select">
+              <option value="Employee">Employee (Standard Access)</option>
+              <option value="Manager">Manager</option>
+              <option value="HR">HR Operations</option>
+              <option value="Admin">System Administrator</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-row grid-2">
+          <div class="form-field-wrapper">
+            <label class="field-label">Official Date of Joining <span class="required">*</span></label>
+            <input type="date" formControlName="dateOfJoining" class="form-input" />
+          </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Gender</label>
+            <select formControlName="gender" class="form-select">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other / Decline to state</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Final CTC & Dynamic Indian Payroll Breakdown -->
+      <div class="form-section-group ctc-section-group">
+        <div class="section-group-header">
+          <mat-icon class="section-icon text-emerald">payments</mat-icon>
+          <div class="header-split">
+            <h3>3. Final CTC & Payroll Compensation Breakdown</h3>
+            <span class="lpa-pill">{{ formatLpa(annualCtcNumber) }}</span>
+          </div>
+        </div>
+
+        <!-- Annual CTC Input Box -->
+        <div class="ctc-input-box">
+          <div class="ctc-input-col">
+            <label class="ctc-main-label">Final Annual CTC (Cost to Company in INR) <span class="required">*</span></label>
+            <div class="currency-input-group">
+              <span class="currency-prefix">₹</span>
+              <input
+                type="number"
+                formControlName="annualCtc"
+                (input)="onAnnualCtcInput($event)"
+                class="form-input font-bold ctc-primary-input"
+                placeholder="1200000"
+                min="50000"
+              />
+            </div>
+            <span class="helper-text">Enter annual figure in INR. Monthly earnings and deductions recalculate automatically.</span>
+          </div>
+
+          <div class="ctc-highlight-stat">
+            <span class="stat-label">Net Monthly Take-Home</span>
+            <span class="stat-value font-mono">{{ formatCurrency(netTakeHomeMonthly) }}</span>
+            <span class="stat-sub">In-hand monthly bank transfer</span>
+          </div>
+        </div>
+
+        <!-- Breakdown Grid (Monthly Components with editable adjustments) -->
+        <div class="payroll-breakdown-table">
+          <div class="breakdown-header-row">
+            <span>Salary Component</span>
+            <span>Monthly (₹)</span>
+            <span class="text-right">Annual (₹)</span>
+          </div>
+
+          <!-- Basic Salary -->
+          <div class="breakdown-item-row">
+            <div class="component-desc">
+              <span class="name">Basic Salary</span>
+              <span class="note">50% of monthly CTC (Statutory baseline)</span>
+            </div>
+            <div class="input-cell">
+              <input type="number" formControlName="basicSalary" (input)="onComponentChange()" class="table-input" />
+            </div>
+            <div class="annual-cell text-right">
+              {{ formatCurrency(basicSalaryMonthly * 12) }}
+            </div>
+          </div>
+
+          <!-- HRA -->
+          <div class="breakdown-item-row">
+            <div class="component-desc">
+              <span class="name">House Rent Allowance (HRA)</span>
+              <span class="note">20% of monthly CTC (Tax exempt eligible)</span>
+            </div>
+            <div class="input-cell">
+              <input type="number" formControlName="hra" (input)="onComponentChange()" class="table-input" />
+            </div>
+            <div class="annual-cell text-right">
+              {{ formatCurrency(hraMonthly * 12) }}
+            </div>
+          </div>
+
+          <!-- Special Allowance -->
+          <div class="breakdown-item-row">
+            <div class="component-desc">
+              <span class="name">Special & Flexible Allowances</span>
+              <span class="note">Balancing component for benefits</span>
+            </div>
+            <div class="input-cell">
+              <input type="number" formControlName="specialAllowance" (input)="onComponentChange()" class="table-input" />
+            </div>
+            <div class="annual-cell text-right">
+              {{ formatCurrency(specialAllowanceMonthly * 12) }}
+            </div>
+          </div>
+
+          <!-- PF Deduction -->
+          <div class="breakdown-item-row deduction-row">
+            <div class="component-desc">
+              <span class="name text-red">Provident Fund (PF Deduction)</span>
+              <span class="note">12% statutory employee contribution</span>
+            </div>
+            <div class="input-cell">
+              <input type="number" formControlName="pfDeduction" (input)="onComponentChange()" class="table-input" />
+            </div>
+            <div class="annual-cell text-right text-red">
+              - {{ formatCurrency(pfDeductionMonthly * 12) }}
+            </div>
+          </div>
+
+          <!-- Summary Summary Footers -->
+          <div class="breakdown-summary-row gross-row">
+            <span class="summary-label">Gross Monthly Pay</span>
+            <span class="summary-val font-mono">{{ formatCurrency(grossSalaryMonthly) }}</span>
+            <span class="summary-annual text-right font-mono">{{ formatCurrency(grossSalaryMonthly * 12) }}</span>
+          </div>
+
+          <div class="breakdown-summary-row net-row">
+            <span class="summary-label text-emerald font-bold">Net In-Hand (Take-Home)</span>
+            <span class="summary-val font-mono text-emerald font-bold">{{ formatCurrency(netTakeHomeMonthly) }}</span>
+            <span class="summary-annual text-right font-mono text-emerald font-bold">{{ formatCurrency(netTakeHomeMonthly * 12) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Portal Credentials & Welcome Email -->
+      <div class="form-section-group">
+        <div class="section-group-header">
+          <mat-icon class="section-icon text-indigo">lock_person</mat-icon>
+          <h3>4. User Access Credentials & Email Notification</h3>
+        </div>
+
+        <div class="grid-row grid-2">
+          <div class="form-field-wrapper">
+            <label class="field-label">Generated Temporary Password <span class="required">*</span></label>
+            <input type="text" formControlName="temporaryPassword" class="form-input font-mono font-bold" />
+            <span class="helper-text">Employee will be prompted to reset this password upon first login.</span>
+          </div>
+
+          <div class="form-field-wrapper flex-center-vertical">
+            <label class="checkbox-option">
+              <input type="checkbox" formControlName="sendCredentialsEmail" class="custom-checkbox" />
+              <div class="checkbox-text">
+                <span class="title">Email Login Credentials Immediately</span>
+                <span class="desc">Sends welcome email with portal link and temporary password to {{ onboardForm.get('emailAddress')?.value }}</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()">Cancel</button>
+      <button type="submit" class="btn-submit-onboard" [disabled]="isSubmitting || onboardForm.invalid">
+        <mat-icon *ngIf="!isSubmitting">person_add_alt_1</mat-icon>
+        <span *ngIf="isSubmitting" class="spinner-border"></span>
+        <span>{{ isSubmitting ? 'Onboarding Employee...' : 'Confirm & Complete Onboarding' }}</span>
+      </button>
+    </div>
+  </form>
+</div>
