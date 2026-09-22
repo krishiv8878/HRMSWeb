@@ -110,11 +110,36 @@
             <span class="location-text">{{ asset.location }}</span>
           </td>
 
-          <!-- Status Badge -->
+          <!-- Status Badge & Active Ticket Indicator -->
           <td class="col-status">
-            <span class="status-pill" [ngClass]="getStatusPillClass(asset.status)">
-              {{ asset.status }}
-            </span>
+            <div class="status-cell-wrapper">
+              <span class="status-pill" [ngClass]="getStatusPillClass(asset.status)">
+                {{ asset.status }}
+              </span>
+              <button
+                *ngIf="getActiveRequest(asset) as activeReq"
+                type="button"
+                class="active-ticket-chip"
+                [ngClass]="getTicketBadgeClass(activeReq.status)"
+                (click)="openTrackModal(asset)"
+                [title]="'Click to track ticket #' + activeReq.id + ' (' + activeReq.status + ')'"
+              >
+                <mat-icon class="chip-icon">{{ getTicketIcon(activeReq.status) }}</mat-icon>
+                <span>{{ activeReq.requestType }}: {{ activeReq.status }}</span>
+              </button>
+
+              <!-- If Latest Request Was Rejected -->
+              <button
+                *ngIf="!getActiveRequest(asset) && isLatestRequestRejected(asset)"
+                type="button"
+                class="active-ticket-chip badge-rejected"
+                (click)="openTrackModal(asset)"
+                title="Service request was rejected by IT. Click to view rejection reason."
+              >
+                <mat-icon class="chip-icon">cancel</mat-icon>
+                <span>Rejected: View Reason</span>
+              </button>
+            </div>
           </td>
 
           <!-- Last Audit Date -->
@@ -130,10 +155,42 @@
               <mat-icon>more_vert</mat-icon>
             </button>
             <mat-menu #assetMenu="matMenu" xPosition="before">
-              <button mat-menu-item (click)="openViewDetails(asset)">
-                <mat-icon>visibility</mat-icon> View Details
+              <!-- Track Service Ticket if ticket exists -->
+              <button *ngIf="getActiveRequest(asset) as activeReq" mat-menu-item (click)="openTrackModal(asset)">
+                <mat-icon style="color: #2563eb;">local_shipping</mat-icon>
+                <span>Track Ticket (#{{ activeReq.id }})</span>
               </button>
+
+              <!-- View Rejection Reason if latest ticket was rejected -->
+              <button *ngIf="!getActiveRequest(asset) && isLatestRequestRejected(asset)" mat-menu-item (click)="openTrackModal(asset)">
+                <mat-icon style="color: #ef4444;">cancel</mat-icon>
+                <span style="color: #ef4444; font-weight: 600;">View Rejection Reason</span>
+              </button>
+
+              <!-- Employee Confirm Receipt shortcut if dispatched/delivered -->
+              <button *ngIf="canConfirmReceipt(asset)" mat-menu-item (click)="openTrackModal(asset)">
+                <mat-icon style="color: #16a34a;">check_circle</mat-icon>
+                <span style="color: #16a34a; font-weight: 600;">Confirm Received</span>
+              </button>
+
+              <mat-divider *ngIf="!isAdmin"></mat-divider>
+
+              <!-- Employee Service Request Options -->
+              <ng-container *ngIf="!isAdmin">
+                <button mat-menu-item (click)="openRequestModal(asset, 'Repair')">
+                  <mat-icon style="color: #d97706;">build</mat-icon> Request Repair
+                </button>
+                <button mat-menu-item (click)="openRequestModal(asset, 'Replacement')">
+                  <mat-icon style="color: #2563eb;">swap_horiz</mat-icon> Request Replacement
+                </button>
+                <button mat-menu-item (click)="openRequestModal(asset, 'Return')">
+                  <mat-icon style="color: #7c3aed;">keyboard_return</mat-icon> Return Asset
+                </button>
+              </ng-container>
+
+              <!-- Admin Controls -->
               <ng-container *ngIf="isAdmin">
+                <mat-divider></mat-divider>
                 <button mat-menu-item (click)="openEditAsset(asset)">
                   <mat-icon>edit</mat-icon> Edit Asset
                 </button>
@@ -143,9 +200,6 @@
                 <mat-divider></mat-divider>
                 <button mat-menu-item (click)="onSendToRepair(asset.id)">
                   <mat-icon style="color: #d97706;">build</mat-icon> Send to Repair
-                </button>
-                <button mat-menu-item (click)="onSendForDeployment(asset.id)">
-                  <mat-icon style="color: #059669;">rocket_launch</mat-icon> Send for Deployment (Available)
                 </button>
                 <mat-divider></mat-divider>
                 <button mat-menu-item class="delete-action" (click)="onDelete(asset.id)">

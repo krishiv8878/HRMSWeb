@@ -1,7 +1,8 @@
 <div class="timesheet-container">
   <!-- Top Navigation & Actions Bar -->
   <div class="header-card">
-    <div class="header-left">
+    <!-- Top Row: Title on Left, Project Selector on Right -->
+    <div class="header-top-row">
       <div class="title-group">
         <h1 class="page-title">Timesheet Management</h1>
         <p class="page-subtitle">Log project tasks, verify attendance reference hours, and submit weekly/monthly timesheets.</p>
@@ -27,65 +28,77 @@
       </div>
     </div>
 
-    <div class="header-right">
-      <!-- Period Selector Toggle (Weekly / Monthly) -->
-      <div class="period-toggle-group">
-        <button
-          type="button"
-          class="toggle-btn"
-          [class.active]="periodType === 'Weekly'"
-          (click)="setPeriodType('Weekly')"
-        >
-          Weekly
-        </button>
-        <button
-          type="button"
-          class="toggle-btn"
-          [class.active]="periodType === 'Monthly'"
-          (click)="setPeriodType('Monthly')"
-        >
-          Monthly
-        </button>
+    <!-- Subtle Divider -->
+    <div class="header-row-divider"></div>
+
+    <!-- Controls Row: Period & Date Nav on Left, Submit Button on Right -->
+    <div class="header-controls-row">
+      <div class="controls-left">
+        <!-- Period Selector Toggle (Weekly / Monthly) -->
+        <div class="period-toggle-group">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="periodType === 'Weekly'"
+            (click)="setPeriodType('Weekly')"
+          >
+            Weekly
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="periodType === 'Monthly'"
+            (click)="setPeriodType('Monthly')"
+          >
+            Monthly
+          </button>
+        </div>
+
+        <!-- Date Navigator -->
+        <div class="date-navigator">
+          <button type="button" class="nav-arrow-btn" (click)="navigatePeriod(-1)" title="Previous Period">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span class="period-label">
+            {{ currentStartDate | date:'MMM d' }} – {{ currentEndDate | date:'MMM d, yyyy' }}
+          </span>
+          <button
+            type="button"
+            class="nav-arrow-btn"
+            [disabled]="isCurrentOrFuturePeriod"
+            (click)="navigatePeriod(1)"
+            title="Next Period"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button
+            type="button"
+            class="btn-current"
+            [disabled]="isCurrentOrFuturePeriod"
+            (click)="goToCurrent()"
+          >
+            Current
+          </button>
+          <span class="backfill-indicator" title="Timesheet entry is open for previous weeks within current month / past 30 days">
+            <mat-icon>history</mat-icon>
+            <span>Backfill Open</span>
+          </span>
+        </div>
       </div>
 
-      <!-- Date Navigator -->
-      <div class="date-navigator">
-        <button type="button" class="nav-arrow-btn" (click)="navigatePeriod(-1)" title="Previous Period">
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <span class="period-label">
-          {{ currentStartDate | date:'MMM d' }} – {{ currentEndDate | date:'MMM d, yyyy' }}
-        </span>
+      <div class="controls-right">
+        <!-- Submit Action Button -->
         <button
           type="button"
-          class="nav-arrow-btn"
-          [disabled]="isCurrentOrFuturePeriod"
-          (click)="navigatePeriod(1)"
-          title="Next Period"
+          class="btn-submit"
+          *ngIf="canSubmit"
+          [disabled]="isSubmitting || !timesheetData || timesheetData.totalTimesheetHours === 0"
+          (click)="submitTimesheet()"
         >
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-        <button
-          type="button"
-          class="btn-current"
-          [disabled]="isCurrentOrFuturePeriod"
-          (click)="goToCurrent()"
-        >
-          Current
+          <mat-icon>send</mat-icon>
+          <span>{{ isSubmitting ? 'Submitting...' : 'Submit Timesheet' }}</span>
         </button>
       </div>
-
-      <!-- Submit Action Button -->
-      <button
-        type="button"
-        class="btn-submit"
-        *ngIf="canEdit"
-        [disabled]="isSubmitting || !timesheetData || timesheetData.totalTimesheetHours === 0"
-        (click)="submitTimesheet()"
-      >
-        <mat-icon>send</mat-icon>
-        <span>{{ isSubmitting ? 'Submitting...' : 'Submit Timesheet' }}</span>
-      </button>
     </div>
   </div>
 
@@ -106,12 +119,20 @@
         </span>
         <span *ngIf="timesheetData.status === 'Submitted'">
           Submitted on <strong>{{ timesheetData.submittedDate | date:'medium' }}</strong>. Awaiting review from your manager <strong>{{ timesheetData.managerName || 'Reporting Manager' }}</strong>.
+          <span class="submitted-lock-notice" style="display: block; margin-top: 4px; font-size: 12px; color: #854d0e;">
+            <mat-icon style="font-size: 13px; width: 13px; height: 13px; vertical-align: middle; margin-right: 3px;">lock</mat-icon>
+            Timesheet is under review and locked. Your manager can approve or reject it.
+          </span>
         </span>
         <span *ngIf="timesheetData.status === 'Approved'">
           Approved on <strong>{{ timesheetData.submittedDate | date:'mediumDate' }}</strong> by <strong>{{ timesheetData.managerName || 'Manager' }}</strong>.
+          <span class="approved-lock-notice" style="display: block; margin-top: 4px; font-size: 12px; color: #166534;">
+            <mat-icon style="font-size: 13px; width: 13px; height: 13px; vertical-align: middle; margin-right: 3px;">lock</mat-icon>
+            This timesheet is approved and locked. To log missing hours or make changes, your manager or admin must manually reject it from their Requests & Approvals tab.
+          </span>
         </span>
         <span *ngIf="timesheetData.status === 'Rejected'" class="rejection-text">
-          Timesheet was rejected. Reason: <strong>"{{ timesheetData.rejectionReason || 'Please adjust hours or tasks.' }}"</strong>. You may edit your entries and resubmit.
+          Timesheet was rejected. Reason: <strong>"{{ timesheetData.rejectionReason || 'Please adjust hours or tasks.' }}"</strong>. You may now add or edit your tasks and resubmit.
         </span>
       </div>
     </div>
@@ -143,6 +164,27 @@
         <div class="day-meta">
           <span class="day-name">{{ day.dayOfWeek }}</span>
           <span class="day-date">{{ day.date | date:'MMM d, yyyy' }}</span>
+
+          <!-- Day Status Badges (Holiday, Leave, Weekend, Pre-Join) -->
+          <span *ngIf="day.isPriorToJoining" class="badge-day-status badge-pre-join" title="Date is prior to your official joining date">
+            <mat-icon>person_off</mat-icon>
+            <span>Pre-Joining</span>
+          </span>
+
+          <span *ngIf="!day.isPriorToJoining && day.isLeave" class="badge-day-status badge-leave" title="On approved leave">
+            <mat-icon>event_busy</mat-icon>
+            <span>Leave: {{ day.leaveTypeName || 'Approved Leave' }}</span>
+          </span>
+
+          <span *ngIf="!day.isPriorToJoining && day.isHoliday" class="badge-day-status" [class.badge-holiday]="!day.isOptionalHoliday" [class.badge-holiday-opt]="day.isOptionalHoliday" [title]="day.isOptionalHoliday ? 'Optional Holiday' : 'Company Holiday'">
+            <mat-icon>{{ day.isOptionalHoliday ? 'event_note' : 'celebration' }}</mat-icon>
+            <span>{{ day.holidayName || (day.isOptionalHoliday ? 'Optional Holiday' : 'Holiday') }}</span>
+          </span>
+
+          <span *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && day.isWeekend" class="badge-day-status badge-weekend" title="Weekend">
+            <mat-icon>weekend</mat-icon>
+            <span>Weekend</span>
+          </span>
         </div>
 
         <!-- Attendance Reference Badge -->
@@ -172,13 +214,16 @@
         <button
           type="button"
           class="btn-add-task"
-          *ngIf="canEdit && !isFutureDay(day.date)"
+          [class.btn-add-holiday]="day.isHoliday || day.isWeekend"
+          *ngIf="canAddTaskForDay(day)"
           (click)="openAddTaskModal(day)"
         >
           <mat-icon>add</mat-icon>
-          <span>Add Task</span>
+          <span>{{ (day.isHoliday || day.isWeekend) ? 'Log Work' : 'Add Task' }}</span>
         </button>
-        <span class="badge-future" *ngIf="isFutureDay(day.date)">Upcoming</span>
+        <span class="badge-leave-disabled" *ngIf="!day.isPriorToJoining && day.isLeave">On Leave</span>
+        <span class="badge-prejoin-disabled" *ngIf="day.isPriorToJoining">Not Joined Yet</span>
+        <span class="badge-future" *ngIf="isFutureDay(day.date) && !day.isPriorToJoining">Upcoming</span>
       </div>
 
       <!-- Tasks List for Day -->
@@ -187,27 +232,53 @@
         <div
           *ngIf="getDayTasks(day).length === 0"
           class="empty-tasks-card"
-          [class.clickable]="canEdit && !isFutureDay(day.date)"
-          (click)="canEdit && !isFutureDay(day.date) && openAddTaskModal(day)"
+          [class.empty-card-leave]="day.isLeave"
+          [class.empty-card-prejoin]="day.isPriorToJoining"
+          [class.empty-card-holiday]="day.isHoliday || day.isWeekend"
+          [class.clickable]="canAddTaskForDay(day)"
+          (click)="canAddTaskForDay(day) && openAddTaskModal(day)"
         >
           <div class="empty-icon-circle">
-            <mat-icon>{{ isFutureDay(day.date) ? 'schedule' : 'playlist_add' }}</mat-icon>
+            <mat-icon *ngIf="day.isPriorToJoining">person_off</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && day.isLeave">event_busy</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && day.isHoliday">celebration</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && day.isWeekend">weekend</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend">{{ isFutureDay(day.date) ? 'schedule' : 'playlist_add' }}</mat-icon>
           </div>
           <div class="empty-text-wrap">
             <span class="empty-title">
-              {{ isFutureDay(day.date) ? 'Upcoming Date' : 'No project tasks recorded for this date.' }}
+              <ng-container *ngIf="day.isPriorToJoining">Prior to Official Joining Date</ng-container>
+              <ng-container *ngIf="!day.isPriorToJoining && day.isLeave">On Approved Leave ({{ day.leaveTypeName || 'Leave' }})</ng-container>
+              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && (day.isHoliday || day.isWeekend)">
+                {{ day.isHoliday ? ('Holiday: ' + (day.holidayName || 'Company Holiday')) : 'Weekend' }} - No Tasks Logged
+              </ng-container>
+              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend && isFutureDay(day.date)">Upcoming Date</ng-container>
+              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend && !isFutureDay(day.date)">No project tasks recorded for this date.</ng-container>
             </span>
-            <span class="empty-sub" *ngIf="canEdit && !isFutureDay(day.date)">
+
+            <span class="empty-sub" *ngIf="day.isPriorToJoining">
+              Task logging is not permitted prior to your official joining date.
+            </span>
+            <span class="empty-sub" *ngIf="!day.isPriorToJoining && day.isLeave">
+              Tasks cannot be logged while on approved leave.
+            </span>
+            <span class="empty-sub" *ngIf="!day.isPriorToJoining && !day.isLeave && (day.isHoliday || day.isWeekend) && canAddTaskForDay(day)">
+              {{ selectedProject ? ('Click to log work hours for ' + (selectedProject.projectName || selectedProject.name) + ' if you worked on this day.') : 'Select a project from the top dropdown to log holiday / weekend work.' }}
+            </span>
+            <span class="empty-sub" *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend && canAddTaskForDay(day)">
               {{ selectedProject ? ('Click to add task for ' + (selectedProject.projectName || selectedProject.name)) : 'Select a project from the top dropdown to log tasks.' }}
             </span>
-            <span class="empty-sub" *ngIf="isFutureDay(day.date)">
+            <span class="empty-sub" *ngIf="!canAddTaskForDay(day) && !day.isPriorToJoining && !day.isLeave && !isFutureDay(day.date)">
+              Timesheet is {{ timesheetData.status || 'Locked' }}. Locked for modifications.
+            </span>
+            <span class="empty-sub" *ngIf="isFutureDay(day.date) && !day.isPriorToJoining && !day.isLeave">
               Tasks cannot be logged for future dates.
             </span>
           </div>
         </div>
 
         <!-- Task Item Row -->
-        <div *ngFor="let t of getDayTasks(day)" class="task-item-row" [class.clickable]="canEdit" (click)="canEdit && openEditTaskModal(t, day)">
+        <div *ngFor="let t of getDayTasks(day)" class="task-item-row" [class.clickable]="canEditTask(day)" (click)="canEditTask(day) && openEditTaskModal(t, day)">
           <div class="task-info">
             <div class="project-tag">
               <mat-icon>business_center</mat-icon>
@@ -221,8 +292,8 @@
             <button
               type="button"
               class="task-delete-btn"
-              *ngIf="canEdit"
-              (click)="deleteTask(t, $event)"
+              *ngIf="canEditTask(day)"
+              (click)="deleteTask(t, day, $event)"
               title="Delete task entry"
             >
               <mat-icon>delete_outline</mat-icon>

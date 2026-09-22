@@ -8,10 +8,11 @@
 
     <!-- Header Action Buttons -->
     <div class="action-buttons">
-      <!-- Export Button with Upward Reversed Arrow Icon -->
-      <button type="button" class="btn-export" (click)="onExport()">
-        <mat-icon class="btn-icon">upload</mat-icon>
-        <span>Export</span>
+      <!-- Ticket History Button -->
+      <button type="button" class="btn-ticket-history" (click)="openTicketHistoryModal()">
+        <mat-icon class="btn-icon">history</mat-icon>
+        <span>{{ isAdmin ? 'Ticket History' : 'My Service Tickets' }}</span>
+        <span *ngIf="ticketCount$ | async as count" class="history-count-badge">{{ count }}</span>
       </button>
 
       <!-- Add Asset Button (Admin Only) -->
@@ -20,6 +21,52 @@
         <span>Add Asset</span>
       </button>
     </div>
+  </div>
+
+  <!-- Rejection Alert Banner for Employee -->
+  <div *ngIf="rejectedTicket$ | async as rejTicket" class="rejected-alert-banner">
+    <div class="banner-left">
+      <div class="banner-rejected-icon">
+        <mat-icon>cancel</mat-icon>
+      </div>
+      <div class="banner-text">
+        <span class="banner-title">Service Request Rejected: {{ rejTicket.assetModel || rejTicket.assetName || ('Asset #' + rejTicket.assetId) }}</span>
+        <span class="banner-subtitle">
+          Your {{ rejTicket.requestType }} request was reviewed and rejected by IT. <strong>Reason:</strong> {{ rejTicket.adminRemarks || rejTicket.reason || 'No specific remarks recorded.' }}. Your equipment has been maintained as Active.
+        </span>
+      </div>
+    </div>
+    <div class="banner-actions-group">
+      <button type="button" class="btn-view-rejection" (click)="openDispatchedTracking(rejTicket)">
+        <mat-icon>info</mat-icon>
+        <span>View Rejection Details</span>
+      </button>
+      <button type="button" class="btn-dismiss-rejection" (click)="dismissRejectedBanner(rejTicket.id)" title="Dismiss this notice">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Parcel In Transit Alert Banner for Employee -->
+  <div *ngIf="dispatchedTicket$ | async as ticket" class="dispatched-alert-banner">
+    <div class="banner-left">
+      <div class="banner-pulse-icon">
+        <mat-icon>local_shipping</mat-icon>
+      </div>
+      <div class="banner-text">
+        <span class="banner-title">Parcel In Transit: {{ ticket.assetModel || 'Assigned Equipment' }}</span>
+        <span class="banner-subtitle">
+          <ng-container *ngIf="ticket.courierPartner">
+            Dispatched via <strong>{{ ticket.courierPartner }}</strong> (AWB: <code>{{ ticket.trackingNumber || 'N/A' }}</code>).
+          </ng-container>
+          Please inspect device upon arrival and confirm receipt below to verify and restore asset to Active.
+        </span>
+      </div>
+    </div>
+    <button type="button" class="btn-confirm-arrival" (click)="openDispatchedTracking(ticket)">
+      <mat-icon>verified</mat-icon>
+      <span>Track & Confirm Received</span>
+    </button>
   </div>
 
   <!-- Assigned Projects Quick Ribbon (For Employee / Manager) -->

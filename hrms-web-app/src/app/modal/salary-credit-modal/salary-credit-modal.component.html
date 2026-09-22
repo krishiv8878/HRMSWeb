@@ -1,0 +1,311 @@
+<div class="salary-credit-modal-container">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>paid</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Mark Salary as Credited</h2>
+        <p class="modal-subtitle">Record monthly salary disbursement and generate an employee payslip record.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Employee & Banking Summary Banner -->
+  <div class="employee-summary-banner">
+    <div class="emp-info-left">
+      <div class="emp-avatar">
+        {{ employee?.firstName?.[0] || 'E' }}{{ employee?.lastName?.[0] || 'M' }}
+      </div>
+      <div class="emp-details">
+        <span class="emp-name">{{ employee?.firstName }} {{ employee?.lastName }}</span>
+        <span class="emp-meta">
+          EMP ID: #{{ employee?.id }} • {{ employee?.designation || 'Software Engineer' }} • {{ employee?.branch || 'Engineering' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="bank-status-pill" [class.has-bank]="bankInfo" [class.no-bank]="!bankInfo">
+      <mat-icon>{{ bankInfo ? 'account_balance' : 'warning_amber' }}</mat-icon>
+      <div class="bank-text">
+        <span class="bank-label">{{ bankInfo ? bankInfo.bankName : 'No Bank Configured' }}</span>
+        <span class="bank-sub" *ngIf="bankInfo">A/C: •••• {{ (bankInfo.accountNumber + '').slice(-4) }} • IFSC: {{ bankInfo.ifscCode }}</span>
+        <span class="bank-sub" *ngIf="!bankInfo">Manual verification recommended</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Body -->
+  <form [formGroup]="creditForm" (ngSubmit)="submitSalaryCredit()" class="salary-form-body">
+    <!-- Row 1: Disbursement Month & Payment Date -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Disbursement Month / Period <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">calendar_month</mat-icon>
+          <input
+            type="text"
+            formControlName="monthYear"
+            placeholder="e.g. September 2026"
+            class="custom-input font-semibold"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Disbursement Date <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">event_available</mat-icon>
+          <input
+            type="date"
+            formControlName="creditDate"
+            class="custom-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Payment Mode & Transaction Ref -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Disbursement Mode <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">account_balance_wallet</mat-icon>
+          <select formControlName="paymentMode" class="custom-select">
+            <option *ngFor="let m of paymentModes" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Transaction Ref / UTR Number <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">receipt_long</mat-icon>
+          <input
+            type="text"
+            formControlName="transactionRef"
+            placeholder="e.g. NEFT-20260930-91823"
+            class="custom-input font-mono"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Compensation Breakdown Section -->
+    <div class="breakdown-card">
+      <div class="breakdown-header">
+        <mat-icon class="breakdown-icon">calculate</mat-icon>
+        <span class="breakdown-title">CTC Breakdown & Statutory Allowances (Monthly)</span>
+      </div>
+
+      <div class="breakdown-grid">
+        <div class="component-item">
+          <span class="comp-label">Basic Salary (50%)</span>
+          <span class="comp-val">{{ formatCurrency(basicSalary) }}</span>
+        </div>
+        <div class="component-item">
+          <span class="comp-label">House Rent Allowance (20%)</span>
+          <span class="comp-val">{{ formatCurrency(hra) }}</span>
+        </div>
+        <div class="component-item">
+          <span class="comp-label">Special Allowance (20%)</span>
+          <span class="comp-val">{{ formatCurrency(specialAllowance) }}</span>
+        </div>
+        <div class="component-item deduction-item">
+          <span class="comp-label">Statutory PF Deduction (12%)</span>
+          <span class="comp-val text-red">- {{ formatCurrency(pfDeduction) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Auto-Calculated LOP Card -->
+    <div class="smart-lop-card">
+      <div class="lop-card-header">
+        <div class="lop-header-left">
+          <div class="lop-icon-box">
+            <mat-icon>auto_fix_high</mat-icon>
+          </div>
+          <div>
+            <div class="lop-title-row">
+              <span class="lop-heading">Auto-Calculated LOP & Unpaid Leave</span>
+              <button
+                type="button"
+                class="lop-rule-tag"
+                (click)="openLopSettings()"
+                title="Click to view or modify company LOP calculation rules"
+              >
+                <span>Rule: {{ activeRuleLabel }}</span>
+                <mat-icon class="rule-edit-icon">settings</mat-icon>
+              </button>
+            </div>
+            <span class="lop-subtitle">
+              Calculated from attendance punches & approved leaves for {{ creditForm.get('monthYear')?.value }}
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="btn-refresh-lop"
+          (click)="loadLopData()"
+          [disabled]="isLoadingLopData"
+          title="Re-scan attendance & leave records"
+        >
+          <mat-icon [class.spinning]="isLoadingLopData">refresh</mat-icon>
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div class="lop-loading-banner" *ngIf="isLoadingLopData">
+        <mat-icon class="spinning">sync</mat-icon>
+        <span>Scanning attendance punches and leave requests for {{ creditForm.get('monthYear')?.value }}...</span>
+      </div>
+
+      <!-- LOP Metrics & Stepper Row -->
+      <div class="lop-calc-body" *ngIf="!isLoadingLopData">
+        <div class="calc-metric-pill rate-pill">
+          <span class="pill-label">DAILY LOP RATE</span>
+          <span class="pill-val">{{ formatCurrency(lopDailyRate) }} <small>/ day</small></span>
+          <span class="pill-hint">{{ formulaBreakdownStr }}</span>
+        </div>
+
+        <div class="calc-metric-pill days-stepper-pill">
+          <span class="pill-label">DETECTED LOP DAYS</span>
+          <div class="stepper-controls">
+            <button
+              type="button"
+              class="stepper-btn"
+              (click)="adjustLopDays(-1)"
+              [disabled]="lopDaysCount <= 0"
+              title="Decrease LOP Days"
+            >
+              <mat-icon>remove</mat-icon>
+            </button>
+            <span class="stepper-val font-mono">{{ lopDaysCount }}</span>
+            <button
+              type="button"
+              class="stepper-btn"
+              (click)="adjustLopDays(1)"
+              title="Increase LOP Days"
+            >
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+          <span class="pill-hint" *ngIf="totalDetectedLopDays > 0">
+            {{ detectedUnpaidLeaveDays }} Unpaid Leave • {{ detectedAbsentDays }} Absent
+          </span>
+          <span class="pill-hint text-emerald" *ngIf="totalDetectedLopDays === 0">
+            Full Attendance (0 LOP)
+          </span>
+        </div>
+
+        <div class="calc-metric-pill deduction-pill">
+          <span class="pill-label">TOTAL CALCULATED DEDUCTION</span>
+          <span class="pill-val text-red">{{ formatCurrency(calculatedLopDeduction) }}</span>
+          <span class="pill-hint">{{ lopDaysCount }} Days × {{ formatCurrency(lopDailyRate) }}</span>
+        </div>
+
+        <!-- Action Button -->
+        <div class="lop-action-box">
+          <button
+            type="button"
+            class="btn-apply-lop"
+            [class.btn-applied]="isLopApplied"
+            (click)="applyCalculatedLop()"
+            [disabled]="calculatedLopDeduction <= 0"
+            title="Auto-fill additional deductions and deduction note"
+          >
+            <mat-icon>{{ isLopApplied ? 'check_circle' : 'bolt' }}</mat-icon>
+            <span>{{ isLopApplied ? 'Applied to Form' : 'Apply Calculation' }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn-clear-lop"
+            *ngIf="creditForm.get('additionalDeductions')?.value > 0"
+            (click)="clearLopDeduction()"
+            title="Clear deduction"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adjustments Row: Additional Deductions (LOP) & Bonus -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">
+          Additional Deductions (LOP / Unpaid Leave)
+          <span class="label-hint">(Optional)</span>
+        </label>
+        <div class="input-wrapper">
+          <span class="currency-prefix">₹</span>
+          <input
+            type="number"
+            formControlName="additionalDeductions"
+            placeholder="0"
+            min="0"
+            class="custom-input input-currency"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">
+          Deduction Reason / Note
+          <span class="label-hint">(Visible on Payslip)</span>
+        </label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">edit_note</mat-icon>
+          <input
+            type="text"
+            formControlName="deductionReason"
+            placeholder="e.g. 2 days unpaid leave (LOP)"
+            class="custom-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">
+          Performance Bonus / Incentive
+          <span class="label-hint">(Optional)</span>
+        </label>
+        <div class="input-wrapper">
+          <span class="currency-prefix">₹</span>
+          <input
+            type="number"
+            formControlName="bonusAmount"
+            placeholder="0"
+            min="0"
+            class="custom-input input-currency"
+          />
+        </div>
+      </div>
+
+      <!-- Net Credited Amount Callout -->
+      <div class="net-credit-callout">
+        <span class="callout-label">NET TAKE-HOME SALARY CREDITED</span>
+        <span class="callout-value">{{ formatCurrency(calculatedNet) }}</span>
+        <span class="callout-sub">Direct disbursement credit amount for {{ creditForm.get('monthYear')?.value }}</span>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="isSubmitting">Cancel</button>
+      <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
+        <span *ngIf="!isSubmitting">Confirm & Mark Salary Credited</span>
+        <span *ngIf="isSubmitting">Processing Disbursement...</span>
+      </button>
+    </div>
+  </form>
+</div>

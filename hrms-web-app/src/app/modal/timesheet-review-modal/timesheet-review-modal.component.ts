@@ -65,18 +65,39 @@ export class TimesheetReviewModalComponent implements OnInit {
     return Number(day.dayTotalHours || day.DayTotalHours || 0);
   }
 
+  parseDateSafe(val: any): Date | null {
+    if (!val) return null;
+    if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+    let s = String(val).trim();
+    if (!s || s === 'null' || s === 'undefined' || s.startsWith('0001-01-01') || s.startsWith('1970-01-01')) return null;
+
+    if (!s.endsWith('Z') && !s.includes('+') && !s.match(/-\d{2}:\d{2}$/)) {
+      s += 'Z';
+    }
+    const dt = new Date(s);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
   formatTime(val: any): string {
     if (!val) return '';
-    try {
-      if (typeof val === 'string' && (val.includes('AM') || val.includes('PM'))) {
-        return val;
-      }
-      const d = new Date(val);
-      if (isNaN(d.getTime())) return String(val);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return String(val);
+    let s = String(val).trim();
+    if (!s || s === '--' || s === 'null' || s === 'undefined' || s.startsWith('0001-01-01') || s.startsWith('1970-01-01')) return '';
+
+    if (/(?:AM|PM)$/i.test(s)) {
+      return s;
     }
+
+    if (/^\d{1,2}:\d{2}$/.test(s)) {
+      const [hStr, mStr] = s.split(':');
+      let h = parseInt(hStr, 10);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`;
+    }
+
+    const d = this.parseDateSafe(s);
+    if (!d || isNaN(d.getTime()) || d.getFullYear() < 2000) return '';
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   }
 
   formatDayHeader(dateVal: any, dayName?: string): string {

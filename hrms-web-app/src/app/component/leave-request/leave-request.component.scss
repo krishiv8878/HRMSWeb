@@ -94,6 +94,28 @@
         box-shadow: 0 4px 6px rgba(29, 78, 216, 0.3);
       }
     }
+
+    .supervisor-mode-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 38px;
+      padding: 0 14px;
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #2563eb;
+      }
+    }
   }
 }
 
@@ -369,6 +391,45 @@
     color: #c2410c;
     border: 1px solid #ffedd5;
   }
+
+  &.badge-cancelled {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+  }
+}
+
+.btn-cancel-leave-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  background-color: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+  }
+
+  &:hover {
+    background-color: #e11d48;
+    color: #ffffff;
+    border-color: #e11d48;
+    box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2);
+  }
+}
+
+.text-muted-dash {
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 .active-badge {

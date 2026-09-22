@@ -226,6 +226,79 @@
     }
   }
 
+  .lop-notice-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+
+    .lop-icon-wrap {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .lop-text-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+
+      .lop-title {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .lop-desc {
+        margin: 0;
+        line-height: 1.45;
+      }
+    }
+
+    &.is-lop {
+      background-color: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+
+      .lop-icon-wrap {
+        background-color: #ffedd5;
+        color: #ea580c;
+      }
+
+      .lop-title {
+        color: #c2410c;
+      }
+    }
+
+    &.is-covered {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+
+      .lop-icon-wrap {
+        background-color: #dcfce7;
+        color: #16a34a;
+      }
+
+      .lop-title {
+        color: #15803d;
+      }
+    }
+  }
+
   /* File Dropzone */
   .upload-dropzone {
     border: 2px dashed #cbd5e1;

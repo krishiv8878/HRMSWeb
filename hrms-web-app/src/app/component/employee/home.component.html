@@ -9,12 +9,6 @@
     </div>
 
     <div class="header-actions">
-      <!-- Export Directory CSV Button -->
-      <button type="button" class="btn-export" (click)="onExportDirectory()">
-        <mat-icon class="btn-icon">file_upload</mat-icon>
-        <span>Export Directory</span>
-      </button>
-
       <!-- Add Employee Button -->
       <button type="button" class="btn-add-employee" (click)="openAddForm()">
         <mat-icon class="btn-icon">person_add</mat-icon>
@@ -145,7 +139,7 @@
           <tr *ngFor="let emp of paginatedEmployees">
             <!-- Employee Avatar & Name -->
             <td class="col-employee">
-              <div class="employee-avatar-group">
+              <div class="employee-avatar-group clickable-employee" (click)="viewEmployeeProfile(emp)" title="Click to view complete employee details">
                 <img
                   *ngIf="emp.avatarUrl"
                   [src]="emp.avatarUrl"
@@ -207,6 +201,9 @@
             <!-- Actions -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
+                <button type="button" class="btn-action-icon payroll-btn" (click)="navigateToPayroll(emp)" title="Banking & Payroll Details">
+                  <mat-icon>account_balance</mat-icon>
+                </button>
                 <button type="button" class="btn-action-icon edit-btn" (click)="Edit(emp)" title="Edit Employee Profile">
                   <mat-icon>edit</mat-icon>
                 </button>

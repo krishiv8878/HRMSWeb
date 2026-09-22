@@ -20,6 +20,32 @@
           aria-label="Search documents"
         />
       </div>
+
+      <!-- Status Filter Dropdown -->
+      <div class="filter-dropdown">
+        <select [(ngModel)]="selectedStatus" (change)="filterDocuments()" class="custom-select" aria-label="Filter by Status">
+          <option value="All">Status: All</option>
+          <option value="Approved">Approved</option>
+          <option value="Pending">Pending</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+
+      <!-- Category Filter Dropdown -->
+      <div class="filter-dropdown" *ngIf="categoryOptions.length > 2">
+        <select [(ngModel)]="selectedCategory" (change)="filterDocuments()" class="custom-select" aria-label="Filter by Category">
+          <option value="All">Category: All</option>
+          <option *ngFor="let cat of categoryOptions.slice(1)" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+
+      <!-- Owner / Employee Filter Dropdown -->
+      <div class="filter-dropdown" *ngIf="ownerOptions.length > 2">
+        <select [(ngModel)]="selectedOwner" (change)="filterDocuments()" class="custom-select" aria-label="Filter by Employee">
+          <option value="All">Employee: All</option>
+          <option *ngFor="let owner of ownerOptions.slice(1)" [value]="owner">{{ owner }}</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -80,10 +106,10 @@
                 <span>{{ doc.status || 'Approved' }}</span>
               </span>
               <button
-                *ngIf="doc.status === 'Rejected' && doc.rejectionReason"
+                *ngIf="doc.status === 'Rejected'"
                 type="button"
                 class="reason-btn"
-                [matTooltip]="'Rejection Reason: ' + doc.rejectionReason"
+                [matTooltip]="'Rejection Reason: ' + (doc.rejectionReason || 'Click to view & re-upload')"
                 matTooltipPosition="above"
                 (click)="onShowRejectionReason(doc)"
                 aria-label="View rejection reason"
@@ -125,6 +151,19 @@
                 </button>
               </ng-container>
 
+              <!-- Quick Re-Upload / View Reason for Rejected -->
+              <button
+                *ngIf="doc.status === 'Rejected'"
+                type="button"
+                class="quick-action-btn btn-reupload-quick"
+                matTooltip="View Rejection Reason & Re-Upload"
+                matTooltipPosition="above"
+                (click)="onShowRejectionReason(doc)"
+                aria-label="Re-upload"
+              >
+                <mat-icon>upload_file</mat-icon>
+              </button>
+
               <button type="button" class="action-dots-btn" [matMenuTriggerFor]="docMenu" aria-label="Document options">
                 <mat-icon>more_vert</mat-icon>
               </button>
@@ -144,17 +183,12 @@
                 <mat-divider></mat-divider>
               </ng-container>
 
-              <button mat-menu-item *ngIf="doc.status === 'Rejected' && doc.rejectionReason" (click)="onShowRejectionReason(doc)">
-                <mat-icon style="color: #e11d48;">info</mat-icon>
-                <span>View Rejection Reason</span>
+              <button mat-menu-item *ngIf="doc.status === 'Rejected'" (click)="onShowRejectionReason(doc)">
+                <mat-icon style="color: #e11d48;">upload_file</mat-icon>
+                <span style="color: #e11d48; font-weight: 600;">View Reason & Re-Upload</span>
               </button>
 
-              <!-- Action 1: View Document Modal -->
-              <button mat-menu-item (click)="onViewDocument(doc)">
-                <mat-icon>visibility</mat-icon> View Document
-              </button>
-
-              <!-- Action 2: Download Document -->
+              <!-- Action 1: Download Document -->
               <button mat-menu-item (click)="onDownloadDocument(doc)">
                 <mat-icon>download</mat-icon> Download
               </button>

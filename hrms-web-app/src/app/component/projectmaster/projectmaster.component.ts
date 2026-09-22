@@ -120,54 +120,40 @@ export class ProjectmasterComponent implements OnInit {
     this.loadManagersList();
     const currentEmpId = Number(this.getStorageItem('employeeId')) || 0;
 
-    if (this.isEmployeeOnly && currentEmpId > 0) {
-      // Employees cannot call GetEmployees (403 Forbidden). Fetch their own profile directly.
-      this.employeeService.getEmployeeById(currentEmpId).subscribe({
-        next: (empRes: any) => {
-          const emp = empRes?.data || empRes || null;
-          if (emp) {
-            this.currentEmployeeRecord = emp;
-            this.employeesList = [emp];
-          }
-          this.loadProjects();
-        },
-        error: () => {
-          this.loadProjects();
+    this.employeeService.getData().subscribe({
+      next: (empRes: any) => {
+        let emps: any[] = [];
+        if (Array.isArray(empRes)) emps = empRes;
+        else if (empRes && Array.isArray(empRes.data)) emps = empRes.data;
+        else if (empRes && Array.isArray(empRes.employeedata?.data)) emps = empRes.employeedata.data;
+        this.employeesList = emps;
+        if (currentEmpId > 0) {
+          this.currentEmployeeRecord = emps.find((e: any) => Number(e.id || e.employeeId) === currentEmpId) || null;
         }
-      });
-    } else {
-      this.employeeService.getData().subscribe({
-        next: (empRes: any) => {
-          let emps: any[] = [];
-          if (Array.isArray(empRes)) emps = empRes;
-          else if (empRes && Array.isArray(empRes.data)) emps = empRes.data;
-          else if (empRes && Array.isArray(empRes.employeedata?.data)) emps = empRes.employeedata.data;
-          this.employeesList = emps;
-          this.loadProjects();
-        },
-        error: () => {
-          if (currentEmpId > 0) {
-            this.employeeService.getEmployeeById(currentEmpId).subscribe({
-              next: (singleRes: any) => {
-                const singleEmp = singleRes?.data || singleRes;
-                if (singleEmp) {
-                  this.currentEmployeeRecord = singleEmp;
-                  this.employeesList = [singleEmp];
-                }
-                this.loadProjects();
-              },
-              error: () => {
-                this.employeesList = [];
-                this.loadProjects();
+        this.loadProjects();
+      },
+      error: () => {
+        if (currentEmpId > 0) {
+          this.employeeService.getEmployeeById(currentEmpId).subscribe({
+            next: (singleRes: any) => {
+              const singleEmp = singleRes?.data || singleRes;
+              if (singleEmp) {
+                this.currentEmployeeRecord = singleEmp;
+                this.employeesList = [singleEmp];
               }
-            });
-          } else {
-            this.employeesList = [];
-            this.loadProjects();
-          }
+              this.loadProjects();
+            },
+            error: () => {
+              this.employeesList = [];
+              this.loadProjects();
+            }
+          });
+        } else {
+          this.employeesList = [];
+          this.loadProjects();
         }
-      });
-    }
+      }
+    });
   }
 
   loadProjects() {
@@ -248,8 +234,7 @@ export class ProjectmasterComponent implements OnInit {
 
     // Dynamic team size computed from assigned employees
     const dynamicSize = this.employeesList.filter((emp: any) => {
-      const rawIds = emp.projectIds || emp.ProjectIds || [];
-      const pIds = Array.isArray(rawIds) ? rawIds : [];
+      const pIds = this.parseEmployeeProjectIds(emp.projectIds || emp.ProjectIds);
       return pIds.includes(projectId) || pIds.includes(Number(projectId));
     }).length;
     const finalTeamSize = dynamicSize > 0 ? dynamicSize : (Number(item.teamSize) || 1);
@@ -433,10 +418,23 @@ export class ProjectmasterComponent implements OnInit {
     }
   }
 
+  private parseEmployeeProjectIds(rawIds: any): number[] {
+    if (!rawIds) return [];
+    if (Array.isArray(rawIds)) return rawIds.map((id: any) => Number(id)).filter((n: number) => !isNaN(n));
+    if (typeof rawIds === 'string' && rawIds.trim()) {
+      try {
+        const parsed = JSON.parse(rawIds);
+        if (Array.isArray(parsed)) return parsed.map((id: any) => Number(id)).filter((n: number) => !isNaN(n));
+      } catch {
+        return rawIds.split(',').map((s: string) => Number(s.trim())).filter((n: number) => !isNaN(n));
+      }
+    }
+    return [];
+  }
+
   getTeamMembersForProject(projectId: number): any[] {
     return this.employeesList.filter((emp: any) => {
-      const rawIds = emp.projectIds || emp.ProjectIds || [];
-      const pIds = Array.isArray(rawIds) ? rawIds : [];
+      const pIds = this.parseEmployeeProjectIds(emp.projectIds || emp.ProjectIds);
       return pIds.includes(projectId) || pIds.includes(Number(projectId));
     });
   }

@@ -1,0 +1,172 @@
+<div class="asset-request-modal">
+  <!-- Modal Header Bar -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge" [ngClass]="requestForm.get('requestType')?.value?.toLowerCase()">
+        <mat-icon>{{ requestForm.get('requestType')?.value === 'Return' ? 'keyboard_return' : (requestForm.get('requestType')?.value === 'Replacement' ? 'swap_horiz' : 'build') }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Asset Service & Handover Request</h2>
+        <p class="modal-subtitle">Submit repair, replacement, or return request for your assigned corporate equipment.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Asset Info Ribbon -->
+  <div class="asset-context-card">
+    <div class="card-left">
+      <mat-icon class="device-icon">devices</mat-icon>
+      <div class="device-info">
+        <span class="device-name">{{ data.asset.modelName }}</span>
+        <span class="device-meta font-mono">{{ data.asset.serialNumber || 'SN-N/A' }} • {{ data.asset.assetType }} • {{ data.asset.location || 'Assigned' }}</span>
+      </div>
+    </div>
+    <div class="card-right">
+      <span class="status-badge" [ngClass]="'status-' + data.asset.status.toLowerCase().replace(' ', '-')">
+        {{ data.asset.status }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Form Body -->
+  <form [formGroup]="requestForm" (ngSubmit)="onSubmit()" class="modal-form-body">
+    <!-- Request Type Selector Tabs -->
+    <div class="form-group">
+      <label class="field-label">Select Request Action <span class="required">*</span></label>
+      <div class="type-selector-grid">
+        <button
+          *ngFor="let rt of requestTypes"
+          type="button"
+          class="type-card-btn"
+          [class.is-active]="requestForm.get('requestType')?.value === rt.type"
+          (click)="setRequestType(rt.type)"
+        >
+          <div class="type-icon-wrapper">
+            <mat-icon>{{ rt.icon }}</mat-icon>
+          </div>
+          <div class="type-text">
+            <span class="type-title">{{ rt.label }}</span>
+            <span class="type-desc">{{ rt.desc }}</span>
+          </div>
+          <mat-icon class="check-icon" *ngIf="requestForm.get('requestType')?.value === rt.type">check_circle</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Reason & Priority Grid -->
+    <div class="form-row-2">
+      <!-- Primary Reason Dropdown -->
+      <div class="form-group">
+        <label class="field-label">Primary Reason <span class="required">*</span></label>
+        <div class="input-wrapper" [class.has-error]="reasonCtrl?.invalid && (reasonCtrl?.touched || submittedOnce)">
+          <mat-icon class="input-icon">help_outline</mat-icon>
+          <select formControlName="reason" class="custom-select">
+            <option value="" disabled selected>Select a reason...</option>
+            <option *ngFor="let r of currentReasons" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+        <div *ngIf="reasonCtrl?.invalid && (reasonCtrl?.touched || submittedOnce)" class="error-msg-box">
+          <mat-icon>error_outline</mat-icon>
+          <span>Please select a valid reason from the list.</span>
+        </div>
+      </div>
+
+      <!-- Priority Level -->
+      <div class="form-group">
+        <label class="field-label">Urgency / Priority <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">flag</mat-icon>
+          <select formControlName="priority" class="custom-select">
+            <option *ngFor="let p of priorities" [value]="p">{{ p }} Priority</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issue / Handover Description -->
+    <div class="form-group">
+      <div class="field-label-row">
+        <label class="field-label">Detailed Notes & Symptoms <span class="required">*</span></label>
+        <span class="char-counter" [class.is-valid]="(descriptionCtrl?.value?.length || 0) >= 5">
+          {{ descriptionCtrl?.value?.length || 0 }}/5 characters min
+        </span>
+      </div>
+      <div class="textarea-wrapper" [class.has-error]="descriptionCtrl?.invalid && (descriptionCtrl?.touched || submittedOnce)">
+        <textarea
+          formControlName="description"
+          rows="3"
+          placeholder="Please describe the issue in detail (e.g. screen blinks intermittently when tilted, charger pin loose, or return package drop-off details)..."
+          class="custom-textarea"
+        ></textarea>
+      </div>
+      <div *ngIf="descriptionCtrl?.invalid && (descriptionCtrl?.touched || submittedOnce)" class="error-msg-box">
+        <mat-icon>error_outline</mat-icon>
+        <span *ngIf="descriptionCtrl?.errors?.['required']">Detailed notes are required. Please describe the defect or reason.</span>
+        <span *ngIf="descriptionCtrl?.errors?.['minlength']">Please enter at least 5 characters (currently {{ descriptionCtrl?.value?.length || 0 }}).</span>
+      </div>
+      <span class="field-hint" *ngIf="!(descriptionCtrl?.invalid && (descriptionCtrl?.touched || submittedOnce))">
+        Provide exact details to help IT support speed up diagnostics and logistics.
+      </span>
+    </div>
+
+    <!-- Photo Attachments Section (For Defect / Device Condition) -->
+    <div class="form-group">
+      <div class="attachment-header">
+        <label class="field-label">Upload Defect / Condition Photos (Optional)</label>
+        <span class="file-count-badge">{{ selectedFiles.length }}/4 Photos</span>
+      </div>
+
+      <!-- Dropzone Area -->
+      <div
+        class="upload-dropzone"
+        (click)="fileInput.click()"
+        (drop)="onFileDropped($event)"
+        (dragover)="onDragOver($event)"
+      >
+        <input
+          #fileInput
+          type="file"
+          accept="image/png, image/jpeg, image/webp"
+          multiple
+          (change)="onFileSelected($event)"
+          style="display: none;"
+        />
+        <div class="dropzone-content">
+          <div class="upload-icon-circle">
+            <mat-icon>cloud_upload</mat-icon>
+          </div>
+          <div class="dropzone-text">
+            <span class="dropzone-primary">Click to upload or drag & drop</span>
+            <span class="dropzone-secondary">PNG, JPG, or WebP (Max 5MB each, up to 4 images)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attached Thumbnails Preview Grid -->
+      <div *ngIf="imagePreviews.length > 0" class="previews-grid">
+        <div *ngFor="let preview of imagePreviews; let i = index" class="preview-item">
+          <img [src]="preview" alt="Defect Photo" class="preview-img" />
+          <button type="button" class="remove-thumb-btn" (click)="removeFile(i)" title="Remove Photo">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="onCancel()" [disabled]="isSubmitting || isUploading">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit" [disabled]="isSubmitting || isUploading">
+        <mat-icon *ngIf="!isSubmitting && !isUploading">send</mat-icon>
+        <span *ngIf="isUploading">Uploading Photos...</span>
+        <span *ngIf="isSubmitting && !isUploading">Submitting Ticket...</span>
+        <span *ngIf="!isSubmitting && !isUploading">Submit {{ requestForm.get('requestType')?.value }} Request</span>
+      </button>
+    </div>
+  </form>
+</div>

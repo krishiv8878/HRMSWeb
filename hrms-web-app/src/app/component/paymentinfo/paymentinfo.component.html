@@ -1,286 +1,970 @@
 <div class="payment-dashboard-container">
-  <!-- Top Header Bar -->
-  <div class="header-section">
-    <div class="title-group">
-      <h1 class="page-title">Banking & Payment Information</h1>
-      <p class="page-subtitle">
-        Direct deposit accounts, disbursement channels, IFSC routing, and payroll verification.
-      </p>
+  <!-- ========================================================================= -->
+  <!-- ================= EMPLOYEE / MANAGER VIEW (!isAdminOrHr) ================= -->
+  <!-- ========================================================================= -->
+  <ng-container *ngIf="!isAdminOrHr">
+    <ng-container *ngTemplateOutlet="employeePersonalView"></ng-container>
+  </ng-container>
+
+  <!-- ===================================================================== -->
+  <!-- ================= ADMIN / HR OPERATIONS VIEW (isAdminOrHr) =========== -->
+  <!-- ===================================================================== -->
+  <ng-container *ngIf="isAdminOrHr">
+    <!-- Top Header Bar -->
+    <div class="header-section">
+      <div class="title-group">
+        <h1 class="page-title">Payroll & Compensation Hub</h1>
+        <p class="page-subtitle">
+          Monthly salary disbursements, official payslips, direct deposit routing, and CTC management.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <!-- LOP Calculation Settings Button (Admin/HR) -->
+        <button
+          *ngIf="isAdminOrHr"
+          type="button"
+          class="btn-lop-settings"
+          (click)="openLopSettingsModal()"
+          title="Configure CTC Loss of Pay (LOP) Deduction Calculation Rules"
+        >
+          <mat-icon class="btn-icon">tune</mat-icon>
+          <span>LOP Settings</span>
+          <span class="rule-pill-badge" *ngIf="currentLopRuleLabel">{{ currentLopRuleLabel }}</span>
+        </button>
+
+        <!-- Actions for Tab 1 & Tab 2: Add Bank Account Button -->
+        <button
+          *ngIf="activeTab !== 'my-payslips'"
+          type="button"
+          class="btn-add-account"
+          (click)="openAddForm()"
+          title="Register New Direct Deposit Coordinates"
+        >
+          <mat-icon class="btn-icon">account_balance</mat-icon>
+          <span>Add Bank Account</span>
+        </button>
+
+        <!-- Actions for Tab 3 (HR Personal Payslips): Request Update or Add -->
+        <button
+          *ngIf="activeTab === 'my-payslips' && !myEmployeeRecord?.hasBankConfigured"
+          type="button"
+          class="btn-add-account"
+          (click)="openRequestBankUpdate()"
+          title="Register Direct Deposit Coordinates"
+        >
+          <mat-icon class="btn-icon">account_balance</mat-icon>
+          <span>Add Bank Account</span>
+        </button>
+
+        <button
+          *ngIf="activeTab === 'my-payslips' && myEmployeeRecord?.hasBankConfigured"
+          type="button"
+          class="btn-request-update"
+          (click)="openRequestBankUpdate()"
+          title="Submit Bank Details Update Request to HR Operations"
+        >
+          <mat-icon class="btn-icon">edit_note</mat-icon>
+          <span>Request Bank Details Update</span>
+        </button>
+      </div>
     </div>
 
-    <div class="header-actions">
-      <!-- Export Matrix CSV Button -->
-      <button type="button" class="btn-export" (click)="onExportPaymentMatrix()">
-        <mat-icon class="btn-icon">file_upload</mat-icon>
-        <span>Export Matrix</span>
+    <!-- Tri-View Tabs Bar (Company Disbursements, Company Accounts, HR Personal Payslips) -->
+    <div class="payroll-tabs-bar">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'disbursements'"
+        (click)="switchTab('disbursements')"
+      >
+        <mat-icon class="tab-icon">payments</mat-icon>
+        <span class="tab-title">Monthly Payroll & Disbursements</span>
+        <span class="tab-badge" [class.badge-pending]="pendingCount > 0">
+          {{ creditedCount }}/{{ allPayrollEmployees.length }} Credited
+        </span>
       </button>
 
-      <!-- Add Account Button -->
-      <button type="button" class="btn-add-account" (click)="openAddForm()">
-        <mat-icon class="btn-icon">account_balance</mat-icon>
-        <span>Add Bank Account</span>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'accounts'"
+        (click)="switchTab('accounts')"
+      >
+        <mat-icon class="tab-icon">account_balance</mat-icon>
+        <span class="tab-title">Direct Deposit Bank Accounts</span>
+        <span class="tab-badge">{{ totalAccountsCount }} Accounts</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn tab-my-payslips"
+        [class.active]="activeTab === 'my-payslips'"
+        (click)="switchTab('my-payslips')"
+      >
+        <mat-icon class="tab-icon">receipt_long</mat-icon>
+        <span class="tab-title">My Payslips & Compensation</span>
+        <span class="tab-badge badge-personal">{{ myDisbursements.length }} Slips</span>
       </button>
     </div>
-  </div>
 
-  <!-- Top 4 Metrics Cards Grid -->
-  <div class="metrics-cards-grid">
-    <!-- Card 1: Registered Accounts -->
-    <div class="metric-card card-blue">
-      <div class="card-header">
-        <span class="card-title">REGISTERED ACCOUNTS</span>
-        <div class="icon-box icon-blue">
-          <mat-icon>account_balance</mat-icon>
+    <!-- ================= TAB 1: MONTHLY DISBURSEMENTS ================= -->
+    <ng-container *ngIf="activeTab === 'disbursements'">
+      <!-- Disbursement Period Selector Bar -->
+      <div class="period-selector-banner">
+        <div class="selector-left">
+          <div class="period-icon-box">
+            <mat-icon>calendar_month</mat-icon>
+          </div>
+          <div class="selector-text">
+            <span class="selector-label">PAYROLL DISBURSEMENT CYCLE</span>
+            <div class="select-wrapper">
+              <select [(ngModel)]="selectedMonth" (change)="onMonthChange()" class="month-select">
+                <option *ngFor="let m of availableMonths" [value]="m">{{ m }}</option>
+              </select>
+              <mat-icon class="chevron-icon">expand_more</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="selector-summary">
+          <span class="status-chip is-disbursed">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ formatCurrency(totalCreditedAmount) }} Disbursed for {{ selectedMonth }}</span>
+          </span>
         </div>
       </div>
-      <div class="card-value">{{ totalAccountsCount }} <small class="unit-text">Profiles</small></div>
-      <div class="card-subtitle is-good">
-        <span class="dot-indicator dot-green"></span>
-        <span>{{ activeAccountsCount }} Verified & Active</span>
+
+      <!-- Payroll Metrics 4-Cards Grid -->
+      <div class="metrics-cards-grid">
+        <!-- Card 1: Net Payroll Budget -->
+        <div class="metric-card card-blue">
+          <div class="card-header">
+            <span class="card-title">TOTAL MONTHLY NET BUDGET</span>
+            <div class="icon-box icon-blue">
+              <mat-icon>account_balance_wallet</mat-icon>
+            </div>
+          </div>
+          <div class="card-value font-mono">{{ formatCurrency(totalPayrollBudget) }}</div>
+          <div class="card-subtitle is-neutral">
+            <span class="dot-indicator dot-blue"></span>
+            <span>Across {{ allPayrollEmployees.length }} Active Personnel</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Total Disbursed This Month -->
+        <div class="metric-card card-emerald">
+          <div class="card-header">
+            <span class="card-title">DISBURSED FOR {{ selectedMonth.toUpperCase() }}</span>
+            <div class="icon-box icon-emerald">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+          </div>
+          <div class="card-value font-mono text-emerald">{{ formatCurrency(totalCreditedAmount) }}</div>
+          <div class="card-subtitle is-good">
+            <span class="dot-indicator dot-green"></span>
+            <span>{{ creditedCount }} Disbursed • {{ pendingCount }} Pending</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Disbursement Rate -->
+        <div class="metric-card card-purple">
+          <div class="card-header">
+            <span class="card-title">DISBURSEMENT PROGRESS</span>
+            <div class="icon-box icon-purple">
+              <mat-icon>pie_chart</mat-icon>
+            </div>
+          </div>
+          <div class="card-value">
+            {{ allPayrollEmployees.length > 0 ? Math.round((creditedCount / allPayrollEmployees.length) * 100) : 0 }}%
+            <small class="unit-text">Completed</small>
+          </div>
+          <div class="card-subtitle is-good">
+            <span class="dot-indicator dot-purple"></span>
+            <span>{{ pendingCount === 0 ? 'All Salaries Credited!' : (pendingCount + ' Pending Credit') }}</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Direct Deposit Readiness -->
+        <div class="metric-card card-amber">
+          <div class="card-header">
+            <span class="card-title">BANKING READINESS</span>
+            <div class="icon-box icon-amber">
+              <mat-icon>verified</mat-icon>
+            </div>
+          </div>
+          <div class="card-value">{{ bankCoverageRate }}% <small class="unit-text">Configured</small></div>
+          <div class="card-subtitle is-good">
+            <span class="dot-indicator dot-amber"></span>
+            <span>Verified Direct Deposit Coordinates</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Payroll Table Card -->
+      <div class="table-card-container">
+        <div class="table-header-bar">
+          <div class="table-title">
+            <h2>Personnel Payroll & Credit Register ({{ filteredPayrollEmployees.length }})</h2>
+          </div>
+
+          <div class="table-controls-right">
+            <!-- Search -->
+            <div class="search-box">
+              <mat-icon class="search-icon">search</mat-icon>
+              <input
+                type="text"
+                [(ngModel)]="payrollSearchQuery"
+                (input)="filterPayroll()"
+                placeholder="Search employee, ID, department..."
+                class="search-input"
+              />
+            </div>
+
+            <!-- Status Filter -->
+            <div class="filter-dropdown">
+              <select [(ngModel)]="payrollStatusFilter" (change)="filterPayroll()" class="custom-select">
+                <option value="All">Status: All</option>
+                <option value="Credited">Credited (This Month)</option>
+                <option value="Pending">Pending Credit</option>
+                <option value="NoBank">Missing Bank Details</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Body -->
+        <div class="table-responsive">
+          <table class="payment-table">
+            <thead>
+              <tr>
+                <th>EMPLOYEE & DEPT</th>
+                <th>BANKING COORDINATES</th>
+                <th>CTC & MONTHLY PACKAGE</th>
+                <th>DISBURSEMENT STATUS ({{ selectedMonth }})</th>
+                <th class="text-right">ACTIONS & PAYSLIP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let emp of paginatedPayrollEmployees">
+                <!-- Employee Info -->
+                <td class="col-beneficiary">
+                  <div class="beneficiary-wrapper">
+                    <div class="avatar-circle">
+                      <img *ngIf="emp.avatarUrl" [src]="emp.avatarUrl" [alt]="emp.fullName" class="pay-avatar-img" />
+                      <span *ngIf="!emp.avatarUrl" class="avatar-initials">{{ emp.initials }}</span>
+                    </div>
+                    <div class="info-group">
+                      <span class="beneficiary-name">{{ emp.fullName }}</span>
+                      <span class="emp-id-tag">EMP-{{ (emp.id + '').padStart(4, '0') }} • {{ emp.department }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Banking Coordinates -->
+                <td class="col-bank">
+                  <div *ngIf="emp.hasBankConfigured" class="bank-wrapper">
+                    <div class="bank-icon-badge">
+                      <mat-icon>account_balance</mat-icon>
+                    </div>
+                    <div class="bank-text-group">
+                      <span class="bank-name">{{ emp.bankAccount?.bankName }}</span>
+                      <span class="bank-sub font-mono">{{ emp.bankAccount?.maskedAccount }} • {{ emp.bankAccount?.ifscCode }}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="!emp.hasBankConfigured" class="no-bank-warning">
+                    <mat-icon class="warn-icon">warning</mat-icon>
+                    <div class="warn-text">
+                      <span>No Bank Coordinates</span>
+                      <button type="button" class="btn-link-bank" (click)="openAddForm(emp.id)">+ Add Bank</button>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- CTC & Monthly Package -->
+                <td class="col-ctc">
+                  <div class="ctc-stack" *ngIf="emp.monthlyNet > 0">
+                    <div class="net-takehome">
+                      <span class="net-amount font-mono font-bold text-emerald">{{ formatCurrency(emp.monthlyNet) }}</span>
+                      <span class="net-sub">/ month net</span>
+                    </div>
+                    <span class="ctc-lpa-tag">{{ formatLpa(emp.annualCtc) }} CTC</span>
+                  </div>
+                  <div *ngIf="emp.monthlyNet === 0" class="no-ctc-text">
+                    <span class="text-muted italic">CTC not configured</span>
+                  </div>
+                </td>
+
+                <!-- Status for Selected Month -->
+                <td class="col-status">
+                  <div *ngIf="emp.isCreditedThisMonth" class="credited-block">
+                    <span class="status-badge badge-active">
+                      <span class="dot"></span>
+                      <span>Credited</span>
+                    </span>
+                    <div class="credited-meta">
+                      <span class="credit-date font-mono">{{ emp.currentMonthDisbursement?.paymentDate }}</span>
+                      <span class="credit-utr font-mono" [title]="emp.currentMonthDisbursement?.transactionRef">
+                        UTR: {{ emp.currentMonthDisbursement?.transactionRef }}
+                      </span>
+                      <span class="credit-amt font-mono font-semibold text-emerald">
+                        Net: {{ formatCurrency(emp.currentMonthDisbursement?.netSalary) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div *ngIf="!emp.isCreditedThisMonth" class="pending-block">
+                    <span class="status-badge badge-pending">
+                      <span class="dot-amber-pulse"></span>
+                      <span>Pending Credit</span>
+                    </span>
+                    <span class="pending-hint">Awaiting Disbursement</span>
+                  </div>
+                </td>
+
+                <!-- Actions -->
+                <td class="col-actions text-right">
+                  <div class="action-btn-group">
+                    <!-- If Credited: View Payslip Button -->
+                    <button
+                      *ngIf="emp.isCreditedThisMonth"
+                      type="button"
+                      class="btn-payslip-action"
+                      (click)="openSalarySlip(emp)"
+                      title="View & Download Official Payslip"
+                    >
+                      <mat-icon>receipt</mat-icon>
+                      <span>View Payslip</span>
+                    </button>
+
+                    <!-- If Pending & Admin/HR: Mark Salary Credited Button -->
+                    <button
+                      *ngIf="!emp.isCreditedThisMonth && isAdminOrHr"
+                      type="button"
+                      class="btn-credit-action"
+                      (click)="openSalaryCredit(emp)"
+                      title="Record Salary Disbursement & Generate UTR"
+                    >
+                      <mat-icon>check_circle</mat-icon>
+                      <span>Mark Credited</span>
+                    </button>
+
+                    <!-- Add Bank if missing -->
+                    <button
+                      *ngIf="!emp.hasBankConfigured && isAdminOrHr"
+                      type="button"
+                      class="btn-action-icon payroll-btn"
+                      (click)="openAddForm(emp.id)"
+                      title="Configure Bank Coordinates"
+                    >
+                      <mat-icon>add_card</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Empty State -->
+              <tr *ngIf="paginatedPayrollEmployees.length === 0">
+                <td colspan="5" class="empty-state">
+                  <div class="empty-box">
+                    <mat-icon class="empty-icon">payments</mat-icon>
+                    <p *ngIf="allPayrollEmployees.length === 0">
+                      No active personnel found. Add employees in the Personnel Directory to initiate payroll disbursements.
+                    </p>
+                    <p *ngIf="allPayrollEmployees.length > 0">
+                      No employee payroll records match your filter criteria.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination for Payroll -->
+        <div class="table-footer">
+          <span class="entry-count" *ngIf="filteredPayrollEmployees.length > 0">
+            Showing {{ (payrollCurrentPage - 1) * payrollPageSize + 1 }} to {{ Math.min(payrollCurrentPage * payrollPageSize, filteredPayrollEmployees.length) }} of {{ filteredPayrollEmployees.length }} employees
+          </span>
+          <span class="entry-count" *ngIf="filteredPayrollEmployees.length === 0">0 employees</span>
+
+          <div class="pagination-controls">
+            <button
+              type="button"
+              class="page-nav-btn"
+              [disabled]="payrollCurrentPage === 1"
+              (click)="prevPayrollPage()"
+              aria-label="Previous Page"
+            >
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+
+            <button
+              *ngFor="let p of payrollPages"
+              type="button"
+              class="page-num-btn"
+              [class.active]="payrollCurrentPage === p"
+              (click)="goToPayrollPage(p)"
+            >
+              {{ p }}
+            </button>
+
+            <button
+              type="button"
+              class="page-nav-btn"
+              [disabled]="payrollCurrentPage === payrollTotalPages || filteredPayrollEmployees.length === 0"
+              (click)="nextPayrollPage()"
+              aria-label="Next Page"
+            >
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ================= TAB 2: DIRECT DEPOSIT BANK ACCOUNTS ================= -->
+    <ng-container *ngIf="activeTab === 'accounts'">
+      <!-- Top 4 Metrics Cards Grid -->
+      <div class="metrics-cards-grid">
+        <!-- Card 1: Registered Accounts -->
+        <div class="metric-card card-blue">
+          <div class="card-header">
+            <span class="card-title">REGISTERED ACCOUNTS</span>
+            <div class="icon-box icon-blue">
+              <mat-icon>account_balance</mat-icon>
+            </div>
+          </div>
+          <div class="card-value">{{ totalAccountsCount }} <small class="unit-text">Profiles</small></div>
+          <div class="card-subtitle is-good">
+            <span class="dot-indicator dot-green"></span>
+            <span>{{ activeAccountsCount }} Verified & Active</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Disbursement Channels -->
+        <div class="metric-card card-emerald">
+          <div class="card-header">
+            <span class="card-title">DISBURSEMENT ROUTE</span>
+            <div class="icon-box icon-emerald">
+              <mat-icon>verified_user</mat-icon>
+            </div>
+          </div>
+          <div class="card-value">100% <small class="unit-text">Direct Deposit</small></div>
+          <div class="card-subtitle is-good">
+            <span class="dot-indicator dot-green"></span>
+            <span>NEFT, RTGS & IMPS Enabled</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Partner Banks -->
+        <div class="metric-card card-purple">
+          <div class="card-header">
+            <span class="card-title">CLEARING BANKS</span>
+            <div class="icon-box icon-purple">
+              <mat-icon>account_balance_wallet</mat-icon>
+            </div>
+          </div>
+          <div class="card-value">{{ banksCount }} <small class="unit-text">Institutions</small></div>
+          <div class="card-subtitle is-good">
+            <span class="dot-indicator dot-blue"></span>
+            <span>HDFC, ICICI, SBI & Axis</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Compliance Score -->
+        <div class="metric-card card-amber">
+          <div class="card-header">
+            <span class="card-title">PAYROLL COMPLIANCE</span>
+            <div class="icon-box icon-amber">
+              <mat-icon>security</mat-icon>
+            </div>
+          </div>
+          <div class="card-value">{{ complianceRate }}% <small class="unit-text">KYC Verified</small></div>
+          <div class="card-subtitle is-neutral">
+            <span class="dot-indicator dot-amber"></span>
+            <span>RBI & Banking SLA Verified</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Profiles Table Card -->
+      <div class="table-card-container">
+        <!-- Table Controls Header Bar -->
+        <div class="table-header-bar">
+          <div class="table-title">
+            <h2>Direct Deposit Profiles ({{ allPayments.length }})</h2>
+          </div>
+
+          <div class="table-controls-right">
+            <!-- Search Input -->
+            <div class="search-box">
+              <mat-icon class="search-icon">search</mat-icon>
+              <input
+                type="text"
+                [(ngModel)]="searchQuery"
+                (input)="filterPayments()"
+                placeholder="Search bank, account, IFSC, name..."
+                class="search-input"
+              />
+            </div>
+
+            <!-- Bank Filter Dropdown -->
+            <div class="filter-dropdown">
+              <select [(ngModel)]="selectedBank" (change)="filterPayments()" class="custom-select">
+                <option value="All">All Banks</option>
+                <option *ngFor="let b of banksList" [value]="b">{{ b }}</option>
+              </select>
+            </div>
+
+            <!-- Status Filter Dropdown -->
+            <div class="filter-dropdown">
+              <select [(ngModel)]="selectedStatus" (change)="filterPayments()" class="custom-select">
+                <option value="All">Status: All</option>
+                <option value="Active">Active / Verified</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Accounts Table -->
+        <div class="table-responsive">
+          <table class="payment-table">
+            <thead>
+              <tr>
+                <th>BENEFICIARY & ID</th>
+                <th>BANKING INSTITUTION</th>
+                <th>ACCOUNT NUMBER</th>
+                <th>IFSC CODE</th>
+                <th>STATUS</th>
+                <th class="text-right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pay of paginatedPayments">
+                <!-- Beneficiary Name & Employee ID -->
+                <td class="col-beneficiary">
+                  <div class="beneficiary-wrapper">
+                    <div class="avatar-circle">
+                      <img *ngIf="pay.avatarUrl" [src]="pay.avatarUrl" [alt]="pay.nameOnAccount" class="pay-avatar-img" />
+                      <mat-icon *ngIf="!pay.avatarUrl">person</mat-icon>
+                    </div>
+                    <div class="info-group">
+                      <span class="beneficiary-name">{{ pay.nameOnAccount }}</span>
+                      <span class="emp-id-tag">EMP ID: #{{ pay.employeeId }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Banking Institution -->
+                <td class="col-bank">
+                  <div class="bank-wrapper">
+                    <div class="bank-icon-badge">
+                      <mat-icon>account_balance</mat-icon>
+                    </div>
+                    <div class="bank-text-group">
+                      <span class="bank-name">{{ pay.bankName }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Account Number (with eye toggle) -->
+                <td class="col-account">
+                  <div class="account-wrapper">
+                    <span class="account-number-text" [class.is-revealed]="pay.showFullAccount">
+                      {{ pay.showFullAccount ? pay.accountNumber : pay.maskedAccount }}
+                    </span>
+                    <button
+                      type="button"
+                      class="btn-toggle-eye"
+                      (click)="toggleAccountMask(pay)"
+                      [title]="pay.showFullAccount ? 'Mask Account Number' : 'Reveal Account Number'"
+                    >
+                      <mat-icon>{{ pay.showFullAccount ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
+                  </div>
+                </td>
+
+                <!-- IFSC Code -->
+                <td class="col-ifsc">
+                  <span class="ifsc-badge">{{ pay.ifscCode }}</span>
+                </td>
+
+                <!-- Status (Display Only Badge) -->
+                <td class="col-status">
+                  <span class="status-badge" [ngClass]="pay.isActive ? 'badge-active' : 'badge-inactive'">
+                    <span class="dot"></span>
+                    <span>{{ pay.isActive ? 'Verified / Active' : 'Inactive' }}</span>
+                  </span>
+                </td>
+
+                <!-- Actions: Delete restricted to Admin, Toggle restricted to Admin/HR -->
+                <td class="col-actions text-right">
+                  <div class="action-btn-group">
+                    <button type="button" class="btn-action-icon edit-btn" (click)="Edit(pay)" title="Edit Banking Details">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <!-- Strict Admin Only Delete -->
+                    <button
+                      *ngIf="rbacService.isAdmin()"
+                      type="button"
+                      class="btn-action-icon btn-delete"
+                      (click)="Delete(pay.id)"
+                      title="Delete Bank Account"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                    <!-- Strict Admin & HR Only Active/Inactive Toggle -->
+                    <button
+                      *ngIf="isAdminOrHr"
+                      type="button"
+                      class="btn-action-icon"
+                      [class.btn-toggle-off]="pay.isActive !== false"
+                      [class.btn-toggle-on]="pay.isActive === false"
+                      (click)="onToggleActive(pay)"
+                      [title]="pay.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                    >
+                      <mat-icon>{{ pay.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Empty State -->
+              <tr *ngIf="paginatedPayments.length === 0">
+                <td colspan="6" class="empty-state">
+                  <div class="empty-box">
+                    <mat-icon class="empty-icon">credit_card_off</mat-icon>
+                    <p *ngIf="allPayments.length === 0">
+                      No bank payment accounts configured. Click <strong>'+ Add Bank Account'</strong> above to set up direct deposit.
+                    </p>
+                    <p *ngIf="allPayments.length > 0">
+                      No payment accounts match your search or filter criteria.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table Pagination Footer -->
+        <div class="table-footer">
+          <span class="entry-count" *ngIf="filteredPayments.length > 0">
+            Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredPayments.length) }} of {{ filteredPayments.length }} accounts
+          </span>
+          <span class="entry-count" *ngIf="filteredPayments.length === 0">0 accounts</span>
+
+          <div class="pagination-controls">
+            <button
+              type="button"
+              class="page-nav-btn"
+              [disabled]="currentPage === 1"
+              (click)="prevPage()"
+              aria-label="Previous Page"
+            >
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+
+            <button
+              *ngFor="let p of pages"
+              type="button"
+              class="page-num-btn"
+              [class.active]="currentPage === p"
+              (click)="goToPage(p)"
+            >
+              {{ p }}
+            </button>
+
+            <button
+              type="button"
+              class="page-nav-btn"
+              [disabled]="currentPage === totalPages || filteredPayments.length === 0"
+              (click)="nextPage()"
+              aria-label="Next Page"
+            >
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ================= TAB 3: HR PERSONAL COMPENSATION & PAYSLIPS ================= -->
+    <ng-container *ngIf="activeTab === 'my-payslips'">
+      <ng-container *ngTemplateOutlet="employeePersonalView"></ng-container>
+    </ng-container>
+  </ng-container>
+
+  <!-- ========================================================================= -->
+  <!-- ================= REUSABLE EMPLOYEE PERSONAL VIEW TEMPLATE ============== -->
+  <!-- ========================================================================= -->
+  <ng-template #employeePersonalView>
+    <!-- Top Header Bar (Only rendered for non-Admin/HR users since Admin/HR have page-level header) -->
+    <div class="header-section" *ngIf="!isAdminOrHr">
+      <div class="title-group">
+        <h1 class="page-title">My Compensation & Salary Slips</h1>
+        <p class="page-subtitle">
+          Review your monthly remuneration, view and download official digital payslips, and manage direct deposit coordinates.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <!-- If NO bank account configured yet: show Add Bank Account button -->
+        <button
+          *ngIf="!myEmployeeRecord?.hasBankConfigured"
+          type="button"
+          class="btn-add-account"
+          (click)="openRequestBankUpdate()"
+          title="Register Direct Deposit Coordinates"
+        >
+          <mat-icon class="btn-icon">account_balance</mat-icon>
+          <span>Add Bank Account</span>
+        </button>
+
+        <!-- Once bank account IS configured: only show Request Update button -->
+        <button
+          *ngIf="myEmployeeRecord?.hasBankConfigured"
+          type="button"
+          class="btn-request-update"
+          (click)="openRequestBankUpdate()"
+          title="Submit Bank Details Update Request to HR Operations"
+        >
+          <mat-icon class="btn-icon">edit_note</mat-icon>
+          <span>Request Bank Details Update</span>
+        </button>
       </div>
     </div>
 
-    <!-- Card 2: Disbursement Channels -->
-    <div class="metric-card card-emerald">
-      <div class="card-header">
-        <span class="card-title">DISBURSEMENT ROUTE</span>
-        <div class="icon-box icon-emerald">
-          <mat-icon>verified_user</mat-icon>
-        </div>
+    <!-- Pending Bank Request Alert Banner -->
+    <div *ngIf="myPendingBankRequest?.status === 'Pending'" class="pending-bank-alert">
+      <div class="alert-icon-box">
+        <mat-icon>hourglass_top</mat-icon>
       </div>
-      <div class="card-value">100% <small class="unit-text">Direct Deposit</small></div>
-      <div class="card-subtitle is-good">
-        <span class="dot-indicator dot-green"></span>
-        <span>NEFT, RTGS & IMPS Enabled</span>
+      <div class="alert-content">
+        <div class="alert-title-row">
+          <span class="alert-heading">Bank Details Update Request Pending Verification</span>
+          <span class="alert-status-badge">Under Review</span>
+        </div>
+        <p class="alert-desc">
+          You submitted an update request on <strong>{{ myPendingBankRequest.requestedAt | date:'mediumDate' }}</strong> for 
+          <strong>{{ myPendingBankRequest.bankName }}</strong> (Account: •••• {{ myPendingBankRequest.accountNumber ? myPendingBankRequest.accountNumber.slice(-4) : '••••' }}, IFSC: {{ myPendingBankRequest.ifscCode }}). 
+          This request is awaiting verification and approval from HR Operations. Your active account below remains in effect until approved.
+        </p>
       </div>
     </div>
 
-    <!-- Card 3: Partner Banks -->
-    <div class="metric-card card-purple">
-      <div class="card-header">
-        <span class="card-title">CLEARING BANKS</span>
-        <div class="icon-box icon-purple">
-          <mat-icon>account_balance_wallet</mat-icon>
+    <!-- Top 3 Personal Summary Cards -->
+    <div class="employee-metrics-grid">
+      <!-- Card 1: Annual CTC -->
+      <div class="metric-card card-blue">
+        <div class="card-header">
+          <span class="card-title">ANNUAL COST TO COMPANY (CTC)</span>
+          <div class="icon-box icon-blue">
+            <mat-icon>monetization_on</mat-icon>
+          </div>
+        </div>
+        <div class="card-value font-mono">{{ formatLpa(myEmployeeRecord?.annualCtc || 0) }}</div>
+        <div class="card-subtitle is-neutral">
+          <span class="dot-indicator dot-blue"></span>
+          <span>{{ formatCurrency(myEmployeeRecord?.annualCtc || 0) }} per annum</span>
         </div>
       </div>
-      <div class="card-value">{{ banksCount }} <small class="unit-text">Institutions</small></div>
-      <div class="card-subtitle is-good">
-        <span class="dot-indicator dot-blue"></span>
-        <span>HDFC, ICICI, SBI & Axis</span>
-      </div>
-    </div>
 
-    <!-- Card 4: Compliance Score -->
-    <div class="metric-card card-amber">
-      <div class="card-header">
-        <span class="card-title">PAYROLL COMPLIANCE</span>
-        <div class="icon-box icon-amber">
-          <mat-icon>security</mat-icon>
+      <!-- Card 2: Net Monthly Take-Home -->
+      <div class="metric-card card-emerald">
+        <div class="card-header">
+          <span class="card-title">ESTIMATED MONTHLY TAKE-HOME</span>
+          <div class="icon-box icon-emerald">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+        </div>
+        <div class="card-value font-mono text-emerald">{{ formatCurrency(myEmployeeRecord?.monthlyNet || 0) }}</div>
+        <div class="card-subtitle is-good">
+          <span class="dot-indicator dot-green"></span>
+          <span>Gross: {{ formatCurrency(myEmployeeRecord?.monthlyGross || 0) }} / month</span>
         </div>
       </div>
-      <div class="card-value">{{ complianceRate }}% <small class="unit-text">KYC Verified</small></div>
-      <div class="card-subtitle is-neutral">
-        <span class="dot-indicator dot-amber"></span>
-        <span>RBI & Banking SLA Verified</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- Bank Profiles Table Card -->
-  <div class="table-card-container">
-    <!-- Table Controls Header Bar -->
-    <div class="table-header-bar">
-      <div class="table-title">
-        <h2>Direct Deposit Profiles ({{ allPayments.length }})</h2>
-      </div>
-
-      <div class="table-controls-right">
-        <!-- Search Input -->
-        <div class="search-box">
-          <mat-icon class="search-icon">search</mat-icon>
-          <input
-            type="text"
-            [(ngModel)]="searchQuery"
-            (input)="filterPayments()"
-            placeholder="Search bank, account, IFSC, name..."
-            class="search-input"
-          />
+      <!-- Card 3: Active Direct Deposit Coordinates -->
+      <div class="metric-card card-purple bank-summary-card">
+        <div class="card-header">
+          <span class="card-title">ACTIVE DIRECT DEPOSIT ACCOUNT</span>
+          <div class="icon-box icon-purple">
+            <mat-icon>account_balance</mat-icon>
+          </div>
         </div>
-
-        <!-- Bank Filter Dropdown -->
-        <div class="filter-dropdown">
-          <select [(ngModel)]="selectedBank" (change)="filterPayments()" class="custom-select">
-            <option value="All">All Banks</option>
-            <option *ngFor="let b of banksList" [value]="b">{{ b }}</option>
-          </select>
-        </div>
-
-        <!-- Status Filter Dropdown -->
-        <div class="filter-dropdown">
-          <select [(ngModel)]="selectedStatus" (change)="filterPayments()" class="custom-select">
-            <option value="All">Status: All</option>
-            <option value="Active">Active / Verified</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Payment Accounts Table -->
-    <div class="table-responsive">
-      <table class="payment-table">
-        <thead>
-          <tr>
-            <th>BENEFICIARY & ID</th>
-            <th>BANKING INSTITUTION</th>
-            <th>ACCOUNT NUMBER</th>
-            <th>IFSC CODE</th>
-            <th>STATUS</th>
-            <th class="text-right">ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let pay of paginatedPayments">
-            <!-- Beneficiary Name & Employee ID -->
-            <td class="col-beneficiary">
-              <div class="beneficiary-wrapper">
-                <div class="avatar-circle">
-                  <img *ngIf="pay.avatarUrl" [src]="pay.avatarUrl" [alt]="pay.nameOnAccount" class="pay-avatar-img" />
-                  <mat-icon *ngIf="!pay.avatarUrl">person</mat-icon>
-                </div>
-                <div class="info-group">
-                  <span class="beneficiary-name">{{ pay.nameOnAccount }}</span>
-                  <span class="emp-id-tag">EMP ID: #{{ pay.employeeId }}</span>
-                </div>
-              </div>
-            </td>
-
-            <!-- Banking Institution -->
-            <td class="col-bank">
-              <div class="bank-wrapper">
-                <div class="bank-icon-badge">
-                  <mat-icon>account_balance</mat-icon>
-                </div>
-                <div class="bank-text-group">
-                  <span class="bank-name">{{ pay.bankName }}</span>
-                </div>
-              </div>
-            </td>
-
-            <!-- Account Number (with eye toggle) -->
-            <td class="col-account">
-              <div class="account-wrapper">
-                <span class="account-number-text" [class.is-revealed]="pay.showFullAccount">
-                  {{ pay.showFullAccount ? pay.accountNumber : pay.maskedAccount }}
-                </span>
-                <button
-                  type="button"
-                  class="btn-toggle-eye"
-                  (click)="toggleAccountMask(pay)"
-                  [title]="pay.showFullAccount ? 'Mask Account Number' : 'Reveal Account Number'"
-                >
-                  <mat-icon>{{ pay.showFullAccount ? 'visibility_off' : 'visibility' }}</mat-icon>
-                </button>
-              </div>
-            </td>
-
-            <!-- IFSC Code -->
-            <td class="col-ifsc">
-              <span class="ifsc-badge">{{ pay.ifscCode }}</span>
-            </td>
-
-            <!-- Status (Display Only Badge) -->
-            <td class="col-status">
-              <span class="status-badge" [ngClass]="pay.isActive ? 'badge-active' : 'badge-inactive'">
-                <span class="dot"></span>
-                <span>{{ pay.isActive ? 'Verified / Active' : 'Inactive' }}</span>
+        
+        <div *ngIf="myEmployeeRecord?.hasBankConfigured" class="bank-card-content">
+          <div class="bank-primary-info">
+            <span class="bank-title-name">{{ myEmployeeRecord?.bankAccount?.bankName }}</span>
+            <div class="acc-num-row">
+              <span class="bank-acc-masked font-mono">
+                {{ myEmployeeRecord?.bankAccount?.showFullAccount ? myEmployeeRecord?.bankAccount?.accountNumber : myEmployeeRecord?.bankAccount?.maskedAccount }}
               </span>
-            </td>
+              <button
+                type="button"
+                class="btn-toggle-eye-mini"
+                (click)="myEmployeeRecord && myEmployeeRecord.bankAccount && toggleAccountMask(myEmployeeRecord.bankAccount)"
+                [title]="myEmployeeRecord?.bankAccount?.showFullAccount ? 'Hide Account Number' : 'Show Account Number'"
+              >
+                <mat-icon>{{ myEmployeeRecord?.bankAccount?.showFullAccount ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div class="bank-secondary-info">
+            <span>IFSC: <strong class="font-mono">{{ myEmployeeRecord?.bankAccount?.ifscCode }}</strong></span>
+            <span>A/C Holder: <strong>{{ myEmployeeRecord?.bankAccount?.nameOnAccount }}</strong></span>
+          </div>
+          <div class="bank-card-footer">
+            <span class="status-badge badge-active">
+              <span class="dot"></span>
+              <span>Active & Verified</span>
+            </span>
+            <button type="button" class="btn-card-update" (click)="openRequestBankUpdate()" title="Submit change request to HR">
+              <mat-icon>edit</mat-icon>
+              <span>Request Update</span>
+            </button>
+          </div>
+        </div>
 
-            <!-- Actions -->
-            <td class="col-actions text-right">
-              <div class="action-btn-group">
-                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(pay)" title="Edit Banking Details">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="btn-action-icon btn-delete"
-                  (click)="Delete(pay.id)"
-                  title="Delete Bank Account"
-                >
-                  <mat-icon>delete</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="btn-action-icon"
-                  [class.btn-toggle-off]="pay.isActive !== false"
-                  [class.btn-toggle-on]="pay.isActive === false"
-                  (click)="onToggleActive(pay)"
-                  [title]="pay.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
-                >
-                  <mat-icon>{{ pay.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Empty State -->
-          <tr *ngIf="paginatedPayments.length === 0">
-            <td colspan="6" class="empty-state">
-              <div class="empty-box">
-                <mat-icon class="empty-icon">credit_card_off</mat-icon>
-                <p *ngIf="allPayments.length === 0">
-                  No bank payment accounts configured. Click <strong>'+ Add Bank Account'</strong> above to set up direct deposit.
-                </p>
-                <p *ngIf="allPayments.length > 0">
-                  No payment accounts match your search or filter criteria.
-                </p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Table Pagination Footer -->
-    <div class="table-footer">
-      <span class="entry-count" *ngIf="filteredPayments.length > 0">
-        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredPayments.length) }} of {{ filteredPayments.length }} accounts
-      </span>
-      <span class="entry-count" *ngIf="filteredPayments.length === 0">0 accounts</span>
-
-      <div class="pagination-controls">
-        <button
-          type="button"
-          class="page-nav-btn"
-          [disabled]="currentPage === 1"
-          (click)="prevPage()"
-          aria-label="Previous Page"
-        >
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-
-        <button
-          *ngFor="let p of pages"
-          type="button"
-          class="page-num-btn"
-          [class.active]="currentPage === p"
-          (click)="goToPage(p)"
-        >
-          {{ p }}
-        </button>
-
-        <button
-          type="button"
-          class="page-nav-btn"
-          [disabled]="currentPage === totalPages || filteredPayments.length === 0"
-          (click)="nextPage()"
-          aria-label="Next Page"
-        >
-          <mat-icon>chevron_right</mat-icon>
-        </button>
+        <div *ngIf="!myEmployeeRecord?.hasBankConfigured" class="bank-card-empty">
+          <div class="empty-bank-text">
+            <mat-icon>warning_amber</mat-icon>
+            <span>No bank details registered yet</span>
+          </div>
+          <button type="button" class="btn-card-add" (click)="openRequestBankUpdate()">
+            <mat-icon>add</mat-icon>
+            <span>Add Bank Coordinates</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- All Payslips Register Table Card -->
+    <div class="table-card-container">
+      <div class="table-header-bar">
+        <div class="table-title">
+          <h2>Official Monthly Salary Slips ({{ filteredEmployeePayslips.length }})</h2>
+          <p class="table-subtitle-note">View and download official digital payslips across all credited disbursement periods.</p>
+        </div>
+
+        <div class="table-controls-right">
+          <!-- Search Input -->
+          <div class="search-box">
+            <mat-icon class="search-icon">search</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="employeePayslipSearch"
+              (input)="filterEmployeePayslips()"
+              placeholder="Search by month, UTR, amount..."
+              class="search-input"
+            />
+          </div>
+
+          <!-- Month Filter Dropdown -->
+          <div class="filter-dropdown">
+            <select [(ngModel)]="selectedPayslipMonth" (change)="filterEmployeePayslips()" class="custom-select">
+              <option value="All">All Months ({{ myDisbursements.length }})</option>
+              <option *ngFor="let m of employeePayslipMonths" [value]="m">{{ m }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Body -->
+      <div class="table-responsive">
+        <table class="payment-table">
+          <thead>
+            <tr>
+              <th>SALARY PERIOD / MONTH</th>
+              <th>CREDITED DATE</th>
+              <th>GROSS SALARY</th>
+              <th>DEDUCTIONS</th>
+              <th>NET TAKE-HOME</th>
+              <th>TRANSACTION REF (UTR)</th>
+              <th>STATUS</th>
+              <th class="text-right">OFFICIAL PAYSLIP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let disb of filteredEmployeePayslips">
+              <!-- Period -->
+              <td>
+                <div class="period-badge-cell">
+                  <mat-icon class="period-icon">event_available</mat-icon>
+                  <span class="period-name font-semibold">{{ disb.monthYear || disb.month }}</span>
+                </div>
+              </td>
+
+              <!-- Date -->
+              <td class="font-mono">
+                {{ disb.paymentDate || (disb.creditDate | date:'mediumDate') }}
+              </td>
+
+              <!-- Gross -->
+              <td class="font-mono">
+                {{ formatCurrency(disb.grossSalary || myEmployeeRecord?.monthlyGross || 0) }}
+              </td>
+
+              <!-- Deductions -->
+              <td class="font-mono text-muted">
+                {{ formatCurrency((disb.pfDeduction || 0) + (disb.additionalDeductions || 0)) }}
+              </td>
+
+              <!-- Net Take-Home -->
+              <td class="font-mono font-bold text-emerald">
+                {{ formatCurrency(disb.netSalaryCredited || disb.netSalary || myEmployeeRecord?.monthlyNet || 0) }}
+              </td>
+
+              <!-- UTR -->
+              <td>
+                <span class="utr-pill font-mono" [title]="disb.transactionRef">
+                  {{ disb.transactionRef || '—' }}
+                </span>
+              </td>
+
+              <!-- Status -->
+              <td>
+                <span class="status-badge badge-active">
+                  <span class="dot"></span>
+                  <span>Credited</span>
+                </span>
+              </td>
+
+              <!-- Action: View Payslip -->
+              <td class="col-actions text-right">
+                <div class="action-btn-group">
+                  <button
+                    type="button"
+                    class="btn-payslip-action"
+                    (click)="openEmployeePayslip(disb)"
+                    title="View & Download Official Payslip"
+                  >
+                    <mat-icon>receipt_long</mat-icon>
+                    <span>View / Download Slip</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="filteredEmployeePayslips.length === 0">
+              <td colspan="8" class="empty-state">
+                <div class="empty-box">
+                  <mat-icon class="empty-icon">receipt_long</mat-icon>
+                  <p *ngIf="myDisbursements.length === 0">
+                    No salary disbursements recorded yet. When monthly salary credits are processed, official payslips will appear here for viewing and download.
+                  </p>
+                  <p *ngIf="myDisbursements.length > 0">
+                    No salary slips match your filter or search query.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-template>
 </div>

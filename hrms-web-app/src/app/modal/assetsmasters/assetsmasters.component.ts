@@ -10,7 +10,14 @@ import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.se
 import { EmployeeService } from '../../services/employee/employee.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { AssetStatus, AssetType } from '../../interface/asset.interface';
+import { AssetItem, AssetStatus, AssetType } from '../../interface/asset.interface';
+
+export interface EmployeeOption {
+  id: number | null;
+  name: string;
+  fullName: string;
+  email?: string;
+}
 
 @Component({
   selector: 'app-assetsmasters',
@@ -39,7 +46,7 @@ export class AssetsmastersComponent implements OnInit {
 
   assetTypes: AssetType[] = ['Laptop', 'Monitor', 'Tablet', 'Furniture', 'Peripherals'];
   statusList: AssetStatus[] = ['Active', 'Available', 'In Repair'];
-  employees: string[] = ['Unassigned'];
+  employees: EmployeeOption[] = [{ id: null, name: 'Unassigned', fullName: 'Unassigned' }];
 
   constructor(
     @Optional() private dialogRef?: MatDialogRef<AssetsmastersComponent>,
@@ -50,42 +57,74 @@ export class AssetsmastersComponent implements OnInit {
     const todayYMD = new Date().toISOString().slice(0, 10);
     const defaultSN = 'SN-' + Math.floor(100000 + Math.random() * 900000);
 
-    this.assetForm = this.fb.group({
-      modelName: ['', [Validators.required, Validators.minLength(2)]],
-      assetType: ['Laptop', [Validators.required]],
-      specifications: ['', [Validators.required]],
-      serialNumber: [defaultSN, [Validators.required]],
-      dateOfPurchase: [todayYMD, [Validators.required]],
-      location: ['', [Validators.required]],
-      assignedTo: ['Unassigned', [Validators.required]],
-      status: ['Active', [Validators.required]]
-    });
-
-    this.loadLiveEmployees();
+    let initialEmpId: number | null = null;
+    let initialAssigned = 'Unassigned';
 
     if (this.data) {
       this.isEdit = true;
-      let purchaseDate = todayYMD;
-      if (this.data.lastAudit || this.data.dateOfPurchase) {
-        try {
-          const d = new Date(this.data.dateOfPurchase || this.data.lastAudit);
-          if (!isNaN(d.getTime())) {
-            purchaseDate = d.toISOString().slice(0, 10);
-          }
-        } catch (_) {}
+      if (this.data.employeeId !== undefined && this.data.employeeId !== null && this.data.employeeId !== '') {
+        const parsed = Number(this.data.employeeId);
+        if (!isNaN(parsed) && parsed > 0) {
+          initialEmpId = parsed;
+        }
       }
-
-      this.assetForm.patchValue({
-        modelName: this.data.modelName || this.data.assetsMasterName || '',
-        assetType: this.data.assetType || 'Laptop',
-        specifications: this.data.specifications || this.data.description || '',
-        serialNumber: this.data.serialNumber || defaultSN,
-        dateOfPurchase: purchaseDate,
-        location: this.data.location || 'Main HQ Office',
-        assignedTo: this.data.assignedTo || 'Unassigned',
-        status: this.data.status || 'Active'
-      });
+      if (this.data.assignedTo && this.data.assignedTo !== 'Unassigned') {
+        initialAssigned = this.data.assignedTo;
+      }
     }
+
+    // Pre-seed employees list with assigned employee so dropdown option is present immediately
+    if (initialEmpId && initialAssigned !== 'Unassigned') {
+      this.employees = [
+        { id: null, name: 'Unassigned', fullName: 'Unassigned' },
+        { id: initialEmpId, name: initialAssigned, fullName: initialAssigned }
+      ];
+    } else {
+      this.employees = [{ id: null, name: 'Unassigned', fullName: 'Unassigned' }];
+    }
+
+    let purchaseDate = todayYMD;
+    if (this.data?.dateOfPurchase || this.data?.lastAudit) {
+      try {
+        const rawD = this.data.dateOfPurchase || this.data.lastAudit;
+        const d = new Date(rawD);
+        if (!isNaN(d.getTime())) {
+          purchaseDate = d.toISOString().slice(0, 10);
+        }
+      } catch (_) {}
+    }
+
+    this.assetForm = this.fb.group({
+      modelName: [this.data?.modelName || this.data?.assetsMasterName || '', [Validators.required, Validators.minLength(2)]],
+      assetType: [this.data?.assetType || 'Laptop', [Validators.required]],
+      specifications: [this.data?.specifications || this.data?.description || '', [Validators.required]],
+      serialNumber: [this.data?.serialNumber || defaultSN, [Validators.required]],
+      dateOfPurchase: [purchaseDate, [Validators.required]],
+      location: [this.data?.location || 'Main HQ Office', [Validators.required]],
+      employeeId: [initialEmpId],
+      assignedTo: [initialAssigned, [Validators.required]],
+      status: [this.data?.status || 'Active', [Validators.required]]
+    });
+
+    // Automatically synchronize assignedTo and status when employeeId changes
+    this.assetForm.get('employeeId')?.valueChanges.subscribe(val => {
+      const empId = (val !== null && val !== undefined && val !== '' && val !== 'null') ? Number(val) : null;
+      if (!empId) {
+        this.assetForm.patchValue({
+          assignedTo: 'Unassigned',
+          status: this.assetForm.get('status')?.value === 'In Repair' ? 'In Repair' : 'Available'
+        }, { emitEvent: false });
+      } else {
+        const emp = this.employees.find(e => e.id === empId);
+        const empName = emp ? emp.fullName : (this.assetForm.get('assignedTo')?.value || 'Unassigned');
+        this.assetForm.patchValue({
+          assignedTo: empName,
+          status: this.assetForm.get('status')?.value === 'In Repair' ? 'In Repair' : 'Active'
+        }, { emitEvent: false });
+      }
+    });
+
+    this.loadLiveEmployees();
   }
 
   loadLiveEmployees() {
@@ -99,17 +138,62 @@ export class AssetsmastersComponent implements OnInit {
         }
 
         if (list.length > 0) {
-          const names = list.map((e: any) => {
-            const first = e.firstName || e.first_name || '';
-            const last = e.lastName || e.last_name || '';
-            return `${first} ${last}`.trim() || e.emailAddress || 'Employee';
-          }).filter(Boolean);
+          const mapped: EmployeeOption[] = list.map((e: any) => {
+            const first = (e.firstName || e.first_name || '').trim();
+            const last = (e.lastName || e.last_name || '').trim();
+            const fullName = `${first} ${last}`.trim() || e.emailAddress || `Employee #${e.id}`;
+            const email = (e.emailAddress || e.email || '').trim();
+            const displayName = email ? `${fullName} (${email})` : fullName;
+            const id = e.id ? Number(e.id) : null;
+            return { id, name: displayName, fullName, email };
+          }).filter(e => e.id !== null);
 
-          this.employees = ['Unassigned', ...Array.from(new Set(names))];
+          // Deduplicate by employee id
+          const uniqueEmps = new Map<number, EmployeeOption>();
+          mapped.forEach(e => {
+            if (e.id && !uniqueEmps.has(e.id)) {
+              uniqueEmps.set(e.id, e);
+            }
+          });
+
+          this.employees = [
+            { id: null, name: 'Unassigned', fullName: 'Unassigned' },
+            ...Array.from(uniqueEmps.values())
+          ];
+
+          // Re-sync current selection
+          const currentEmpId = this.assetForm.get('employeeId')?.value;
+          const currentAssigned = (this.assetForm.get('assignedTo')?.value || '').trim();
+
+          if (currentEmpId && Number(currentEmpId) > 0) {
+            const numId = Number(currentEmpId);
+            const emp = this.employees.find(e => e.id === numId);
+            if (emp) {
+              this.assetForm.patchValue({
+                employeeId: numId,
+                assignedTo: emp.fullName
+              }, { emitEvent: false });
+            }
+          } else if (currentAssigned && currentAssigned.toLowerCase() !== 'unassigned') {
+            // Legacy case: asset had assignedTo string but employeeId was null
+            const matched = this.employees.find(emp =>
+              emp.id !== null && (
+                emp.fullName.toLowerCase() === currentAssigned.toLowerCase() ||
+                emp.name.toLowerCase() === currentAssigned.toLowerCase() ||
+                (emp.email && emp.email.toLowerCase() === currentAssigned.toLowerCase())
+              )
+            );
+            if (matched && matched.id) {
+              this.assetForm.patchValue({
+                employeeId: matched.id,
+                assignedTo: matched.fullName
+              });
+            }
+          }
         }
       },
       error: () => {
-        this.employees = ['Unassigned'];
+        // Keep existing this.employees
       }
     });
   }
@@ -135,6 +219,12 @@ export class AssetsmastersComponent implements OnInit {
       numericId = isNaN(parsed) ? 1 : parsed;
     }
 
+    const selectedEmpId = formVal.employeeId ? Number(formVal.employeeId) : null;
+    const assignedEmp = selectedEmpId ? this.employees.find(e => e.id === selectedEmpId) : null;
+    const assignedName = selectedEmpId
+      ? (assignedEmp?.fullName || formVal.assignedTo || 'Unassigned')
+      : 'Unassigned';
+
     const apiPayload = {
       id: numericId,
       assetsMasterId: numericId,
@@ -143,19 +233,23 @@ export class AssetsmastersComponent implements OnInit {
       serialNumber: formVal.serialNumber || formVal.specifications || 'SN-1000',
       dateOfPurchase: purchaseDateISO,
       assetType: formVal.assetType,
-      assignedTo: formVal.assignedTo,
+      employeeId: selectedEmpId,
+      assignedTo: assignedName,
       location: formVal.location,
       isActive: formVal.status !== 'In Repair',
       status: formVal.status
     };
 
-    const updatedAssetObj = {
+    const updatedAssetObj: AssetItem = {
       id: this.data?.id ? String(this.data.id) : `AST-${numericId || 1001}`,
       modelName: formVal.modelName,
       assetType: formVal.assetType as AssetType,
       specifications: formVal.specifications,
+      serialNumber: formVal.serialNumber,
+      dateOfPurchase: purchaseDateISO,
       location: formVal.location,
-      assignedTo: formVal.assignedTo,
+      employeeId: selectedEmpId ? Number(selectedEmpId) : undefined,
+      assignedTo: assignedName,
       status: formVal.status as AssetStatus,
       isActive: formVal.status !== 'In Repair',
       lastAudit: new Date(formVal.dateOfPurchase).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })

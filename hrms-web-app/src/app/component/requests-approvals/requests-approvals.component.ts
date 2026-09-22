@@ -1,10 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { Subscription } from 'rxjs';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
 import { RequestsApprovalsModalComponent } from '../../modal/requests-approvals-modal/requests-approvals-modal.component';
@@ -13,6 +14,15 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { RbacService } from '../../core/rbac.service';
 import { DocumentService } from '../../services/documnets/document.service';
 import { TimesheetService } from '../../services/timesheet/timesheet.service';
+import { AssetRequestService } from '../../services/asset-request/asset-request.service';
+import { AssetTrackingModalComponent } from '../../modal/asset-tracking-modal/asset-tracking-modal.component';
+import { CancelLeaveModalComponent } from '../../modal/cancel-leave-modal/cancel-leave-modal.component';
+import { AssetItem } from '../../interface/asset.interface';
+import { CandidateService } from '../../services/candidate/candidate.service';
+import { CandidateInterviewModalComponent } from '../../modal/candidate-interview/candidate-interview.component';
+import { PaymentinfoService } from '../../services/employeePayment/paymentinfo.service';
+import { NotificationService } from '../../services/notification/notification.service';
+import { GlobalFilterService } from '../../services/filter/global-filter.service';
 
 export interface ApprovalRequestItem {
   id: number;
@@ -26,11 +36,11 @@ export interface ApprovalRequestItem {
   endDate?: string;
   durationText?: string;
   reasonPreview?: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
   actionBy?: number;
   actionDate?: string;
   rawRecord?: any;
-  category: 'Leave' | 'Attendance' | 'Document' | 'Timesheet' | 'Other';
+  category: 'Leave' | 'Attendance' | 'Document' | 'Timesheet' | 'Asset' | 'Interview' | 'Banking' | 'Other';
 }
 
 @Component({
@@ -46,7 +56,7 @@ export interface ApprovalRequestItem {
   templateUrl: './requests-approvals.component.html',
   styleUrl: './requests-approvals.component.scss'
 })
-export class RequestsApprovalsComponent implements OnInit {
+export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   private service = inject(EmailService);
   private service2 = inject(AttendanceRequestService);
   private employeeService = inject(EmployeeService);
@@ -55,12 +65,30 @@ export class RequestsApprovalsComponent implements OnInit {
   private dialog = inject(MatDialog);
   private documentService = inject(DocumentService);
   private timesheetService = inject(TimesheetService);
+  private assetRequestService = inject(AssetRequestService);
+  private candidateService = inject(CandidateService);
+  private paymentInfoService = inject(PaymentinfoService);
+  private notificationService = inject(NotificationService);
+  private globalFilterService = inject(GlobalFilterService);
+  private filterSub?: Subscription;
+
+  get isApprover(): boolean {
+    return this.rbacService.hasAnyRole(['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management']);
+  }
+
+  get isBankingApprover(): boolean {
+    return this.rbacService.hasAnyRole(['Admin', 'System Admin', 'HR', 'HR Operations']);
+  }
 
   Math = Math;
 
-  activeTab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet' = 'all';
+  activeCategory: 'action_required' | 'time_attendance' | 'timesheet' | 'asset' | 'hr_banking' = 'action_required';
+  activeSubTab: string = 'all';
+  activeTab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet' | 'asset' | 'interview' | 'banking' = 'all';
   searchQuery: string = '';
-  selectedStatus: string = 'All';
+  selectedStatus: string = 'Pending';
+  selectedEmployee: string = 'All';
+  employeeOptions: string[] = [];
 
   allRequests: ApprovalRequestItem[] = [];
   filteredRequests: ApprovalRequestItem[] = [];
@@ -72,7 +100,22 @@ export class RequestsApprovalsComponent implements OnInit {
   attendanceCount: number = 0;
   documentCount: number = 0;
   timesheetCount: number = 0;
+  assetTicketCount: number = 0;
+  interviewCount: number = 0;
+  bankingCount: number = 0;
   processedTodayCount: number = 0;
+
+  // Domain Counts
+  totalLeaveAttendanceCount: number = 0;
+  totalTimesheetCount: number = 0;
+  totalAssetCount: number = 0;
+  totalHrBankingCount: number = 0;
+
+  // Domain Pending Counts
+  pendingLeaveAttendanceCount: number = 0;
+  pendingTimesheetCount: number = 0;
+  pendingAssetCount: number = 0;
+  pendingHrBankingCount: number = 0;
   processedTodayPercent: number = 0;
   urgentCount: number = 0;
 
@@ -88,9 +131,29 @@ export class RequestsApprovalsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAllRequests();
+
+    this.filterSub = this.globalFilterService.filters$.subscribe(f => {
+      this.searchQuery = f.search || '';
+      if (f.status) this.selectedStatus = f.status;
+      if (f.employeeName && f.employeeId !== 'All') {
+        this.selectedEmployee = f.employeeName;
+      } else if (f.employeeId === 'All') {
+        this.selectedEmployee = 'All';
+      }
+      if (this.allRequests.length > 0) {
+        this.filterRequests();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.filterSub) {
+      this.filterSub.unsubscribe();
+    }
   }
 
   loadAllRequests(): void {
+    this.notificationService.refreshNotifications();
     const globalAvatar = typeof window !== 'undefined' ? localStorage.getItem('profileImage') : null;
     const loggedUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
 
@@ -113,9 +176,10 @@ export class RequestsApprovalsComponent implements OnInit {
 
           const actionByVal = Number(x.actionBy || 0);
           const rawStatus = x.status ? String(x.status).trim() : '';
-          const statusStr: 'Pending' | 'Approved' | 'Rejected' = 
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' = 
             rawStatus.toLowerCase() === 'approved' ? 'Approved' :
-            (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' : 'Pending');
+            (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' :
+            (rawStatus.toLowerCase() === 'cancelled' ? 'Cancelled' : 'Pending'));
 
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
@@ -205,7 +269,7 @@ export class RequestsApprovalsComponent implements OnInit {
                 docList = docList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
 
                 const docItems: ApprovalRequestItem[] = docList.map((x: any, idx: number) => {
-                  const empName = x.employeeName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
+                  const empName = x.employeeName || x.uploadedByName || x.ownerName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || (x.employeeId ? `Employee #${x.employeeId}` : 'Employee');
                   const rawStatus = x.status ? String(x.status).trim() : 'Approved';
                   const statusStr: 'Pending' | 'Approved' | 'Rejected' = 
                     rawStatus.toLowerCase() === 'pending' ? 'Pending' :
@@ -283,37 +347,274 @@ export class RequestsApprovalsComponent implements OnInit {
                       };
                     });
 
-                    this.allRequests = [...combinedSoFar, ...tsItems];
-                    this.updateMetricsAndFilter();
+                    finalizeWithAssetTickets([...combinedSoFar, ...tsItems]);
                   },
                   error: () => {
-                    this.allRequests = combinedSoFar;
-                    this.updateMetricsAndFilter();
+                    finalizeWithAssetTickets(combinedSoFar);
                   }
                 });
               },
               error: () => {
-                this.allRequests = [...leaveItems, ...attItems];
-                this.updateMetricsAndFilter();
+                finalizeWithAssetTickets([...leaveItems, ...attItems]);
               }
             });
           },
           error: (err: any) => {
             console.error('Error fetching attendance requests from DB:', err);
-            this.allRequests = [...leaveItems];
-            this.updateMetricsAndFilter();
+            finalizeWithAssetTickets([...leaveItems]);
           }
         });
       },
       error: (err: any) => {
         console.error('Error fetching leave requests from DB:', err);
-        this.allRequests = [];
-        this.updateMetricsAndFilter();
+        finalizeWithAssetTickets([]);
       }
     });
+
+    const finalizeWithAssetTickets = (currentItems: ApprovalRequestItem[]) => {
+      this.assetRequestService.fetchRequests(this.isApprover ? undefined : loggedUserId).subscribe({
+        next: (assetRes: any) => {
+          const rawAssetList = Array.isArray(assetRes) ? assetRes : (assetRes?.data || []);
+          const assetItems: ApprovalRequestItem[] = rawAssetList.map((a: any) => {
+            const empName = a.employeeName || 'Employee';
+            const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+            const s = (a.status || '').toLowerCase().trim();
+            const statusStr: 'Pending' | 'Approved' | 'Rejected' =
+              s.includes('reject') ? 'Rejected' :
+              (s.includes('approved') || s.includes('completed') || s.includes('received') ? 'Approved' : 'Pending');
+
+            return {
+              id: Number(a.id),
+              requesterName: empName,
+              requesterRole: `Asset (${a.requestType || 'Service'})`,
+              avatarUrl: undefined,
+              initials: initials || 'AS',
+              requestType: `${a.requestType || 'Asset'} - ${a.assetModel || ('Asset #' + a.assetId)}`,
+              startDate: a.createdDate,
+              endDate: a.updatedDate,
+              durationText: a.createdDate ? new Date(a.createdDate).toLocaleDateString('en-GB') : 'Recent',
+              reasonPreview: s.includes('reject')
+                ? `Rejected: ${a.adminRemarks || a.remarks || 'No remarks provided'}`
+                : (a.reason || a.description || `Ticket #${a.id} (${a.status})`),
+              status: statusStr,
+              actionBy: a.actionByEmployeeId,
+              actionDate: a.updatedDate,
+              category: 'Asset',
+              rawRecord: {
+                ...a,
+                fullName: empName,
+                category: 'Asset'
+              }
+            };
+          });
+
+          let combined = [...currentItems, ...assetItems];
+
+          if (!this.isApprover && loggedUserId > 0) {
+            combined = combined.filter(r => {
+              const rec = r.rawRecord;
+              if (rec?.employeeId) return Number(rec.employeeId) === loggedUserId;
+              if (rec?.empId) return Number(rec.empId) === loggedUserId;
+              return true;
+            });
+          }
+
+          fetchCandidateInterviews(combined);
+        },
+        error: () => {
+          let combined = [...currentItems];
+          if (!this.isApprover && loggedUserId > 0) {
+            combined = combined.filter(r => {
+              const rec = r.rawRecord;
+              if (rec?.employeeId) return Number(rec.employeeId) === loggedUserId;
+              if (rec?.empId) return Number(rec.empId) === loggedUserId;
+              return true;
+            });
+          }
+          fetchCandidateInterviews(combined);
+        }
+      });
+    };
+
+    const fetchCandidateInterviews = (baseItems: ApprovalRequestItem[]) => {
+      this.candidateService.getData().subscribe({
+        next: (candRes: any) => {
+          let candList: any[] = [];
+          if (Array.isArray(candRes)) candList = candRes;
+          else if (candRes?.data && Array.isArray(candRes.data)) candList = candRes.data;
+
+          const interviewItems: ApprovalRequestItem[] = [];
+          const loggedEmpId = loggedUserId;
+          const loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || '').toLowerCase().trim() : '';
+
+          candList.forEach((c: any, idx: number) => {
+            if (c.isDeleted || c.stage === 'Rejected' || c.stage === 'Onboarded') return;
+
+            let intId: number | undefined = undefined;
+            let intName: string | undefined = undefined;
+            let lastEvaluatedBy: string | undefined = undefined;
+            let curRound: string = 'Interview Round';
+            let intStatus: string = 'Scheduled';
+            let intRemarks: string | undefined = undefined;
+            let intRating: number | undefined = undefined;
+            let intRec: string | undefined = undefined;
+            let scheduledAt: string | undefined = undefined;
+
+            if (c.relevantExperience && typeof c.relevantExperience === 'string' && c.relevantExperience.trim().startsWith('{')) {
+              try {
+                const parsed = JSON.parse(c.relevantExperience);
+                intId = parsed.interviewerId ? Number(parsed.interviewerId) : undefined;
+                intName = parsed.interviewerName || undefined;
+                lastEvaluatedBy = parsed.lastEvaluatedBy || undefined;
+                curRound = parsed.currentRound || parsed.round || 'Technical Interview';
+                intStatus = parsed.status || 'Scheduled';
+                intRemarks = parsed.remarks || parsed.interviewerRemarks;
+                intRating = parsed.rating || parsed.interviewRating;
+                intRec = parsed.recommendation || parsed.interviewRecommendation;
+                scheduledAt = parsed.scheduledAt || parsed.evaluatedAt;
+              } catch {}
+            }
+
+            const isAssignedToUser = (intId && loggedEmpId > 0 && intId === loggedEmpId) ||
+              (intName && loggedUserName && intName.toLowerCase().includes(loggedUserName));
+
+            const isFeedbackSubmitted = intStatus?.includes('Feedback Submitted') ||
+              intStatus?.includes('Awaiting HR Review') ||
+              intStatus === 'Pending HR Decision' ||
+              Boolean(intRemarks);
+
+            const isAdminOrHr = this.rbacService.isAdmin() || this.rbacService.isHR();
+            // Interviewer only sees it when assigned and feedback has NOT been submitted yet. Once feedback is submitted, it is reassigned back to HR.
+            const interviewerShouldSee = isAssignedToUser && !isFeedbackSubmitted;
+
+            if (isAdminOrHr || interviewerShouldSee) {
+              if (intId || intName || isFeedbackSubmitted || (c.stage && c.stage.toLowerCase().includes('interview'))) {
+                const candName = `${c.firstName || 'Candidate'} ${c.lastName || ''}`.trim();
+                const initials = ((c.firstName?.[0] || 'C') + (c.lastName?.[0] || 'D')).toUpperCase();
+                const isCompleted = isFeedbackSubmitted;
+                const evaluatorDisplay = lastEvaluatedBy || intName || 'Interviewer';
+
+                interviewItems.push({
+                  id: Number(c.id || (idx + 9000)),
+                  requesterName: candName,
+                  requesterRole: `Candidate (${c.appliedRole || 'Applicant'})`,
+                  avatarUrl: undefined,
+                  initials: initials,
+                  requestType: curRound,
+                  startDate: scheduledAt || c.lastUpdated || new Date().toISOString(),
+                  endDate: scheduledAt || c.lastUpdated || new Date().toISOString(),
+                  durationText: curRound,
+                  reasonPreview: isCompleted
+                    ? `Feedback logged by ${evaluatorDisplay}. Awaiting HR Review (${intRating ? intRating + '/5' : 'Rating logged'}: "${intRemarks || intRec || 'Feedback submitted'}").`
+                    : `Assigned Interviewer: ${intName || 'You'}. Pending interview feedback submission.`,
+                  status: isCompleted ? 'Approved' : 'Pending',
+                  actionBy: intId,
+                  actionDate: scheduledAt,
+                  category: 'Interview',
+                  rawRecord: {
+                    ...c,
+                    id: Number(c.id),
+                    candidateId: Number(c.id),
+                    currentRound: curRound,
+                    interviewStatus: intStatus,
+                    interviewerId: intId,
+                    interviewerName: intName || lastEvaluatedBy,
+                    interviewerRemarks: intRemarks,
+                    interviewRating: intRating,
+                    interviewRecommendation: intRec,
+                    interviewHistory: (c.relevantExperience && typeof c.relevantExperience === 'string' && c.relevantExperience.trim().startsWith('{'))
+                      ? (() => { try { return Array.isArray(JSON.parse(c.relevantExperience).history) ? JSON.parse(c.relevantExperience).history : []; } catch { return []; } })()
+                      : [],
+                    rawRelevantExperience: c.relevantExperience,
+                    isCandidateInterview: true
+                  }
+                });
+              }
+            }
+          });
+
+          const allCombined = [...baseItems, ...interviewItems];
+          fetchBankingRequests(allCombined);
+        },
+        error: () => {
+          fetchBankingRequests(baseItems);
+        }
+      });
+    };
+
+    const fetchBankingRequests = (currentItems: ApprovalRequestItem[]) => {
+      // Strictly restrict Banking requests to HR and Admin
+      if (!this.isBankingApprover) {
+        this.allRequests = currentItems;
+        const names = Array.from(new Set(currentItems.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
+        this.employeeOptions = names;
+        this.updateMetricsAndFilter();
+        return;
+      }
+
+      this.employeeService.getData().subscribe({
+        next: (empRes: any) => {
+          let empList: any[] = [];
+          if (Array.isArray(empRes)) empList = empRes;
+          else if (empRes?.data && Array.isArray(empRes.data)) empList = empRes.data;
+
+          const bankingItems: ApprovalRequestItem[] = [];
+          empList.forEach((emp: any) => {
+            if (emp.responsibilities) {
+              try {
+                const parsed = JSON.parse(emp.responsibilities);
+                const req = parsed.pendingBankRequest;
+                if (req) {
+                  const statusStr: 'Pending' | 'Approved' | 'Rejected' =
+                    req.status === 'Approved' ? 'Approved' : (req.status === 'Rejected' ? 'Rejected' : 'Pending');
+                  const last4 = req.accountNumber ? String(req.accountNumber).slice(-4) : '••••';
+                  const empName = req.employeeName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Employee';
+                  const initials = ((emp.firstName?.[0] || 'E') + (emp.lastName?.[0] || '')).toUpperCase();
+
+                  bankingItems.push({
+                    id: Number(emp.id),
+                    requesterName: empName,
+                    requesterRole: `Banking (${req.isNewAccount ? 'New Direct Deposit' : 'Coordinate Update'})`,
+                    avatarUrl: undefined,
+                    initials: initials,
+                    requestType: `Bank Details Update - ${req.bankName}`,
+                    startDate: req.requestedAt,
+                    endDate: req.requestedAt,
+                    durationText: req.requestedAt ? new Date(req.requestedAt).toLocaleDateString('en-GB') : 'Recent',
+                    reasonPreview: `Bank: ${req.bankName} | A/C: •••• ${last4} | IFSC: ${req.ifscCode} | Beneficiary: ${req.nameOnAccount}`,
+                    status: statusStr,
+                    actionBy: req.actionBy,
+                    actionDate: req.actionDate,
+                    category: 'Banking',
+                    rawRecord: {
+                      ...req,
+                      fullName: empName,
+                      employeeRecord: emp,
+                      category: 'Banking'
+                    }
+                  });
+                }
+              } catch {}
+            }
+          });
+
+          const finalCombined = [...currentItems, ...bankingItems];
+          this.allRequests = finalCombined;
+          const names = Array.from(new Set(finalCombined.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
+          this.employeeOptions = names;
+          this.updateMetricsAndFilter();
+        },
+        error: () => {
+          this.allRequests = currentItems;
+          const names = Array.from(new Set(currentItems.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
+          this.employeeOptions = names;
+          this.updateMetricsAndFilter();
+        }
+      });
+    };
   }
 
-  private formatDateRange(start?: string, end?: string): string {
+  formatDateRange(start?: string, end?: string): string {
     if (!start && !end) return 'N/A';
     try {
       const s = start ? new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
@@ -334,6 +635,21 @@ export class RequestsApprovalsComponent implements OnInit {
     this.attendanceCount = this.allRequests.filter(r => r.category === 'Attendance').length;
     this.documentCount = this.allRequests.filter(r => r.category === 'Document').length;
     this.timesheetCount = this.allRequests.filter(r => r.category === 'Timesheet').length;
+    this.assetTicketCount = this.allRequests.filter(r => r.category === 'Asset').length;
+    this.interviewCount = this.allRequests.filter(r => r.category === 'Interview').length;
+    this.bankingCount = this.allRequests.filter(r => r.category === 'Banking').length;
+
+    // Totals by Domain
+    this.totalLeaveAttendanceCount = this.leaveCount + this.attendanceCount;
+    this.totalTimesheetCount = this.timesheetCount;
+    this.totalAssetCount = this.assetTicketCount;
+    this.totalHrBankingCount = this.documentCount + this.bankingCount + this.interviewCount;
+
+    // Pending by Domain
+    this.pendingLeaveAttendanceCount = this.allRequests.filter(r => (r.category === 'Leave' || r.category === 'Attendance') && r.status === 'Pending').length;
+    this.pendingTimesheetCount = this.allRequests.filter(r => r.category === 'Timesheet' && r.status === 'Pending').length;
+    this.pendingAssetCount = this.allRequests.filter(r => r.category === 'Asset' && r.status === 'Pending').length;
+    this.pendingHrBankingCount = this.allRequests.filter(r => (r.category === 'Document' || r.category === 'Banking' || r.category === 'Interview') && r.status === 'Pending').length;
 
     const processedList = this.allRequests.filter(r => r.status !== 'Pending');
     this.processedTodayCount = processedList.length;
@@ -367,7 +683,25 @@ export class RequestsApprovalsComponent implements OnInit {
     this.filterRequests();
   }
 
-  setTab(tab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet'): void {
+  setCategory(cat: 'action_required' | 'time_attendance' | 'timesheet' | 'asset' | 'hr_banking'): void {
+    this.activeCategory = cat;
+    this.activeSubTab = 'all';
+    this.currentPage = 1;
+    if (cat === 'action_required') {
+      this.selectedStatus = 'Pending';
+    } else {
+      this.selectedStatus = 'All';
+    }
+    this.filterRequests();
+  }
+
+  setSubTab(subTab: string): void {
+    this.activeSubTab = subTab;
+    this.currentPage = 1;
+    this.filterRequests();
+  }
+
+  setTab(tab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet' | 'asset' | 'interview' | 'banking'): void {
     this.activeTab = tab;
     this.currentPage = 1;
     this.filterRequests();
@@ -376,18 +710,40 @@ export class RequestsApprovalsComponent implements OnInit {
   filterRequests(): void {
     let result = [...this.allRequests];
 
-    if (this.activeTab === 'leave') {
-      result = result.filter(r => r.category === 'Leave');
-    } else if (this.activeTab === 'attendance') {
-      result = result.filter(r => r.category === 'Attendance');
-    } else if (this.activeTab === 'document') {
-      result = result.filter(r => r.category === 'Document');
-    } else if (this.activeTab === 'timesheet') {
+    // Filter by Active Category (Option A Hub)
+    if (this.activeCategory === 'action_required') {
+      result = result.filter(r => r.status === 'Pending');
+      if (this.activeSubTab !== 'all') {
+        result = result.filter(r => r.category.toLowerCase() === this.activeSubTab.toLowerCase());
+      }
+    } else if (this.activeCategory === 'time_attendance') {
+      result = result.filter(r => r.category === 'Leave' || r.category === 'Attendance');
+      if (this.activeSubTab === 'leave') {
+        result = result.filter(r => r.category === 'Leave');
+      } else if (this.activeSubTab === 'attendance') {
+        result = result.filter(r => r.category === 'Attendance');
+      }
+    } else if (this.activeCategory === 'timesheet') {
       result = result.filter(r => r.category === 'Timesheet');
+    } else if (this.activeCategory === 'asset') {
+      result = result.filter(r => r.category === 'Asset');
+    } else if (this.activeCategory === 'hr_banking') {
+      result = result.filter(r => r.category === 'Document' || r.category === 'Banking' || r.category === 'Interview');
+      if (this.activeSubTab === 'document') {
+        result = result.filter(r => r.category === 'Document');
+      } else if (this.activeSubTab === 'banking') {
+        result = result.filter(r => r.category === 'Banking');
+      } else if (this.activeSubTab === 'interview') {
+        result = result.filter(r => r.category === 'Interview');
+      }
     }
 
     if (this.selectedStatus !== 'All') {
       result = result.filter(r => r.status === this.selectedStatus);
+    }
+
+    if (this.selectedEmployee !== 'All') {
+      result = result.filter(r => r.requesterName === this.selectedEmployee);
     }
 
     if (this.searchQuery && this.searchQuery.trim()) {
@@ -396,7 +752,8 @@ export class RequestsApprovalsComponent implements OnInit {
         r.requesterName.toLowerCase().includes(q) ||
         (r.requesterRole && r.requesterRole.toLowerCase().includes(q)) ||
         (r.reasonPreview && r.reasonPreview.toLowerCase().includes(q)) ||
-        (r.requestType && r.requestType.toLowerCase().includes(q))
+        (r.requestType && r.requestType.toLowerCase().includes(q)) ||
+        (r.durationText && r.durationText.toLowerCase().includes(q))
       );
     }
 
@@ -550,6 +907,62 @@ export class RequestsApprovalsComponent implements OnInit {
               this.toaster.error(msg, 'Approval Error');
             }
           });
+        } else if (item.category === 'Banking') {
+          if (!this.isBankingApprover) {
+            this.toaster.error('Only HR and Administrators are authorized to approve bank details requests.', 'Access Denied');
+            return;
+          }
+
+          const req = item.rawRecord;
+          const emp = req.employeeRecord || {};
+          const loggedManagerName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || 'HR/Manager') : 'HR/Manager';
+
+          const bankPayload = {
+            id: req.existingPaymentId || 0,
+            employeeId: Number(req.employeeId),
+            bankName: req.bankName,
+            ifscCode: req.ifscCode,
+            accountNumber: Number(req.accountNumber),
+            nameOnAccount: req.nameOnAccount,
+            isActive: true
+          };
+
+          const saveBankObs = (req.isNewAccount || !req.existingPaymentId)
+            ? this.paymentInfoService.createData(bankPayload)
+            : this.paymentInfoService.updateData(bankPayload);
+
+          saveBankObs.subscribe({
+            next: () => {
+              let respObj: any = {};
+              if (emp.responsibilities) {
+                try { respObj = JSON.parse(emp.responsibilities); } catch {}
+              }
+              respObj.pendingBankRequest = {
+                ...req,
+                status: 'Approved',
+                approvedBy: loggedManagerName,
+                actionDate: new Date().toISOString()
+              };
+              const updatedEmp = {
+                ...emp,
+                responsibilities: JSON.stringify(respObj)
+              };
+              this.employeeService.updateData(updatedEmp).subscribe({
+                next: () => {
+                  this.toaster.success(`Bank details update for ${item.requesterName} Approved and active in payroll!`, 'Approved');
+                  this.loadAllRequests();
+                },
+                error: () => {
+                  this.toaster.success(`Bank details update for ${item.requesterName} Approved and active in payroll!`, 'Approved');
+                  this.loadAllRequests();
+                }
+              });
+            },
+            error: (err: any) => {
+              console.error('Error saving bank coordinates:', err);
+              this.toaster.error('Failed to update bank details in payroll system.', 'Error');
+            }
+          });
         } else {
           const raw = item.rawRecord || {};
           const payload = {
@@ -603,6 +1016,7 @@ export class RequestsApprovalsComponent implements OnInit {
       const isConfirmed = res === true || res?.confirmed === true;
       if (isConfirmed) {
         const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
+        const loggedManagerName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || 'HR/Manager') : 'HR/Manager';
         const reason = res?.rejectionReason || '';
 
         if (item.category === 'Leave') {
@@ -648,6 +1062,40 @@ export class RequestsApprovalsComponent implements OnInit {
               this.toaster.error(msg, 'Rejection Error');
             }
           });
+        } else if (item.category === 'Banking') {
+          if (!this.isBankingApprover) {
+            this.toaster.error('Only HR and Administrators are authorized to reject bank details requests.', 'Access Denied');
+            return;
+          }
+
+          const req = item.rawRecord;
+          const emp = req.employeeRecord || {};
+
+          let respObj: any = {};
+          if (emp.responsibilities) {
+            try { respObj = JSON.parse(emp.responsibilities); } catch {}
+          }
+          respObj.pendingBankRequest = {
+            ...req,
+            status: 'Rejected',
+            rejectedBy: loggedManagerName,
+            rejectionReason: reason,
+            actionDate: new Date().toISOString()
+          };
+          const updatedEmp = {
+            ...emp,
+            responsibilities: JSON.stringify(respObj)
+          };
+          this.employeeService.updateData(updatedEmp).subscribe({
+            next: () => {
+              this.toaster.warning(`Bank details request for ${item.requesterName} Rejected.`, 'Rejected');
+              this.loadAllRequests();
+            },
+            error: () => {
+              this.toaster.warning(`Bank details request for ${item.requesterName} Rejected.`, 'Rejected');
+              this.loadAllRequests();
+            }
+          });
         } else {
           const raw = item.rawRecord || {};
           const payload = {
@@ -682,12 +1130,156 @@ export class RequestsApprovalsComponent implements OnInit {
     });
   }
 
+  viewAssetDetails(item: ApprovalRequestItem): void {
+    const raw = item.rawRecord || {};
+    const asset = {
+      id: Number(raw.assetId || 0),
+      assetId: raw.assetId || 0,
+      assetName: raw.assetModel || item.requestType || 'Company Asset',
+      model: raw.assetModel || item.requestType || 'Company Asset',
+      modelName: raw.assetModel || item.requestType || 'Company Asset',
+      specifications: '',
+      serialNumber: raw.serialNumber || 'N/A',
+      assetType: raw.assetType || 'Equipment',
+      assignedTo: item.requesterName || 'Assigned User',
+      location: raw.location || 'Office',
+      status: (raw.status || '').toLowerCase().includes('completed') ? 'Active' : 'In Repair',
+      isActive: true,
+      lastAudit: ''
+    } as unknown as AssetItem;
+
+    const dialogRef = this.dialog.open(AssetTrackingModalComponent, {
+      width: '680px',
+      data: {
+        asset,
+        request: raw,
+        isAdmin: this.isApprover
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.loadAllRequests();
+    });
+  }
+
+  onRowClick(item: ApprovalRequestItem): void {
+    if (item.category === 'Asset') {
+      this.viewAssetDetails(item);
+    } else if (item.category === 'Timesheet') {
+      this.reviewTimesheet(item);
+    } else if (item.category === 'Interview') {
+      this.openInterviewAction(item);
+    } else if (item.category === 'Banking') {
+      if (this.isBankingApprover && item.status === 'Pending') {
+        this.approveRequest(item);
+      }
+    } else {
+      if (this.isApprover && item.status === 'Pending') {
+        this.approveRequest(item);
+      }
+    }
+  }
+
   getTypeBadgeClass(type: string): string {
     const t = type.toUpperCase();
-    if (t.includes('ANNUAL') || t.includes('PL')) return 'badge-type-annual';
+    if (t.includes('ANNUAL') || t.includes('PL') || t.includes('LEAVE')) return 'badge-type-annual';
     if (t.includes('SICK') || t.includes('CL')) return 'badge-type-sick';
     if (t.includes('EXPENSE')) return 'badge-type-expense';
     if (t.includes('SHIFT') || t.includes('CLOCK')) return 'badge-type-shift';
+    if (t.includes('ASSET') || t.includes('REPAIR') || t.includes('REPLACE') || t.includes('RETURN')) return 'badge-type-asset';
+    if (t.includes('DOC') || t.includes('VERIF')) return 'badge-type-doc';
+    if (t.includes('INTERVIEW') || t.includes('ROUND')) return 'badge-type-interview';
     return 'badge-type-default';
+  }
+
+  openInterviewAction(item: ApprovalRequestItem): void {
+    const raw = item.rawRecord || {};
+    const candidateData: any = {
+      id: Number(raw.id || item.id),
+      candidateId: Number(raw.candidateId || raw.id || item.id),
+      firstName: raw.firstName || item.requesterName?.split(' ')[0] || 'Candidate',
+      lastName: raw.lastName || item.requesterName?.split(' ').slice(1).join(' ') || '',
+      fullName: item.requesterName,
+      emailAddress: raw.emailAddress || '—',
+      mobileNumber: raw.mobileNumber || '—',
+      appliedRole: raw.appliedRole || 'Applicant',
+      stage: raw.stage || 'Technical Interview',
+      totalExperience: raw.totalExperience || '0',
+      relevantExperience: raw.relevantExperience || '{}',
+      rawRelevantExperience: raw.rawRelevantExperience || raw.relevantExperience || '{}',
+      interviewHistory: Array.isArray(raw.interviewHistory) ? raw.interviewHistory : [],
+      currentSalary: raw.currentSalary,
+      expectedSalary: raw.expectedSalary,
+      rawCurrentSalary: raw.rawCurrentSalary,
+      rawExpectedSalary: raw.rawExpectedSalary,
+      currentRound: raw.currentRound || item.requestType,
+      interviewStatus: raw.interviewStatus || (item.status === 'Approved' ? 'Feedback Submitted' : 'Scheduled'),
+      interviewerId: raw.interviewerId,
+      interviewerName: raw.interviewerName,
+      interviewerRemarks: raw.interviewerRemarks,
+      interviewRating: raw.interviewRating,
+      interviewRecommendation: raw.interviewRecommendation,
+      noticePeriod: raw.noticePeriod || 30,
+      matchScore: raw.matchScore || 85
+    };
+
+    const dialogRef = this.dialog.open(CandidateInterviewModalComponent, {
+      width: '680px',
+      maxHeight: '90vh',
+      data: { candidate: candidateData }
+    });
+
+    dialogRef.afterClosed().subscribe((res: any) => {
+      if (res) {
+        this.loadAllRequests();
+      }
+    });
+  }
+
+  canCancelLeave(item: ApprovalRequestItem): boolean {
+    if (item.category !== 'Leave') return false;
+    const s = (item.status || '').toLowerCase();
+    if (s !== 'pending' && s !== 'approved') return false;
+
+    const loggedUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
+    const leaveEmpId = Number(item.rawRecord?.employeeId || item.rawRecord?.empId || 0);
+
+    return (loggedUserId > 0 && leaveEmpId === loggedUserId) || this.rbacService.isAdmin() || this.rbacService.isHR();
+  }
+
+  cancelLeave(item: ApprovalRequestItem): void {
+    const leaveId = Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId);
+    if (!leaveId) {
+      this.toaster.error('Invalid leave request ID', 'Error');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(CancelLeaveModalComponent, {
+      width: '480px',
+      panelClass: 'custom-clean-dialog',
+      data: {
+        leaveId: leaveId,
+        leaveTypeName: item.requestType,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        reason: item.reasonPreview
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((res: any) => {
+      if (res && res.confirmed) {
+        this.service.cancelLeave(leaveId, res.reason || 'Cancelled by employee').subscribe({
+          next: () => {
+            this.toaster.success(`Leave request #${leaveId} has been cancelled and quota balance restored.`, 'Leave Cancelled');
+            this.loadAllRequests();
+          },
+          error: (err: any) => {
+            console.error('Error cancelling leave:', err);
+            const msg = err?.error?.message || 'Failed to cancel leave request.';
+            this.toaster.error(msg, 'Error');
+          }
+        });
+      }
+    });
   }
 }

@@ -46,6 +46,27 @@
           <mat-icon>open_in_new</mat-icon> Open Document Content
         </button>
       </div>
+  </div>
+
+  <!-- Rejection Alert & Re-upload Section (If Rejected) -->
+  <div class="rejection-alert-card" *ngIf="data.status === 'Rejected'">
+    <div class="rejection-card-top">
+      <div class="rejection-status-box">
+        <mat-icon class="rejection-alert-icon">cancel</mat-icon>
+        <div>
+          <span class="rejection-title">Document Rejected by HR / Admin</span>
+          <span class="rejection-date" *ngIf="data.actionDate">{{ data.actionDate | date:'medium' }}</span>
+        </div>
+      </div>
+      <button type="button" class="btn-reupload-card" (click)="onReupload()" title="Re-upload replacement document">
+        <mat-icon>upload_file</mat-icon>
+        <span>Re-Upload Document</span>
+      </button>
+    </div>
+
+    <div class="rejection-remarks-box">
+      <strong>Reason / Reviewer Remarks:</strong>
+      <p>{{ data.rejectionReason || 'No specific rejection remarks provided.' }}</p>
     </div>
   </div>
 

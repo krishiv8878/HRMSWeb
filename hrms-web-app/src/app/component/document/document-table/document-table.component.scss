@@ -78,6 +78,31 @@
         }
       }
     }
+
+    .filter-dropdown {
+      .custom-select {
+        height: 38px;
+        padding: 0 32px 0 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #334155;
+        background-color: #ffffff;
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 14px;
+        transition: all 0.2s ease;
+
+        &:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+      }
+    }
   }
 }
 
@@ -359,6 +384,17 @@
 
       &:hover {
         background-color: #e11d48;
+        color: #ffffff;
+      }
+    }
+
+    &.btn-reupload-quick {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+
+      &:hover {
+        background-color: #dc2626;
         color: #ffffff;
       }
     }

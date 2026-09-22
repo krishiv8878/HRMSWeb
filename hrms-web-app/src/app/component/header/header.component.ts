@@ -5,13 +5,20 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
-import { Router, RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { ResignationComponent } from '../../modal/resignation/resignation.component';
 import { DocumentService } from '../../services/documnets/document.service';
 import { EmployeeService } from '../../services/employee/employee.service';
 import { CandidateService } from '../../services/candidate/candidate.service';
 import { RbacService } from '../../core/rbac.service';
+import { NotificationService, AppNotification } from '../../services/notification/notification.service';
+import { ExportCenterModalComponent } from '../../modal/export-center-modal/export-center-modal.component';
+import {
+  GlobalFilterService,
+  PageFilterConfig,
+  ActiveFilterState
+} from '../../services/filter/global-filter.service';
 
 export interface SearchResultItem {
   id: string;
@@ -52,10 +59,34 @@ export class HeaderComponent implements OnInit {
   employeeService = inject(EmployeeService);
   candidateService = inject(CandidateService);
   rbacService = inject(RbacService);
+  notificationService = inject(NotificationService);
+  globalFilterService = inject(GlobalFilterService);
+
+  // Universal Filter Bar State
+  pageConfig: PageFilterConfig | null = null;
+  activeFilters: ActiveFilterState = {
+    search: '',
+    employeeId: 'All',
+    employeeName: 'All Employees',
+    status: 'All',
+    month: 'All',
+    category: 'All',
+    dateStart: null,
+    dateEnd: null
+  };
+  isFilterRibbonOpen: boolean = true;
+  allEmployeesForFilter: any[] = [];
+  availableFilterMonths: string[] = [];
+  isAdminOrHrOrManager: boolean = false;
 
   headerSearchQuery: string = '';
   isSearchOpen: boolean = false;
   selectedIndex: number = -1;
+
+  // Notifications State
+  notificationTab: 'all' | 'unread' | 'requests' = 'all';
+  notifications: AppNotification[] = [];
+  unreadCount: number = 0;
 
   // Cached Search Pools
   private cachedEmployees: SearchResultItem[] = [];
@@ -89,7 +120,8 @@ export class HeaderComponent implements OnInit {
     { id: 'mod-attendance', title: 'Attendance & Time Logs', subtitle: 'Clock-in / Clock-out, biometric records & logs', category: 'Module', icon: 'fingerprint', route: '/index/attendance' },
     { id: 'mod-timesheet', title: 'Timesheet Management', subtitle: 'Project task logging, attendance hours & approvals', category: 'Module', icon: 'more_time', route: '/index/timesheet' },
     { id: 'mod-profile', title: 'My User Profile', subtitle: 'Personal profile details, contact & compensation', category: 'Module', icon: 'account_circle', route: '/index/user-profile' },
-    { id: 'mod-resignation', title: 'Resignation Request', subtitle: 'Submit notice period & exit separation workflow', category: 'Module', icon: 'exit_to_app', route: '/index/resignation' }
+    { id: 'mod-resignation', title: 'Resignation Request', subtitle: 'Submit notice period & exit separation workflow', category: 'Module', icon: 'exit_to_app', route: '/index/resignation' },
+    { id: 'mod-email-templates', title: 'Email Templates & Notification Engine', subtitle: 'Design HTML email templates, automated notifications & trigger types', category: 'Module', icon: 'mail', route: '/index/email-templates' }
   ];
 
   currentUserName: string = '';
@@ -103,6 +135,100 @@ export class HeaderComponent implements OnInit {
     this.employeeService.userProfile$.subscribe(() => {
       this.refreshUserInfo();
     });
+
+    this.notificationService.notifications$.subscribe((items) => {
+      this.notifications = items;
+    });
+
+    this.notificationService.unreadCount$.subscribe((count) => {
+      this.unreadCount = count;
+    });
+
+    this.initFilterContext();
+  }
+
+  initFilterContext(): void {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const now = new Date();
+    const mList: string[] = ['All'];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      mList.push(`${months[d.getMonth()]} ${d.getFullYear()}`);
+    }
+    this.availableFilterMonths = mList;
+
+    this.isAdminOrHrOrManager = this.rbacService.isAdmin() || this.rbacService.isHR() || this.rbacService.isManager();
+
+    this.employeeService.getData().subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || res?.result || []);
+        this.allEmployeesForFilter = list.filter((e: any) => e.isActive !== false && e.isActive !== 0);
+      },
+      error: () => {
+        this.allEmployeesForFilter = [];
+      }
+    });
+
+    this.globalFilterService.updateRouteContext(this.router.url);
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.globalFilterService.updateRouteContext(event.urlAfterRedirects);
+      }
+    });
+
+    this.globalFilterService.pageConfig$.subscribe((cfg) => {
+      this.pageConfig = cfg;
+    });
+
+    this.globalFilterService.filters$.subscribe((f) => {
+      this.activeFilters = f;
+    });
+
+    this.globalFilterService.isFilterBarOpen$.subscribe((open) => {
+      this.isFilterRibbonOpen = open;
+    });
+  }
+
+  onFilterSearchInput(event: any): void {
+    this.globalFilterService.setSearch(event.target.value);
+  }
+
+  clearFilterSearch(): void {
+    this.globalFilterService.setSearch('');
+  }
+
+  onFilterEmployeeSelect(empId: any): void {
+    if (empId === 'All') {
+      this.globalFilterService.setEmployee('All', 'All Personnel');
+    } else {
+      const found = this.allEmployeesForFilter.find(e => String(e.id) === String(empId));
+      const name = found ? `${found.firstName} ${found.lastName}`.trim() : 'Employee';
+      this.globalFilterService.setEmployee(Number(empId), name);
+    }
+  }
+
+  onFilterStatusSelect(status: string): void {
+    this.globalFilterService.setStatus(status);
+  }
+
+  onFilterMonthSelect(month: string): void {
+    this.globalFilterService.setMonth(month);
+  }
+
+  resetAllFilters(): void {
+    this.globalFilterService.resetAllFilters();
+  }
+
+  removeFilter(key: keyof ActiveFilterState): void {
+    this.globalFilterService.resetFilter(key);
+  }
+
+  toggleFilterRibbon(): void {
+    this.globalFilterService.toggleFilterBar();
+  }
+
+  getActiveFiltersCount(): number {
+    return this.globalFilterService.getActiveFiltersCount();
   }
 
   refreshUserInfo(): void {
@@ -377,9 +503,86 @@ export class HeaderComponent implements OnInit {
 
   getUserRole() {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      return localStorage.getItem('RoleType') || 'HR Administrator';
+      return localStorage.getItem('RoleType') || 'Employee';
     }
-    return 'HR Administrator';
+    return 'Employee';
+  }
+
+  get filteredNotifications(): AppNotification[] {
+    if (this.notificationTab === 'unread') {
+      return this.notifications.filter(n => !n.isRead);
+    }
+    if (this.notificationTab === 'requests') {
+      return this.notifications.filter(n => n.type === 'request');
+    }
+    return this.notifications;
+  }
+
+  onOpenNotifications(): void {
+    this.refreshUserInfo();
+    this.notificationService.refreshNotifications();
+  }
+
+  setNotificationTab(tab: 'all' | 'unread' | 'requests', event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.notificationTab = tab;
+  }
+
+  onNotificationClick(notif: AppNotification): void {
+    this.notificationService.markAsRead(notif.id);
+    if (notif.route) {
+      this.router.navigate([notif.route], { queryParams: notif.queryParams });
+    }
+  }
+
+  markAllNotificationsRead(event: Event): void {
+    event.stopPropagation();
+    this.notificationService.markAllAsRead();
+  }
+
+  clearAllNotifications(event: Event): void {
+    event.stopPropagation();
+    this.notificationService.clearAllNotifications();
+  }
+
+  removeNotification(notif: AppNotification, event: Event): void {
+    event.stopPropagation();
+    this.notificationService.deleteNotification(notif.id);
+  }
+
+  getRelativeTime(timestamp: string): string {
+    if (!timestamp) return 'Just now';
+    try {
+      const diffMs = Date.now() - new Date(timestamp).getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return new Date(timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    } catch {
+      return 'Recently';
+    }
+  }
+
+  getUserEmail(): string {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      return localStorage.getItem('userEmail') || localStorage.getItem('email') || 'employee@khrms.com';
+    }
+    return 'employee@khrms.com';
+  }
+
+  getEmployeeId(): string {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const id = localStorage.getItem('employeeId');
+      return id ? `EMP-${id.padStart(3, '0')}` : 'EMP-001';
+    }
+    return 'EMP-001';
   }
 
   logout() {
@@ -392,6 +595,13 @@ export class HeaderComponent implements OnInit {
   resignation() {
     this.dialog.open(ResignationComponent, {
       width: '640px',
+      maxWidth: '95vw'
+    });
+  }
+
+  openExportCenter() {
+    this.dialog.open(ExportCenterModalComponent, {
+      width: '740px',
       maxWidth: '95vw'
     });
   }

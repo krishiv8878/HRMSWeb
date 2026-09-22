@@ -9,8 +9,12 @@ import { MatMenuModule } from '@angular/material/menu';
 import { ToastrService } from 'ngx-toastr';
 import { CandidateService } from '../../services/candidate/candidate.service';
 import { CandidateeComponent } from '../../modal/candidatee/candidate.component';
+import { CandidateOnboardModalComponent } from '../../modal/candidate-onboard/candidate-onboard.component';
+import { CandidateInterviewModalComponent } from '../../modal/candidate-interview/candidate-interview.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { CandidateItem, TalentMetrics } from '../../interface/candidate.interface';
+import { RbacService } from '../../core/rbac.service';
+import { EmployeeService } from '../../services/employee/employee.service';
 
 @Component({
   selector: 'app-candidate',
@@ -31,6 +35,8 @@ export class CandidateComponent implements OnInit {
   router = inject(Router);
   dialog = inject(MatDialog);
   toaster = inject(ToastrService);
+  rbacService = inject(RbacService);
+  employeeService = inject(EmployeeService);
 
   Math = Math;
 
@@ -41,6 +47,16 @@ export class CandidateComponent implements OnInit {
   searchQuery: string = '';
   selectedStage: string = 'All';
   selectAllChecked: boolean = false;
+  onlyAssignedToMe: boolean = false;
+  myAssignedCount: number = 0;
+  loggedEmpId: number = 0;
+  loggedUserName: string = '';
+  loggedUserEmail: string = '';
+  employeeEmails: Set<string> = new Set<string>();
+
+  get isAdminOrHr(): boolean {
+    return this.rbacService.isAdmin() || this.rbacService.isHR();
+  }
 
   // Pipeline & Requisition Metrics (100% Dynamic)
   metrics: TalentMetrics = {
@@ -64,16 +80,38 @@ export class CandidateComponent implements OnInit {
 
   stagesFilterOptions: string[] = [
     'All',
+    'Selected / Hired',
+    'Offer Extended',
+    'Offer Accepted',
     'Technical Interview',
     'HR Screen',
-    'Rejected',
-    'Offer Extended',
     'Screening',
-    'Sourced'
+    'Sourced',
+    'Rejected'
   ];
 
   ngOnInit() {
-    this.getData();
+    this.loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
+    this.loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || '').toLowerCase().trim() : '';
+    this.loggedUserEmail = typeof window !== 'undefined' ? (localStorage.getItem('userEmail') || '').toLowerCase().trim() : '';
+
+    this.employeeService.getData().subscribe({
+      next: (res: any) => {
+        let list: any[] = [];
+        if (Array.isArray(res)) list = res;
+        else if (res?.data && Array.isArray(res.data)) list = res.data;
+        else if (res?.employeedata?.data) list = res.employeedata.data;
+        list.forEach((e: any) => {
+          if (!e.isDeleted && e.emailAddress) {
+            this.employeeEmails.add(String(e.emailAddress).toLowerCase().trim());
+          }
+        });
+        this.getData();
+      },
+      error: () => {
+        this.getData();
+      }
+    });
   }
 
   getData() {
@@ -92,7 +130,13 @@ export class CandidateComponent implements OnInit {
         rawList = rawList.filter((item: any) => !item.isDeleted);
 
         if (rawList.length > 0) {
-          this.allCandidates = rawList.map((item: any, idx: number) => this.mapCandidateItem(item, idx));
+          const mapped = rawList.map((item: any, idx: number) => this.mapCandidateItem(item, idx));
+          if (this.isAdminOrHr) {
+            this.allCandidates = mapped;
+          } else {
+            // Non-HR/Admin users (Interviewer: Manager / Employee) only see candidates assigned to them
+            this.allCandidates = mapped.filter((c: CandidateItem) => this.isAssignedToCurrentUser(c));
+          }
         } else {
           this.allCandidates = [];
         }
@@ -114,32 +158,59 @@ export class CandidateComponent implements OnInit {
     const fullName = `${fName} ${lName}`.trim();
     const initials = (fName[0] || 'C') + (lName[0] || (fName[1] || ''));
 
-    const roles = [
-      'Senior Frontend Engineer (REQ-104)',
-      'Product Manager (REQ-108)',
-      'Data Scientist (REQ-112)',
-      'DevOps Engineer (REQ-105)',
-      'Full Stack Developer (REQ-109)',
-      'UI/UX Designer (REQ-102)'
-    ];
-
-    const stages = [
-      'Technical Interview',
-      'HR Screen',
-      'Rejected',
-      'Offer Extended',
-      'Screening',
-      'Sourced'
-    ];
-
-    const matchScores = [92, 78, 45, 96, 84, 90, 65, 88];
-    const timeAgo = ['2 hours ago', '1 day ago', '3 days ago', 'Oct 24, 2023', 'Nov 02, 2023', '5 days ago'];
-
-    const roleName = item.appliedRole || roles[idx % roles.length];
-    const stageName = item.stage || stages[idx % stages.length];
-    const scoreVal = item.matchScore || item.MatchScore || matchScores[idx % matchScores.length];
+    const roleName = item.appliedRole || 'General Applicant';
+    const stageName = item.stage || 'Screening';
+    const scoreVal = item.matchScore !== undefined ? item.matchScore : (item.MatchScore !== undefined ? item.MatchScore : 75);
     const rawDate = item.lastUpdated || item.LastUpdated || item.updatedDate || item.UpdatedDate || item.modifiedDate || item.ModifiedDate || item.updatedOn || item.UpdatedOn || item.createdDate || item.CreatedDate;
-    const updatedVal = this.formatLastUpdated(rawDate, timeAgo[idx % timeAgo.length]);
+    const updatedVal = this.formatLastUpdated(rawDate, 'Recently');
+
+    let relExpVal = '0';
+    let intId: number | undefined = undefined;
+    let intName: string | undefined = undefined;
+    let intRemarks: string | undefined = undefined;
+    let intRating: number | undefined = undefined;
+    let intRec: string | undefined = undefined;
+    let curRound: string | undefined = undefined;
+    let intStatus: string | undefined = undefined;
+    let intHistory: any[] = [];
+
+    if (item.relevantExperience) {
+      if (typeof item.relevantExperience === 'string' && item.relevantExperience.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(item.relevantExperience);
+          relExpVal = parsed.years || '0';
+          intId = parsed.interviewerId || undefined;
+          intName = parsed.interviewerName || undefined;
+          intRemarks = parsed.remarks || parsed.interviewerRemarks || undefined;
+          intRating = parsed.rating || parsed.interviewRating || undefined;
+          intRec = parsed.recommendation || parsed.interviewRecommendation || undefined;
+          curRound = parsed.currentRound || parsed.round || undefined;
+          intStatus = parsed.status || undefined;
+          intHistory = Array.isArray(parsed.history) ? parsed.history : [];
+        } catch {
+          relExpVal = String(item.relevantExperience);
+        }
+      } else {
+        relExpVal = String(item.relevantExperience);
+      }
+    }
+
+    const rawCurSal = Number(item.currentSalary || item.CurrentSalary || 0);
+    const rawExpSal = Number(item.expectedSalary || item.ExpectedSalary || 0);
+    const curSal = rawCurSal > 0 ? (rawCurSal <= 100 ? `${rawCurSal} LPA` : `${(rawCurSal / 100000).toFixed(1)} LPA`) : (item.currentSalary ? String(item.currentSalary) : '—');
+    const expSal = rawExpSal > 0 ? (rawExpSal <= 100 ? `${rawExpSal} LPA` : `${(rawExpSal / 100000).toFixed(1)} LPA`) : (item.expectedSalary ? String(item.expectedSalary) : '—');
+
+    const emailLower = (item.emailAddress || '').toLowerCase().trim();
+    const isAlreadyEmployee = Boolean(emailLower && this.employeeEmails.has(emailLower));
+    const isOnboarded = stageName === 'Onboarded' || Boolean(item.onboardedEmployeeId) || Boolean(item.isHired) || isAlreadyEmployee;
+    const effectiveStage = isOnboarded ? 'Onboarded' : stageName;
+
+    // If candidate is already onboarded or rejected, clear active interviewer indicators so no stale tags display
+    if (isOnboarded || effectiveStage === 'Rejected') {
+      intId = undefined;
+      intName = undefined;
+      intRemarks = undefined;
+    }
 
     return {
       id: Number(item.id || item.candidateId || (idx + 1)),
@@ -147,22 +218,34 @@ export class CandidateComponent implements OnInit {
       firstName: fName,
       lastName: lName,
       fullName: fullName,
-      emailAddress: item.emailAddress || `${fName.toLowerCase()}.${lName.toLowerCase()}@example.com`,
-      mobileNumber: item.mobileNumber || '9876543210',
-      totalExperience: item.totalExperience !== undefined ? item.totalExperience : '4.5',
-      relevantExperience: item.relevantExperience !== undefined ? item.relevantExperience : '3.5',
-      currentSalary: item.currentSalary || '10 LPA',
-      currentExperience: item.currentSalary || '10 LPA',
-      expectedSalary: item.expectedSalary || '14 LPA',
-      expectedExperience: item.expectedSalary || '14 LPA',
+      emailAddress: item.emailAddress || '—',
+      mobileNumber: item.mobileNumber || '—',
+      totalExperience: item.totalExperience !== undefined && item.totalExperience !== null ? String(item.totalExperience) : '0',
+      relevantExperience: relExpVal,
+      rawRelevantExperience: typeof item.relevantExperience === 'string' ? item.relevantExperience : JSON.stringify(item.relevantExperience || {}),
+      currentSalary: curSal,
+      currentExperience: curSal,
+      expectedSalary: expSal,
+      expectedExperience: expSal,
+      rawCurrentSalary: rawCurSal,
+      rawExpectedSalary: rawExpSal,
       noticePeriod: item.noticePeriod !== undefined ? item.noticePeriod : 30,
       appliedRole: roleName,
-      stage: stageName,
+      stage: effectiveStage,
       matchScore: scoreVal,
       lastUpdated: updatedVal,
       isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
       initials: initials.toUpperCase(),
-      selected: false
+      selected: false,
+      interviewerId: intId,
+      interviewerName: intName,
+      interviewerRemarks: intRemarks,
+      interviewRating: intRating,
+      interviewRecommendation: intRec,
+      currentRound: curRound,
+      interviewStatus: intStatus,
+      interviewHistory: intHistory,
+      isOnboarded: isOnboarded
     };
   }
 
@@ -192,92 +275,21 @@ export class CandidateComponent implements OnInit {
   }
 
   private getDefaultMockCandidates(): CandidateItem[] {
-    return [
-      {
-        id: 1,
-        candidateId: 1,
-        firstName: 'Sarah',
-        lastName: 'Jenkins',
-        fullName: 'Sarah Jenkins',
-        emailAddress: 'sarah.jenkins@example.com',
-        mobileNumber: '9876543210',
-        totalExperience: '6.5',
-        relevantExperience: '5.0',
-        currentSalary: '18.0',
-        expectedSalary: '24.0',
-        appliedRole: 'Senior Frontend Engineer (REQ-104)',
-        stage: 'Technical Interview',
-        matchScore: 92,
-        lastUpdated: '2 hours ago',
-        noticePeriod: 30,
-        isActive: true,
-        initials: 'SJ',
-        selected: false
-      },
-      {
-        id: 2,
-        candidateId: 2,
-        firstName: 'Marcus',
-        lastName: 'Rodriguez',
-        fullName: 'Marcus Rodriguez',
-        emailAddress: 'marcus.r@example.com',
-        mobileNumber: '9876543211',
-        totalExperience: '8.0',
-        relevantExperience: '6.5',
-        currentSalary: '22.0',
-        expectedSalary: '28.0',
-        appliedRole: 'Product Manager (REQ-108)',
-        stage: 'HR Screen',
-        matchScore: 78,
-        lastUpdated: '1 day ago',
-        noticePeriod: 60,
-        isActive: true,
-        initials: 'MR',
-        selected: false
-      },
-      {
-        id: 3,
-        candidateId: 3,
-        firstName: 'Emily',
-        lastName: 'Chen',
-        fullName: 'Emily Chen',
-        emailAddress: 'emily.chen@example.com',
-        mobileNumber: '9876543212',
-        totalExperience: '3.0',
-        relevantExperience: '2.0',
-        currentSalary: '9.5',
-        expectedSalary: '14.0',
-        appliedRole: 'Data Scientist (REQ-112)',
-        stage: 'Rejected',
-        matchScore: 45,
-        lastUpdated: '3 days ago',
-        noticePeriod: 15,
-        isActive: false,
-        initials: 'EL',
-        selected: false
-      },
-      {
-        id: 4,
-        candidateId: 4,
-        firstName: 'David',
-        lastName: 'Thompson',
-        fullName: 'David Thompson',
-        emailAddress: 'david.t@example.com',
-        mobileNumber: '9876543213',
-        totalExperience: '7.5',
-        relevantExperience: '6.0',
-        currentSalary: '20.0',
-        expectedSalary: '26.0',
-        appliedRole: 'DevOps Engineer (REQ-105)',
-        stage: 'Offer Extended',
-        matchScore: 96,
-        lastUpdated: 'Oct 24, 2023',
-        noticePeriod: 30,
-        isActive: true,
-        initials: 'DT',
-        selected: false
+    return [];
+  }
+
+  openInterviewModal(candidate: CandidateItem) {
+    const dialogRef = this.dialog.open(CandidateInterviewModalComponent, {
+      width: '680px',
+      maxHeight: '90vh',
+      data: { candidate }
+    });
+
+    dialogRef.afterClosed().subscribe((res: any) => {
+      if (res) {
+        this.getData();
       }
-    ];
+    });
   }
 
   private calculatePipelineMetrics() {
@@ -335,8 +347,38 @@ export class CandidateComponent implements OnInit {
     this.metrics.quarterlyGrowthPositive = growthPercent >= 0;
   }
 
+  isAssignedToCurrentUser(c: CandidateItem): boolean {
+    // Only show if currently assigned to this user and pending their feedback
+    if (!c.interviewerId && !c.interviewerName) return false;
+
+    const statusLower = (c.interviewStatus || '').toLowerCase();
+    if (statusLower.includes('feedback submitted') || statusLower.includes('awaiting hr review') || statusLower === 'pending hr decision') {
+      return false; // Feedback already submitted and reassigned to HR!
+    }
+
+    if (this.loggedEmpId > 0 && c.interviewerId && Number(c.interviewerId) === this.loggedEmpId) return true;
+    if (this.loggedUserName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedUserName)) return true;
+    return false;
+  }
+
+  toggleAssignedToMe(): void {
+    this.onlyAssignedToMe = !this.onlyAssignedToMe;
+    this.filterCandidates();
+  }
+
   filterCandidates() {
+    if (this.isAdminOrHr) {
+      this.myAssignedCount = this.allCandidates.filter(c => this.isAssignedToCurrentUser(c) && c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
+    } else {
+      this.myAssignedCount = this.allCandidates.filter(c => c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
+    }
+
     let result = [...this.allCandidates];
+
+    // Filter to only assigned to current user if enabled
+    if (this.onlyAssignedToMe && this.isAdminOrHr) {
+      result = result.filter(c => this.isAssignedToCurrentUser(c));
+    }
 
     // Search query
     if (this.searchQuery && this.searchQuery.trim()) {
@@ -347,7 +389,8 @@ export class CandidateComponent implements OnInit {
         (c.lastName && c.lastName.toLowerCase().includes(q)) ||
         (c.emailAddress && c.emailAddress.toLowerCase().includes(q)) ||
         (c.appliedRole && c.appliedRole.toLowerCase().includes(q)) ||
-        (c.stage && c.stage.toLowerCase().includes(q))
+        (c.stage && c.stage.toLowerCase().includes(q)) ||
+        (c.interviewerName && c.interviewerName.toLowerCase().includes(q))
       );
     }
 
@@ -402,6 +445,9 @@ export class CandidateComponent implements OnInit {
 
   getStageBadgeClass(stage?: string): string {
     switch (stage) {
+      case 'Onboarded': return 'stage-onboarded';
+      case 'Selected / Hired': return 'stage-selected';
+      case 'Offer Accepted': return 'stage-offer-accepted';
       case 'Technical Interview': return 'stage-tech-interview';
       case 'HR Screen': return 'stage-hr-screen';
       case 'Rejected': return 'stage-rejected';
@@ -410,6 +456,19 @@ export class CandidateComponent implements OnInit {
       case 'Sourced': return 'stage-sourced';
       default: return 'stage-hr-screen';
     }
+  }
+
+  openOnboardModal(candidate: CandidateItem) {
+    const dialogRef = this.dialog.open(CandidateOnboardModalComponent, {
+      width: '780px',
+      data: candidate
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res) {
+        this.getData();
+      }
+    });
   }
 
   getScoreBarClass(score?: number): string {

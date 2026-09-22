@@ -1,4 +1,5 @@
 <header class="top-header-container">
+  <div class="top-header-main-row">
   <!-- Search Input Area with Interactive Global Search -->
   <div class="search-wrapper" #searchContainer>
     <mat-icon class="search-icon">search</mat-icon>
@@ -203,51 +204,356 @@
 
   <!-- Right Actions & User Profile -->
   <div class="right-actions">
-    <button type="button" class="action-btn" aria-label="Notifications">
-      <mat-icon>notifications</mat-icon>
+    <!-- Page Filters Toggle Button -->
+    <button
+      *ngIf="pageConfig"
+      type="button"
+      class="action-btn filter-toggle-btn"
+      [class.active]="isFilterRibbonOpen"
+      (click)="toggleFilterRibbon()"
+      aria-label="Toggle Page Filters"
+      [title]="isFilterRibbonOpen ? 'Hide Page Filter Bar' : 'Show Page Filter Bar'"
+    >
+      <mat-icon>tune</mat-icon>
+      <span *ngIf="getActiveFiltersCount() > 0" class="filter-count-badge">
+        {{ getActiveFiltersCount() }}
+      </span>
     </button>
 
-    <button type="button" class="action-btn" aria-label="App Menu">
+    <!-- Export Data Center Button -->
+    <button
+      type="button"
+      class="action-btn export-btn"
+      aria-label="Enterprise Data Export Center"
+      title="Export Data Center"
+      (click)="openExportCenter()"
+    >
+      <mat-icon>file_download</mat-icon>
+    </button>
+
+    <!-- Notifications Button & Rich Dropdown Hub -->
+    <button
+      type="button"
+      class="action-btn notification-btn"
+      aria-label="Notifications"
+      [matMenuTriggerFor]="notificationMenu"
+      (click)="onOpenNotifications()"
+    >
+      <mat-icon>notifications</mat-icon>
+      <span *ngIf="unreadCount > 0" class="notification-badge-count">
+        {{ unreadCount > 99 ? '99+' : unreadCount }}
+      </span>
+    </button>
+
+    <mat-menu #notificationMenu="matMenu" xPosition="before" class="notification-popover-menu">
+      <div class="notif-menu-header" (click)="$event.stopPropagation()">
+        <div class="notif-header-title">
+          <mat-icon class="bell-title-icon">notifications_active</mat-icon>
+          <h3>Notifications</h3>
+          <span *ngIf="unreadCount > 0" class="unread-pill">{{ unreadCount }} New</span>
+        </div>
+        <div class="notif-header-actions">
+          <button
+            *ngIf="unreadCount > 0"
+            type="button"
+            class="mark-all-read-btn"
+            (click)="markAllNotificationsRead($event)"
+            title="Mark all as read"
+          >
+            <mat-icon>done_all</mat-icon>
+            <span>Mark read</span>
+          </button>
+          <button
+            *ngIf="notifications.length > 0"
+            type="button"
+            class="clear-all-notif-btn"
+            (click)="clearAllNotifications($event)"
+            title="Remove all notifications"
+          >
+            <mat-icon>delete_sweep</mat-icon>
+            <span>Clear all</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notification Filter Tabs -->
+      <div class="notif-tabs" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="notif-tab-btn"
+          [class.active]="notificationTab === 'all'"
+          (click)="setNotificationTab('all', $event)"
+        >
+          All ({{ notifications.length }})
+        </button>
+        <button
+          type="button"
+          class="notif-tab-btn"
+          [class.active]="notificationTab === 'unread'"
+          (click)="setNotificationTab('unread', $event)"
+        >
+          Unread ({{ unreadCount }})
+        </button>
+        <button
+          type="button"
+          class="notif-tab-btn"
+          [class.active]="notificationTab === 'requests'"
+          (click)="setNotificationTab('requests', $event)"
+        >
+          Requests
+        </button>
+      </div>
+
+      <!-- Notifications List -->
+      <div class="notif-list-container" (click)="$event.stopPropagation()">
+        <div *ngIf="filteredNotifications.length === 0" class="notif-empty-state">
+          <mat-icon class="empty-icon">notifications_none</mat-icon>
+          <p class="empty-title">All caught up!</p>
+          <span class="empty-desc">No notifications right now</span>
+        </div>
+
+        <div
+          *ngFor="let notif of filteredNotifications"
+          class="notif-item"
+          [class.unread]="!notif.isRead"
+          (click)="onNotificationClick(notif)"
+        >
+          <div class="notif-icon-circle" [style.background-color]="notif.iconBg" [style.color]="notif.iconColor">
+            <mat-icon>{{ notif.icon }}</mat-icon>
+          </div>
+          <div class="notif-content">
+            <div class="notif-title-row">
+              <span class="notif-title">{{ notif.title }}</span>
+              <span *ngIf="!notif.isRead" class="unread-dot"></span>
+            </div>
+            <p class="notif-message">{{ notif.message }}</p>
+            <span class="notif-time">{{ getRelativeTime(notif.timestamp) }}</span>
+          </div>
+          <button
+            type="button"
+            class="item-remove-btn"
+            (click)="removeNotification(notif, $event)"
+            title="Remove notification"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="notif-footer" (click)="$event.stopPropagation()">
+        <a [routerLink]="['/index/request']" class="view-all-link">
+          <span>Go to Requests & Approvals</span>
+          <mat-icon>chevron_right</mat-icon>
+        </a>
+      </div>
+    </mat-menu>
+
+    <!-- App Module Launcher -->
+    <button type="button" class="action-btn" aria-label="App Menu" [routerLink]="['/index/home']" title="Employee Directory">
       <mat-icon>apps</mat-icon>
     </button>
 
     <!-- Single User Profile Trigger -->
     <div class="user-profile-trigger" [matMenuTriggerFor]="userMenu" role="button" tabindex="0">
-      <img
-        *ngIf="getUserAvatar()"
-        [src]="getUserAvatar()"
-        [alt]="getUserName()"
-        class="user-avatar"
-      />
-      <div *ngIf="!getUserAvatar()" class="user-initials-badge">
-        {{ getUserInitials() }}
+      <div class="avatar-wrapper">
+        <img
+          *ngIf="getUserAvatar()"
+          [src]="getUserAvatar()"
+          [alt]="getUserName()"
+          class="user-avatar"
+        />
+        <div *ngIf="!getUserAvatar()" class="user-initials-badge">
+          {{ getUserInitials() }}
+        </div>
+        <span class="online-indicator"></span>
       </div>
       <div class="user-meta-name">
         <span class="user-name">{{ getUserName() }}</span>
+        <span class="user-role-label">{{ getUserRole() }}</span>
       </div>
       <mat-icon class="chevron-icon">keyboard_arrow_down</mat-icon>
     </div>
 
-    <!-- Clean Executive User Menu -->
-    <mat-menu #userMenu="matMenu" xPosition="before" class="custom-user-menu">
-      <div class="menu-header">
-        <strong class="menu-name">{{ getUserName() }}</strong>
-        <span class="menu-role">{{ getUserRole() }}</span>
+    <!-- Executive User Menu Card -->
+    <mat-menu #userMenu="matMenu" xPosition="before" class="executive-profile-menu">
+      <div class="profile-card-header" (click)="$event.stopPropagation()">
+        <div class="profile-card-top">
+          <div class="profile-card-avatar-wrapper">
+            <img
+              *ngIf="getUserAvatar()"
+              [src]="getUserAvatar()"
+              [alt]="getUserName()"
+              class="card-avatar"
+            />
+            <div *ngIf="!getUserAvatar()" class="card-initials">
+              {{ getUserInitials() }}
+            </div>
+            <span class="card-status-dot"></span>
+          </div>
+          <div class="profile-card-details">
+            <h4 class="card-user-name">{{ getUserName() }}</h4>
+            <span class="card-user-email">{{ getUserEmail() }}</span>
+            <div class="card-badge-row">
+              <span class="role-pill">{{ getUserRole() }}</span>
+              <span class="emp-id-pill">{{ getEmployeeId() }}</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div class="profile-card-actions">
+        <button mat-menu-item [routerLink]="['/index/user-profile']" class="card-menu-item">
+          <div class="item-icon-box profile-box"><mat-icon>person</mat-icon></div>
+          <div class="item-text">
+            <span class="item-title">My Profile</span>
+            <span class="item-desc">Personal details & work information</span>
+          </div>
+        </button>
+
+        <button mat-menu-item [routerLink]="['/index/paymentinfo']" class="card-menu-item">
+          <div class="item-icon-box payroll-box"><mat-icon>payments</mat-icon></div>
+          <div class="item-text">
+            <span class="item-title">Payroll & Salary Slips</span>
+            <span class="item-desc">Monthly slips & bank account details</span>
+          </div>
+        </button>
+
+        <button mat-menu-item [routerLink]="['/index/attendance']" class="card-menu-item">
+          <div class="item-icon-box attendance-box"><mat-icon>fingerprint</mat-icon></div>
+          <div class="item-text">
+            <span class="item-title">Attendance & Time Logs</span>
+            <span class="item-desc">Daily check-in / check-out history</span>
+          </div>
+        </button>
+
+        <button mat-menu-item [routerLink]="['/index/document']" class="card-menu-item">
+          <div class="item-icon-box document-box"><mat-icon>folder_shared</mat-icon></div>
+          <div class="item-text">
+            <span class="item-title">My Documents</span>
+            <span class="item-desc">Contracts, certificates & IDs</span>
+          </div>
+        </button>
+
+        <button mat-menu-item (click)="resignation()" class="card-menu-item">
+          <div class="item-icon-box resign-box"><mat-icon>exit_to_app</mat-icon></div>
+          <div class="item-text">
+            <span class="item-title">Resignation Workflow</span>
+            <span class="item-desc">Notice period & separation request</span>
+          </div>
+        </button>
+      </div>
+
       <mat-divider></mat-divider>
-      <button mat-menu-item [routerLink]="['/index/user-profile']">
-        <mat-icon>account_circle</mat-icon>
-        <span>My Profile</span>
-      </button>
-      <button mat-menu-item (click)="resignation()">
-        <mat-icon>exit_to_app</mat-icon>
-        <span>Resignation</span>
-      </button>
-      <mat-divider></mat-divider>
-      <button mat-menu-item (click)="logout()" class="logout-item">
-        <mat-icon>power_settings_new</mat-icon>
-        <span>Log Out</span>
-      </button>
+
+      <div class="profile-card-footer">
+        <button mat-menu-item (click)="logout()" class="executive-logout-btn">
+          <mat-icon>power_settings_new</mat-icon>
+          <span>Sign Out</span>
+        </button>
+      </div>
     </mat-menu>
+  </div>
+  </div>
+
+  <!-- Universal Page Filter Ribbon -->
+  <div class="universal-filter-ribbon" *ngIf="pageConfig && isFilterRibbonOpen">
+    <!-- Module Context Badge -->
+    <div class="ribbon-context-badge">
+      <mat-icon class="context-icon">{{ pageConfig.pageIcon }}</mat-icon>
+      <span class="context-title">{{ pageConfig.pageTitle }}</span>
+      <span class="context-tag">Active View</span>
+    </div>
+
+    <div class="ribbon-divider"></div>
+
+    <!-- Active Filter Controls -->
+    <div class="ribbon-controls">
+      <!-- Search Filter -->
+      <div *ngIf="pageConfig.showSearch" class="ribbon-control ribbon-search-control">
+        <mat-icon class="control-icon">search</mat-icon>
+        <input
+          type="text"
+          class="ribbon-search-input"
+          [placeholder]="pageConfig.searchPlaceholder || 'Filter in this page...'"
+          [value]="activeFilters.search"
+          (input)="onFilterSearchInput($event)"
+        />
+        <button
+          *ngIf="activeFilters.search"
+          type="button"
+          class="ribbon-clear-btn"
+          (click)="clearFilterSearch()"
+          title="Clear search filter"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Employee Filter (for Admin, HR, Manager) -->
+      <div *ngIf="pageConfig.showEmployeeFilter && isAdminOrHrOrManager" class="ribbon-control ribbon-select-control">
+        <mat-icon class="control-icon">person</mat-icon>
+        <select
+          class="ribbon-select"
+          [value]="activeFilters.employeeId"
+          (change)="onFilterEmployeeSelect($any($event.target).value)"
+        >
+          <option value="All">All Personnel</option>
+          <option *ngFor="let emp of allEmployeesForFilter" [value]="emp.id">
+            {{ emp.firstName }} {{ emp.lastName }} ({{ emp.employeeId || emp.id }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div *ngIf="pageConfig.showStatusFilter && pageConfig.statusOptions && pageConfig.statusOptions.length > 0" class="ribbon-control ribbon-select-control">
+        <mat-icon class="control-icon">filter_alt</mat-icon>
+        <select
+          class="ribbon-select"
+          [value]="activeFilters.status"
+          (change)="onFilterStatusSelect($any($event.target).value)"
+        >
+          <option *ngFor="let opt of pageConfig.statusOptions" [value]="opt">
+            {{ opt === 'All' ? 'All Statuses' : opt }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Month Filter -->
+      <div *ngIf="pageConfig.showMonthFilter" class="ribbon-control ribbon-select-control">
+        <mat-icon class="control-icon">calendar_month</mat-icon>
+        <select
+          class="ribbon-select"
+          [value]="activeFilters.month"
+          (change)="onFilterMonthSelect($any($event.target).value)"
+        >
+          <option *ngFor="let m of availableFilterMonths" [value]="m">
+            {{ m === 'All' ? 'All Months' : m }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Right-aligned Reset & Collapse Actions -->
+    <div class="ribbon-actions">
+      <button
+        *ngIf="getActiveFiltersCount() > 0"
+        type="button"
+        class="ribbon-reset-btn"
+        (click)="resetAllFilters()"
+        title="Reset all active page filters"
+      >
+        <mat-icon>refresh</mat-icon>
+        <span>Reset ({{ getActiveFiltersCount() }})</span>
+      </button>
+
+      <button
+        type="button"
+        class="ribbon-collapse-btn"
+        (click)="toggleFilterRibbon()"
+        title="Hide filter bar"
+      >
+        <mat-icon>expand_less</mat-icon>
+      </button>
+    </div>
   </div>
 </header>

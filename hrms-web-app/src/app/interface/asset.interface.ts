@@ -15,6 +15,8 @@ export interface AssetItem {
   isOverdue?: boolean;
   isActive?: boolean;
   employeeId?: number;
+  serialNumber?: string;
+  dateOfPurchase?: string;
 }
 
 export interface AssetMetricCard {

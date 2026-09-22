@@ -29,16 +29,34 @@ export class AttendaseditComponent {
   statusMessage: string = '';
   currentStatus: string = '';
   rejectionReason: string = '';
+  hasExistingClockIn: boolean = false;
+  existingClockInDisplay: string = '';
+  minDate: Date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  maxDate: Date = new Date();
 
   attendaseform = this.formbuilder.group({
     RequestType: ['Regularization', Validators.required],
-    selectedDate: [{ value: new Date(), disabled: true }],
+    selectedDate: [new Date(), Validators.required],
     Reason: ['', Validators.required],
-    clockIn: [''],
-    clockOut: ['']
-  })
+    clockIn: ['09:30', Validators.required],
+    clockOut: ['18:30', Validators.required]
+  });
 
   constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
+    this.hasExistingClockIn = !!this.data?.hasExistingClockIn;
+    this.existingClockInDisplay = this.data?.existingClockInDisplay || '';
+
+    // Clamp minDate to joiningDate if joiningDate is later than 30 days ago
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    const joiningDate = this.data?.joiningDate ? new Date(this.data.joiningDate) : null;
+    if (joiningDate && !isNaN(joiningDate.getTime())) {
+      joiningDate.setHours(0, 0, 0, 0);
+      this.minDate = joiningDate > thirtyDaysAgo ? joiningDate : thirtyDaysAgo;
+    } else {
+      this.minDate = thirtyDaysAgo;
+    }
+
     const parsedDate = this.parseInputDate(this.data);
     this.evaluateDateRegularization(parsedDate);
 
@@ -46,7 +64,13 @@ export class AttendaseditComponent {
       selectedDate: parsedDate,
       clockIn: this.data?.clockIn || '09:30',
       clockOut: this.data?.clockOut || '18:30',
+      Reason: this.hasExistingClockIn ? 'Forgot to Clock Out' : ''
     });
+
+    if (this.hasExistingClockIn) {
+      this.attendaseform.get('clockIn')?.disable();
+      this.attendaseform.get('selectedDate')?.disable();
+    }
 
     this.attendaseform.get('selectedDate')?.valueChanges.subscribe((newDate: any) => {
       if (newDate instanceof Date) {
@@ -61,6 +85,13 @@ export class AttendaseditComponent {
     const m = (date.getMonth() + 1).toString().padStart(2, '0');
     const d = date.getDate().toString().padStart(2, '0');
     const dateStr = `${y}-${m}-${d}`;
+
+    if (this.data?.joiningDateStr && dateStr < this.data.joiningDateStr) {
+      this.canSubmit = false;
+      this.currentStatus = 'PreJoining';
+      this.statusMessage = `Cannot regularize attendance prior to your official joining date (${this.data.joiningDateStr}).`;
+      return;
+    }
 
     const requests = Array.isArray(this.data?.existingRequests) ? this.data.existingRequests : [];
     const dateRequests = requests.filter((req: any) => {
@@ -100,18 +131,20 @@ export class AttendaseditComponent {
         this.canSubmit = true;
         this.currentStatus = 'Rejected';
         this.rejectionReason = rejectedReq.rejectionReason || rejectedReq.RejectionReason || '';
-      } else if (this.data?.canRegularize === false || 
-                 this.data?.regularizationStatus === 'Pending' || 
-                 this.data?.regularizationStatus === 'Approved') {
-        this.canSubmit = false;
-        this.currentStatus = this.data?.regularizationStatus || 'Pending';
-        this.statusMessage = this.currentStatus === 'Approved'
-          ? 'Attendance for this date is already approved and regularized.'
-          : 'A regularization request for this date is currently pending approval.';
       } else {
-        this.canSubmit = true;
-        this.currentStatus = this.data?.regularizationStatus || '';
-        this.rejectionReason = this.data?.rejectionReason || '';
+        const initialDateStr = this.data?.dateStr || (this.data?.date ? new Date(this.data.date).toISOString().slice(0, 10) : '');
+        if (initialDateStr && initialDateStr === dateStr && (this.data?.regularizationStatus === 'Pending' || this.data?.regularizationStatus === 'Approved')) {
+          this.canSubmit = false;
+          this.currentStatus = this.data.regularizationStatus;
+          this.statusMessage = this.currentStatus === 'Approved'
+            ? 'Attendance for this date is already approved and regularized.'
+            : 'A regularization request for this date is currently pending approval.';
+        } else {
+          this.canSubmit = true;
+          this.currentStatus = '';
+          this.rejectionReason = '';
+          this.statusMessage = '';
+        }
       }
     }
   }
@@ -229,6 +262,17 @@ export class AttendaseditComponent {
     if (!selectedDate || !clockIn || !clockOut || !Reason) {
       this.toaster.warning('All fields are required');
       return;
+    }
+
+    if (selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
+      const y = selectedDate.getFullYear();
+      const m = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+      const d = selectedDate.getDate().toString().padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      if (this.data?.joiningDateStr && dateStr < this.data.joiningDateStr) {
+        this.toaster.error(`Cannot regularize attendance prior to your official joining date (${this.data.joiningDateStr}).`);
+        return;
+      }
     }
 
     const loggedUser = (typeof localStorage !== 'undefined' ? (localStorage.getItem('employeeId') || localStorage.getItem('userId')) : null)

@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { DocumentService } from '../../services/documnets/document.service';
 import { AccessLevel } from '../../interface/document.interface';
@@ -28,6 +28,7 @@ import { AccessLevel } from '../../interface/document.interface';
 })
 export class DocumentsComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<DocumentsComponent>);
+  public data: any = inject(MAT_DIALOG_DATA, { optional: true });
   private fb = inject(FormBuilder);
   private documentService = inject(DocumentService);
   private toastr = inject(ToastrService);
@@ -49,9 +50,9 @@ export class DocumentsComponent implements OnInit {
 
   ngOnInit() {
     this.documentForm = this.fb.group({
-      documentName: ['', [Validators.required, Validators.minLength(2)]],
-      category: ['Employee Docs', [Validators.required]],
-      accessLevel: ['Public', [Validators.required]]
+      documentName: [this.data?.documentName || '', [Validators.required, Validators.minLength(2)]],
+      category: [this.data?.category || 'Employee Docs', [Validators.required]],
+      accessLevel: [this.data?.accessLevel || 'Public', [Validators.required]]
     });
   }
 

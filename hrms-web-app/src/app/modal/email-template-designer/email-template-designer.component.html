@@ -1,0 +1,290 @@
+<div class="designer-modal-container">
+  <!-- Top Header Bar -->
+  <div class="designer-header">
+    <div class="header-left">
+      <div class="header-icon-badge">
+        <mat-icon>palette</mat-icon>
+      </div>
+      <div>
+        <h2 class="modal-title">{{ data.isEdit ? 'Edit Email Template' : 'Design Corporate Email Template' }}</h2>
+        <p class="modal-subtitle">Visual rich-text canvas, live simulated email client, and dynamic variable tokens</p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- Starter Presets Dropdown -->
+      <div class="preset-selector">
+        <mat-icon class="preset-icon">auto_fix_high</mat-icon>
+        <select (change)="loadPreset($any($event.target).value)" class="preset-select" title="Load Starter Preset">
+          <option value="" disabled selected>Load Starter Preset...</option>
+          <option *ngFor="let p of presets" [value]="p.id">{{ p.name }}</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn-close-modal" (click)="close()" aria-label="Close modal">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Metadata Configuration Row -->
+  <div class="designer-meta-bar">
+    <div class="meta-field">
+      <label class="meta-label">Assigned Template Type <span class="required">*</span></label>
+      <div class="dropdown-with-status">
+        <select [ngModel]="selectedTypeId" (ngModelChange)="onTypeChange($event)" class="type-dropdown" [disabled]="data.isEdit">
+          <option [ngValue]="null" disabled>Select trigger category...</option>
+          <option *ngFor="let t of templateTypes" [ngValue]="t.id">
+            {{ t.templateType }} ({{ t.description }})
+          </option>
+        </select>
+        <span class="existing-indicator" *ngIf="existingTemplateId">
+          <mat-icon class="indicator-icon">verified</mat-icon>
+          <span>Existing #{{ existingTemplateId }} Active</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Mode Switcher Tabs -->
+    <div class="view-mode-tabs">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="viewMode === 'designer'"
+        (click)="setViewMode('designer')"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>Visual Canvas</span>
+      </button>
+
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="viewMode === 'source'"
+        (click)="setViewMode('source')"
+      >
+        <mat-icon>code</mat-icon>
+        <span>HTML Source</span>
+      </button>
+
+      <button
+        type="button"
+        class="mode-btn mode-preview"
+        [class.active]="viewMode === 'preview'"
+        (click)="setViewMode('preview')"
+      >
+        <mat-icon>visibility</mat-icon>
+        <span>Live Email Client</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Dynamic Variables Bar -->
+  <div class="variable-palette-bar">
+    <span class="palette-label">INSERT DYNAMIC VARIABLE:</span>
+    <div class="variable-chips-scroll">
+      <button
+        *ngFor="let v of variables"
+        type="button"
+        class="var-chip"
+        (click)="insertVariable(v.tag)"
+        [title]="'Click to insert ' + v.label + ' (' + v.sampleValue + ')'"
+      >
+        <mat-icon class="var-icon">{{ v.icon }}</mat-icon>
+        <span class="var-tag">{{ v.tag }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Editor Workspace Area -->
+  <div class="designer-body">
+
+    <!-- MODE 1: VISUAL WYSIWYG CANVAS -->
+    <div class="mode-container canvas-mode-container" *ngIf="viewMode === 'designer'">
+      <!-- Formatting Toolbar -->
+      <div class="formatting-toolbar">
+        <div class="toolbar-group">
+          <button type="button" class="tool-btn" (click)="execCmd('bold')" title="Bold (Ctrl+B)">
+            <mat-icon>format_bold</mat-icon>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('italic')" title="Italic (Ctrl+I)">
+            <mat-icon>format_italic</mat-icon>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('underline')" title="Underline (Ctrl+U)">
+            <mat-icon>format_underlined</mat-icon>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('strikeThrough')" title="Strikethrough">
+            <mat-icon>format_strikethrough</mat-icon>
+          </button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <button type="button" class="tool-btn" (click)="execCmd('formatBlock', 'H1')" title="Heading 1">
+            <span>H1</span>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('formatBlock', 'H2')" title="Heading 2">
+            <span>H2</span>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('formatBlock', 'P')" title="Paragraph Text">
+            <span>P</span>
+          </button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <button type="button" class="tool-btn" (click)="execCmd('justifyLeft')" title="Align Left">
+            <mat-icon>format_align_left</mat-icon>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('justifyCenter')" title="Align Center">
+            <mat-icon>format_align_center</mat-icon>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('justifyRight')" title="Align Right">
+            <mat-icon>format_align_right</mat-icon>
+          </button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <button type="button" class="tool-btn" (click)="execCmd('insertUnorderedList')" title="Bullet List">
+            <mat-icon>format_list_bulleted</mat-icon>
+          </button>
+          <button type="button" class="tool-btn" (click)="execCmd('insertOrderedList')" title="Numbered List">
+            <mat-icon>format_list_numbered</mat-icon>
+          </button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <button type="button" class="tool-btn-component" (click)="insertButtonSnippet()" title="Insert Call-To-Action Button">
+            <mat-icon>smart_button</mat-icon>
+            <span>Action Button</span>
+          </button>
+          <button type="button" class="tool-btn-component" (click)="insertAlertSnippet()" title="Insert Callout Card">
+            <mat-icon>info</mat-icon>
+            <span>Notice Card</span>
+          </button>
+          <button type="button" class="tool-btn-component" (click)="insertDivider()" title="Insert Line Divider">
+            <mat-icon>horizontal_rule</mat-icon>
+            <span>Divider</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenteditable Canvas Paper -->
+      <div class="canvas-scroll-wrapper">
+        <div
+          #visualCanvas
+          class="visual-canvas-paper"
+          contenteditable="true"
+          (input)="onCanvasInput()"
+        ></div>
+      </div>
+    </div>
+
+    <!-- MODE 2: HTML SOURCE CODE EDITOR -->
+    <div class="mode-container source-mode-container" *ngIf="viewMode === 'source'">
+      <div class="source-header-hint">
+        <mat-icon class="hint-icon">terminal</mat-icon>
+        <span>Direct HTML Source Code. Changes made here synchronize instantly to the Visual Canvas and Live Email Preview.</span>
+      </div>
+      <textarea
+        [(ngModel)]="templateHtml"
+        rows="18"
+        class="source-textarea"
+        placeholder="Enter or paste email HTML code..."
+        spellcheck="false"
+      ></textarea>
+    </div>
+
+    <!-- MODE 3: LIVE EMAIL CLIENT SIMULATOR -->
+    <div class="mode-container preview-mode-container" *ngIf="viewMode === 'preview'">
+      <!-- Device Switcher Bar -->
+      <div class="preview-controls-bar">
+        <div class="device-toggle-group">
+          <button
+            type="button"
+            class="device-btn"
+            [class.active]="previewDevice === 'desktop'"
+            (click)="previewDevice = 'desktop'"
+          >
+            <mat-icon>desktop_windows</mat-icon>
+            <span>Desktop Client (600px)</span>
+          </button>
+          <button
+            type="button"
+            class="device-btn"
+            [class.active]="previewDevice === 'mobile'"
+            (click)="previewDevice = 'mobile'"
+          >
+            <mat-icon>smartphone</mat-icon>
+            <span>Mobile Device (375px)</span>
+          </button>
+        </div>
+
+        <div class="live-sample-badge">
+          <mat-icon class="badge-icon">check_circle</mat-icon>
+          <span>Sample variables hydrated in real time</span>
+        </div>
+      </div>
+
+      <!-- Email Client Window Shell -->
+      <div class="email-client-shell" [class.is-mobile-frame]="previewDevice === 'mobile'">
+        <!-- Email Client Chrome Header -->
+        <div class="client-chrome-header">
+          <div class="window-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <div class="mail-header-details">
+            <div class="mail-header-row">
+              <span class="meta-title">From:</span>
+              <span class="meta-val">KHRMS Notifications &lt;noreply&#64;khrms.internal&gt;</span>
+            </div>
+            <div class="mail-header-row">
+              <span class="meta-title">To:</span>
+              <span class="meta-val">Alex Morgan &lt;alex.morgan&#64;company.com&gt;</span>
+            </div>
+            <div class="mail-header-row">
+              <span class="meta-title">Subject:</span>
+              <span class="meta-val font-bold">Official Notification: {{ selectedTypeObj?.templateType || 'Notice' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rendered Email Body -->
+        <div class="client-chrome-body">
+          <div [innerHTML]="getHydratedHtml()" class="rendered-email-output"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Designer Footer -->
+  <div class="designer-footer">
+    <div class="footer-left-info">
+      <mat-icon class="info-icon">info</mat-icon>
+      <span>Active Type: <strong>{{ selectedTypeObj?.templateType || 'Not Selected' }}</strong></span>
+    </div>
+
+    <div class="footer-actions">
+      <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+      <button
+        type="button"
+        class="btn-save-template"
+        (click)="onSave()"
+        [disabled]="isSubmitting"
+      >
+        <mat-icon *ngIf="!isSubmitting">save</mat-icon>
+        <mat-icon *ngIf="isSubmitting" class="spin-icon">sync</mat-icon>
+        <span>{{ isSubmitting ? 'Saving Template...' : (data.isEdit ? 'Save Changes' : 'Save Template') }}</span>
+      </button>
+    </div>
+  </div>
+</div>

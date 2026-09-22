@@ -1,0 +1,387 @@
+<div class="interview-modal-container">
+  <!-- Dialog Header -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-avatar">
+        <mat-icon>rate_review</mat-icon>
+      </div>
+      <div class="title-group">
+        <h2 class="dialog-title">Candidate Recruitment & Interview Hub</h2>
+        <p class="dialog-sub">Manage multi-round interviews, assign interviewers, log feedback, and advance candidates</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Candidate Summary Banner -->
+  <div class="candidate-summary-banner">
+    <div class="cand-info">
+      <span class="cand-name">{{ candidate.firstName }} {{ candidate.lastName }}</span>
+      <span class="cand-role">{{ candidate.appliedRole }}</span>
+    </div>
+    <div class="cand-pills">
+      <span class="info-pill"><mat-icon>email</mat-icon> {{ candidate.emailAddress }}</span>
+      <span class="info-pill"><mat-icon>phone</mat-icon> {{ candidate.mobileNumber }}</span>
+      <span class="info-pill pill-stage" [ngClass]="{'pill-rejected': candidate.stage === 'Rejected', 'pill-hired': candidate.stage === 'Selected / Hired' || candidate.stage === 'Onboarded'}">
+        <mat-icon>{{ candidate.stage === 'Rejected' ? 'cancel' : 'flag' }}</mat-icon>
+        {{ candidate.stage }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Rejection Alert (If Candidate is Rejected) -->
+  <div class="rejection-alert" *ngIf="candidate.stage === 'Rejected'">
+    <mat-icon>block</mat-icon>
+    <div class="alert-content">
+      <strong>Candidate Application Closed (Rejected)</strong>
+      <p>This candidate has been rejected. No further interview rounds can be scheduled or remarks submitted.</p>
+    </div>
+  </div>
+
+  <!-- Workflow Step Tabs (Disabled if Rejected) -->
+  <div class="modal-tab-bar" *ngIf="candidate.stage !== 'Rejected'">
+    <button
+      *ngIf="isAdminOrHr"
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'schedule'"
+      (click)="setTab('schedule')"
+    >
+      <mat-icon>schedule</mat-icon>
+      <span>1. Assign & Schedule</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'feedback'"
+      (click)="setTab('feedback')"
+    >
+      <mat-icon>rate_review</mat-icon>
+      <span>{{ isAdminOrHr ? '2. Feedback' : 'Interview Evaluation' }}</span>
+    </button>
+
+    <button
+      *ngIf="isAdminOrHr"
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'review'"
+      (click)="setTab('review')"
+    >
+      <mat-icon>grading</mat-icon>
+      <span>3. Review Decision</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'history'"
+      (click)="setTab('history')"
+    >
+      <mat-icon>history_edu</mat-icon>
+      <span>History ({{ interviewHistory.length }})</span>
+    </button>
+  </div>
+
+  <!-- ==================== TAB 1: SCHEDULE / ASSIGN INTERVIEWER (HR/ADMIN) ==================== -->
+  <div class="tab-pane" *ngIf="activeTab === 'schedule' && candidate.stage !== 'Rejected'">
+    <form [formGroup]="scheduleForm" (ngSubmit)="submitScheduleRound()" class="modal-body-form">
+      <div class="step-guide-box">
+        <mat-icon>info</mat-icon>
+        <span>
+          <strong>HR / Admin Workflow:</strong> Select the interview stage/round and assign an employee from the workforce. The assigned interviewer will subsequently log their technical evaluation notes after completing the interview.
+        </span>
+      </div>
+
+      <div class="form-grid">
+        <!-- Select Round -->
+        <div class="form-group span-2">
+          <label class="form-label">Interview Stage / Round <span class="req">*</span></label>
+          <div class="select-wrapper">
+            <mat-icon class="input-icon">timeline</mat-icon>
+            <select formControlName="round" class="form-select">
+              <option *ngFor="let r of interviewRounds" [value]="r">{{ r }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Assigned Interviewer -->
+        <div class="form-group span-2">
+          <label class="form-label">Assigned Interviewer <span class="req">*</span></label>
+          <div class="select-wrapper">
+            <mat-icon class="input-icon">person_outline</mat-icon>
+            <select formControlName="interviewerId" class="form-select">
+              <option [ngValue]="null" disabled>
+                {{ isLoadingEmployees ? 'Loading active workforce...' : 'Select an active employee as interviewer' }}
+              </option>
+              <option *ngFor="let emp of employees" [ngValue]="emp.id">
+                {{ emp.firstName }} {{ emp.lastName }} ({{ emp.designation || emp.rolenames || 'Employee' }})
+              </option>
+            </select>
+          </div>
+          <div class="field-error" *ngIf="scheduleForm.get('interviewerId')?.touched && scheduleForm.get('interviewerId')?.errors">
+            Please assign an active employee as interviewer.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="isSubmitting">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+          <mat-icon *ngIf="!isSubmitting">assignment_turned_in</mat-icon>
+          <span *ngIf="!isSubmitting">Schedule Round & Assign Interviewer</span>
+          <span *ngIf="isSubmitting">Saving Schedule...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ==================== TAB 2: INTERVIEWER FEEDBACK (INTERVIEWER) ==================== -->
+  <div class="tab-pane" *ngIf="activeTab === 'feedback' && candidate.stage !== 'Rejected'">
+    <form [formGroup]="feedbackForm" (ngSubmit)="submitInterviewerFeedback()" class="modal-body-form">
+      <div class="current-assignment-card">
+        <div class="card-left">
+          <span class="round-badge">{{ currentRound }}</span>
+          <span class="int-tag">Interviewer: <strong>{{ candidate.interviewerName || 'Assigned Employee' }}</strong></span>
+        </div>
+        <span class="status-chip" [class.chip-done]="interviewStatus === 'Feedback Submitted'">
+          {{ interviewStatus === 'Feedback Submitted' ? 'Feedback Logged' : 'Pending Feedback' }}
+        </span>
+      </div>
+
+      <!-- Previous Feedbacks In-Flow Section (Visible to Everyone in Hiring Flow) -->
+      <div class="previous-feedbacks-flow-section" *ngIf="interviewHistory.length > 0">
+        <div class="prev-flow-header">
+          <div class="title-with-icon">
+            <mat-icon class="prev-icon">history_edu</mat-icon>
+            <span class="prev-title">Previous Rounds & Interviewer Feedback ({{ interviewHistory.length }})</span>
+          </div>
+          <span class="prev-sub">Notes and ratings submitted by previous evaluators in this candidate's hiring flow</span>
+        </div>
+
+        <div class="prev-rounds-timeline">
+          <div class="prev-round-box" *ngFor="let h of interviewHistory; let i = index">
+            <div class="prev-round-top">
+              <div class="round-id-tag">
+                <span class="round-step">Round {{ i + 1 }}</span>
+                <span class="round-name">{{ h.round }}</span>
+              </div>
+              <div class="score-pills">
+                <span class="star-rating-pill" *ngIf="h.rating">★ {{ h.rating }}/5</span>
+                <span class="rec-pill" *ngIf="h.recommendation" [ngClass]="{'rec-pass': h.recommendation.includes('Hire') || h.recommendation.includes('Advance'), 'rec-fail': h.recommendation.includes('Reject')}">
+                  {{ h.recommendation }}
+                </span>
+              </div>
+            </div>
+            <div class="evaluator-info">
+              <mat-icon>badge</mat-icon>
+              <span>Evaluated by: <strong>{{ h.interviewerName }}</strong></span>
+              <span class="eval-date" *ngIf="h.evaluatedAt && !h.evaluatedAt.startsWith('0001')">{{ h.evaluatedAt | date:'mediumDate' }}</span>
+            </div>
+            <div class="prev-remarks-quote" *ngIf="h.remarks">
+              "{{ h.remarks }}"
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <!-- Overall Rating -->
+        <div class="form-group span-2 rating-group">
+          <label class="form-label">Interviewer Competency Rating <span class="req">*</span></label>
+          <div class="stars-bar">
+            <button
+              type="button"
+              *ngFor="let s of ratingStars"
+              class="btn-star"
+              [class.filled]="s <= feedbackForm.get('rating')?.value"
+              (click)="setRating(s)"
+              [title]="s + ' Star' + (s > 1 ? 's' : '')"
+            >
+              <mat-icon>{{ s <= feedbackForm.get('rating')?.value ? 'star' : 'star_border' }}</mat-icon>
+            </button>
+            <span class="rating-text">
+              <strong>{{ feedbackForm.get('rating')?.value }}</strong> / 5
+              <span class="rating-descriptor" *ngIf="feedbackForm.get('rating')?.value >= 5">(Exceptional)</span>
+              <span class="rating-descriptor" *ngIf="feedbackForm.get('rating')?.value === 4">(Strong Competence)</span>
+              <span class="rating-descriptor" *ngIf="feedbackForm.get('rating')?.value === 3">(Meets Requirements)</span>
+              <span class="rating-descriptor" *ngIf="feedbackForm.get('rating')?.value <= 2">(Needs Improvement)</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="form-group span-2">
+          <label class="form-label">Interview Recommendation / Next Step <span class="req">*</span></label>
+          <div class="select-wrapper">
+            <mat-icon class="input-icon">recommend</mat-icon>
+            <select formControlName="recommendation" class="form-select">
+              <option *ngFor="let rec of recommendationOptions" [value]="rec">{{ rec }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Detailed Remarks -->
+        <div class="form-group span-2">
+          <label class="form-label">
+            Interviewer Remarks & Technical Assessment <span class="req">*</span>
+            <span class="label-hint">Key technical strengths, system design aptitude, coding quality, and hiring notes</span>
+          </label>
+          <div class="textarea-wrapper">
+            <textarea
+              formControlName="remarks"
+              rows="4"
+              class="form-textarea"
+              placeholder="e.g. Demonstrated strong knowledge of modern Angular state management and C# REST services. Strong problem solver with clear architectural articulation. Recommended to advance to next technical round."
+            ></textarea>
+          </div>
+          <div class="field-error" *ngIf="feedbackForm.get('remarks')?.touched && feedbackForm.get('remarks')?.errors">
+            <span *ngIf="feedbackForm.get('remarks')?.errors?.['required']">Please write your evaluation feedback remarks.</span>
+            <span *ngIf="feedbackForm.get('remarks')?.errors?.['minlength']">Remarks must contain at least 10 characters.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="isSubmitting">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+          <mat-icon *ngIf="!isSubmitting">save</mat-icon>
+          <span *ngIf="!isSubmitting">Save Interviewer Feedback</span>
+          <span *ngIf="isSubmitting">Saving Evaluation...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ==================== TAB 3: REVIEW & NEXT ACTION (HR/ADMIN DECISION) ==================== -->
+  <div class="tab-pane" *ngIf="activeTab === 'review' && candidate.stage !== 'Rejected'">
+    <div class="review-container">
+      <div class="decision-intro-card">
+        <mat-icon class="intro-icon">rule</mat-icon>
+        <div class="intro-text">
+          <h3>HR / Admin Pipeline Decision</h3>
+          <p>Review the completed evaluation from {{ candidate.interviewerName || 'the assigned interviewer' }} and choose the next hiring milestone.</p>
+        </div>
+      </div>
+
+      <!-- Current Evaluation Summary Card -->
+      <div class="evaluation-card" *ngIf="candidate.interviewerRemarks">
+        <div class="card-header-bar">
+          <div class="round-title-group">
+            <span class="round-tag">{{ currentRound }}</span>
+            <span class="evaluator-name">Evaluated by: <strong>{{ candidate.interviewerName }}</strong></span>
+          </div>
+          <div class="star-rating-chip">
+            <mat-icon>star</mat-icon>
+            <span>{{ candidate.interviewRating || 4 }} / 5</span>
+          </div>
+        </div>
+
+        <div class="rec-row">
+          <span class="rec-label">Recommendation:</span>
+          <span class="rec-value" [ngClass]="{'text-green': candidate.interviewRecommendation?.includes('Hire') || candidate.interviewRecommendation?.includes('Advance'), 'text-red': candidate.interviewRecommendation?.includes('Reject')}">
+            {{ candidate.interviewRecommendation || 'Pass / Advance to Next Round' }}
+          </span>
+        </div>
+
+        <div class="remarks-box">
+          <span class="remarks-label">Interviewer Notes & Remarks:</span>
+          <p class="remarks-text">"{{ candidate.interviewerRemarks }}"</p>
+        </div>
+      </div>
+
+      <!-- No Feedback State -->
+      <div class="no-feedback-box" *ngIf="!candidate.interviewerRemarks">
+        <mat-icon>hourglass_empty</mat-icon>
+        <p>Interviewer has not submitted feedback for {{ currentRound }} yet.</p>
+        <button type="button" class="btn-inline-link" (click)="setTab('feedback')">
+          Enter Interviewer Feedback Now →
+        </button>
+      </div>
+
+      <!-- All Completed Rounds in Pipeline (HR/Admin Overview) -->
+      <div class="previous-history-subcard" *ngIf="interviewHistory.length > 0">
+        <div class="subcard-header">
+          <mat-icon>history_edu</mat-icon>
+          <span>All Completed Rounds in Pipeline ({{ interviewHistory.length }})</span>
+        </div>
+        <div class="subcard-rounds">
+          <div class="subcard-round-item" *ngFor="let h of interviewHistory; let i = index">
+            <div class="sub-top">
+              <span class="sub-round">Round {{ i + 1 }}: {{ h.round }}</span>
+              <span class="sub-rating" *ngIf="h.rating">★ {{ h.rating }}/5</span>
+              <span class="sub-evaluator">Evaluated by <strong>{{ h.interviewerName }}</strong></span>
+              <span class="sub-rec" *ngIf="h.recommendation">• {{ h.recommendation }}</span>
+            </div>
+            <div class="sub-remarks" *ngIf="h.remarks">
+              "{{ h.remarks }}"
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decision Action Buttons -->
+      <div class="decision-actions-row">
+        <button type="button" class="btn-decision btn-next-round" (click)="prepareNextRound()" [disabled]="isSubmitting">
+          <mat-icon>skip_next</mat-icon>
+          <div class="btn-desc">
+            <span class="btn-main">Schedule Next Round</span>
+            <span class="btn-sub">Assign next interviewer</span>
+          </div>
+        </button>
+
+        <button type="button" class="btn-decision btn-approve-offer" (click)="approveCandidate()" [disabled]="isSubmitting">
+          <mat-icon>how_to_reg</mat-icon>
+          <div class="btn-desc">
+            <span class="btn-main">Approve for Hiring</span>
+            <span class="btn-sub">Extend offer & onboard</span>
+          </div>
+        </button>
+
+        <button type="button" class="btn-decision btn-reject-candidate" (click)="rejectCandidate()" [disabled]="isSubmitting">
+          <mat-icon>cancel</mat-icon>
+          <div class="btn-desc">
+            <span class="btn-main">Reject Candidate</span>
+            <span class="btn-sub">Close application</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 4: INTERVIEW HISTORY ==================== -->
+  <div class="tab-pane" *ngIf="activeTab === 'history' || candidate.stage === 'Rejected'">
+    <div class="history-container">
+      <div class="history-header">
+        <h4>Historical Interview Rounds & Assessments</h4>
+        <span class="badge-count">{{ interviewHistory.length }} Completed Round{{ interviewHistory.length > 1 ? 's' : '' }}</span>
+      </div>
+
+      <div class="history-timeline" *ngIf="interviewHistory.length > 0">
+        <div class="history-item" *ngFor="let h of interviewHistory; let idx = index">
+          <div class="timeline-dot">#{{ idx + 1 }}</div>
+          <div class="history-item-body">
+            <div class="item-top">
+              <span class="history-round">{{ h.round }}</span>
+              <span class="history-rating" *ngIf="h.rating">★ {{ h.rating }}/5</span>
+            </div>
+            <div class="history-int-line">
+              <span>Interviewer: <strong>{{ h.interviewerName }}</strong></span>
+              <span class="history-rec" *ngIf="h.recommendation">• {{ h.recommendation }}</span>
+            </div>
+            <p class="history-remarks" *ngIf="h.remarks">
+              "{{ h.remarks }}"
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-history" *ngIf="interviewHistory.length === 0">
+        <mat-icon>history_toggle_off</mat-icon>
+        <p>No prior interview rounds recorded in history.</p>
+      </div>
+    </div>
+  </div>
+</div>

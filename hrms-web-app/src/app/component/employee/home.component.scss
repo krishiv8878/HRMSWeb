@@ -391,11 +391,29 @@
         font-weight: 600;
         color: #0f172a;
         font-size: 13.5px;
+        transition: color 0.15s ease;
       }
 
       .emp-email {
         font-size: 11.5px;
         color: #64748b;
+      }
+    }
+
+    &.clickable-employee {
+      cursor: pointer;
+      padding: 4px 6px;
+      margin: -4px -6px;
+      border-radius: 6px;
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: #f1f5f9;
+
+        .emp-name {
+          color: #2563eb;
+          text-decoration: underline;
+        }
       }
     }
   }
@@ -538,10 +556,22 @@
         height: 18px;
       }
 
+      &.view-btn:hover {
+        background-color: #f0fdf4;
+        border-color: #bbf7d0;
+        color: #16a34a;
+      }
+
       &.edit-btn:hover {
         background-color: #eff6ff;
         border-color: #bfdbfe;
         color: #2563eb;
+      }
+
+      &.payroll-btn:hover {
+        background-color: #f5f3ff;
+        border-color: #ddd6fe;
+        color: #7c3aed;
       }
 
       &.btn-toggle-off:hover {

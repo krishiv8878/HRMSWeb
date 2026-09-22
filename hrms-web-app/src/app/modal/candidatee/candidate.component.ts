@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { CandidateService } from '../../services/candidate/candidate.service';
+import { EmployeeService } from '../../services/employee/employee.service';
 
 @Component({
   selector: 'app-candidate-modal',
@@ -31,10 +32,12 @@ import { CandidateService } from '../../services/candidate/candidate.service';
 export class CandidateeComponent implements OnInit {
   private fb = inject(FormBuilder);
   private services = inject(CandidateService);
+  private employeeService = inject(EmployeeService);
   private toaster = inject(ToastrService);
   private dialogRef = inject(MatDialogRef<CandidateeComponent>);
 
   isEdit: boolean = false;
+  employees: any[] = [];
 
   rolesList: string[] = [
     'Senior Frontend Engineer',
@@ -54,7 +57,16 @@ export class CandidateeComponent implements OnInit {
     'Technical Interview',
     'HR Screen',
     'Offer Extended',
+    'Offer Accepted',
+    'Selected / Hired',
     'Rejected'
+  ];
+
+  recommendationOptions: string[] = [
+    'Strong Hire / Recommend for Offer',
+    'Advance to Next Round',
+    'Keep on Hold / Backup Candidate',
+    'Reject / Not Suitable'
   ];
 
   noticePeriodOptions: number[] = [0, 15, 30, 45, 60, 90];
@@ -73,14 +85,39 @@ export class CandidateeComponent implements OnInit {
     expectedSalary: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
     noticePeriod: [30, [Validators.required]],
     matchScore: [85],
-    isActive: [true]
+    isActive: [true],
+    interviewerId: [null as number | null],
+    interviewerName: [''],
+    interviewerRemarks: [''],
+    interviewRating: [4],
+    interviewRecommendation: ['Advance to Next Round']
   });
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
   ngOnInit() {
+    this.loadEmployees();
     if (this.data) {
       this.isEdit = true;
+      let relExpYears = String(this.data.totalExperience !== undefined ? (this.data.relevantExperience || '') : '');
+      let intId = this.data.interviewerId || null;
+      let intName = this.data.interviewerName || '';
+      let intRemarks = this.data.interviewerRemarks || '';
+      let intRating = this.data.interviewRating || 4;
+      let intRec = this.data.interviewRecommendation || 'Advance to Next Round';
+
+      if (typeof this.data.relevantExperience === 'string' && this.data.relevantExperience.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(this.data.relevantExperience);
+          relExpYears = parsed.years || parsed.experience || relExpYears;
+          intId = parsed.interviewerId || intId;
+          intName = parsed.interviewerName || intName;
+          intRemarks = parsed.remarks || parsed.interviewerRemarks || intRemarks;
+          intRating = parsed.rating || parsed.interviewRating || intRating;
+          intRec = parsed.recommendation || parsed.interviewRecommendation || intRec;
+        } catch {}
+      }
+
       this.CandidateForm.patchValue({
         id: this.data.id || this.data.candidateId || 0,
         firstName: this.data.firstName || '',
@@ -90,14 +127,42 @@ export class CandidateeComponent implements OnInit {
         appliedRole: this.data.appliedRole || 'Senior Frontend Engineer',
         stage: this.data.stage || 'Screening',
         totalExperience: String(this.data.totalExperience || ''),
-        relevantExperience: String(this.data.relevantExperience || ''),
+        relevantExperience: relExpYears,
         currentSalary: this.data.currentSalary ? String(Math.round(Number(this.data.currentSalary))) : '',
         expectedSalary: this.data.expectedSalary ? String(Math.round(Number(this.data.expectedSalary))) : '',
         noticePeriod: this.data.noticePeriod !== undefined ? Number(this.data.noticePeriod) : 30,
         matchScore: this.data.matchScore || 85,
-        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
+        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true,
+        interviewerId: intId,
+        interviewerName: intName,
+        interviewerRemarks: intRemarks,
+        interviewRating: intRating,
+        interviewRecommendation: intRec
       });
     }
+
+    this.CandidateForm.get('interviewerId')?.valueChanges.subscribe(id => {
+      const found = this.employees.find(e => Number(e.id) === Number(id));
+      if (found) {
+        const fName = found.firstName || '';
+        const lName = found.lastName || '';
+        this.CandidateForm.get('interviewerName')?.setValue(`${fName} ${lName}`.trim());
+      }
+    });
+  }
+
+  private loadEmployees() {
+    this.employeeService.getData().subscribe({
+      next: (res: any) => {
+        let list: any[] = [];
+        if (Array.isArray(res)) list = res;
+        else if (res?.data && Array.isArray(res.data)) list = res.data;
+        this.employees = list.filter((e: any) => !e.isDeleted && e.isActive !== false);
+      },
+      error: () => {
+        this.employees = [];
+      }
+    });
   }
 
   allowOnlyLetters(event: KeyboardEvent) {
@@ -136,6 +201,19 @@ export class CandidateeComponent implements OnInit {
 
     const isoDate = new Date().toISOString();
 
+    let relExpValue = String(formVal.relevantExperience || '').trim();
+    if (formVal.interviewerId || (formVal.interviewerRemarks && formVal.interviewerRemarks.trim())) {
+      relExpValue = JSON.stringify({
+        years: relExpValue || '0',
+        interviewerId: formVal.interviewerId ? Number(formVal.interviewerId) : null,
+        interviewerName: formVal.interviewerName || '',
+        remarks: (formVal.interviewerRemarks || '').trim(),
+        rating: Number(formVal.interviewRating || 4),
+        recommendation: formVal.interviewRecommendation || 'Advance to Next Round',
+        evaluationDate: new Date().toISOString()
+      });
+    }
+
     // Exact Payload mapping matching C# Candidate Model
     const payload: any = {
       id: this.isEdit ? Number(formVal.id || 0) : 0,
@@ -147,9 +225,9 @@ export class CandidateeComponent implements OnInit {
       appliedRole: formVal.appliedRole || 'Senior Frontend Engineer',
       stage: formVal.stage || 'Screening',
       totalExperience: String(formVal.totalExperience || '').trim(),
-      relevantExperience: String(formVal.relevantExperience || '').trim(),
-      currentSalary: Math.round(Number(formVal.currentSalary || 0)),
-      expectedSalary: Math.round(Number(formVal.expectedSalary || 0)),
+      relevantExperience: relExpValue,
+      currentSalary: Math.round(parseFloat(String(formVal.currentSalary || '').replace(/[^0-9.]/g, '')) || 1200000),
+      expectedSalary: Math.round(parseFloat(String(formVal.expectedSalary || '').replace(/[^0-9.]/g, '')) || 1400000),
       noticePeriod: parseInt(String(formVal.noticePeriod || 30), 10),
       matchScore: Number(formVal.matchScore || 85),
       lastUpdated: isoDate,

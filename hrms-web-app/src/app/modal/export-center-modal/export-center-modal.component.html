@@ -1,0 +1,110 @@
+<div class="export-center-container">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-title-box">
+      <div class="header-icon-badge">
+        <mat-icon>file_download</mat-icon>
+      </div>
+      <div>
+        <h2 class="modal-title">Enterprise Data Export Center</h2>
+        <p class="modal-subtitle">
+          Select a corporate dataset, specify export parameters, and download verified CSV reports.
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn-close-modal" (click)="close()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Modal Body: Category Grid -->
+  <div class="modal-body-scroll">
+    <div class="selection-section">
+      <span class="section-label">SELECT DATASET TO EXPORT</span>
+      <div class="categories-grid">
+        <div
+          *ngFor="let cat of categories"
+          class="category-card"
+          [class.is-selected]="selectedCategoryId === cat.id"
+          (click)="selectCategory(cat.id)"
+        >
+          <div class="cat-radio-indicator">
+            <span class="radio-dot" *ngIf="selectedCategoryId === cat.id"></span>
+          </div>
+          <div class="cat-icon-box">
+            <mat-icon>{{ cat.icon }}</mat-icon>
+          </div>
+          <div class="cat-info">
+            <div class="cat-domain-tag">{{ cat.domain }}</div>
+            <div class="cat-name">{{ cat.name }}</div>
+            <div class="cat-desc">{{ cat.description }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Options Section -->
+    <div class="options-section">
+      <span class="section-label">EXPORT PARAMETERS</span>
+      <div class="options-row">
+        <!-- Date Scope -->
+        <div class="option-item" *ngIf="selectedCategoryId === 'attendance' || selectedCategoryId === 'timesheets' || selectedCategoryId === 'leaves'">
+          <label class="option-title">Time Range</label>
+          <div class="pill-selector">
+            <button
+              type="button"
+              class="pill-btn"
+              [class.active]="selectedDateRange === 'all'"
+              (click)="selectedDateRange = 'all'"
+            >
+              All Records
+            </button>
+            <button
+              type="button"
+              class="pill-btn"
+              [class.active]="selectedDateRange === 'current_month'"
+              (click)="selectedDateRange = 'current_month'"
+            >
+              This Month
+            </button>
+          </div>
+        </div>
+
+        <!-- File Format -->
+        <div class="option-item">
+          <label class="option-title">Output Format</label>
+          <div class="pill-selector">
+            <button
+              type="button"
+              class="pill-btn active"
+            >
+              <mat-icon class="pill-icon">table_view</mat-icon>
+              <span>CSV Spreadsheet (.csv)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="modal-footer">
+    <div class="selected-summary">
+      <mat-icon class="summary-icon">info</mat-icon>
+      <span>Ready to export: <strong>{{ selectedCategory?.name }}</strong></span>
+    </div>
+    <div class="footer-actions">
+      <button type="button" class="btn-cancel" (click)="close()" [disabled]="isExporting">Cancel</button>
+      <button
+        type="button"
+        class="btn-export-primary"
+        (click)="executeExport()"
+        [disabled]="isExporting"
+      >
+        <mat-icon class="spin-icon" *ngIf="isExporting">sync</mat-icon>
+        <mat-icon *ngIf="!isExporting">download</mat-icon>
+        <span>{{ isExporting ? 'Generating CSV...' : 'Download Export' }}</span>
+      </button>
+    </div>
+  </div>
+</div>

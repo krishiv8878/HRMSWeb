@@ -126,6 +126,16 @@ export class EmployeeService {
     this.avatarSubject.next(fullUrl);
   }
 
+  clearAvatar() {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.removeItem('profileImage');
+      localStorage.removeItem('userAvatar');
+      localStorage.removeItem('profilePic');
+      localStorage.removeItem('uploadedProfileAvatar');
+    }
+    this.avatarSubject.next(null);
+  }
+
   getData(): Observable<any> {
     return this.http.get<any>(this.apiUrl + "/Employee/GetEmployees").pipe(
       catchError((err) => {

@@ -7,10 +7,17 @@
     </div>
 
     <div class="header-actions">
-      <!-- Export List Button with Upward Reversed Arrow Icon -->
-      <button type="button" class="btn-export" (click)="onExportList()">
-        <mat-icon class="btn-icon">upload</mat-icon>
-        <span>Export List</span>
+      <!-- Copy/Roll-Forward Holidays to Next Year Button -->
+      <button
+        type="button"
+        class="btn-copy-year"
+        *ngIf="canManageHoliday && selectedYear !== 'All'"
+        [disabled]="isCopyingHolidays"
+        (click)="onCopyHolidaysToNextYear()"
+        [title]="'Copy ' + selectedYear + ' holidays list into ' + (+selectedYear + 1)"
+      >
+        <mat-icon class="btn-icon">content_copy</mat-icon>
+        <span>{{ isCopyingHolidays ? 'Copying...' : 'Copy to ' + (+selectedYear + 1) }}</span>
       </button>
       <button type="button" class="btn-add-holiday" *ngIf="canManageHoliday" (click)="openHolidayForm()">
         <mat-icon class="btn-icon">add</mat-icon>

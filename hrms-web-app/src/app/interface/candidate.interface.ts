@@ -8,12 +8,15 @@ export interface CandidateItem {
   mobileNumber: string;
   totalExperience: string | number;
   relevantExperience: string | number;
+  rawRelevantExperience?: string;
   currentSalary?: string | number;
   currentExperience?: string | number;
   expectedSalary?: string | number;
   expectedExperience?: string | number;
+  rawCurrentSalary?: number;
+  rawExpectedSalary?: number;
   appliedRole?: string;
-  stage?: 'Sourced' | 'Screening' | 'Technical Interview' | 'HR Screen' | 'Interview' | 'Offer Extended' | 'Offer' | 'Rejected' | string;
+  stage?: 'Sourced' | 'Screening' | 'Technical Interview' | 'HR Screen' | 'Interview' | 'Offer Extended' | 'Offer Accepted' | 'Selected / Hired' | 'Offer' | 'Rejected' | string;
   matchScore?: number;
   lastUpdated?: string;
   noticePeriod?: string | number;
@@ -22,6 +25,15 @@ export interface CandidateItem {
   avatarUrl?: string;
   initials?: string;
   selected?: boolean;
+  interviewerId?: number;
+  interviewerName?: string;
+  interviewerRemarks?: string;
+  interviewRating?: number;
+  interviewRecommendation?: string;
+  currentRound?: string;
+  interviewStatus?: 'Not Scheduled' | 'Scheduled' | 'Feedback Submitted' | 'Passed' | 'Rejected' | string;
+  interviewHistory?: any[];
+  isOnboarded?: boolean;
 }
 
 export interface TalentMetrics {

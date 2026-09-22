@@ -27,6 +27,7 @@ import { ResetpasswordComponent } from './modal/resetpassword/resetpassword.comp
 import { ForgotpasswordComponent } from './modal/forgotpassword/forgotpassword.component';
 import { RequestsApprovalsComponent } from './component/requests-approvals/requests-approvals.component';
 import { TimesheetComponent } from './component/timesheet/timesheet.component';
+import { EmailTemplatesComponent } from './component/email-templates/email-templates.component';
 
 export const routes: Routes = [
     {
@@ -68,7 +69,7 @@ export const routes: Routes = [
                 path: 'holiday', component: HolidayComponent
             },
             {
-                path: 'candidate', component: CandidateComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
+                path: 'candidate', component: CandidateComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
             },
             {
                 path: 'assets', component: AssetsmasterComponent
@@ -89,7 +90,7 @@ export const routes: Routes = [
                 path: 'attendance', component: EmployeeAttendanceComponent
             },
             {
-                path: 'paymentinfo', component: PaymentinfoComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
+                path: 'paymentinfo', component: PaymentinfoComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
             },
             {
                 path: 'shift', component: ShiftemployeeComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
@@ -107,10 +108,13 @@ export const routes: Routes = [
                 path: 'resignation', component: ResignationComponent
             },
             {
-                path: 'request', component: RequestsApprovalsComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] }
+                path: 'request', component: RequestsApprovalsComponent
             },
             {
                 path: 'timesheet', component: TimesheetComponent
+            },
+            {
+                path: 'email-templates', component: EmailTemplatesComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
             }
         ]
     }

@@ -19,48 +19,114 @@
         </div>
       </div>
 
-      <!-- Clock In / Out Action -->
-      <button
-        type="button"
-        *ngIf="!isClockedIn"
-        class="btn-punch btn-clock-in"
-        (click)="openClockInDialog()"
-      >
-        <mat-icon>login</mat-icon>
-        <span>Clock-In</span>
-      </button>
+      <!-- Clock In / Out Action (Strictly for personal self-attendance) -->
+      <ng-container *ngIf="!isViewingOtherEmployee">
+        <button
+          type="button"
+          *ngIf="!isClockedIn"
+          class="btn-punch btn-clock-in"
+          (click)="openClockInDialog()"
+        >
+          <mat-icon>login</mat-icon>
+          <span>Clock-In</span>
+        </button>
 
-      <button
-        type="button"
-        *ngIf="isClockedIn"
-        class="btn-punch btn-clock-out"
-        (click)="openClockOutDialog()"
-      >
-        <mat-icon>logout</mat-icon>
-        <span>Clock-Out</span>
-        <span class="session-duration-tag">{{ activeSessionDuration }}</span>
-      </button>
+        <button
+          type="button"
+          *ngIf="isClockedIn"
+          class="btn-punch btn-clock-out"
+          (click)="openClockOutDialog()"
+        >
+          <mat-icon>logout</mat-icon>
+          <span>Clock-Out</span>
+          <span class="session-duration-tag">{{ activeSessionDuration }}</span>
+        </button>
+      </ng-container>
 
-      <!-- Export CSV Button -->
-      <button type="button" class="btn-secondary-action" (click)="onExportAttendance()">
-        <mat-icon>file_upload</mat-icon>
-        <span>Export Log</span>
-      </button>
+      <!-- Supervisor Audit View Badge when inspecting another employee -->
+      <div *ngIf="isViewingOtherEmployee" class="supervisor-mode-badge" title="Supervisor Audit Mode: Punching and self-regularization are restricted.">
+        <mat-icon class="supervisor-icon">admin_panel_settings</mat-icon>
+        <div class="supervisor-text-group">
+          <span class="supervisor-label">AUDIT VIEW</span>
+          <span class="supervisor-emp-name">{{ selectedEmployeeName || 'Selected Employee' }}</span>
+        </div>
+      </div>
 
-      <!-- Request Regularization Button (Hidden if already requested/regularized) -->
+      <!-- View Mode Switcher -->
+      <div class="view-mode-toggle">
+        <button
+          type="button"
+          class="btn-toggle"
+          [class.active]="viewMode === 'calendar'"
+          (click)="viewMode = 'calendar'"
+          title="Switch to Calendar View"
+        >
+          <mat-icon>calendar_month</mat-icon>
+          <span>Calendar</span>
+        </button>
+        <button
+          type="button"
+          class="btn-toggle"
+          [class.active]="viewMode === 'table'"
+          (click)="viewMode = 'table'"
+          title="Switch to Table View"
+        >
+          <mat-icon>table_rows</mat-icon>
+          <span>Table Log</span>
+        </button>
+      </div>
+
+      <!-- Request Regularization Button -->
       <button
+        *ngIf="!isViewingOtherEmployee"
         type="button"
-        *ngIf="allRows.length > 0 && allRows[0]?.canRegularize && !allRows[0]?.regularizationStatus"
         class="btn-regularize-action"
-        (click)="openRegularizationModal(allRows[0])"
+        (click)="openRegularizationModal()"
+        title="Request Attendance Regularization (current month / previous 30 days)"
       >
         <mat-icon>edit_calendar</mat-icon>
-        <span>Regularize</span>
+        <span>Request Regularization</span>
       </button>
     </div>
   </div>
 
-  <!-- Top 4 Metrics Cards Grid -->
+  <!-- Missing Clock-Out Prompt / Alert Banner -->
+  <div *ngIf="missingPunchDay && !isViewingOtherEmployee" class="missing-punch-alert-banner">
+    <div class="banner-left">
+      <div class="banner-icon-box">
+        <mat-icon>warning_amber</mat-icon>
+      </div>
+      <div class="banner-text">
+        <div class="banner-title-line">
+          <span class="banner-title">Missing Clock-Out on {{ missingPunchDay.formattedDate }}</span>
+          <span class="banner-tag">Action Required</span>
+        </div>
+        <p class="banner-desc">
+          You clocked in at <strong>{{ missingPunchDay.clockInDisplay }}</strong>, but did not record your departure punch. Please submit your clock-out time for approval to complete your attendance record.
+        </p>
+      </div>
+    </div>
+    <div class="banner-actions">
+      <button
+        type="button"
+        class="btn-banner-regularize"
+        (click)="openRegularizationModal(missingPunchDay)"
+      >
+        <mat-icon>schedule</mat-icon>
+        <span>Regularize Clock-Out</span>
+      </button>
+      <button
+        type="button"
+        class="btn-banner-dismiss"
+        (click)="dismissMissingPunchBanner()"
+        title="Dismiss prompt"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Top 4 Metrics Cards Grid (Calendar Month or 30-day Table) -->
   <div class="metrics-cards-grid">
     <!-- Card 1: Average Working Hours -->
     <div class="metric-card card-purple">
@@ -70,61 +136,499 @@
           <mat-icon>timer</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ avgWorkingHours }} <small class="unit-text">hrs/day</small></div>
+      <div class="card-value">
+        {{ viewMode === 'calendar' ? calendarMonthAvgHours : avgWorkingHours }}
+        <small class="unit-text">hrs/day</small>
+      </div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-green"></span>
-        <span>Target: 08:00 hrs/day (+15m avg)</span>
+        <span>Target: 08:00 hrs/day standard</span>
       </div>
     </div>
 
-    <!-- Card 2: Average In Time -->
+    <!-- Card 2: Attendance / Present Days -->
     <div class="metric-card card-blue">
       <div class="card-header">
-        <span class="card-title">Average In Time</span>
+        <span class="card-title">{{ viewMode === 'calendar' ? 'Present This Month' : 'Average In Time' }}</span>
         <div class="icon-box icon-blue">
-          <mat-icon>wb_sunny</mat-icon>
+          <mat-icon>{{ viewMode === 'calendar' ? 'event_available' : 'wb_sunny' }}</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ avgInTime }}</div>
+      <div class="card-value">
+        <ng-container *ngIf="viewMode === 'calendar'">
+          {{ calendarMonthPresent }} <small class="unit-text">/ {{ calendarMonthWorkingDays }} Days</small>
+        </ng-container>
+        <ng-container *ngIf="viewMode === 'table'">
+          {{ avgInTime }}
+        </ng-container>
+      </div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-blue"></span>
-        <span>On-time arrival score: 98%</span>
+        <span>{{ viewMode === 'calendar' ? calendarMonthCompliance + '% Compliance' : 'On-time arrival score: 98%' }}</span>
       </div>
     </div>
 
-    <!-- Card 3: Average Out Time -->
+    <!-- Card 3: Leaves & Holidays / Out Time -->
     <div class="metric-card card-green">
       <div class="card-header">
-        <span class="card-title">Average Out Time</span>
+        <span class="card-title">{{ viewMode === 'calendar' ? 'Leaves & Holidays' : 'Average Out Time' }}</span>
         <div class="icon-box icon-green">
-          <mat-icon>nights_stay</mat-icon>
+          <mat-icon>{{ viewMode === 'calendar' ? 'beach_access' : 'nights_stay' }}</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ avgOutTime }}</div>
+      <div class="card-value">
+        <ng-container *ngIf="viewMode === 'calendar'">
+          {{ calendarMonthLeaves }} <small class="unit-text">Leaves • {{ calendarMonthHolidays }} Holidays</small>
+        </ng-container>
+        <ng-container *ngIf="viewMode === 'table'">
+          {{ avgOutTime }}
+        </ng-container>
+      </div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-green"></span>
-        <span>Standard shift wrap compliance</span>
+        <span>{{ viewMode === 'calendar' ? calendarMonthWeekOffs + ' Weekend Offs' : 'Standard shift wrap compliance' }}</span>
       </div>
     </div>
 
-    <!-- Card 4: Monthly Attendance Overview -->
+    <!-- Card 4: Overtime / Overview -->
     <div class="metric-card card-amber">
       <div class="card-header">
-        <span class="card-title">Present This Month</span>
+        <span class="card-title">{{ viewMode === 'calendar' ? 'Monthly Overtime' : '30-Day Compliance' }}</span>
         <div class="icon-box icon-amber">
-          <mat-icon>event_available</mat-icon>
+          <mat-icon>{{ viewMode === 'calendar' ? 'more_time' : 'insights' }}</mat-icon>
         </div>
       </div>
-      <div class="card-value">{{ presentDaysCount }} <small class="unit-text">/ {{ totalWorkingDays }} Days</small></div>
+      <div class="card-value">
+        <ng-container *ngIf="viewMode === 'calendar'">
+          {{ calendarMonthOvertime }}
+        </ng-container>
+        <ng-container *ngIf="viewMode === 'table'">
+          {{ presentDaysCount }} <small class="unit-text">/ {{ totalWorkingDays }} Days</small>
+        </ng-container>
+      </div>
       <div class="card-subtitle is-neutral">
         <span class="dot-indicator dot-amber"></span>
-        <span>{{ complianceRate }}% Attendance Compliance</span>
+        <span>{{ viewMode === 'calendar' ? calendarMonthAbsent + ' Unplanned Absences' : complianceRate + '% Attendance Compliance' }}</span>
       </div>
     </div>
   </div>
 
-  <!-- Attendance Table Container -->
-  <div class="table-card-container">
+  <!-- CALENDAR VIEW CONTAINER -->
+  <div class="calendar-card-container" *ngIf="viewMode === 'calendar'">
+    <!-- Month Navigation Bar -->
+    <div class="calendar-nav-bar">
+      <div class="nav-left">
+        <div class="month-title-group">
+          <mat-icon class="calendar-title-icon">calendar_month</mat-icon>
+          <h2 class="month-title">{{ calendarMonthTitle }}</h2>
+        </div>
+
+        <div class="nav-arrows-group">
+          <button type="button" class="btn-nav-arrow" (click)="prevMonth()" title="Previous Month">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <button type="button" class="btn-today-shortcut" (click)="goToToday()" title="Jump to Today">
+            Today
+          </button>
+          <button type="button" class="btn-nav-arrow" (click)="nextMonth()" title="Next Month">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Month / Year Selectors & Legend -->
+      <div class="nav-right">
+        <div class="quick-selectors">
+          <select [ngModel]="currentMonthIndex" (ngModelChange)="onMonthChange($event)" class="custom-select month-select">
+            <option *ngFor="let m of monthOptions" [value]="m.value">{{ m.label }}</option>
+          </select>
+          <select [ngModel]="currentYear" (ngModelChange)="onYearChange($event)" class="custom-select year-select">
+            <option *ngFor="let y of yearOptions" [value]="y">{{ y }}</option>
+          </select>
+        </div>
+
+        <!-- Legend Pills -->
+        <div class="calendar-legend">
+          <span class="legend-item"><span class="legend-dot dot-present"></span>Present</span>
+          <span class="legend-item"><span class="legend-dot dot-absent"></span>Absent</span>
+          <span class="legend-item"><span class="legend-dot dot-leave"></span>Leave</span>
+          <span class="legend-item"><span class="legend-dot dot-holiday"></span>Holiday</span>
+          <span class="legend-item"><span class="legend-dot dot-weekoff"></span>Weekend</span>
+          <span class="legend-item"><span class="legend-dot dot-regularized"></span>Regularized</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar Main Grid & Side Details Layout -->
+    <div class="calendar-main-layout" [class.has-drawer]="selectedDay">
+      <!-- 7-Column Calendar Grid Area -->
+      <div class="calendar-grid-area">
+        <!-- Weekday Headers -->
+        <div class="calendar-weekday-headers">
+          <div *ngFor="let dayName of weekDayNames; let i = index" class="weekday-header" [class.is-weekend-header]="i === 0 || i === 6">
+            {{ dayName }}
+          </div>
+        </div>
+
+        <!-- Calendar Weeks & Days -->
+        <div class="calendar-grid-body">
+          <div *ngFor="let week of calendarWeeks" class="calendar-week-row">
+            <div
+              *ngFor="let day of week"
+              class="calendar-day-cell"
+              [class.not-current-month]="!day.isCurrentMonth"
+              [class.is-today]="day.isToday"
+              [class.is-selected]="selectedDay?.dateStr === day.dateStr"
+              [class.is-weekend-cell]="day.isWeekend"
+              [ngClass]="{
+                'cell-present': day.status === 'Present',
+                'cell-absent': day.status === 'Absent',
+                'cell-leave': day.isLeave || isLeaveStatus(day.status),
+                'cell-holiday': day.isHoliday || isHolidayStatus(day.status),
+                'cell-weekoff': day.isWeekend || day.status === 'Week Off',
+                'cell-not-joined': day.isPriorToJoining
+              }"
+              (click)="selectDay(day)"
+            >
+              <!-- Day Header (Number + Badges) -->
+              <div class="day-cell-top">
+                <span class="day-number" [class.today-badge]="day.isToday">{{ day.dayNumber }}</span>
+
+                <div class="day-indicators">
+                  <span class="chip-overtime" *ngIf="day.isOvertime" title="Overtime: {{ day.overtimeDisplay }}">OT</span>
+                  <span class="chip-reg" *ngIf="day.isRegularized" title="Approved Regularization">
+                    <mat-icon>verified</mat-icon>
+                  </span>
+                  <span class="chip-pending" *ngIf="day.regularizationStatus === 'Pending'" title="Regularization Pending">
+                    <mat-icon>schedule</mat-icon>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Day Content Body -->
+              <div class="day-cell-body">
+                <!-- Present status -->
+                <ng-container *ngIf="day.status === 'Present'">
+                  <div class="status-chip chip-present">
+                    <mat-icon class="status-icon">check_circle</mat-icon>
+                    <span>{{ day.totalHoursDisplay || 'Present' }}</span>
+                  </div>
+                  <div class="punch-times-preview" *ngIf="day.clockInDisplay !== '--'">
+                    <span class="time-in"><mat-icon>north_east</mat-icon>{{ day.clockInDisplay }}</span>
+                    <span class="time-out" *ngIf="day.clockOutDisplay !== '--'"><mat-icon>south_west</mat-icon>{{ day.clockOutDisplay }}</span>
+                  </div>
+                </ng-container>
+
+                <!-- Holiday -->
+                <ng-container *ngIf="day.isHoliday || isHolidayStatus(day.status)">
+                  <div class="status-chip chip-holiday" [title]="day.holidayName || day.status">
+                    <mat-icon class="status-icon">celebration</mat-icon>
+                    <span class="chip-text">{{ day.holidayName || day.status }}</span>
+                  </div>
+                </ng-container>
+
+                <!-- On Leave -->
+                <ng-container *ngIf="day.isLeave || isLeaveStatus(day.status)">
+                  <div class="status-chip chip-leave" [title]="day.leaveType || day.status">
+                    <mat-icon class="status-icon">event_busy</mat-icon>
+                    <span class="chip-text">{{ day.leaveType || day.status }}</span>
+                  </div>
+                </ng-container>
+
+                <!-- Week Off -->
+                <ng-container *ngIf="day.isWeekend || day.status === 'Week Off'">
+                  <div class="status-chip chip-weekend">
+                    <span>Weekend</span>
+                  </div>
+                </ng-container>
+
+                <!-- Absent -->
+                <ng-container *ngIf="day.status === 'Absent' && !day.isPriorToJoining">
+                  <div class="status-chip chip-absent">
+                    <mat-icon class="status-icon">cancel</mat-icon>
+                    <span>Absent</span>
+                  </div>
+                </ng-container>
+
+                <!-- Not Joined Yet (Prior to Date of Joining) -->
+                <ng-container *ngIf="day.isPriorToJoining">
+                  <div class="status-chip chip-not-joined" title="Prior to official joining date">
+                    <mat-icon class="status-icon">person_off</mat-icon>
+                    <span>Not Joined</span>
+                  </div>
+                </ng-container>
+              </div>
+
+              <!-- Day Hover Action -->
+              <div class="day-hover-bar" *ngIf="day.canRegularize && !day.regularizationStatus">
+                <span class="hover-regularize-text">Click to view/regularize</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Day Details Panel / Drawer -->
+      <div class="calendar-detail-drawer" *ngIf="selectedDay">
+        <div class="drawer-header">
+          <div class="drawer-title-block">
+            <span class="drawer-day-name">{{ selectedDay.dayName }}</span>
+            <h3 class="drawer-date-title">{{ selectedDay.formattedDate }}</h3>
+          </div>
+          <button type="button" class="btn-close-drawer" (click)="closeDayDetail()" title="Close details">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Status Card Banner in Drawer -->
+        <div class="drawer-status-card" [ngClass]="{
+          'status-card-present': selectedDay.status === 'Present',
+          'status-card-absent': selectedDay.status === 'Absent',
+          'status-card-leave': selectedDay.isLeave || isLeaveStatus(selectedDay.status),
+          'status-card-holiday': selectedDay.isHoliday || isHolidayStatus(selectedDay.status),
+          'status-card-weekoff': selectedDay.isWeekend || selectedDay.status === 'Week Off'
+        }">
+          <div class="status-badge-lg">
+            <mat-icon *ngIf="selectedDay.status === 'Present'">check_circle</mat-icon>
+            <mat-icon *ngIf="selectedDay.status === 'Absent'">cancel</mat-icon>
+            <mat-icon *ngIf="selectedDay.isHoliday || isHolidayStatus(selectedDay.status)">celebration</mat-icon>
+            <mat-icon *ngIf="selectedDay.isLeave || isLeaveStatus(selectedDay.status)">flight_takeoff</mat-icon>
+            <mat-icon *ngIf="selectedDay.isWeekend || selectedDay.status === 'Week Off'">weekend</mat-icon>
+            <span>{{ selectedDay.status }}</span>
+          </div>
+
+          <span class="punch-mode-tag" *ngIf="selectedDay.punchType === 'Self Punch'">
+            <mat-icon>fingerprint</mat-icon> Self Punch (App / Web)
+          </span>
+          <span class="punch-mode-tag" *ngIf="selectedDay.punchType === 'Regularized'">
+            <mat-icon>verified</mat-icon> Regularized (Manager Approved)
+          </span>
+        </div>
+
+        <!-- Punch Timings Breakdown -->
+        <div class="drawer-timings-card" *ngIf="selectedDay.status === 'Present' || selectedDay.clockInDisplay !== '--'">
+          <h4 class="drawer-section-heading">Punch Timings & Duration</h4>
+
+          <div class="timing-rows">
+            <div class="timing-item">
+              <div class="timing-icon-box in-icon">
+                <mat-icon>login</mat-icon>
+              </div>
+              <div class="timing-details">
+                <span class="timing-label">Clock In</span>
+                <span class="timing-val">{{ selectedDay.clockInDisplay }}</span>
+              </div>
+            </div>
+
+            <div class="timing-item">
+              <div class="timing-icon-box out-icon">
+                <mat-icon>logout</mat-icon>
+              </div>
+              <div class="timing-details">
+                <span class="timing-label">Clock Out</span>
+                <span class="timing-val">{{ selectedDay.clockOutDisplay }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hours-summary-grid four-cols">
+            <div class="hours-box">
+              <span class="h-label">Gross Hours</span>
+              <span class="h-val">{{ selectedDay.totalHoursDisplay || '--' }}</span>
+            </div>
+            <div class="hours-box">
+              <span class="h-label">Break Time</span>
+              <span class="h-val text-amber" [title]="getBreakTooltip(selectedDay)">{{ selectedDay.breakTimeDisplay || '00h 00m' }}</span>
+            </div>
+            <div class="hours-box">
+              <span class="h-label">Effective Hours</span>
+              <span class="h-val text-emerald">{{ selectedDay.effectiveHoursDisplay || '--' }}</span>
+            </div>
+            <div class="hours-box">
+              <span class="h-label">Overtime</span>
+              <span class="h-val" [class.text-amber]="selectedDay.isOvertime">{{ selectedDay.overtimeDisplay }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Punch Sessions & Breaks Timeline Card in Drawer -->
+        <div class="drawer-info-card timeline-card" *ngIf="selectedDay.status === 'Present' && (selectedDay.punchSessions?.length || selectedDay.breaks?.length)">
+          <div class="card-title-flex">
+            <h4 class="drawer-section-heading">Work Sessions & Breaks Timeline</h4>
+            <span class="break-count-pill" *ngIf="selectedDay.breaks && selectedDay.breaks.length > 0">
+              <mat-icon class="pill-icon">coffee</mat-icon>
+              <span>{{ selectedDay.breaks.length }} Break{{ selectedDay.breaks.length === 1 ? '' : 's' }} ({{ selectedDay.breakTimeDisplay }})</span>
+            </span>
+          </div>
+
+          <div class="sessions-timeline-list">
+            <ng-container *ngFor="let s of selectedDay.punchSessions; let i = index">
+              <!-- Work Session Item -->
+              <div class="timeline-item work-session-item">
+                <div class="timeline-indicator-node in-node">
+                  <mat-icon>login</mat-icon>
+                </div>
+                <div class="timeline-item-content">
+                  <div class="session-top-line">
+                    <span class="session-tag">Work Session #{{ s.sessionNumber }}</span>
+                    <span class="session-dur">{{ s.durationDisplay }}</span>
+                  </div>
+                  <div class="session-times">
+                    <span>In: <strong>{{ s.inTime }}</strong></span>
+                    <span class="time-sep">&rarr;</span>
+                    <span>Out: <strong>{{ s.outTime }}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Intervening Break Item (if not last session) -->
+              <div class="timeline-item break-interval-item" *ngIf="selectedDay.breaks && selectedDay.breaks[i]">
+                <div class="timeline-indicator-node break-node">
+                  <mat-icon>coffee</mat-icon>
+                </div>
+                <div class="timeline-item-content break-content">
+                  <div class="break-top-line">
+                    <span class="break-tag">Break #{{ selectedDay.breaks[i].breakNumber }}</span>
+                    <span class="break-dur-pill">{{ selectedDay.breaks[i].durationDisplay }}</span>
+                  </div>
+                  <div class="break-times">
+                    <span>Interval: <strong>{{ selectedDay.breaks[i].startTime }}</strong> &rarr; <strong>{{ selectedDay.breaks[i].endTime }}</strong></span>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Shift Information -->
+        <div class="drawer-info-card">
+          <h4 class="drawer-section-heading">Shift Schedule</h4>
+          <div class="shift-info-row">
+            <mat-icon class="shift-icon">access_time</mat-icon>
+            <div class="shift-text">
+              <span class="shift-name">Standard General Shift</span>
+              <span class="shift-hours">09:00 AM - 06:00 PM (09 hrs required)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leave Details & Cancellation Card in Drawer -->
+        <div class="drawer-leave-card" *ngIf="selectedDay.isLeave">
+          <div class="leave-card-header">
+            <div class="leave-icon-title">
+              <mat-icon class="leave-calendar-icon">event_busy</mat-icon>
+              <div>
+                <h4 class="leave-card-type">{{ selectedDay.leaveTypeName || selectedDay.status || 'Approved Leave' }}</h4>
+                <span class="leave-card-dates" *ngIf="selectedDay.leaveRecord?.startDate">
+                  {{ selectedDay.leaveRecord.startDate | date:'dd MMM yyyy' }}
+                  <ng-container *ngIf="selectedDay.leaveRecord.endDate && selectedDay.leaveRecord.endDate !== selectedDay.leaveRecord.startDate">
+                    - {{ selectedDay.leaveRecord.endDate | date:'dd MMM yyyy' }}
+                  </ng-container>
+                </span>
+              </div>
+            </div>
+            <span class="leave-status-pill">Approved</span>
+          </div>
+
+          <div class="leave-reason-wrapper" *ngIf="selectedDay.leaveRecord?.leaveReason || selectedDay.leaveRecord?.reason">
+            <span class="leave-reason-label">Reason:</span>
+            <p class="leave-reason-text">{{ selectedDay.leaveRecord?.leaveReason || selectedDay.leaveRecord?.reason }}</p>
+          </div>
+
+          <div class="leave-actions-row">
+            <button
+              type="button"
+              class="btn-cancel-leave-drawer"
+              (click)="cancelLeaveFromDrawer(selectedDay.leaveRecord)"
+              title="Cancel this leave and restore leave balance"
+            >
+              <mat-icon>cancel</mat-icon>
+              <span>Cancel Leave</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Regularization Action / Status Section in Drawer -->
+        <div class="drawer-regularization-card" *ngIf="!selectedDay.isLeave">
+          <h4 class="drawer-section-heading">Regularization</h4>
+
+          <!-- Approved -->
+          <div class="reg-state-box reg-state-approved" *ngIf="selectedDay.regularizationStatus === 'Approved'">
+            <mat-icon>verified</mat-icon>
+            <div>
+              <strong>Regularized & Approved</strong>
+              <p>Manager approved regularization request for this date.</p>
+            </div>
+          </div>
+
+          <!-- Pending -->
+          <div class="reg-state-box reg-state-pending" *ngIf="selectedDay.regularizationStatus === 'Pending'">
+            <mat-icon>hourglass_top</mat-icon>
+            <div>
+              <strong>Request Pending Approval</strong>
+              <p>Your regularization request is awaiting approval from your manager.</p>
+            </div>
+          </div>
+
+          <!-- Rejected -->
+          <div class="reg-state-box reg-state-rejected" *ngIf="selectedDay.regularizationStatus === 'Rejected'">
+            <mat-icon>cancel</mat-icon>
+            <div>
+              <strong>Regularization Rejected</strong>
+              <p>{{ selectedDay.rejectionReason || 'No rejection reason specified.' }}</p>
+              <button
+                *ngIf="!isViewingOtherEmployee"
+                type="button"
+                class="btn-drawer-action btn-reapply"
+                (click)="openRegularizationModal(selectedDay)"
+              >
+                <mat-icon>refresh</mat-icon>
+                <span>Re-apply Regularization</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Eligible to Regularize (Only for self-attendance) -->
+          <div class="reg-eligible-box" *ngIf="!isViewingOtherEmployee && selectedDay.canRegularize && !selectedDay.regularizationStatus">
+            <p class="eligible-text" *ngIf="selectedDay.clockInDisplay !== '--' && selectedDay.clockOutDisplay === '--'">
+              Arrival punch recorded at <strong>{{ selectedDay.clockInDisplay }}</strong>. Missing Clock-Out time.
+            </p>
+            <p class="eligible-text" *ngIf="selectedDay.clockInDisplay === '--' || selectedDay.clockOutDisplay !== '--'">
+              Missed a punch, had network issues, or arrived outside scheduled hours?
+            </p>
+            <button
+              type="button"
+              class="btn-drawer-action btn-regularize-drawer"
+              (click)="openRegularizationModal(selectedDay)"
+            >
+              <mat-icon>{{ selectedDay.clockInDisplay !== '--' && selectedDay.clockOutDisplay === '--' ? 'schedule' : 'edit_calendar' }}</mat-icon>
+              <span>{{ selectedDay.clockInDisplay !== '--' && selectedDay.clockOutDisplay === '--' ? 'Regularize Clock-Out' : 'Regularize Attendance' }}</span>
+            </button>
+          </div>
+
+          <!-- Supervisor Mode Notice -->
+          <div class="reg-na-box reg-na-prejoin" *ngIf="isViewingOtherEmployee">
+            <mat-icon>admin_panel_settings</mat-icon>
+            <p>Viewing in supervisor audit mode. Employee self-regularization is disabled.</p>
+          </div>
+
+          <!-- Prior to Date of Joining -->
+          <div class="reg-na-box reg-na-prejoin" *ngIf="!isViewingOtherEmployee && selectedDay.isPriorToJoining">
+            <mat-icon>info</mat-icon>
+            <p>This date is prior to your official joining date. Regularization is not permitted.</p>
+          </div>
+
+          <!-- Weekend / Holiday / Already Complete: No Action Needed -->
+          <div class="reg-na-box" *ngIf="!selectedDay.canRegularize && !selectedDay.regularizationStatus && !selectedDay.isPriorToJoining">
+            <p class="text-muted">No punch regularization required for this day.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Table Container (Table View) -->
+  <div class="table-card-container" *ngIf="viewMode === 'table'">
     <!-- Table Controls Bar -->
     <div class="table-header-bar">
       <div class="table-title">
@@ -167,8 +671,9 @@
             <th>STATUS</th>
             <th>CHECK IN</th>
             <th>CHECK OUT</th>
-            <th>GROSS HOURS</th>
+            <th>BREAK TIME</th>
             <th>EFFECTIVE HOURS</th>
+            <th>GROSS HOURS</th>
             <th>OVERTIME</th>
             <th class="text-right">REGULARIZATION</th>
           </tr>
@@ -220,15 +725,30 @@
               <span class="time-text">{{ row.clockOutDisplay }}</span>
             </td>
 
-            <!-- Gross Hours -->
-            <td class="col-hours">
-              <span class="hours-badge" *ngIf="row.status === 'Present'">{{ row.totalHoursDisplay }}</span>
+            <!-- Break Time -->
+            <td class="col-break">
+              <span
+                class="break-pill-badge"
+                *ngIf="row.status === 'Present' && row.breakHoursDecimal && row.breakHoursDecimal > 0"
+                [title]="getBreakTooltip(row)"
+              >
+                <mat-icon class="break-pill-icon">coffee</mat-icon>
+                <span>{{ row.breakTimeDisplay }}</span>
+                <span class="break-count-tag" *ngIf="row.breaks && row.breaks.length > 1">({{ row.breaks.length }})</span>
+              </span>
+              <span class="na-text text-muted" *ngIf="row.status === 'Present' && (!row.breakHoursDecimal || row.breakHoursDecimal === 0)">00h 00m</span>
               <span class="na-text" *ngIf="row.status !== 'Present'">--</span>
             </td>
 
             <!-- Effective Hours -->
             <td class="col-hours">
               <span class="hours-badge eff-badge" *ngIf="row.status === 'Present'">{{ row.effectiveHoursDisplay }}</span>
+              <span class="na-text" *ngIf="row.status !== 'Present'">--</span>
+            </td>
+
+            <!-- Gross Hours -->
+            <td class="col-hours">
+              <span class="hours-badge" *ngIf="row.status === 'Present'">{{ row.totalHoursDisplay }}</span>
               <span class="na-text" *ngIf="row.status !== 'Present'">--</span>
             </td>
 
@@ -256,13 +776,14 @@
                   <span>Regularized</span>
                 </span>
 
-                <!-- Rejected: User CAN re-apply -->
+                <!-- Rejected: User CAN re-apply (only on own sheet) -->
                 <div class="reg-rejected-group" *ngIf="row.regularizationStatus === 'Rejected'">
                   <span class="reg-badge reg-rejected" [title]="'Rejected: ' + (row.rejectionReason || 'No reason provided')">
                     <mat-icon>cancel</mat-icon>
                     <span>Rejected</span>
                   </span>
                   <button
+                    *ngIf="!isViewingOtherEmployee"
                     type="button"
                     class="btn-regularize-row btn-reapply"
                     (click)="openRegularizationModal(row)"
@@ -273,10 +794,10 @@
                   </button>
                 </div>
 
-                <!-- Never applied yet -->
+                <!-- Never applied yet (only on own sheet) -->
                 <button
                   type="button"
-                  *ngIf="row.canRegularize && !row.regularizationStatus"
+                  *ngIf="!isViewingOtherEmployee && row.canRegularize && !row.regularizationStatus"
                   class="btn-regularize-row"
                   (click)="openRegularizationModal(row)"
                   title="Request Regularization for this date"
@@ -284,6 +805,9 @@
                   <mat-icon>edit_calendar</mat-icon>
                   <span>Regularize</span>
                 </button>
+
+                <!-- In Supervisor View and never applied -->
+                <span class="na-text text-muted" *ngIf="isViewingOtherEmployee && !row.regularizationStatus">--</span>
               </ng-container>
             </td>
           </tr>

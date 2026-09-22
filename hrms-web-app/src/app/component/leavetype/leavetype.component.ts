@@ -15,6 +15,7 @@ export interface LeaveTypeRecord {
   leaveName?: string;
   leaveTypeName?: string;
   description?: string;
+  allowedDays?: number;
   isActive?: boolean;
 }
 
@@ -79,6 +80,7 @@ export class LeavetypeComponent implements OnInit {
             id: Number(item.id || item.leaveTypeId || (idx + 1)),
             type: item.type || item.leaveTypeName || item.leaveName || 'General Leave',
             description: item.description || 'Employee corporate leave policy',
+            allowedDays: item.allowedDays !== undefined && item.allowedDays !== null ? Number(item.allowedDays) : 0,
             isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false'
           }));
         } else {
@@ -99,7 +101,7 @@ export class LeavetypeComponent implements OnInit {
   recalculateStats() {
     this.totalCount = this.allLeaveTypes.length;
     this.activeCount = this.allLeaveTypes.filter(l => l.isActive !== false).length;
-    this.paidCount = this.allLeaveTypes.filter(l => !l.type?.toLowerCase().includes('unpaid')).length;
+    this.paidCount = this.allLeaveTypes.filter(l => (l.allowedDays || 0) > 0 && !l.type?.toLowerCase().includes('unpaid')).length;
     this.unpaidCount = this.totalCount - this.paidCount;
   }
 
@@ -224,6 +226,7 @@ export class LeavetypeComponent implements OnInit {
       leaveTypeName: record.type,
       leaveName: record.type,
       description: record.description,
+      allowedDays: record.allowedDays ?? 0,
       isActive: nextState
     };
 

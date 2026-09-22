@@ -1,0 +1,221 @@
+<div class="lop-settings-modal-container">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>tune</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">Payroll LOP & Unpaid Leave Settings</h2>
+        <p class="modal-subtitle">
+          Configure how daily Loss of Pay (LOP) deductions are calculated against employee CTC and attendance.
+        </p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Modal Scrollable Body -->
+  <div class="modal-body-scroll">
+    <!-- Section 1: Base Salary Component -->
+    <div class="settings-section">
+      <div class="section-title-row">
+        <mat-icon class="sec-icon">account_balance_wallet</mat-icon>
+        <div>
+          <h3 class="section-heading">1. Base Salary Component for LOP Deduction</h3>
+          <p class="section-desc">Select which compensation element is used as the daily deduction baseline.</p>
+        </div>
+      </div>
+
+      <div class="option-cards-grid three-cards">
+        <div
+          *ngFor="let base of calculationBases"
+          class="setting-card"
+          [class.active]="settings.calculationBase === base.id"
+          (click)="setCalculationBase(base.id)"
+        >
+          <div class="card-radio-indicator">
+            <span class="radio-dot" *ngIf="settings.calculationBase === base.id"></span>
+          </div>
+          <div class="card-content">
+            <div class="card-title-row">
+              <mat-icon class="card-icon">{{ base.icon }}</mat-icon>
+              <span class="card-title">{{ base.title }}</span>
+            </div>
+            <p class="card-subtitle">{{ base.subtitle }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Days Divisor Basis -->
+    <div class="settings-section">
+      <div class="section-title-row">
+        <mat-icon class="sec-icon">calendar_month</mat-icon>
+        <div>
+          <h3 class="section-heading">2. Days Divisor (Per-Day Rate Formula)</h3>
+          <p class="section-desc">Determines how the monthly salary is divided to calculate the 1-day LOP rate.</p>
+        </div>
+      </div>
+
+      <div class="option-cards-grid two-by-two">
+        <div
+          *ngFor="let div of divisorOptions"
+          class="setting-card"
+          [class.active]="settings.divisorBasis === div.id"
+          (click)="setDivisorBasis(div.id)"
+        >
+          <div class="card-radio-indicator">
+            <span class="radio-dot" *ngIf="settings.divisorBasis === div.id"></span>
+          </div>
+          <div class="card-content">
+            <div class="card-title-row">
+              <span class="card-title">{{ div.title }}</span>
+              <span class="days-badge">{{ div.daysBadge }}</span>
+            </div>
+            <p class="card-subtitle">{{ div.subtitle }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Attendance & Leave Inclusion Rules -->
+    <div class="settings-section">
+      <div class="section-title-row">
+        <mat-icon class="sec-icon">rule</mat-icon>
+        <div>
+          <h3 class="section-heading">3. Automatic Detection Policy</h3>
+          <p class="section-desc">Choose which employee records automatically trigger LOP deductions when generating salary credits.</p>
+        </div>
+      </div>
+
+      <div class="toggles-card">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Include Approved Unpaid / LOP Leaves</span>
+            <p class="toggle-sub">Automatically deducts for leaves approved under "Loss of Pay", "Unpaid Leave", or "Leave Without Pay".</p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              [(ngModel)]="settings.includeUnpaidLeaves"
+              (change)="updateSimulation()"
+            />
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div class="toggle-divider"></div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Include Unexcused Absences & Missing Punches</span>
+            <p class="toggle-sub">Automatically flags non-weekend, non-holiday working days where employee had 0 punch logs and no approved leave or regularization.</p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              [(ngModel)]="settings.includeUnexcusedAbsents"
+              (change)="updateSimulation()"
+            />
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Live Interactive Formula Sandbox -->
+    <div class="simulator-card">
+      <div class="simulator-header">
+        <div class="sim-title-group">
+          <mat-icon class="sim-icon">calculate</mat-icon>
+          <div>
+            <h4 class="sim-heading">Live Calculation Simulator</h4>
+            <span class="sim-sub">Preview how this rule calculates deductions for a sample employee</span>
+          </div>
+        </div>
+        <span class="rule-badge">{{ simulatedFormulaStr }}</span>
+      </div>
+
+      <div class="sim-inputs-grid">
+        <div class="sim-input-item">
+          <label class="sim-label">Sample Monthly Gross</label>
+          <div class="sim-input-wrap">
+            <span class="prefix">₹</span>
+            <input
+              type="number"
+              [(ngModel)]="sampleGrossSalary"
+              (ngModelChange)="updateSimulation()"
+              class="sim-input"
+            />
+          </div>
+        </div>
+
+        <div class="sim-input-item">
+          <label class="sim-label">Sample Basic Salary</label>
+          <div class="sim-input-wrap">
+            <span class="prefix">₹</span>
+            <input
+              type="number"
+              [(ngModel)]="sampleBasicSalary"
+              (ngModelChange)="updateSimulation()"
+              class="sim-input"
+            />
+          </div>
+        </div>
+
+        <div class="sim-input-item">
+          <label class="sim-label">Simulated LOP Days</label>
+          <div class="sim-input-wrap">
+            <input
+              type="number"
+              [(ngModel)]="sampleLopDays"
+              (ngModelChange)="updateSimulation()"
+              min="1"
+              max="31"
+              class="sim-input"
+            />
+            <span class="suffix">Days</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-results-ribbon">
+        <div class="res-box">
+          <span class="res-label">Daily Deduction Rate</span>
+          <span class="res-val text-amber">{{ formatCurrency(simulatedDailyRate) }} <small>/ day</small></span>
+        </div>
+        <div class="res-sep">×</div>
+        <div class="res-box">
+          <span class="res-label">LOP Days</span>
+          <span class="res-val text-slate">{{ sampleLopDays }} Days</span>
+        </div>
+        <div class="res-sep">=</div>
+        <div class="res-box total-res">
+          <span class="res-label">Total Simulated LOP Deduction</span>
+          <span class="res-val text-red">{{ formatCurrency(simulatedTotalDeduction) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer Actions -->
+  <div class="modal-footer">
+    <button type="button" class="btn-secondary" (click)="resetDefaults()">
+      <mat-icon>restart_alt</mat-icon>
+      <span>Restore Defaults</span>
+    </button>
+
+    <div class="footer-right">
+      <button type="button" class="btn-cancel" (click)="closeModal()">
+        Cancel
+      </button>
+      <button type="button" class="btn-save-primary" (click)="saveSettings()">
+        <mat-icon>check_circle</mat-icon>
+        <span>Save Calculation Rule</span>
+      </button>
+    </div>
+  </div>
+</div>

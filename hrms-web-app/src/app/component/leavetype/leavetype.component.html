@@ -111,6 +111,7 @@
           <tr>
             <th>LEAVE TYPE</th>
             <th>DESCRIPTION</th>
+            <th>ALLOWED DAYS (WITHOUT LOP)</th>
             <th>STATUS</th>
             <th class="text-right">ACTIONS</th>
           </tr>
@@ -130,6 +131,14 @@
             <!-- Description -->
             <td class="col-desc">
               <span class="desc-text">{{ record.description }}</span>
+            </td>
+
+            <!-- Allowed Days / Quota without LOP -->
+            <td class="col-quota">
+              <span class="quota-badge" [class.badge-paid]="(record.allowedDays || 0) > 0" [class.badge-unpaid]="!(record.allowedDays || 0)">
+                <mat-icon>{{ (record.allowedDays || 0) > 0 ? 'event_available' : 'money_off' }}</mat-icon>
+                <span>{{ (record.allowedDays || 0) > 0 ? (record.allowedDays + ' Days (Paid)') : '0 Days (Full LOP)' }}</span>
+              </span>
             </td>
 
             <!-- Status (Display Only Badge) -->
@@ -166,7 +175,7 @@
 
           <!-- Empty State -->
           <tr *ngIf="paginatedRecords.length === 0">
-            <td colspan="4" class="empty-state">
+            <td colspan="5" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">search_off</mat-icon>
                 <p *ngIf="allLeaveTypes.length === 0">

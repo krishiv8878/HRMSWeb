@@ -68,6 +68,41 @@
       }
     }
 
+    .btn-copy-year {
+      height: 38px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: all 0.15s ease;
+
+      .btn-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #475569;
+      }
+
+      &:hover:not(:disabled) {
+        background-color: #f1f5f9;
+        border-color: #94a3b8;
+        color: #0f172a;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
     .btn-add-holiday {
       height: 38px;
       background: linear-gradient(135deg, #1d4ed8, #1e40af);

@@ -6,8 +6,8 @@
         <mat-icon>{{ isEdit ? 'security' : 'add_moderator' }}</mat-icon>
       </div>
       <div class="header-text">
-        <h2 class="modal-title">{{ isEdit ? 'Edit Security Role' : 'Add New Role' }}</h2>
-        <p class="modal-subtitle">Configure authorization tier, portal permissions, and access privileges.</p>
+        <h2 class="modal-title">{{ isEdit ? 'Edit Security Role & Permissions' : 'Add New Role & Define Permissions' }}</h2>
+        <p class="modal-subtitle">Configure authorization tier, portal permissions, and system access rights.</p>
       </div>
     </div>
     <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
@@ -17,42 +17,179 @@
 
   <!-- Form Body -->
   <form [formGroup]="roledateForm" (ngSubmit)="submitdata()" class="role-form-body">
-    <!-- Role Name Field -->
-    <div class="form-group">
-      <label class="field-label">Role Definition Title <span class="required">*</span></label>
-      <div class="input-wrapper">
-        <mat-icon class="input-icon">badge</mat-icon>
-        <input
-          type="text"
-          formControlName="roleName"
-          placeholder="e.g. Super Admin, HR Manager, Team Lead, Employee"
-          class="custom-input"
-          (keypress)="allowOnlyLetters($event)"
-        />
+    <!-- Top Row: Role Title & Active Status -->
+    <div class="top-fields-row">
+      <!-- Role Name Field -->
+      <div class="form-group role-name-group">
+        <label class="field-label">Role Definition Title <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">badge</mat-icon>
+          <input
+            type="text"
+            formControlName="roleName"
+            placeholder="e.g. Finance Lead, HR Specialist, Team Lead, Auditor"
+            class="custom-input"
+            (keypress)="allowOnlyLetters($event)"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('roleName')?.touched && getControl('roleName')?.invalid">
+          Role name is required
+        </span>
       </div>
-      <span class="error-text" *ngIf="getControl('roleName')?.touched && getControl('roleName')?.invalid">
-        Role name is required
-      </span>
+
+      <!-- Active Status Card -->
+      <div class="form-group-checkbox">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
+          <span class="label-title">Active Role Status</span>
+        </label>
+        <p class="checkbox-hint">Enables this role to be assigned to personnel and enforced across HRMS modules.</p>
+      </div>
     </div>
 
-    <!-- Active Status Card -->
-    <div class="form-group-checkbox">
-      <label class="checkbox-label">
-        <input type="checkbox" formControlName="isActive" class="custom-checkbox" />
-        <span class="label-title">Active Role Status</span>
-      </label>
-      <p class="checkbox-hint">Enables this role to be assigned to personnel and enforced across HRMS modules.</p>
+    <!-- Permission Matrix Section -->
+    <div class="permissions-matrix-section">
+      <!-- Section Header -->
+      <div class="matrix-header">
+        <div class="matrix-title-group">
+          <div class="matrix-title-row">
+            <mat-icon class="matrix-icon">lock_open</mat-icon>
+            <h3 class="matrix-title">System Permissions Matrix</h3>
+            <span class="perm-counter-badge" [class.badge-has-perms]="selectedCount > 0">
+              {{ selectedCount }} of {{ allPermissions.length }} Permissions Selected
+            </span>
+          </div>
+          <p class="matrix-subtitle">
+            Users assigned this role automatically inherit all checked permissions across HRMS modules.
+          </p>
+        </div>
+
+        <div class="matrix-actions">
+          <button type="button" class="btn-text-action" (click)="selectAllPermissions()">
+            <mat-icon>done_all</mat-icon> Select All
+          </button>
+          <button type="button" class="btn-text-action" (click)="clearAllPermissions()" [disabled]="selectedCount === 0">
+            <mat-icon>remove_done</mat-icon> Clear All
+          </button>
+        </div>
+      </div>
+
+      <!-- Search & Module Filter Toolbar -->
+      <div class="matrix-toolbar">
+        <div class="perm-search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="permSearchQuery"
+            [ngModelOptions]="{ standalone: true }"
+            placeholder="Search permission or action..."
+            class="perm-search-input"
+          />
+        </div>
+
+        <div class="module-filter-pills">
+          <button
+            type="button"
+            class="module-pill"
+            [class.active]="activeModuleTab === 'All'"
+            (click)="activeModuleTab = 'All'"
+          >
+            All Modules
+          </button>
+          <button
+            *ngFor="let group of groupedPermissions"
+            type="button"
+            class="module-pill"
+            [class.active]="activeModuleTab === group.moduleName"
+            (click)="activeModuleTab = group.moduleName"
+          >
+            <mat-icon class="pill-icon">{{ group.icon }}</mat-icon>
+            <span>{{ group.moduleName }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoadingPermissions" class="perm-loading-box">
+        <mat-icon class="spinning-icon">sync</mat-icon>
+        <span>Loading permissions schema...</span>
+      </div>
+
+      <!-- Groups List Container -->
+      <div *ngIf="!isLoadingPermissions" class="modules-accordion-container">
+        <div *ngFor="let group of filteredModuleGroups" class="module-card">
+          <!-- Module Group Header -->
+          <div class="module-card-header">
+            <div class="module-info">
+              <mat-icon class="mod-icon">{{ group.icon }}</mat-icon>
+              <span class="mod-name">{{ group.moduleName }}</span>
+              <span class="mod-count">({{ group.permissions.length }} Actions)</span>
+            </div>
+
+            <div class="module-header-actions">
+              <label class="module-select-all" (click)="$event.stopPropagation()">
+                <input
+                  type="checkbox"
+                  [checked]="isModuleAllSelected(group)"
+                  (change)="toggleModuleAll(group)"
+                  class="custom-checkbox"
+                />
+                <span>Select All in {{ group.moduleName }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Module Permissions Grid -->
+          <div class="permissions-grid">
+            <div
+              *ngFor="let perm of group.permissions"
+              class="permission-item"
+              [class.selected]="isPermissionSelected(perm.id)"
+              (click)="togglePermission(perm.id)"
+            >
+              <input
+                type="checkbox"
+                [checked]="isPermissionSelected(perm.id)"
+                (change)="togglePermission(perm.id)"
+                (click)="$event.stopPropagation()"
+                class="perm-checkbox"
+              />
+              <div class="perm-text">
+                <div class="perm-name-row">
+                  <span class="perm-display-name">{{ perm.displayName }}</span>
+                  <span class="perm-code-tag">{{ perm.permissionCode }}</span>
+                </div>
+                <p class="perm-description" *ngIf="perm.description">{{ perm.description }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="filteredModuleGroups.length === 0" class="no-perms-found">
+          <mat-icon>search_off</mat-icon>
+          <p>No permissions found matching "{{ permSearchQuery }}".</p>
+        </div>
+      </div>
     </div>
 
     <!-- Modal Footer Actions -->
     <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeModal()">
-        Cancel
-      </button>
-      <button type="submit" class="btn-submit">
-        <mat-icon>{{ isEdit ? 'save' : 'add_moderator' }}</mat-icon>
-        <span>{{ isEdit ? 'Update Role' : 'Save Role' }}</span>
-      </button>
+      <div class="footer-left">
+        <span class="auto-assign-note">
+          <mat-icon class="info-icon">info</mat-icon>
+          Personnel assigned this role will automatically receive all {{ selectedCount }} checked permissions.
+        </span>
+      </div>
+      <div class="footer-buttons">
+        <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="isSaving">
+          Cancel
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="isSaving">
+          <mat-icon *ngIf="!isSaving">{{ isEdit ? 'save' : 'add_moderator' }}</mat-icon>
+          <mat-icon *ngIf="isSaving" class="spinning-icon">sync</mat-icon>
+          <span>{{ isSaving ? 'Saving...' : (isEdit ? 'Update Role & Permissions' : 'Save Role & Permissions') }}</span>
+        </button>
+      </div>
     </div>
   </form>
 </div>

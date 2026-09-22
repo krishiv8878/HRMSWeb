@@ -1,13 +1,16 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { Subscription } from 'rxjs';
 import { EmployeeService } from '../../services/employee/employee.service';
 import { EmployeeComponent } from '../../modal/employee/employee.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { GlobalFilterService } from '../../services/filter/global-filter.service';
 
 export interface EmployeeItem {
   id: number;
@@ -47,10 +50,13 @@ export interface EmployeeItem {
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   private service = inject(EmployeeService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
+  private router = inject(Router);
+  private globalFilterService = inject(GlobalFilterService);
+  private filterSub?: Subscription;
 
   Math = Math;
 
@@ -84,6 +90,22 @@ export class HomeComponent implements OnInit {
 
   ngOnInit() {
     this.getAllData();
+
+    this.filterSub = this.globalFilterService.filters$.subscribe(f => {
+      this.searchQuery = f.search || '';
+      if (f.status && ['All', 'Active', 'Inactive'].includes(f.status)) {
+        this.selectedStatus = f.status;
+      }
+      if (this.allEmployees.length > 0) {
+        this.filterEmployees();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.filterSub) {
+      this.filterSub.unsubscribe();
+    }
   }
 
   getAllData() {
@@ -104,14 +126,14 @@ export class HomeComponent implements OnInit {
         if (rawList.length > 0) {
           this.allEmployees = rawList.map((item: any, idx: number) => this.mapEmployeeItem(item, idx));
         } else {
-          this.allEmployees = this.getDefaultMockEmployees();
+          this.allEmployees = [];
         }
 
         this.processEmployeeMetrics();
         this.filterEmployees();
       },
       error: () => {
-        this.allEmployees = this.getDefaultMockEmployees();
+        this.allEmployees = [];
         this.processEmployeeMetrics();
         this.filterEmployees();
       }
@@ -127,9 +149,9 @@ export class HomeComponent implements OnInit {
     let skillsList: string[] = [];
     if (item.skills) {
       if (Array.isArray(item.skills)) {
-        skillsList = item.skills;
+        skillsList = item.skills.filter(Boolean);
       } else if (typeof item.skills === 'string') {
-        skillsList = item.skills.split(',').map((s: string) => s.trim()).filter((s: string) => s);
+        skillsList = item.skills.split(',').map((s: string) => s.trim()).filter(Boolean);
       }
     }
 
@@ -162,7 +184,7 @@ export class HomeComponent implements OnInit {
 
     const globalAvatar = this.service.getProfileAvatar();
     const loggedUserId = typeof window !== 'undefined' ? localStorage.getItem('employeeId') : null;
-    if (!avatarUrl && globalAvatar && (item.id == loggedUserId || item.employeeId == loggedUserId || idx === 0)) {
+    if (!avatarUrl && globalAvatar && (item.id == loggedUserId || item.employeeId == loggedUserId)) {
       avatarUrl = globalAvatar;
     }
 
@@ -172,117 +194,28 @@ export class HomeComponent implements OnInit {
       firstName: fName,
       lastName: lName,
       fullName: fullName,
-      emailAddress: item.emailAddress || `${fName.toLowerCase()}.${lName.toLowerCase()}@khrms.com`,
-      mobileNumber: item.mobileNumber || '9876543210',
-      permanentAddress: item.permanentAddress || 'Corporate HQ, Floor 3',
-      currentAddress: item.currentAddress || item.permanentAddress || 'Tech Park Campus',
+      emailAddress: item.emailAddress || '—',
+      mobileNumber: item.mobileNumber || '—',
+      permanentAddress: item.permanentAddress || '—',
+      currentAddress: item.currentAddress || item.permanentAddress || '—',
       dateOfJoining: item.dateOfJoining,
       formattedJoinDate: joinDateFormatted,
-      skills: Array.isArray(item.skills) ? item.skills.join(', ') : (item.skills || 'C#, .NET, Angular'),
-      skillsList: skillsList.length > 0 ? skillsList : ['Angular', 'C#', '.NET'],
+      skills: Array.isArray(item.skills) ? item.skills.join(', ') : (item.skills || ''),
+      skillsList: skillsList,
       rolenames: roleStr,
       roleDisplay: roleStr,
-      managerName: item.managerName || (idx % 2 === 0 ? 'Alex Mercer' : 'Sarah Connor'),
-      gender: item.gender || (idx % 2 === 0 ? 'Male' : 'Female'),
+      managerName: item.managerName || 'Not Assigned',
+      gender: item.gender || 'Not Specified',
       isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false',
       avatarUrl: avatarUrl,
       initials: initials.toUpperCase(),
-      department: roleStr.includes('HR') ? 'Human Resources' : (roleStr.includes('Manager') ? 'Management' : 'Engineering'),
+      department: item.department || (roleStr.includes('HR') ? 'Human Resources' : (roleStr.includes('Manager') ? 'Management' : 'Engineering')),
       rawRecord: item
     };
   }
 
   private getDefaultMockEmployees(): EmployeeItem[] {
-    return [
-      {
-        id: 1,
-        employeeId: 1,
-        firstName: 'Sarah',
-        lastName: 'Jenkins',
-        fullName: 'Sarah Jenkins',
-        emailAddress: 'sarah.jenkins@khrms.com',
-        mobileNumber: '9876543210',
-        permanentAddress: 'NY Office - Floor 4',
-        currentAddress: 'NY Office - Floor 4',
-        dateOfJoining: '2023-01-15',
-        formattedJoinDate: '15 Jan 2023',
-        skills: 'Angular, TypeScript, SCSS, RxJS',
-        skillsList: ['Angular', 'TypeScript', 'SCSS'],
-        rolenames: 'Frontend Lead',
-        roleDisplay: 'Frontend Lead',
-        managerName: 'Alex Mercer',
-        gender: 'Female',
-        isActive: true,
-        initials: 'SJ',
-        department: 'Engineering'
-      },
-      {
-        id: 2,
-        employeeId: 2,
-        firstName: 'Michael',
-        lastName: 'Chang',
-        fullName: 'Michael Chang',
-        emailAddress: 'michael.c@khrms.com',
-        mobileNumber: '9876543211',
-        permanentAddress: 'Remote (UK)',
-        currentAddress: 'Remote (UK)',
-        dateOfJoining: '2022-06-10',
-        formattedJoinDate: '10 Jun 2022',
-        skills: 'C#, ASP.NET Core, SQL Server, Azure',
-        skillsList: ['C#', '.NET Core', 'SQL'],
-        rolenames: 'Backend Architect',
-        roleDisplay: 'Backend Architect',
-        managerName: 'Alex Mercer',
-        gender: 'Male',
-        isActive: true,
-        initials: 'MC',
-        department: 'Engineering'
-      },
-      {
-        id: 3,
-        employeeId: 3,
-        firstName: 'Emma',
-        lastName: 'Watson',
-        fullName: 'Emma Watson',
-        emailAddress: 'emma.w@khrms.com',
-        mobileNumber: '9876543212',
-        permanentAddress: 'SF Office - Floor 2',
-        currentAddress: 'SF Office - Floor 2',
-        dateOfJoining: '2023-08-01',
-        formattedJoinDate: '01 Aug 2023',
-        skills: 'Figma, UI/UX, Design Systems, Prototyping',
-        skillsList: ['Figma', 'UI/UX', 'Design System'],
-        rolenames: 'Principal Designer',
-        roleDisplay: 'Principal Designer',
-        managerName: 'Sarah Connor',
-        gender: 'Female',
-        isActive: true,
-        initials: 'EW',
-        department: 'Design'
-      },
-      {
-        id: 4,
-        employeeId: 4,
-        firstName: 'David',
-        lastName: 'Miller',
-        fullName: 'David Miller',
-        emailAddress: 'david.m@khrms.com',
-        mobileNumber: '9876543213',
-        permanentAddress: 'NY Office - Desk 42',
-        currentAddress: 'NY Office - Desk 42',
-        dateOfJoining: '2024-02-15',
-        formattedJoinDate: '15 Feb 2024',
-        skills: 'Talent Acquisition, Payroll, Compliance',
-        skillsList: ['HR', 'Payroll', 'Compliance'],
-        rolenames: 'HR Specialist',
-        roleDisplay: 'HR Specialist',
-        managerName: 'Sarah Connor',
-        gender: 'Male',
-        isActive: true,
-        initials: 'DM',
-        department: 'Human Resources'
-      }
-    ];
+    return [];
   }
 
   private processEmployeeMetrics() {
@@ -450,6 +383,20 @@ export class HomeComponent implements OnInit {
         this.getAllData();
       }
     });
+  }
+
+  viewEmployeeProfile(emp: EmployeeItem | any) {
+    const targetId = emp?.id || emp?.employeeId;
+    if (targetId) {
+      this.router.navigate(['/index/user-profile'], { queryParams: { id: targetId } });
+    }
+  }
+
+  navigateToPayroll(emp: EmployeeItem | any) {
+    const targetId = emp?.id || emp?.employeeId;
+    if (targetId) {
+      this.router.navigate(['/index/paymentinfo'], { queryParams: { employeeId: targetId } });
+    }
   }
 
   Edit(data: any) {

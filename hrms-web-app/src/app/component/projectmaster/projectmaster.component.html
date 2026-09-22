@@ -9,12 +9,6 @@
     </div>
 
     <div class="header-actions">
-      <!-- Export CSV Button (Outward icon) -->
-      <button type="button" class="btn-export" (click)="onExportProjects()">
-        <mat-icon class="btn-icon">file_upload</mat-icon>
-        <span>Export Portfolio</span>
-      </button>
-
       <!-- Add Project Button (Manager & Admin only) -->
       <button *ngIf="canManageProjects" type="button" class="btn-add-project" (click)="openAddForm()">
         <mat-icon class="btn-icon">add_task</mat-icon>
@@ -222,17 +216,7 @@
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
-              <div class="action-btn-group" *ngIf="isEmployeeOnly">
-                <button
-                  type="button"
-                  class="btn-action-icon edit-btn"
-                  (click)="openProjectDetails(proj)"
-                  title="View Team Members & Project Scope"
-                  style="color: #7c3aed; background-color: #f5f3ff;"
-                >
-                  <mat-icon>visibility</mat-icon>
-                </button>
-              </div>
+              <span *ngIf="isEmployeeOnly" class="text-muted" style="font-size: 12px; color: #94a3b8;">Click project name</span>
             </td>
           </tr>
 

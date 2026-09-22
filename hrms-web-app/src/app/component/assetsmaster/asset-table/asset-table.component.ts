@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,10 +7,15 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { Subscription } from 'rxjs';
 import { AssetItem, AssetStatus } from '../../../interface/asset.interface';
 import { AssetsmasterService } from '../../../services/assetsmaster/assetsmaster.service';
+import { AssetRequestService } from '../../../services/asset-request/asset-request.service';
+import { AssetRequestItem, AssetRequestType } from '../../../interface/asset-request.interface';
 import { AssetDetailsComponent } from '../../../modal/asset-details/asset-details.component';
 import { AssetsmastersComponent } from '../../../modal/assetsmasters/assetsmasters.component';
+import { AssetRequestModalComponent } from '../../../modal/asset-request-modal/asset-request-modal.component';
+import { AssetTrackingModalComponent } from '../../../modal/asset-tracking-modal/asset-tracking-modal.component';
 import { DeleteModalComponent } from '../../delete-modal/delete-modal.component';
 import { RbacService } from '../../../core/rbac.service';
 
@@ -29,13 +34,17 @@ import { RbacService } from '../../../core/rbac.service';
   templateUrl: './asset-table.component.html',
   styleUrl: './asset-table.component.scss'
 })
-export class AssetTableComponent implements OnInit, OnChanges {
+export class AssetTableComponent implements OnInit, OnChanges, OnDestroy {
   @Input() assets: AssetItem[] = [];
 
   private assetService = inject(AssetsmasterService);
+  private requestService = inject(AssetRequestService);
   private toastr = inject(ToastrService);
   private dialog = inject(MatDialog);
   private rbacService = inject(RbacService);
+
+  assetRequests: AssetRequestItem[] = [];
+  private reqSub?: Subscription;
 
   get isAdmin(): boolean {
     return this.rbacService.isAdmin();
@@ -61,6 +70,17 @@ export class AssetTableComponent implements OnInit, OnChanges {
 
   ngOnInit() {
     this.filterAssets();
+
+    this.reqSub = this.requestService.requests$.subscribe(reqs => {
+      this.assetRequests = reqs;
+    });
+
+    const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
+    this.requestService.fetchRequests(this.isAdmin ? undefined : currentEmpId).subscribe();
+  }
+
+  ngOnDestroy() {
+    this.reqSub?.unsubscribe();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -143,15 +163,9 @@ export class AssetTableComponent implements OnInit, OnChanges {
   }
 
   openViewDetails(asset: AssetItem) {
-    const dialogRef = this.dialog.open(AssetDetailsComponent, {
+    this.dialog.open(AssetDetailsComponent, {
       width: '520px',
       data: asset
-    });
-
-    dialogRef.afterClosed().subscribe(res => {
-      if (res && res.action === 'deploy') {
-        this.onSendForDeployment(res.id || asset.id);
-      }
     });
   }
 
@@ -167,12 +181,6 @@ export class AssetTableComponent implements OnInit, OnChanges {
         this.assetService.recalculateMetrics();
       }
     });
-  }
-
-  onSendForDeployment(id: string) {
-    if (!this.isAdmin) return;
-    this.assetService.sendForDeployment(id);
-    this.toastr.success(`Asset ${id} sent for deployment! Status set to 'Available'`, 'Ready for Deployment');
   }
 
   onSendToRepair(id: string) {
@@ -203,6 +211,119 @@ export class AssetTableComponent implements OnInit, OnChanges {
       case 'In Repair': return 'pill-repair';
       default: return 'pill-available';
     }
+  }
+
+  getActiveRequest(asset: AssetItem): AssetRequestItem | undefined {
+    const numericId = typeof asset.id === 'string' ? parseInt(asset.id.replace(/\D/g, ''), 10) : Number(asset.id);
+    const assetEmpId = asset.employeeId ? Number(asset.employeeId) : undefined;
+    const currentEmpId = Number(localStorage.getItem('employeeId')) || 0;
+
+    return this.assetRequests.find(r => {
+      // Must match exact asset ID
+      if (Number(r.assetId) !== numericId) return false;
+
+      // In employee view, must match current employee
+      if (!this.isAdmin && currentEmpId > 0 && r.employeeId !== currentEmpId) return false;
+
+      // In admin view, if asset is assigned to someone, only match tickets for currently assigned employee
+      if (this.isAdmin && assetEmpId && assetEmpId > 0 && r.employeeId !== assetEmpId) return false;
+
+      // If asset is Available / Unassigned, previous employee tickets shouldn't be active
+      if (asset.status === 'Available') return false;
+
+      // Check if ticket is still active / in-progress
+      const s = (r.status || '').toLowerCase().trim();
+      const isFinished = s.includes('completed') || s.includes('closed') || s.includes('rejected') || s.includes('received');
+      return !isFinished;
+    });
+  }
+
+  getLatestRequest(asset: AssetItem): AssetRequestItem | undefined {
+    const numericId = typeof asset.id === 'string' ? parseInt(asset.id.replace(/\D/g, ''), 10) : Number(asset.id);
+    const currentEmpId = Number(localStorage.getItem('employeeId')) || 0;
+    const assetEmpId = Number(asset.employeeId) || 0;
+
+    return this.assetRequests.find(r => {
+      if (Number(r.assetId) !== numericId) return false;
+      if (!this.isAdmin && currentEmpId > 0 && r.employeeId !== currentEmpId) return false;
+      if (this.isAdmin && assetEmpId && assetEmpId > 0 && r.employeeId !== assetEmpId) return false;
+      return true;
+    });
+  }
+
+  isLatestRequestRejected(asset: AssetItem): boolean {
+    const active = this.getActiveRequest(asset);
+    if (active) return false;
+    const latest = this.getLatestRequest(asset);
+    if (!latest) return false;
+    const s = (latest.status || '').toLowerCase().trim();
+    return s.includes('reject');
+  }
+
+  getTicketBadgeClass(status: string): string {
+    const s = (status || '').toLowerCase();
+    if (s.includes('dispatch') || s.includes('transit')) return 'badge-dispatched';
+    if (s.includes('deliver')) return 'badge-delivered';
+    if (s.includes('repair')) return 'badge-repair';
+    if (s.includes('approved')) return 'badge-approved';
+    if (s.includes('submitted') || s.includes('requested') || s.includes('initiated')) return 'badge-submitted';
+    if (s.includes('reject')) return 'badge-rejected';
+    return 'badge-default';
+  }
+
+  getTicketIcon(status: string): string {
+    const s = (status || '').toLowerCase();
+    if (s.includes('dispatch') || s.includes('transit')) return 'local_shipping';
+    if (s.includes('deliver')) return 'markunread_mailbox';
+    if (s.includes('repair')) return 'build';
+    if (s.includes('approved')) return 'thumb_up';
+    if (s.includes('submitted') || s.includes('requested') || s.includes('initiated')) return 'schedule';
+    if (s.includes('reject')) return 'cancel';
+    return 'info';
+  }
+
+  openRequestModal(asset: AssetItem, defaultType: AssetRequestType = 'Repair') {
+    const dialogRef = this.dialog.open(AssetRequestModalComponent, {
+      width: '620px',
+      data: { asset, defaultType }
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res) {
+        const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
+        this.requestService.fetchRequests(this.isAdmin ? undefined : currentEmpId).subscribe();
+        this.assetService.fetchAssetsFromApi();
+      }
+    });
+  }
+
+  openTrackModal(asset: AssetItem) {
+    const req = this.getActiveRequest(asset) || this.getLatestRequest(asset);
+    if (!req) return;
+
+    const dialogRef = this.dialog.open(AssetTrackingModalComponent, {
+      width: '680px',
+      data: {
+        asset,
+        request: req,
+        isAdmin: this.isAdmin
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res) {
+        const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
+        this.requestService.fetchRequests(this.isAdmin ? undefined : currentEmpId).subscribe();
+        this.assetService.fetchAssetsFromApi();
+      }
+    });
+  }
+
+  canConfirmReceipt(asset: AssetItem): boolean {
+    const req = this.getActiveRequest(asset);
+    if (!req || this.isAdmin) return false;
+    const s = (req.status || '').toLowerCase();
+    return s.includes('dispatch') || s.includes('deliver');
   }
 
   get startItemIndex(): number {

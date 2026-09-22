@@ -27,4 +27,8 @@ export class HolidayservicesService {
   DeleteHoliday(holidayId: any) {
     return this.http.delete(this.apiUrl + `/Holiday/DeleteHoliday?holidayId=`+ holidayId);
   }
+
+  copyHolidaysToYear(sourceYear: number, targetYear: number) {
+    return this.http.post<any>(`${this.apiUrl}/Holiday/CopyHolidaysToNextYear?sourceYear=${sourceYear}&targetYear=${targetYear}`, {});
+  }
 }
