@@ -23,17 +23,7 @@
       <ng-container *ngIf="!isViewingOtherEmployee">
         <button
           type="button"
-          *ngIf="!isClockedIn"
-          class="btn-punch btn-clock-in"
-          (click)="openClockInDialog()"
-        >
-          <mat-icon>login</mat-icon>
-          <span>Clock-In</span>
-        </button>
-
-        <button
-          type="button"
-          *ngIf="isClockedIn"
+          *ngIf="isClockedIn; else clockInTpl"
           class="btn-punch btn-clock-out"
           (click)="openClockOutDialog()"
         >
@@ -41,6 +31,17 @@
           <span>Clock-Out</span>
           <span class="session-duration-tag">{{ activeSessionDuration }}</span>
         </button>
+
+        <ng-template #clockInTpl>
+          <button
+            type="button"
+            class="btn-punch btn-clock-in"
+            (click)="openClockInDialog()"
+          >
+            <mat-icon>login</mat-icon>
+            <span>Clock-In</span>
+          </button>
+        </ng-template>
       </ng-container>
 
       <!-- Supervisor Audit View Badge when inspecting another employee -->

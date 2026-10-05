@@ -204,6 +204,37 @@
 
   <!-- Right Actions & User Profile -->
   <div class="right-actions">
+    <!-- Top Header Smart Punch Widget (Clock-In / Clock-Out with Live Session Timer) -->
+    <div class="header-punch-widget" *ngIf="loggedInEmployeeId">
+      <!-- When Clocked In -> Clock-Out Button with Running Session Timer -->
+      <button
+        *ngIf="isClockedIn; else headerClockInBtn"
+        type="button"
+        class="header-punch-btn btn-clock-out"
+        (click)="openHeaderClockOutDialog()"
+        [title]="'In session since ' + clockInTimeDisplay + ' • Click to Clock-Out'"
+      >
+        <span class="live-pulse-dot"></span>
+        <mat-icon class="punch-icon">logout</mat-icon>
+        <span class="punch-label">Clock-Out</span>
+        <span class="header-timer-tag">{{ sessionElapsedDisplay }}</span>
+      </button>
+
+      <!-- When NOT Clocked In -> Clock-In Button -->
+      <ng-template #headerClockInBtn>
+        <button
+          type="button"
+          class="header-punch-btn btn-clock-in"
+          [class.btn-clock-again]="hasClockedOutToday"
+          (click)="openHeaderClockInDialog()"
+          [title]="hasClockedOutToday ? 'Clocked out today (' + clockInTimeDisplay + ' - ' + clockOutTimeDisplay + ') • Click to start another session' : 'Start your working session (Clock-In)'"
+        >
+          <mat-icon class="punch-icon">{{ hasClockedOutToday ? 'refresh' : 'login' }}</mat-icon>
+          <span class="punch-label">{{ hasClockedOutToday ? 'Clock-In Again' : 'Clock-In' }}</span>
+        </button>
+      </ng-template>
+    </div>
+
     <!-- Page Filters Toggle Button -->
     <button
       *ngIf="pageConfig"
@@ -489,16 +520,15 @@
         </button>
       </div>
 
-      <!-- Employee Filter (for Admin, HR, Manager) -->
       <div *ngIf="pageConfig.showEmployeeFilter && isAdminOrHrOrManager" class="ribbon-control ribbon-select-control">
         <mat-icon class="control-icon">person</mat-icon>
         <select
           class="ribbon-select"
-          [value]="activeFilters.employeeId"
+          [ngModel]="activeFilters.employeeId?.toString()"
           (change)="onFilterEmployeeSelect($any($event.target).value)"
         >
           <option value="All">All Personnel</option>
-          <option *ngFor="let emp of allEmployeesForFilter" [value]="emp.id">
+          <option *ngFor="let emp of allEmployeesForFilter" [value]="emp.id?.toString()">
             {{ emp.firstName }} {{ emp.lastName }} ({{ emp.employeeId || emp.id }})
           </option>
         </select>
@@ -529,6 +559,20 @@
           <option *ngFor="let m of availableFilterMonths" [value]="m">
             {{ m === 'All' ? 'All Months' : m }}
           </option>
+        </select>
+      </div>
+
+      <!-- Global Sort Order Filter -->
+      <div *ngIf="pageConfig.showSortFilter !== false" class="ribbon-control ribbon-select-control sort-order-control">
+        <mat-icon class="control-icon">swap_vert</mat-icon>
+        <select
+          class="ribbon-select"
+          [value]="activeFilters.sortOrder || 'desc'"
+          (change)="onFilterSortSelect($any($event.target).value)"
+          title="Change sorting order"
+        >
+          <option value="desc">Latest First (Descending)</option>
+          <option value="asc">Oldest First (Ascending)</option>
         </select>
       </div>
     </div>

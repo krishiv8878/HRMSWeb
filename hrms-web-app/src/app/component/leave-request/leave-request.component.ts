@@ -1,6 +1,7 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
@@ -9,6 +10,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { LeaverequestComponent, LeaveTypeItem } from '../../modal/leaverequest/leaverequest.component';
 import { CancelLeaveModalComponent } from '../../modal/cancel-leave-modal/cancel-leave-modal.component';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
@@ -22,9 +24,12 @@ export interface SubmittedLeaveRequest {
   leaveTypeName?: string;
   leaveTypeId?: number;
   leaveMode?: string;
+  totalDays?: number;
   status?: string;
   actionBy?: number;
   actionDate?: string;
+  applyDate?: string;
+  createdDate?: string;
   rejectionReason?: string;
   isActive?: boolean | number;
   isDeleted?: boolean | number;
@@ -47,10 +52,15 @@ export interface SubmittedLeaveRequest {
 export class LeaveRequestComponent implements OnInit, OnDestroy {
   private emailService = inject(EmailService);
   private leaveTypeService = inject(LeavetypeService);
+  private holidayService = inject(HolidayservicesService);
   private dialog = inject(MatDialog);
   private toastr = inject(ToastrService);
   private globalFilterService = inject(GlobalFilterService);
+  private route = inject(ActivatedRoute);
   private filterSub?: Subscription;
+  private routeSub?: Subscription;
+
+  holidays: any[] = [];
 
   Math = Math;
 
@@ -79,15 +89,33 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
   pages: number[] = [];
   paginatedRequests: SubmittedLeaveRequest[] = [];
 
+  // Active Tab: Defaults to 'Pending' on landing as requested by user
+  activeTab: 'Pending' | 'Approved' | 'Cancelled' | 'Rejected' | 'All' = 'Pending';
+  sortOrder: 'desc' | 'asc' = 'desc';
+
   // Dynamic Metric Stats
   totalCount: number = 0;
   approvedCount: number = 0;
   pendingCount: number = 0;
   rejectedCount: number = 0;
+  cancelledCount: number = 0;
   availableBalanceDays: number = 0;
+
+  setTab(tab: 'Pending' | 'Approved' | 'Cancelled' | 'Rejected' | 'All') {
+    this.activeTab = tab;
+    this.currentPage = 1;
+    this.filterRequests();
+  }
+
+  toggleSortOrder() {
+    this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+    this.globalFilterService.setSortOrder(this.sortOrder);
+    this.filterRequests();
+  }
 
   ngOnInit() {
     this.loggedInEmployeeId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
+    this.loadHolidays();
     this.loadLeaveTypes();
     this.loadLeaveBalance();
     this.loadData();
@@ -101,6 +129,9 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
           empChanged = true;
         }
       }
+      if (f.sortOrder && f.sortOrder !== this.sortOrder) {
+        this.sortOrder = f.sortOrder;
+      }
       this.searchQuery = f.search || '';
       this.selectedStatus = f.status || 'All';
 
@@ -111,12 +142,63 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
         this.filterRequests();
       }
     });
+
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      const empId = params['employeeId'];
+      if (empId && String(empId) !== 'All') {
+        this.selectedEmployeeId = Number(empId);
+        this.selectedEmployeeName = params['employeeName'] || '';
+        this.globalFilterService.setEmployee(Number(empId), this.selectedEmployeeName);
+        this.loadLeaveBalance();
+        if (this.allRequests.length > 0) {
+          this.filterRequests();
+        }
+      }
+      if (params['action'] === 'apply' || params['action'] === 'add') {
+        setTimeout(() => {
+          this.openApplyLeaveModal();
+        }, 200);
+      }
+    });
   }
 
   ngOnDestroy() {
     if (this.filterSub) {
       this.filterSub.unsubscribe();
     }
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
+  }
+
+  loadHolidays() {
+    this.holidayService.getHoliday().subscribe({
+      next: (res: any) => {
+        this.holidays = Array.isArray(res) ? res : (res?.data || []);
+        if (this.allRequests.length > 0) {
+          this.recalculateRequestDays();
+        }
+      },
+      error: () => {
+        this.holidays = [];
+      }
+    });
+  }
+
+  recalculateRequestDays() {
+    for (const req of this.allRequests) {
+      if (req.totalDays === undefined || req.totalDays === null || req.totalDays <= 0) {
+        req.totalDays = this.emailService.calculateWorkingLeaveDays(req.startDate, req.endDate, req.leaveMode, this.holidays);
+      }
+    }
+  }
+
+  formatLeaveDuration(req: SubmittedLeaveRequest): string {
+    const days = (req.totalDays !== undefined && req.totalDays !== null && req.totalDays > 0)
+      ? req.totalDays
+      : this.emailService.calculateWorkingLeaveDays(req.startDate, req.endDate, req.leaveMode, this.holidays);
+    const suffix = days === 1 ? 'Day' : 'Days';
+    return `${days} ${suffix}`;
   }
 
   loadLeaveBalance() {
@@ -190,6 +272,10 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
             const actionByVal = (item.actionBy !== undefined && item.actionBy !== null) ? Number(item.actionBy) : undefined;
             const statusStr = item.status ? String(item.status).trim() : 'Pending';
 
+            const calculatedDays = (item.totalDays !== undefined && item.totalDays !== null && Number(item.totalDays) > 0)
+              ? Number(item.totalDays)
+              : this.emailService.calculateWorkingLeaveDays(item.startDate || item.fromDate, item.endDate || item.toDate, item.leaveMode, this.holidays);
+
             return {
               id: Number(item.id || item.leaveRequestId || item.leaveId || 0),
               employeeId: Number(item.employeeId || item.empId || item.requestedBy || item.userId || 0),
@@ -199,6 +285,7 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
               leaveTypeName: typeName,
               leaveTypeId: leaveTypeId,
               leaveMode: item.leaveMode || 'Full Day',
+              totalDays: calculatedDays,
               status: statusStr,
               actionBy: actionByVal,
               actionDate: item.actionDate,
@@ -228,6 +315,7 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
     this.approvedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Approved').length;
     this.pendingCount = this.allRequests.filter(r => this.getStatusText(r) === 'Pending').length;
     this.rejectedCount = this.allRequests.filter(r => this.getStatusText(r) === 'Rejected').length;
+    this.cancelledCount = this.allRequests.filter(r => this.getStatusText(r) === 'Cancelled').length;
   }
 
   filterRequests() {
@@ -238,6 +326,11 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
       result = result.filter(r => Number(r.employeeId) === Number(this.selectedEmployeeId));
     }
 
+    // Filter by Status Tab (Pending / Approved / Cancelled / Rejected / All)
+    if (this.activeTab !== 'All') {
+      result = result.filter(r => this.getStatusText(r) === this.activeTab);
+    }
+
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
       result = result.filter(r =>
@@ -246,13 +339,32 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
       );
     }
 
-    if (this.selectedStatus !== 'All') {
-      result = result.filter(r => this.getStatusText(r) === this.selectedStatus);
-    }
-
     if (this.selectedType !== 'All') {
       result = result.filter(r => (r.leaveTypeName || 'Annual Leave') === this.selectedType);
     }
+
+    // Default Ordering: Descending (latest data showing at first)
+    const getTime = (r: SubmittedLeaveRequest): number => {
+      const d = r.startDate || r.applyDate || r.actionDate || r.createdDate || r.endDate;
+      if (d) {
+        const t = new Date(d).getTime();
+        if (!isNaN(t)) return t;
+      }
+      return r.id || 0;
+    };
+
+    result.sort((a, b) => {
+      const tA = getTime(a);
+      const tB = getTime(b);
+      const idA = a.id || 0;
+      const idB = b.id || 0;
+
+      if (this.sortOrder === 'asc') {
+        return (tA - tB) || (idA - idB);
+      } else {
+        return (tB - tA) || (idB - idA);
+      }
+    });
 
     this.filteredRequests = result;
     this.updatePagination();

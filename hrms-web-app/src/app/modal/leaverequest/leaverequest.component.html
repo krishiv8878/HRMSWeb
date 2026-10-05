@@ -82,7 +82,15 @@
       <div class="duration-banner" *ngIf="calculatedDays > 0">
         <mat-icon class="duration-icon">schedule</mat-icon>
         <span class="duration-text">
-          Calculated Duration: <strong>{{ calculatedDays }} {{ calculatedDays === 1 ? 'day' : 'days' }}</strong> (excluding non-working days)
+          Calculated Duration: <strong>{{ calculatedDays }} {{ calculatedDays === 1 ? 'day' : 'days' }}</strong> (excluding weekends & public holidays)
+        </span>
+      </div>
+
+      <!-- Zero Working Days Warning Banner -->
+      <div class="duration-banner" style="background: #fffbeb; border-color: #fde68a; color: #92400e;" *ngIf="calculatedDays === 0 && leaveForm.get('startDate')?.value && leaveForm.get('endDate')?.value">
+        <mat-icon class="duration-icon" style="color: #d97706;">event_busy</mat-icon>
+        <span class="duration-text">
+          Selected dates fall entirely on <strong>weekends or public holidays</strong> (0 working days). Please choose dates with working days.
         </span>
       </div>
 
@@ -151,12 +159,13 @@
 
       <!-- Modal Footer Actions -->
       <div class="modal-footer">
-        <button type="button" class="btn-cancel" (click)="onCancel()">
+        <button type="button" class="btn-cancel" [disabled]="isSubmitting" (click)="onCancel()">
           Cancel
         </button>
-        <button type="submit" class="btn-submit">
-          <mat-icon>send</mat-icon>
-          <span>Submit Request</span>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+          <span class="btn-spinner" *ngIf="isSubmitting"></span>
+          <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+          <span>{{ isSubmitting ? 'Submitting Leave...' : 'Submit Request' }}</span>
         </button>
       </div>
     </form>

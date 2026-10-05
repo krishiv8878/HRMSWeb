@@ -23,7 +23,7 @@
   <!-- Metric Category Cards Grid (4 Column Layout) -->
   <div class="metrics-cards-grid">
     <!-- Card 1: Available Leave Balance -->
-    <div class="metric-card">
+    <div class="metric-card clickable-metric" (click)="setTab('All')" title="View all requests">
       <div class="card-header">
         <span class="card-title">AVAILABLE BALANCE</span>
         <div class="icon-box icon-blue">
@@ -37,7 +37,7 @@
     </div>
 
     <!-- Card 2: Approved Leaves -->
-    <div class="metric-card">
+    <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Approved'" (click)="setTab('Approved')" title="Filter by Approved Leaves">
       <div class="card-header">
         <span class="card-title">APPROVED LEAVES</span>
         <div class="icon-box icon-indigo">
@@ -51,7 +51,7 @@
     </div>
 
     <!-- Card 3: Pending Approval -->
-    <div class="metric-card">
+    <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Pending'" (click)="setTab('Pending')" title="Filter by Pending Approval">
       <div class="card-header">
         <span class="card-title">PENDING APPROVAL</span>
         <div class="icon-box icon-amber">
@@ -65,7 +65,7 @@
     </div>
 
     <!-- Card 4: Rejected Leaves -->
-    <div class="metric-card">
+    <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Rejected'" (click)="setTab('Rejected')" title="Filter by Rejected Leaves">
       <div class="card-header">
         <span class="card-title">REJECTED</span>
         <div class="icon-box icon-rose">
@@ -81,6 +81,100 @@
 
   <!-- Table Boxed Container -->
   <div class="table-card-container">
+    <!-- Category Tabs Navigation Bar (Landing default: Pending) -->
+    <div class="leave-tabs-bar" role="tablist">
+      <div class="tabs-group">
+        <!-- Tab 1: Pending Requests (Default Landing) -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'Pending'"
+          (click)="setTab('Pending')"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'Pending'"
+        >
+          <mat-icon class="tab-icon text-amber">pending_actions</mat-icon>
+          <span class="tab-text">Pending Requests</span>
+          <span class="tab-count-pill pill-amber">{{ pendingCount }}</span>
+        </button>
+
+        <!-- Tab 2: Approved -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'Approved'"
+          (click)="setTab('Approved')"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'Approved'"
+        >
+          <mat-icon class="tab-icon text-emerald">check_circle</mat-icon>
+          <span class="tab-text">Approved</span>
+          <span class="tab-count-pill pill-emerald">{{ approvedCount }}</span>
+        </button>
+
+        <!-- Tab 3: Cancelled -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'Cancelled'"
+          (click)="setTab('Cancelled')"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'Cancelled'"
+        >
+          <mat-icon class="tab-icon text-slate">block</mat-icon>
+          <span class="tab-text">Cancelled</span>
+          <span class="tab-count-pill pill-slate">{{ cancelledCount }}</span>
+        </button>
+
+        <!-- Tab 4: Rejected -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'Rejected'"
+          (click)="setTab('Rejected')"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'Rejected'"
+        >
+          <mat-icon class="tab-icon text-rose">cancel</mat-icon>
+          <span class="tab-text">Rejected</span>
+          <span class="tab-count-pill pill-rose">{{ rejectedCount }}</span>
+        </button>
+
+        <!-- Tab 5: All Requests -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'All'"
+          (click)="setTab('All')"
+          role="tab"
+          [attr.aria-selected]="activeTab === 'All'"
+        >
+          <mat-icon class="tab-icon text-blue">view_list</mat-icon>
+          <span class="tab-text">All Requests</span>
+          <span class="tab-count-pill pill-blue">{{ totalCount }}</span>
+        </button>
+      </div>
+
+      <div class="tabs-actions-group">
+        <!-- Quick Sort Toggle -->
+        <button
+          type="button"
+          class="btn-tab-sort"
+          (click)="toggleSortOrder()"
+          [title]="'Sorting: ' + (sortOrder === 'desc' ? 'Latest First (Descending)' : 'Oldest First (Ascending)')"
+        >
+          <mat-icon>{{ sortOrder === 'desc' ? 'south' : 'north' }}</mat-icon>
+          <span>{{ sortOrder === 'desc' ? 'Latest First' : 'Oldest First' }}</span>
+        </button>
+
+        <!-- Quick Export CSV -->
+        <button type="button" class="btn-tab-export" (click)="onExport()" title="Export current list to CSV">
+          <mat-icon>file_download</mat-icon>
+          <span>Export CSV</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Table Header Controls Bar -->
     <div class="table-header">
       <!-- Left Search Input -->
@@ -90,33 +184,27 @@
           type="text"
           [(ngModel)]="searchQuery"
           (input)="filterRequests()"
-          placeholder="Search requests by reason..."
+          placeholder="Search requests by reason or leave type..."
           class="search-input"
-          aria-label="Search requests by reason"
+          aria-label="Search requests"
         />
       </div>
 
       <!-- Right Filters Group -->
       <div class="header-filters-group">
-        <!-- Status Filter -->
-        <div class="filter-dropdown">
-          <select [(ngModel)]="selectedStatus" (change)="filterRequests()" class="custom-select">
-            <option value="All">Status: All</option>
-            <option value="Approved">Approved</option>
-            <option value="Pending">Pending</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
-
         <!-- Leave Type Filter (Dynamic) -->
         <div class="filter-dropdown">
           <select [(ngModel)]="selectedType" (change)="filterRequests()" class="custom-select">
-            <option value="All">Type: All</option>
+            <option value="All">All Leave Types</option>
             <option *ngFor="let type of leaveTypes" [value]="type.leaveTypeName">
               {{ type.leaveTypeName }}
             </option>
           </select>
         </div>
+
+        <span class="results-counter-pill">
+          Showing {{ filteredRequests.length }} {{ activeTab === 'All' ? '' : activeTab }} request(s)
+        </span>
       </div>
     </div>
 
@@ -127,6 +215,7 @@
           <tr>
             <th>FROM</th>
             <th>TO</th>
+            <th>DAYS</th>
             <th>LEAVE TYPE</th>
             <th>REASON</th>
             <th>STATUS</th>
@@ -143,6 +232,14 @@
             <!-- To Date -->
             <td class="col-date">
               <span class="date-text">{{ req.endDate | date:'dd MMM yyyy' }}</span>
+            </td>
+
+            <!-- Days Count (Excludes weekends & holidays) -->
+            <td class="col-days">
+              <span class="days-pill" [title]="req.leaveMode || 'Full Day'" style="display: inline-flex; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
+                <mat-icon style="font-size: 13px; width: 13px; height: 13px; line-height: 13px; margin-right: 4px; color: #16a34a;">event_available</mat-icon>
+                <span>{{ formatLeaveDuration(req) }}</span>
+              </span>
             </td>
 
             <!-- Leave Type -->
@@ -185,12 +282,24 @@
           <tr *ngIf="paginatedRequests.length === 0">
             <td colspan="6" class="empty-state">
               <div class="empty-box">
-                <mat-icon class="empty-icon">event_busy</mat-icon>
-                <p *ngIf="allRequests.length === 0">
-                  No leave requests found. Click <strong>'+ Apply Leave'</strong> above to submit a new time-off request.
+                <mat-icon class="empty-icon">{{ activeTab === 'Pending' ? 'hourglass_empty' : 'event_busy' }}</mat-icon>
+                <h4 class="empty-heading">
+                  No {{ activeTab === 'All' ? '' : activeTab }} Leave Requests Found
+                </h4>
+                <p *ngIf="activeTab === 'Pending'">
+                  There are currently no pending leave requests awaiting approval. All submissions have been processed.
                 </p>
-                <p *ngIf="allRequests.length > 0">
-                  No matching requests found for your search filters.
+                <p *ngIf="activeTab === 'Approved'">
+                  No approved leave requests found for the selected view.
+                </p>
+                <p *ngIf="activeTab === 'Cancelled'">
+                  No cancelled leave requests recorded.
+                </p>
+                <p *ngIf="activeTab === 'Rejected'">
+                  No rejected leave requests on file.
+                </p>
+                <p *ngIf="activeTab === 'All'">
+                  No leave requests found. Click <strong>'+ Apply Leave'</strong> above to submit a new time-off request.
                 </p>
               </div>
             </td>

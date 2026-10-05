@@ -6,8 +6,8 @@
         <mat-icon>cloud_upload</mat-icon>
       </div>
       <div class="header-text">
-        <h2 class="modal-title">Upload Corporate Document</h2>
-        <p class="modal-subtitle">Add new enterprise documentation, agreements, or policy files to repository.</p>
+        <h2 class="modal-title">{{ isReupload ? 'Re-Upload Document' : 'Upload Corporate Document' }}</h2>
+        <p class="modal-subtitle">{{ isReupload ? 'Submit an updated file to replace your rejected document.' : 'Add new enterprise documentation, agreements, or policy files to repository.' }}</p>
       </div>
     </div>
     <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
@@ -94,7 +94,7 @@
         [disabled]="documentForm.invalid || !selectedFile"
       >
         <mat-icon>cloud_upload</mat-icon>
-        <span>Upload Document</span>
+        <span>{{ isReupload ? 'Re-Upload Document' : 'Upload Document' }}</span>
       </button>
     </div>
   </form>

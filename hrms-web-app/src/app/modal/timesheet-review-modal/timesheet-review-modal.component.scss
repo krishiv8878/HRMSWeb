@@ -320,7 +320,8 @@
           .day-title-group {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.6rem;
+            flex-wrap: wrap;
 
             .day-icon {
               font-size: 18px;
@@ -333,6 +334,53 @@
               font-size: 0.875rem;
               font-weight: 700;
               color: #1e293b;
+            }
+
+            .badge-day-status {
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              font-size: 0.725rem;
+              font-weight: 600;
+              padding: 0.2rem 0.6rem;
+              border-radius: 6px;
+              line-height: 1;
+
+              mat-icon {
+                font-size: 13px;
+                width: 13px;
+                height: 13px;
+              }
+
+              &.badge-holiday {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+              }
+
+              &.badge-holiday-opt {
+                background: #fdf4ff;
+                color: #9333ea;
+                border: 1px solid #f5d0fe;
+              }
+
+              &.badge-leave {
+                background: #fff7ed;
+                color: #c2410c;
+                border: 1px solid #fed7aa;
+              }
+
+              &.badge-weekend {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #cbd5e1;
+              }
+
+              &.badge-pre-join {
+                background: #f3f4f6;
+                color: #9ca3af;
+                border: 1px dashed #d1d5db;
+              }
             }
           }
 
@@ -514,6 +562,122 @@
 
           .no-tasks-row {
             padding: 0.65rem 0.75rem;
+
+            .day-status-card {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              padding: 10px 14px;
+              border-radius: 8px;
+              border: 1px solid #e2e8f0;
+              background-color: #f8fafc;
+
+              .status-card-icon {
+                width: 34px;
+                height: 34px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+
+                mat-icon {
+                  font-size: 18px;
+                  width: 18px;
+                  height: 18px;
+                }
+              }
+
+              .status-card-text {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+
+                .status-card-title {
+                  font-size: 0.85rem;
+                  font-weight: 700;
+                  color: #1e293b;
+                }
+
+                .status-card-sub {
+                  font-size: 0.725rem;
+                  color: #64748b;
+                }
+              }
+
+              &.status-card-holiday {
+                background-color: #fef2f2;
+                border-color: #fecaca;
+
+                .status-card-icon {
+                  background-color: #fee2e2;
+                  color: #dc2626;
+                }
+
+                .status-card-text .status-card-title {
+                  color: #991b1b;
+                }
+
+                .status-card-text .status-card-sub {
+                  color: #b91c1c;
+                }
+              }
+
+              &.status-card-leave {
+                background-color: #fff7ed;
+                border-color: #fed7aa;
+
+                .status-card-icon {
+                  background-color: #ffedd5;
+                  color: #ea580c;
+                }
+
+                .status-card-text .status-card-title {
+                  color: #9a3412;
+                }
+
+                .status-card-text .status-card-sub {
+                  color: #c2410c;
+                }
+              }
+
+              &.status-card-weekend {
+                background-color: #f8fafc;
+                border-color: #e2e8f0;
+
+                .status-card-icon {
+                  background-color: #f1f5f9;
+                  color: #64748b;
+                }
+
+                .status-card-text .status-card-title {
+                  color: #334155;
+                }
+
+                .status-card-text .status-card-sub {
+                  color: #64748b;
+                }
+              }
+
+              &.status-card-prejoin {
+                background-color: #fafafa;
+                border-color: #e5e7eb;
+                border-style: dashed;
+
+                .status-card-icon {
+                  background-color: #f3f4f6;
+                  color: #9ca3af;
+                }
+
+                .status-card-text .status-card-title {
+                  color: #6b7280;
+                }
+
+                .status-card-text .status-card-sub {
+                  color: #9ca3af;
+                }
+              }
+            }
 
             .no-tasks-text {
               display: inline-flex;

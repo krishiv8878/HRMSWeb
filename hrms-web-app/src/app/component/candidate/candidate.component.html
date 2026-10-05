@@ -133,10 +133,61 @@
 
   <!-- Candidate Directory Table Card -->
   <div class="table-card-container">
+    <!-- Top Lifecycle Status Tabs (HR and Admin Only) -->
+    <div *ngIf="isAdminOrHr" class="candidate-tabs-header">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'active'"
+        (click)="switchTab('active')"
+      >
+        <mat-icon class="tab-icon">flash_on</mat-icon>
+        <span class="tab-text">Active Pipeline</span>
+        <span class="tab-badge badge-active-count">{{ activeCandidatesCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'onboarded'"
+        (click)="switchTab('onboarded')"
+      >
+        <mat-icon class="tab-icon">how_to_reg</mat-icon>
+        <span class="tab-text">Onboarded / Hired</span>
+        <span class="tab-badge badge-onboarded-count">{{ onboardedCandidatesCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'rejected'"
+        (click)="switchTab('rejected')"
+      >
+        <mat-icon class="tab-icon">cancel</mat-icon>
+        <span class="tab-text">Rejected / Archived</span>
+        <span class="tab-badge badge-rejected-count">{{ rejectedCandidatesCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'all'"
+        (click)="switchTab('all')"
+      >
+        <mat-icon class="tab-icon">view_list</mat-icon>
+        <span class="tab-text">All Candidates</span>
+        <span class="tab-badge badge-all-count">{{ allCandidatesCount }}</span>
+      </button>
+    </div>
+
     <!-- Table Header Controls Bar -->
     <div class="table-header-bar">
       <div class="table-title">
-        <h2>{{ isAdminOrHr ? 'Candidate Directory' : 'Assigned Candidate Interviews' }}</h2>
+        <h2>
+          {{ getTabHeading() }}
+          <span class="title-count">({{ filteredCandidates.length }})</span>
+        </h2>
+        <p class="title-sub">{{ getTabSubheading() }}</p>
       </div>
 
       <div class="table-controls-right">
@@ -155,31 +206,50 @@
 
         <!-- Search Input -->
         <div class="search-box">
-          <mat-icon class="search-icon">filter_list</mat-icon>
+          <mat-icon class="search-icon">search</mat-icon>
           <input
             type="text"
             [(ngModel)]="searchQuery"
             (input)="filterCandidates()"
-            placeholder="Filter candidates..."
+            placeholder="Search candidates by name, email, role..."
             class="search-input"
           />
+          <button *ngIf="searchQuery" type="button" class="clear-search-btn" (click)="searchQuery = ''; filterCandidates()" title="Clear search">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
 
-        <!-- Stage Filter Dropdown -->
-        <div class="filter-dropdown">
-          <select [(ngModel)]="selectedStage" (change)="filterCandidates()" class="custom-select">
-            <option *ngFor="let st of stagesFilterOptions" [value]="st">
-              {{ st === 'All' ? 'All Stages' : st }}
-            </option>
+        <!-- Role Filter Dropdown (HR & Admin Only) -->
+        <div class="filter-dropdown" *ngIf="isAdminOrHr && availableRoles.length > 0">
+          <select [(ngModel)]="selectedRole" (change)="filterCandidates()" class="custom-select" title="Filter by Applied Role">
+            <option value="All">All Roles</option>
+            <option *ngFor="let r of availableRoles" [value]="r">{{ r }}</option>
           </select>
         </div>
 
-        <!-- Tool Icons -->
-        <button type="button" class="tool-icon-btn" title="Filter settings">
-          <mat-icon>tune</mat-icon>
-        </button>
-        <button type="button" class="tool-icon-btn" title="Toggle columns">
-          <mat-icon>view_column</mat-icon>
+        <!-- Stage Filter Dropdown (HR & Admin Only) -->
+        <div class="filter-dropdown" *ngIf="isAdminOrHr && (activeTab === 'active' || activeTab === 'all')">
+          <select [(ngModel)]="selectedStage" (change)="filterCandidates()" class="custom-select" title="Filter by Stage">
+            <option value="All">{{ activeTab === 'active' ? 'All Active Stages' : 'All Stages' }}</option>
+            <option *ngFor="let st of currentStageOptions" [value]="st">{{ st }}</option>
+          </select>
+        </div>
+
+        <!-- Sort By Dropdown (HR & Admin Only) -->
+        <div class="filter-dropdown sort-dropdown" *ngIf="isAdminOrHr">
+          <select [(ngModel)]="sortBy" (change)="filterCandidates()" class="custom-select sort-select" title="Sort candidate directory">
+            <option value="newest">🕒 Most Recent First</option>
+            <option value="score">🎯 Highest Match Score</option>
+            <option value="name">🔤 Name (A - Z)</option>
+            <option value="exp">💼 Highest Experience</option>
+            <option value="notice">⚡ Shortest Notice Period</option>
+          </select>
+        </div>
+
+        <!-- Export CSV Button (HR & Admin Only) -->
+        <button *ngIf="isAdminOrHr" type="button" class="btn-export-inline" (click)="onExportReport()" title="Export filtered candidates to CSV">
+          <mat-icon>download</mat-icon>
+          <span>Export</span>
         </button>
       </div>
     </div>
@@ -189,7 +259,7 @@
       <table class="candidate-table">
         <thead>
           <tr>
-            <th class="col-checkbox">
+            <th class="col-checkbox" *ngIf="isAdminOrHr">
               <input
                 type="checkbox"
                 [checked]="selectAllChecked"
@@ -201,17 +271,17 @@
             <th>CANDIDATE NAME</th>
             <th>APPLIED ROLE</th>
             <th>STAGE</th>
-            <th>MATCH SCORE</th>
-            <th>EXPERIENCE & CTC</th>
-            <th>STATUS</th>
+            <th *ngIf="isAdminOrHr">MATCH SCORE</th>
+            <th>{{ isAdminOrHr ? 'EXPERIENCE & CTC' : 'EXPERIENCE' }}</th>
+            <th *ngIf="isAdminOrHr">STATUS</th>
             <th>LAST UPDATED</th>
             <th class="text-right">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let candidate of paginatedCandidates" [class.is-inactive-row]="candidate.isActive === false">
-            <!-- Checkbox Selection -->
-            <td class="col-checkbox">
+            <!-- Checkbox Selection (HR & Admin Only) -->
+            <td class="col-checkbox" *ngIf="isAdminOrHr">
               <input
                 type="checkbox"
                 [(ngModel)]="candidate.selected"
@@ -251,9 +321,9 @@
               </span>
               <ng-container *ngIf="candidate.stage !== 'Onboarded' && candidate.stage !== 'Rejected' && !candidate.isOnboarded">
                 <div *ngIf="candidate.interviewerName" class="interviewer-mini-tag" [class.assigned-to-you]="isAssignedToCurrentUser(candidate)" [title]="'Assigned Interviewer: ' + candidate.interviewerName + (candidate.interviewerRemarks ? '&#10;Remarks: ' + candidate.interviewerRemarks : '')">
-                  <mat-icon>{{ isAssignedToCurrentUser(candidate) ? 'stars' : 'person' }}</mat-icon>
+                  <mat-icon>{{ isCurrentlyAssignedPending(candidate) ? 'stars' : 'person' }}</mat-icon>
                   <span class="int-name">{{ candidate.interviewerName }}</span>
-                  <span *ngIf="isAssignedToCurrentUser(candidate)" class="you-badge">You</span>
+                  <span *ngIf="isCurrentlyAssignedPending(candidate)" class="you-badge">You</span>
                   <span *ngIf="candidate.interviewRating" class="star-pill">★{{ candidate.interviewRating }}</span>
                 </div>
                 <div *ngIf="!candidate.interviewerName && (candidate.interviewStatus?.includes('Awaiting HR') || candidate.interviewerRemarks)" class="interviewer-mini-tag tag-pending-hr" [title]="'Feedback submitted' + (candidate.interviewerRemarks ? ': ' + candidate.interviewerRemarks : '') + '. Awaiting HR review.'">
@@ -262,10 +332,16 @@
                   <span *ngIf="candidate.interviewRating" class="star-pill">★{{ candidate.interviewRating }}</span>
                 </div>
               </ng-container>
+
+              <!-- Rejection feedback note if rejected -->
+              <div *ngIf="candidate.stage === 'Rejected' && candidate.interviewerRemarks" class="rejection-feedback-note" [title]="candidate.interviewerRemarks">
+                <mat-icon>feedback</mat-icon>
+                <span>{{ candidate.interviewerRemarks }}</span>
+              </div>
             </td>
 
-            <!-- Match Score with Progress Bar -->
-            <td class="col-score">
+            <!-- Match Score with Progress Bar (HR & Admin Only) -->
+            <td class="col-score" *ngIf="isAdminOrHr">
               <div class="match-score-wrapper">
                 <div class="score-progress-track">
                   <div class="score-progress-fill" [style.width.%]="candidate.matchScore || 75"></div>
@@ -274,16 +350,16 @@
               </div>
             </td>
 
-            <!-- Experience & CTC -->
+            <!-- Experience & CTC (CTC hidden for non-HR) -->
             <td class="col-exp">
               <div class="exp-wrapper">
                 <span class="exp-text"><strong>{{ candidate.totalExperience }}</strong> Yrs (Rel: {{ candidate.relevantExperience }} Yrs)</span>
-                <span class="ctc-text">{{ candidate.expectedSalary }}</span>
+                <span *ngIf="isAdminOrHr" class="ctc-text">{{ candidate.expectedSalary }}</span>
               </div>
             </td>
 
-            <!-- Status (Display Only Badge) -->
-            <td class="col-status">
+            <!-- Status (Display Only Badge - HR & Admin Only) -->
+            <td class="col-status" *ngIf="isAdminOrHr">
               <span class="status-badge" [ngClass]="candidate.isActive ? 'badge-active' : 'badge-inactive'">
                 <span class="dot"></span>
                 <span>{{ candidate.isActive ? 'Active' : 'Inactive' }}</span>
@@ -298,69 +374,127 @@
             <!-- Actions Menu -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <!-- Interviewer Assignment & Pipeline Hub (Hidden if Candidate is Rejected or Onboarded; for HR/Admin or Assigned Interviewer) -->
-                <button
-                  *ngIf="candidate.stage !== 'Rejected' && candidate.stage !== 'Onboarded' && !candidate.isOnboarded && (isAdminOrHr || isAssignedToCurrentUser(candidate))"
-                  type="button"
-                  class="btn-action-icon btn-interview"
-                  [class.btn-interview-assigned]="isAssignedToCurrentUser(candidate)"
-                  (click)="openInterviewModal(candidate)"
-                  [title]="isAssignedToCurrentUser(candidate) ? 'Conduct Your Assigned Interview & Enter Evaluation' : 'Assign Interviewer & Manage Rounds'"
-                >
-                  <mat-icon>{{ isAssignedToCurrentUser(candidate) ? 'rate_review' : 'how_to_vote' }}</mat-icon>
-                </button>
+                <!-- Non-HR Interviewer Single Action: Conduct Evaluation or View Submitted -->
+                <ng-container *ngIf="!isAdminOrHr">
+                  <button
+                    *ngIf="isCurrentlyAssignedPending(candidate)"
+                    type="button"
+                    class="btn-interviewer-eval"
+                    (click)="openInterviewModal(candidate)"
+                    title="Evaluate Assigned Candidate"
+                  >
+                    <mat-icon>rate_review</mat-icon>
+                    <span>Evaluate</span>
+                  </button>
 
-                <!-- Onboard Action: Only shown for HR / Admin AND if Candidate is Selected/Offered AND NOT already onboarded -->
-                <button
-                  *ngIf="isAdminOrHr && (candidate.stage === 'Selected / Hired' || candidate.stage === 'Offer Extended' || candidate.stage === 'Offer Accepted') && !candidate.isOnboarded"
-                  type="button"
-                  class="btn-action-icon btn-hire"
-                  (click)="openOnboardModal(candidate)"
-                  title="Onboard Candidate as Employee"
-                >
-                  <mat-icon>how_to_reg</mat-icon>
-                </button>
+                  <button
+                    *ngIf="!isCurrentlyAssignedPending(candidate)"
+                    type="button"
+                    class="btn-interviewer-view"
+                    (click)="openInterviewModal(candidate)"
+                    title="View submitted interview evaluation"
+                  >
+                    <mat-icon>check_circle</mat-icon>
+                    <span>View Evaluation</span>
+                  </button>
+                </ng-container>
 
-                <!-- Verified Onboarded Badge (Replaces onboard button once hired/onboarded) -->
-                <span
-                  *ngIf="candidate.stage === 'Onboarded' || candidate.isOnboarded"
-                  class="badge-onboarded-pill"
-                  title="Candidate successfully onboarded as Employee"
-                >
-                  <mat-icon>check_circle</mat-icon>
-                  <span>Onboarded</span>
-                </span>
-                <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon edit-btn" (click)="Edit(candidate)" title="Edit Candidate">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                  *ngIf="isAdminOrHr"
-                  type="button"
-                  class="btn-action-icon"
-                  [class.btn-toggle-off]="candidate.isActive !== false"
-                  [class.btn-toggle-on]="candidate.isActive === false"
-                  (click)="onToggleActive(candidate)"
-                  [title]="candidate.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
-                >
-                  <mat-icon>{{ candidate.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                </button>
-                <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon btn-delete" (click)="Delete(candidate.id)" title="Delete Candidate">
-                  <mat-icon>delete</mat-icon>
-                </button>
+                <!-- HR / Admin Actions -->
+                <ng-container *ngIf="isAdminOrHr">
+                  <!-- Active Candidate Actions: Interview Modal -->
+                  <button
+                    *ngIf="candidate.stage !== 'Rejected' && candidate.stage !== 'Onboarded' && !candidate.isOnboarded"
+                    type="button"
+                    class="btn-action-icon btn-interview"
+                    [class.btn-interview-assigned]="isAssignedToCurrentUser(candidate)"
+                    (click)="openInterviewModal(candidate)"
+                    [title]="isAssignedToCurrentUser(candidate) ? 'Conduct Your Assigned Interview & Enter Evaluation' : 'Assign Interviewer & Manage Rounds'"
+                  >
+                    <mat-icon>{{ isAssignedToCurrentUser(candidate) ? 'rate_review' : 'how_to_vote' }}</mat-icon>
+                  </button>
+
+                  <!-- Onboard Action: Only shown for HR/Admin AND if Candidate is Selected/Offered AND NOT already onboarded -->
+                  <button
+                    *ngIf="isAdminOrHr && (candidate.stage === 'Selected / Hired' || candidate.stage === 'Offer Extended' || candidate.stage === 'Offer Accepted') && !candidate.isOnboarded"
+                    type="button"
+                    class="btn-action-icon btn-hire"
+                    (click)="openOnboardModal(candidate)"
+                    title="Onboard Candidate as Employee"
+                  >
+                    <mat-icon>how_to_reg</mat-icon>
+                  </button>
+
+                  <!-- Onboarded Candidate Badge & Link to Employee Directory -->
+                  <button
+                    *ngIf="candidate.stage === 'Onboarded' || candidate.isOnboarded"
+                    type="button"
+                    class="btn-view-employee"
+                    (click)="navigateToEmployees()"
+                    title="Candidate successfully onboarded as Employee. Click to view in Employee Directory."
+                  >
+                    <mat-icon>badge</mat-icon>
+                    <span>View in Directory</span>
+                  </button>
+
+                  <!-- Reject Action for Active Candidates (HR / Admin only) -->
+                  <button
+                    *ngIf="isAdminOrHr && candidate.stage !== 'Rejected' && candidate.stage !== 'Onboarded' && !candidate.isOnboarded"
+                    type="button"
+                    class="btn-action-icon btn-disqualify"
+                    (click)="rejectCandidate(candidate)"
+                    title="Disqualify / Move to Rejected"
+                  >
+                    <mat-icon>block</mat-icon>
+                  </button>
+
+                  <!-- Reactivate Action for Rejected Candidates (HR / Admin only) -->
+                  <button
+                    *ngIf="isAdminOrHr && candidate.stage === 'Rejected'"
+                    type="button"
+                    class="btn-action-icon btn-reactivate"
+                    (click)="reactivateCandidate(candidate)"
+                    title="Reactivate Candidate back to Active Pipeline"
+                  >
+                    <mat-icon>replay</mat-icon>
+                  </button>
+
+                  <!-- Edit Candidate Details -->
+                  <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon edit-btn" (click)="Edit(candidate)" title="Edit Candidate">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+
+                  <!-- Active / Inactive Toggle -->
+                  <button
+                    *ngIf="isAdminOrHr"
+                    type="button"
+                    class="btn-action-icon"
+                    [class.btn-toggle-off]="candidate.isActive !== false"
+                    [class.btn-toggle-on]="candidate.isActive === false"
+                    (click)="onToggleActive(candidate)"
+                    [title]="candidate.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                  >
+                    <mat-icon>{{ candidate.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                  </button>
+
+                  <!-- Delete Candidate -->
+                  <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon btn-delete" (click)="Delete(candidate.id)" title="Delete Candidate">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </ng-container>
               </div>
             </td>
           </tr>
 
           <!-- Empty State -->
           <tr *ngIf="paginatedCandidates.length === 0">
-            <td colspan="9" class="empty-state">
+            <td [attr.colspan]="isAdminOrHr ? 9 : 5" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">person_search</mat-icon>
                 <p *ngIf="allCandidates.length === 0 && isAdminOrHr">
                   No candidates found in the database. Click <strong>'+ New Requisition'</strong> to add your first candidate.
                 </p>
                 <p *ngIf="allCandidates.length === 0 && !isAdminOrHr">
-                  No candidate interviews are currently assigned to you. When HR or Admin assigns an interview round to you, it will appear here.
+                  You currently have no candidate interviews assigned to you. When HR or Admin assigns an interview round to you, it will appear here.
                 </p>
                 <p *ngIf="allCandidates.length > 0">
                   No candidates match your search filter criteria.

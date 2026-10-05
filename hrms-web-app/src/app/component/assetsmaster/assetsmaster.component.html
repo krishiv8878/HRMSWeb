@@ -69,29 +69,6 @@
     </button>
   </div>
 
-  <!-- Assigned Projects Quick Ribbon (For Employee / Manager) -->
-  <div *ngIf="!isAdmin && assignedProjects.length > 0" class="assigned-projects-banner">
-    <div class="banner-left">
-      <div class="banner-icon-badge">
-        <mat-icon>rocket_launch</mat-icon>
-      </div>
-      <div class="banner-info">
-        <span class="banner-label">Assigned Project Engagements:</span>
-        <div class="project-pills-list">
-          <a *ngFor="let proj of assignedProjects" class="project-pill" [routerLink]="['/index/project']" title="View Project in Portfolio">
-            <mat-icon class="pill-icon">folder_special</mat-icon>
-            <strong>{{ proj.projectName || proj.name }}</strong>
-            <span class="client-tag">({{ proj.clientName || 'Active' }})</span>
-          </a>
-        </div>
-      </div>
-    </div>
-    <a [routerLink]="['/index/project']" class="view-all-projects-link">
-      <span>View In Projects</span>
-      <mat-icon>arrow_forward</mat-icon>
-    </a>
-  </div>
-
   <!-- Metric Category Cards Grid (4 Column Layout) -->
   <div class="metrics-cards-grid">
     <app-asset-card

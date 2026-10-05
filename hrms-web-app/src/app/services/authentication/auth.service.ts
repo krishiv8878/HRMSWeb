@@ -12,9 +12,7 @@ export class AuthService {
   apiUrl = environment.host
 
   createLogin(data: any) {
-    return this.http.post<any>(this.apiUrl + `/UserLogin/Login?email=${data.email}&password=${data.password}`, data, { withCredentials: true }).pipe(map(data => {
-      return data;
-    }))
+    return this.http.post<any>(`${this.apiUrl}/UserLogin/Login`, data, { withCredentials: true });
   }
        
   createRegister(data: any) {

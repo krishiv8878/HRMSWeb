@@ -70,9 +70,11 @@ export class EmployeeComponent implements OnInit {
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required, Validators.email]],
-    mobileNumber: [''],
+    mobileNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
     gender: ['Male'],
     dateOfJoining: [new Date()],
+    dateOfBirth: [null as any],
+    branch: [''],
     designationId: [1],
     designation: [''],
     shiftId: [null as any],
@@ -125,6 +127,11 @@ export class EmployeeComponent implements OnInit {
         desigText = this.data.rolenames;
       }
 
+      let dob: Date | null = null;
+      if (this.data.dateOfBirth) {
+        try { dob = new Date(this.data.dateOfBirth); } catch {}
+      }
+
       this.Employeeform.patchValue({
         id: Number(this.data.id || this.data.employeeId || 0),
         employeeId: Number(this.data.employeeId || this.data.id || 0),
@@ -134,6 +141,8 @@ export class EmployeeComponent implements OnInit {
         mobileNumber: this.data.mobileNumber || this.data.phone || this.data.contactNumber || this.data.primaryContactPhone || '',
         gender: this.data.gender || 'Male',
         dateOfJoining: joinDate,
+        dateOfBirth: dob,
+        branch: this.data.branch || '',
         designationId: desigId,
         designation: desigText,
         shiftId: (this.data.shiftId && Number(this.data.shiftId) > 0) ? Number(this.data.shiftId) : null,
@@ -265,13 +274,40 @@ export class EmployeeComponent implements OnInit {
 
   allowOnlyNumbers(event: KeyboardEvent) {
     const key = event.key;
+    if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) return;
     if (!/^[0-9]$/.test(key)) {
       event.preventDefault();
     }
   }
 
+  onNumberInput(event: Event, controlName: string) {
+    const input = event.target as HTMLInputElement;
+    const cleaned = input.value.replace(/[^0-9]/g, '').slice(0, 10);
+    if (input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    this.Employeeform.get(controlName)?.setValue(cleaned);
+  }
+
+  onNumberPaste(event: ClipboardEvent, controlName: string) {
+    event.preventDefault();
+    const pasted = event.clipboardData?.getData('text') || '';
+    const cleaned = pasted.replace(/[^0-9]/g, '').slice(0, 10);
+    this.Employeeform.get(controlName)?.setValue(cleaned);
+  }
+
   closeModal() {
     this.dialogRef.close(false);
+  }
+
+  private formatDateOnly(dateVal: any): string | null {
+    if (!dateVal) return null;
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return null;
+    const y = d.getFullYear();
+    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${day}T12:00:00`;
   }
 
   submitdata() {
@@ -332,7 +368,9 @@ export class EmployeeComponent implements OnInit {
       primaryEmailAddress: (val.emailAddress || existingData.primaryEmailAddress || '').trim(),
       mobileNumber: String(val.mobileNumber || '').trim(),
       gender: val.gender || 'Male',
-      dateOfJoining: val.dateOfJoining ? new Date(val.dateOfJoining).toISOString() : new Date().toISOString(),
+      dateOfJoining: this.formatDateOnly(val.dateOfJoining) || new Date().toISOString(),
+      dateOfBirth: this.formatDateOnly(val.dateOfBirth),
+      branch: (val.branch || '').trim(),
       currentAddress: (val.currentAddress || '').trim(),
       permanentAddress: (val.permanentAddress || val.currentAddress || '').trim(),
       designationId: designationIdVal,

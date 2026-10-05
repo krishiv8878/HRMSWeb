@@ -20,6 +20,7 @@ import { TimesheetSubmitModalComponent } from '../../modal/timesheet-submit-moda
 
 import { ProjectsService } from '../../services/project/projects.service';
 import { EmployeeService } from '../../services/employee/employee.service';
+import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
 
 @Component({
   selector: 'app-timesheet',
@@ -56,6 +57,85 @@ export class TimesheetComponent implements OnInit {
   todayStr: string = '';
   joiningDate: Date | null = null;
   joiningDateStr: string = '';
+  selectedDayDate: string = '';
+
+  get miniCalendarMonthTitle(): string {
+    return this.currentStartDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  get miniCalendarDays(): any[] {
+    if (!this.timesheetData?.days || this.timesheetData.days.length === 0) {
+      return [];
+    }
+    return this.timesheetData.days.map(d => {
+      const parts = d.date.split('-');
+      const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return {
+        dateStr: d.date,
+        dayNumber: dt.getDate(),
+        dayNameShort: dt.toLocaleDateString('en-US', { weekday: 'short' }),
+        isSelected: d.date === this.selectedDayDate,
+        isToday: d.date === this.todayStr,
+        isWeekend: d.isWeekend,
+        isAbsent: this.isDayAbsent(d),
+        isCurrentMonth: dt.getMonth() === this.currentStartDate.getMonth(),
+        hasTasks: this.getDayTasks(d).length > 0
+      };
+    });
+  }
+
+  selectCalendarDay(dateStr: string): void {
+    this.selectedDayDate = dateStr;
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById('day-card-' + dateStr);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }
+
+  get workingDaysCount(): number {
+    if (!this.timesheetData?.days) return 5;
+    return this.timesheetData.days.filter(d => !d.isWeekend && !d.isHoliday && !d.isPriorToJoining).length;
+  }
+
+  get standardTargetHours(): number {
+    return (this.workingDaysCount || 5) * 8;
+  }
+
+  get loggedHoursPercentage(): number {
+    const target = this.standardTargetHours;
+    if (!target || target <= 0) return 0;
+    return Math.min(100, Math.round((this.filteredTotalHours / target) * 100));
+  }
+
+  get pendingDaysCount(): number {
+    if (!this.timesheetData?.days) return 0;
+    return this.timesheetData.days.filter(d => 
+      !d.isWeekend && 
+      !d.isHoliday && 
+      !d.isPriorToJoining && 
+      !this.isFutureDay(d.date) && 
+      this.getDayTasks(d).length === 0
+    ).length;
+  }
+
+  get userDisplayName(): string {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('username') || localStorage.getItem('name') || this.timesheetData?.employeeName || 'User';
+    }
+    return 'User';
+  }
+
+  get userInitials(): string {
+    const name = this.userDisplayName;
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
 
   ngOnInit(): void {
     this.todayStr = this.formatDateString(new Date());
@@ -331,7 +411,9 @@ export class TimesheetComponent implements OnInit {
         isLeave: Boolean(matched.isLeave),
         leaveTypeName: matched.leaveTypeName || null,
         isWeekend: Boolean(matched.isWeekend !== undefined ? matched.isWeekend : defaultDay.isWeekend),
-        isPriorToJoining: Boolean(isPriorToJoining)
+        isPriorToJoining: Boolean(isPriorToJoining),
+        isAbsent: matched.isAbsent !== undefined ? Boolean(matched.isAbsent) : undefined,
+        regularizationStatus: matched.regularizationStatus || null
       };
     });
 
@@ -354,6 +436,11 @@ export class TimesheetComponent implements OnInit {
       rejectionReason: data.rejectionReason,
       days: mergedDays
     };
+
+    if (!this.selectedDayDate || !mergedDays.some(d => d.date === this.selectedDayDate)) {
+      const hasToday = mergedDays.some(d => d.date === this.todayStr);
+      this.selectedDayDate = hasToday ? this.todayStr : (mergedDays[0]?.date || '');
+    }
   }
 
   private generateDaysList(): TimesheetDayView[] {
@@ -450,11 +537,24 @@ export class TimesheetComponent implements OnInit {
     return this.timesheetData.status === 'Draft' || this.timesheetData.status === 'Rejected';
   }
 
+  isDayAbsent(day: TimesheetDayView): boolean {
+    if (day.isAbsent !== undefined) {
+      return Boolean(day.isAbsent);
+    }
+    if (this.isFutureDay(day.date)) return false;
+    if (day.isPriorToJoining || (this.joiningDateStr && day.date < this.joiningDateStr)) return false;
+    if (day.isLeave || day.isHoliday || day.isWeekend) return false;
+    if (day.isShiftInProgress) return false;
+    if (day.clockInTime || day.isRegularized || (day.attendanceHours && day.attendanceHours > 0)) return false;
+    return true;
+  }
+
   canAddTaskForDay(day: TimesheetDayView): boolean {
     if (day.isPriorToJoining || (this.joiningDateStr && day.date < this.joiningDateStr)) return false;
     if (day.isLeave) return false;
     if (this.isFutureDay(day.date)) return false;
     if (!this.isWithinBackfillWindow(day.date)) return false;
+    if (this.isDayAbsent(day)) return false;
     return this.canEdit;
   }
 
@@ -463,7 +563,54 @@ export class TimesheetComponent implements OnInit {
     if (day.isLeave) return false;
     if (this.isFutureDay(day.date)) return false;
     if (!this.isWithinBackfillWindow(day.date)) return false;
+    if (this.isDayAbsent(day)) return false;
     return this.canEdit;
+  }
+
+  openRegularizeModalForDay(day: TimesheetDayView): void {
+    if (this.isFutureDay(day.date)) {
+      this.toastr.warning('Cannot regularize attendance for future dates.', 'Future Date');
+      return;
+    }
+    if (day.isPriorToJoining || (this.joiningDateStr && day.date < this.joiningDateStr)) {
+      this.toastr.warning(`Cannot regularize attendance prior to your official joining date (${this.joiningDateStr || day.date}).`, 'Prior to Joining');
+      return;
+    }
+    if (day.regularizationStatus === 'Approved' || day.isRegularized) {
+      this.toastr.info('Attendance for this date has already been regularized and approved.', 'Already Regularized');
+      return;
+    }
+    if (day.regularizationStatus === 'Pending') {
+      this.toastr.info('An attendance regularization request for this date is already pending approval from your manager.', 'Regularization Pending');
+      return;
+    }
+
+    const currentEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
+    const targetDateObj = new Date(day.date + 'T00:00:00');
+
+    const dialogRef = this.dialog.open(AttendaseditComponent, {
+      width: '560px',
+      data: {
+        employeeId: currentEmpId,
+        date: targetDateObj,
+        dateObj: targetDateObj,
+        dateStr: day.date,
+        Date: day.date,
+        clockIn: '09:30',
+        clockOut: '18:30',
+        hasExistingClockIn: false,
+        existingClockInDisplay: null,
+        joiningDate: this.joiningDate,
+        joiningDateStr: this.joiningDateStr,
+        canRegularize: true,
+        regularizationStatus: day.regularizationStatus || null,
+        rejectionReason: ''
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.loadTimesheet();
+    });
   }
 
   get canSubmit(): boolean {
@@ -480,6 +627,15 @@ export class TimesheetComponent implements OnInit {
 
     if (day.isLeave) {
       this.toastr.warning(`Cannot log tasks on an approved leave day (${day.leaveTypeName || 'On Leave'}).`, 'Leave Day');
+      return;
+    }
+
+    if (this.isDayAbsent(day)) {
+      if (day.regularizationStatus === 'Pending') {
+        this.toastr.info(`Cannot log tasks for ${day.date}. Your attendance regularization request is currently pending manager approval.`, 'Approval Pending');
+      } else {
+        this.toastr.warning(`Cannot log tasks for ${day.date} because you were marked absent (no attendance punch recorded). Please regularize attendance first.`, 'Marked Absent');
+      }
       return;
     }
 

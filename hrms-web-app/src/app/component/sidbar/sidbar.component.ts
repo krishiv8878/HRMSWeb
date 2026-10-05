@@ -45,7 +45,8 @@ export class SidbarComponent implements OnInit {
   private rawSections: MenuSection[] = [
     {
       items: [
-        { label: 'Home', icon: 'grid_view', route: '/index/home', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] },
+        { label: 'Dashboard', icon: 'grid_view', route: '/index/dashboard' },
+        { label: 'Employee Directory', icon: 'people', route: '/index/home', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] },
         { label: 'Candidate', icon: 'person_search', route: '/index/candidate', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] },
         { label: 'Skill', icon: 'psychology', route: '/index/skill', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
         { label: 'Role', icon: 'account_tree', route: '/index/rolemaster', roles: ['Admin', 'System Admin'] },
@@ -71,7 +72,7 @@ export class SidbarComponent implements OnInit {
         { label: 'Assets', icon: 'inventory_2', route: '/index/assets' },
         { label: 'Docs', icon: 'description', route: '/index/document' },
         { label: 'Payroll & Payslips', icon: 'payments', route: '/index/paymentinfo' },
-        { label: 'Email Templates', icon: 'mail', route: '/index/email-templates', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
+        { label: 'Email Templates', icon: 'mail', route: '/index/email-templates', roles: ['Admin', 'System Admin'] }
       ]
     }
   ];

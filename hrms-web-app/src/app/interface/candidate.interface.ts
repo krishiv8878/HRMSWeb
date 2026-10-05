@@ -19,6 +19,7 @@ export interface CandidateItem {
   stage?: 'Sourced' | 'Screening' | 'Technical Interview' | 'HR Screen' | 'Interview' | 'Offer Extended' | 'Offer Accepted' | 'Selected / Hired' | 'Offer' | 'Rejected' | string;
   matchScore?: number;
   lastUpdated?: string;
+  rawCreatedDate?: Date | null;
   noticePeriod?: string | number;
   isActive?: boolean;
   isDeleted?: boolean;

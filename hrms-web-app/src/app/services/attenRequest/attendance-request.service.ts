@@ -23,6 +23,6 @@ export class AttendanceRequestService {
     }
   
     creatRegular(data: any) {
-      return this.http.post<any[]>(this.apiUrl + `/AttendanceRequest/GetAttendanceRequests`, data,{withCredentials:true})
+      return this.http.post<any>(this.apiUrl + `/AttendanceRequest/AddAttendanceRequest`, data, { withCredentials: true });
     }
 }

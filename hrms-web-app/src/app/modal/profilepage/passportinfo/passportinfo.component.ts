@@ -134,8 +134,7 @@ export class PassportinfoComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error updating passport info:', err);
-        this.toaster.success('Passport & Statutory details updated successfully', 'Saved');
-        this.dialogRef.close(true);
+        this.toaster.error(err?.error?.message || 'Failed to update passport and statutory details', 'Save Error');
       }
     });
   }

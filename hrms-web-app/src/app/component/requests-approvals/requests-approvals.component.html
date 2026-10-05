@@ -1,4 +1,13 @@
 <div class="approvals-dashboard-container">
+  <!-- Floating Loader Overlay for In-Flight Decisions -->
+  <div class="decision-loader-backdrop" *ngIf="isSubmittingDecision">
+    <div class="decision-loader-card">
+      <div class="loader-spinner"></div>
+      <span class="loader-title">{{ decisionLoadingMessage }}</span>
+      <span class="loader-sub">Please wait while the decision is processed and recorded in the database...</span>
+    </div>
+  </div>
+
   <!-- Top Title Header Area -->
   <div class="header-section">
     <div class="title-group">
@@ -112,6 +121,79 @@
 
   <!-- Workspace Card Container -->
   <div class="table-card-container">
+    <!-- Status Tabs Bar (Pending, Approved, Rejected, Cancelled, All Requests) -->
+    <div class="requests-status-tabs-bar">
+      <div class="status-tabs-wrapper">
+        <button
+          type="button"
+          class="status-tab pending-tab"
+          [class.active]="activeStatusTab === 'Pending'"
+          (click)="setStatusTab('Pending')"
+        >
+          <span class="tab-indicator"></span>
+          <span class="tab-title">Pending</span>
+          <span class="tab-count-badge" [class.has-count]="pendingStatusCount > 0">{{ pendingStatusCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="status-tab approved-tab"
+          [class.active]="activeStatusTab === 'Approved'"
+          (click)="setStatusTab('Approved')"
+        >
+          <span class="tab-indicator"></span>
+          <span class="tab-title">Approved</span>
+          <span class="tab-count-badge">{{ approvedStatusCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="status-tab rejected-tab"
+          [class.active]="activeStatusTab === 'Rejected'"
+          (click)="setStatusTab('Rejected')"
+        >
+          <span class="tab-indicator"></span>
+          <span class="tab-title">Rejected</span>
+          <span class="tab-count-badge" [class.has-count]="rejectedStatusCount > 0">{{ rejectedStatusCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="status-tab cancelled-tab"
+          [class.active]="activeStatusTab === 'Cancelled'"
+          (click)="setStatusTab('Cancelled')"
+        >
+          <span class="tab-indicator"></span>
+          <span class="tab-title">Cancelled</span>
+          <span class="tab-count-badge" [class.has-count]="cancelledStatusCount > 0">{{ cancelledStatusCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="status-tab all-tab"
+          [class.active]="activeStatusTab === 'All'"
+          (click)="setStatusTab('All')"
+        >
+          <span class="tab-indicator"></span>
+          <span class="tab-title">All Requests</span>
+          <span class="tab-count-badge">{{ allStatusCount }}</span>
+        </button>
+      </div>
+
+      <!-- Quick Sort Toggle Button -->
+      <div class="status-tab-actions">
+        <button
+          type="button"
+          class="sort-toggle-btn"
+          (click)="toggleSortOrder()"
+          [title]="'Sorting: ' + (sortOrder === 'desc' ? 'Latest First (Descending)' : 'Oldest First (Ascending)')"
+        >
+          <mat-icon class="sort-icon">{{ sortOrder === 'desc' ? 'south' : 'north' }}</mat-icon>
+          <span class="sort-text">{{ sortOrder === 'desc' ? 'Latest First' : 'Oldest First' }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Controls Bar: Category-Specific Sub-Pills & Search / Filters -->
     <div class="table-header-bar">
       <!-- Sub-Pills tailored to Active Category -->
@@ -124,43 +206,43 @@
             [class.active]="activeSubTab === 'all'"
             (click)="setSubTab('all')"
           >
-            All Pending ({{ totalPendingCount }})
+            All Categories ({{ allStatusCount }})
           </button>
           <button
             type="button"
             class="pill-btn"
             [class.active]="activeSubTab === 'leave'"
             (click)="setSubTab('leave')"
-            *ngIf="pendingLeaveAttendanceCount > 0"
+            *ngIf="leaveCount > 0"
           >
-            Leaves ({{ pendingLeaveAttendanceCount }})
+            Leaves ({{ leaveCount }})
           </button>
           <button
             type="button"
             class="pill-btn"
             [class.active]="activeSubTab === 'timesheet'"
             (click)="setSubTab('timesheet')"
-            *ngIf="pendingTimesheetCount > 0"
+            *ngIf="timesheetCount > 0"
           >
-            Timesheets ({{ pendingTimesheetCount }})
+            Timesheets ({{ timesheetCount }})
           </button>
           <button
             type="button"
             class="pill-btn"
             [class.active]="activeSubTab === 'asset'"
             (click)="setSubTab('asset')"
-            *ngIf="pendingAssetCount > 0"
+            *ngIf="assetTicketCount > 0"
           >
-            Assets ({{ pendingAssetCount }})
+            Assets ({{ assetTicketCount }})
           </button>
           <button
             type="button"
             class="pill-btn"
             [class.active]="activeSubTab === 'document'"
             (click)="setSubTab('document')"
-            *ngIf="pendingHrBankingCount > 0"
+            *ngIf="totalHrBankingCount > 0"
           >
-            HR & Banking ({{ pendingHrBankingCount }})
+            HR & Banking ({{ totalHrBankingCount }})
           </button>
         </ng-container>
 
@@ -269,16 +351,6 @@
             <option *ngFor="let emp of employeeOptions" [value]="emp">{{ emp }}</option>
           </select>
         </div>
-
-        <div class="filter-dropdown" *ngIf="activeCategory !== 'action_required'">
-          <select [(ngModel)]="selectedStatus" (change)="filterRequests()" class="custom-select">
-            <option value="All">Status: All</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-        </div>
       </div>
     </div>
 
@@ -331,7 +403,15 @@
 
             <!-- Status -->
             <td class="col-status">
-              <span class="status-badge badge-pending">Pending</span>
+              <span
+                class="status-badge"
+                [ngClass]="{
+                  'badge-approved':  item.status === 'Approved',
+                  'badge-rejected':  item.status === 'Rejected',
+                  'badge-cancelled': item.status === 'Cancelled',
+                  'badge-pending':   item.status === 'Pending' || !item.status
+                }"
+              >{{ item.status || 'Pending' }}</span>
             </td>
 
             <!-- Quick Actions -->
@@ -357,13 +437,15 @@
 
                 <!-- Approve / Reject for Time, Leaves, Documents, Banking -->
                 <ng-container *ngIf="isApprover && item.category !== 'Asset' && item.category !== 'Interview'">
-                  <button type="button" class="btn-approve" (click)="approveRequest(item)" title="Approve Request">
-                    <mat-icon>check</mat-icon>
-                    <span>Approve</span>
+                  <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)" [disabled]="isSubmittingDecision" title="Approve Request">
+                    <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
+                    <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
+                    <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Approve' }}</span>
                   </button>
-                  <button type="button" class="btn-reject" (click)="rejectRequest(item)" title="Reject Request">
-                    <mat-icon>close</mat-icon>
-                    <span>Reject</span>
+                  <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)" [disabled]="isSubmittingDecision" title="Reject Request">
+                    <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
+                    <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">close</mat-icon>
+                    <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Reject' }}</span>
                   </button>
                 </ng-container>
               </div>
@@ -375,8 +457,16 @@
             <td colspan="6" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon text-green">check_circle_outline</mat-icon>
-                <h3>All Caught Up!</h3>
-                <p>There are no pending authorization requests requiring your attention right now.</p>
+                <div *ngIf="searchQuery">
+                  <h3>No Results Found</h3>
+                  <p>No authorization requests match "<strong>{{ searchQuery }}</strong>".</p>
+                </div>
+                <div *ngIf="!searchQuery">
+                  <h3 *ngIf="activeStatusTab === 'Pending'">All Caught Up!</h3>
+                  <h3 *ngIf="activeStatusTab !== 'Pending'">No {{ activeStatusTab }} Requests</h3>
+                  <p *ngIf="activeStatusTab === 'Pending'">There are no pending authorization requests requiring your attention right now.</p>
+                  <p *ngIf="activeStatusTab !== 'Pending'">No requests with status "{{ activeStatusTab }}" were found in this view.</p>
+                </div>
               </div>
             </td>
           </tr>
@@ -446,20 +536,23 @@
             <td class="col-actions text-right">
               <div class="action-btn-group">
                 <!-- Cancel Leave Action -->
-                <button type="button" class="btn-cancel-leave" *ngIf="canCancelLeave(item)" (click)="cancelLeave(item)">
-                  <mat-icon>cancel</mat-icon>
-                  <span>Cancel Leave</span>
+                <button type="button" class="btn-cancel-leave" *ngIf="canCancelLeave(item)" (click)="cancelLeave(item)" [disabled]="isSubmittingDecision">
+                  <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
+                  <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">cancel</mat-icon>
+                  <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Cancelling...' : 'Cancel Leave' }}</span>
                 </button>
 
                 <!-- Approver Actions -->
                 <ng-container *ngIf="isApprover">
-                  <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)">
-                    <mat-icon>check</mat-icon>
-                    <span>Approve</span>
+                  <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)" [disabled]="isSubmittingDecision">
+                    <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
+                    <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
+                    <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Approve' }}</span>
                   </button>
-                  <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)">
-                    <mat-icon>close</mat-icon>
-                    <span>Reject</span>
+                  <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)" [disabled]="isSubmittingDecision">
+                    <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
+                    <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">close</mat-icon>
+                    <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Reject' }}</span>
                   </button>
                 </ng-container>
 
@@ -516,7 +609,7 @@
             <td class="col-type">
               <span class="hours-badge">
                 <mat-icon class="badge-icon">schedule</mat-icon>
-                <strong>{{ item.rawRecord?.totalHours ?? 40 }}</strong> hrs logged
+                <strong>{{ item.rawRecord?.totalTimesheetHours ?? item.rawRecord?.totalHours ?? 0 }}</strong> hrs logged
               </span>
             </td>
 
@@ -687,13 +780,15 @@
                 </button>
 
                 <ng-container *ngIf="isApprover && item.category !== 'Interview'">
-                  <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)">
-                    <mat-icon>check</mat-icon>
-                    <span>Approve</span>
+                  <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)" [disabled]="isSubmittingDecision">
+                    <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
+                    <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
+                    <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Approve' }}</span>
                   </button>
-                  <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)">
-                    <mat-icon>close</mat-icon>
-                    <span>Reject</span>
+                  <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)" [disabled]="isSubmittingDecision">
+                    <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
+                    <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">close</mat-icon>
+                    <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Reject' }}</span>
                   </button>
                 </ng-container>
 

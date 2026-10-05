@@ -2,8 +2,12 @@ import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, of, throwError } from 'rxjs';
+import { catchError, finalize, of, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
+
+// In-flight mutating requests tracker to prevent duplicate rapid requests across the entire website
+const pendingMutations = new Map<string, number>();
+const DUPLICATE_WINDOW_MS = 1200;
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
@@ -60,10 +64,43 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // ----------------------------------------------------
-  // 2. Handle 401 Unauthorized → Auto Logout
+  // 2. Global Guard: Prevent Duplicate Mutating HTTP Requests (POST / PUT / DELETE)
+  // ----------------------------------------------------
+  const isMutating = req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE';
+  const isFormData = typeof FormData !== 'undefined' && req.body instanceof FormData;
+  let requestKey = '';
+
+  if (isMutating && isBrowser && !isFormData) {
+    try {
+      requestKey = `${req.method}_${req.urlWithParams}_${JSON.stringify(req.body || {})}`;
+      const now = Date.now();
+      const lastSent = pendingMutations.get(requestKey);
+
+      if (lastSent && (now - lastSent) < DUPLICATE_WINDOW_MS) {
+        console.warn('⚠ Blocked duplicate mutating request:', req.method, req.url);
+        return throwError(() => new Error('Duplicate request blocked. Please wait a moment.'));
+      }
+      pendingMutations.set(requestKey, now);
+    } catch {
+      // Safe fallback if body serialization fails
+    }
+  }
+
+  // ----------------------------------------------------
+  // 3. Handle 401 Unauthorized → Auto Logout & Finalize Cleanup
   // ----------------------------------------------------
   return next(req).pipe(
+    finalize(() => {
+      if (requestKey) {
+        setTimeout(() => {
+          pendingMutations.delete(requestKey);
+        }, DUPLICATE_WINDOW_MS);
+      }
+    }),
     catchError((error) => {
+      if (requestKey) {
+        pendingMutations.delete(requestKey);
+      }
       if (error.status === 401) {
         if (isBrowser && window.location.pathname !== '/login') {
           console.log("❌ 401 Unauthorized — Session Expired Auto Logout");

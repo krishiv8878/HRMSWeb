@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -24,11 +26,13 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
   templateUrl: './shiftemployee.component.html',
   styleUrl: './shiftemployee.component.scss'
 })
-export class ShiftemployeeComponent implements OnInit {
+export class ShiftemployeeComponent implements OnInit, OnDestroy {
   private services = inject(EmployeeshiftService);
   private employeeService = inject(EmployeeService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
+  private route = inject(ActivatedRoute);
+  private routeSub?: Subscription;
 
   allShifts: ShiftModel[] = [];
   filteredShifts: ShiftModel[] = [];
@@ -56,6 +60,12 @@ export class ShiftemployeeComponent implements OnInit {
   pages: number[] = [];
 
   ngOnInit() {
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'add') {
+        setTimeout(() => this.openAddForm(), 150);
+      }
+    });
+
     this.getAllData();
   }
 
@@ -364,5 +374,11 @@ export class ShiftemployeeComponent implements OnInit {
     link.click();
     URL.revokeObjectURL(url);
     this.toaster.success('Shift master roster exported successfully!', 'Export Complete');
+  }
+
+  ngOnDestroy(): void {
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
   }
 }

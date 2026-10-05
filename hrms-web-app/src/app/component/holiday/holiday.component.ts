@@ -1,6 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -36,11 +38,13 @@ export interface HolidayItem {
   templateUrl: './holiday.component.html',
   styleUrl: './holiday.component.scss'
 })
-export class HolidayComponent implements OnInit {
+export class HolidayComponent implements OnInit, OnDestroy {
   private services = inject(HolidayservicesService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
   public rbacService = inject(RbacService);
+  private route = inject(ActivatedRoute);
+  private routeSub?: Subscription;
 
   get canManageHoliday(): boolean {
     return this.rbacService.isAdmin() || this.rbacService.isHR();
@@ -73,6 +77,12 @@ export class HolidayComponent implements OnInit {
   paginatedHolidays: HolidayItem[] = [];
 
   ngOnInit() {
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'add') {
+        setTimeout(() => this.openHolidayForm(), 150);
+      }
+    });
+
     this.getHoliday();
   }
 
@@ -482,5 +492,11 @@ export class HolidayComponent implements OnInit {
         this.toaster.error(err?.error?.message || `Failed to copy holidays to ${targetYear}.`, 'Error');
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
   }
 }

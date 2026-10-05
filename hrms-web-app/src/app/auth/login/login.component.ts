@@ -7,6 +7,7 @@ import { AuthService } from '../../services/authentication/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { EmployeeService } from '../../services/employee/employee.service';
+import { AttendanceStateService } from '../../services/attendance/attendance-state.service';
 // import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
@@ -26,6 +27,7 @@ export class LoginComponent implements OnInit {
   formBuilder = inject(FormBuilder)
   services = inject(AuthService)
   employeeService = inject(EmployeeService)
+  attendanceStateService = inject(AttendanceStateService)
   // http = inject(HttpClient)
   router = inject(Router)
   toster = inject(ToastrService)
@@ -39,11 +41,7 @@ export class LoginComponent implements OnInit {
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1]));
             if (payload && payload.exp && Date.now() < payload.exp * 1000) {
-              const roleType = localStorage.getItem('RoleType') || '';
-              const targetRoute = (roleType.includes('Admin') || roleType.includes('HR') || roleType.includes('Manager'))
-                ? '/index/home'
-                : '/index/attendance';
-              this.router.navigateByUrl(targetRoute);
+              this.router.navigateByUrl('/index/dashboard');
               return;
             }
           }
@@ -109,12 +107,19 @@ export class LoginComponent implements OnInit {
           localStorage.setItem('userName', res.data.userName);
           localStorage.setItem('fullName', res.data.userName);
           localStorage.setItem('RoleType', res.data.roleType);
+          localStorage.setItem('role', res.data.roleType);
+          localStorage.setItem('Role', res.data.roleType);
           if (res.data.email) {
             localStorage.setItem('userEmail', res.data.email);
           }
 
           this.employeeService.setProfileInfo('', '', res.data.userName, res.data.email);
           this.employeeService.clearAvatar();
+
+          // Reset attendance clock state for the new user session.
+          // The service is a singleton — without this, the previous user's
+          // clock-in state (isClockedIn, clockInTime, etc.) would persist in memory.
+          this.attendanceStateService.reinit();
 
           this.toster.success('Successfully login', 'Success')
 
@@ -127,7 +132,7 @@ export class LoginComponent implements OnInit {
               this.login.reset();
               return
             }else{
-              this.router.navigateByUrl('index/attendance');
+              this.router.navigateByUrl('index/dashboard');
               this.login.reset();
             }
           }, 1000);

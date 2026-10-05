@@ -65,6 +65,40 @@ export class TimesheetReviewModalComponent implements OnInit {
     return Number(day.dayTotalHours || day.DayTotalHours || 0);
   }
 
+  isDayHoliday(day: any): boolean {
+    return Boolean(day?.isHoliday ?? day?.IsHoliday);
+  }
+
+  isDayOptionalHoliday(day: any): boolean {
+    return Boolean(day?.isOptionalHoliday ?? day?.IsOptionalHoliday);
+  }
+
+  getDayHolidayName(day: any): string {
+    return day?.holidayName || day?.HolidayName || (this.isDayOptionalHoliday(day) ? 'Optional Holiday' : 'Holiday');
+  }
+
+  isDayLeave(day: any): boolean {
+    return Boolean(day?.isLeave ?? day?.IsLeave);
+  }
+
+  getDayLeaveTypeName(day: any): string {
+    return day?.leaveTypeName || day?.LeaveTypeName || 'Approved Leave';
+  }
+
+  isDayWeekend(day: any): boolean {
+    if (day?.isWeekend !== undefined || day?.IsWeekend !== undefined) {
+      return Boolean(day.isWeekend ?? day.IsWeekend);
+    }
+    const d = this.parseDateSafe(day?.date || day?.Date);
+    if (!d) return false;
+    const dow = d.getDay();
+    return dow === 0 || dow === 6;
+  }
+
+  isDayPriorToJoining(day: any): boolean {
+    return Boolean(day?.isPriorToJoining ?? day?.IsPriorToJoining);
+  }
+
   parseDateSafe(val: any): Date | null {
     if (!val) return null;
     if (val instanceof Date) return isNaN(val.getTime()) ? null : val;

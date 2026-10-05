@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,6 +16,7 @@ import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.com
 import { CancelLeaveModalComponent } from '../../modal/cancel-leave-modal/cancel-leave-modal.component';
 import { EmployeeService } from '../../services/employee/employee.service';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
+import { AttendanceStateService } from '../../services/attendance/attendance-state.service';
 import { Subscription } from 'rxjs';
 
 export interface BreakInterval {
@@ -99,7 +101,14 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
   private globalFilterService = inject(GlobalFilterService);
+  private attendanceStateService = inject(AttendanceStateService);
+  private route = inject(ActivatedRoute);
   private filterSub?: Subscription;
+  private routeSub?: Subscription;
+  private punchSub?: Subscription;
+  private clockedInSub?: Subscription;
+  private sessionElapsedSub?: Subscription;
+  private clockInTimeSub?: Subscription;
 
   Math = Math;
 
@@ -200,6 +209,13 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   pageSize: number = 10;
   totalPages: number = 1;
   pages: number[] = [];
+  sortOrder: 'desc' | 'asc' = 'desc';
+
+  toggleSortOrder() {
+    this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+    this.globalFilterService.setSortOrder(this.sortOrder);
+    this.filterAttendance();
+  }
 
   ngOnInit() {
     if (typeof window !== 'undefined') {
@@ -251,6 +267,11 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
         }
       }
 
+      // Sort order
+      if (f.sortOrder && f.sortOrder !== this.sortOrder) {
+        this.sortOrder = f.sortOrder;
+      }
+
       // Month filter
       if (f.month && f.month !== 'All') {
         const parsed = new Date(f.month + ' 1');
@@ -274,12 +295,60 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
         this.filterAttendance();
       }
     });
+
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      const empId = params['employeeId'];
+      if (empId && String(empId) !== 'All') {
+        const targetId = String(empId);
+        this.employeeId = targetId;
+        this.selectedEmployeeId = targetId;
+        const name = params['employeeName'] || '';
+        if (name) {
+          this.selectedEmployeeName = name;
+          this.globalFilterService.setEmployee(Number(targetId), name);
+          this.getAllData();
+        } else {
+          this.employeeService.getData().subscribe((emps: any) => {
+            const list = Array.isArray(emps) ? emps : (emps?.data || emps?.result || []);
+            const found = list.find((e: any) => String(e.id || e.employeeId) === targetId);
+            if (found) {
+              this.selectedEmployeeName = `${found.firstName || ''} ${found.lastName || ''}`.trim();
+              this.globalFilterService.setEmployee(Number(targetId), this.selectedEmployeeName);
+            }
+            this.getAllData();
+          });
+        }
+      }
+    });
+
+    // Sync reactive punch & session state with AttendanceStateService (single source of truth)
+    this.clockedInSub = this.attendanceStateService.isClockedIn$.subscribe(isClocked => {
+      this.isClockedIn = isClocked;
+    });
+
+    this.sessionElapsedSub = this.attendanceStateService.sessionElapsed$.subscribe(duration => {
+      this.activeSessionDuration = duration;
+    });
+
+    this.clockInTimeSub = this.attendanceStateService.clockInTime$.subscribe(time => {
+      this.clockInTime = time;
+    });
+
+    // Sync with punches triggered from the top header
+    this.punchSub = this.attendanceStateService.punchChanged$.subscribe(() => {
+      this.getAllData();
+    });
   }
 
   ngOnDestroy() {
     if (this.timerInterval) clearInterval(this.timerInterval);
     if (this.sessionInterval) clearInterval(this.sessionInterval);
     if (this.filterSub) this.filterSub.unsubscribe();
+    if (this.punchSub) this.punchSub.unsubscribe();
+    if (this.clockedInSub) this.clockedInSub.unsubscribe();
+    if (this.sessionElapsedSub) this.sessionElapsedSub.unsubscribe();
+    if (this.clockInTimeSub) this.clockInTimeSub.unsubscribe();
+    if (this.routeSub) this.routeSub.unsubscribe();
   }
 
   private initClock() {
@@ -447,7 +516,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
 
         this.allRequests = rawRequests;
 
-        const getEmpId = (item: any) => String(item.employeeId ?? item.EmployeeId ?? item.requestedBy ?? item.RequestedBy ?? '');
+        const getEmpId = (item: any) => String(item.employeeId ?? item.EmployeeId ?? item.requestedBy ?? item.RequestedBy ?? item.employee?.id ?? item.Employee?.Id ?? '').trim();
         const currentId = String(this.employeeId || '').trim();
 
         let employeeRecords: any[] = [];
@@ -459,19 +528,14 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
 
         let employeeRequests = rawRequests;
         if (currentId) {
-          const matched = rawRequests.filter((item: any) => getEmpId(item) === currentId);
-          employeeRequests = matched;
+          employeeRequests = rawRequests.filter((item: any) => getEmpId(item) === currentId);
         }
 
-        let employeeLeaves = rawLeaves;
+        let employeeLeaves: any[] = [];
         if (currentId) {
-          const matched = rawLeaves.filter((item: any) => {
-            const eid = getEmpId(item);
-            return !eid || eid === currentId;
-          });
-          if (matched.length > 0) {
-            employeeLeaves = matched;
-          }
+          employeeLeaves = rawLeaves.filter((item: any) => getEmpId(item) === currentId);
+        } else {
+          employeeLeaves = rawLeaves;
         }
 
         let employeeLogs: any[] = [];
@@ -505,25 +569,31 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
           return getEmpId(r) === loggedInId && ad && this.toYMD(ad) === todayDateStr;
         });
 
+        const hasOpenAttendance = todayLoggedInAttendance && this.isRealTime(todayLoggedInAttendance.clockIn || todayLoggedInAttendance.ClockIn) && !this.isRealTime(todayLoggedInAttendance.clockOut || todayLoggedInAttendance.ClockOut);
+
         if (activeLog) {
-          this.isClockedIn = true;
-          this.clockInTime = this.parseDateSafe(activeLog.inTime || activeLog.InTime);
-          if (typeof localStorage !== 'undefined' && this.clockInTime) {
-            localStorage.setItem(`activeClockIn_${this.loggedInEmployeeId}`, this.clockInTime.toISOString());
-          }
-        } else if (todayLoggedInLogs.length > 0 && todayLoggedInAttendance && this.isRealTime(todayLoggedInAttendance.clockIn || todayLoggedInAttendance.ClockIn) && !this.isRealTime(todayLoggedInAttendance.clockOut || todayLoggedInAttendance.ClockOut)) {
-          this.isClockedIn = true;
-          this.clockInTime = this.parseDateSafe(todayLoggedInAttendance.clockIn || todayLoggedInAttendance.ClockIn);
-          if (typeof localStorage !== 'undefined' && this.clockInTime) {
-            localStorage.setItem(`activeClockIn_${this.loggedInEmployeeId}`, this.clockInTime.toISOString());
-          }
-        } else {
-          // If no active session for logged-in user, reset state
-          this.isClockedIn = false;
-          this.clockInTime = null;
-          this.activeSessionDuration = '00h 00m 00s';
-          if (typeof localStorage !== 'undefined') {
-            localStorage.removeItem(`activeClockIn_${this.loggedInEmployeeId}`);
+          const inTime = this.parseDateSafe(activeLog.inTime || activeLog.InTime);
+          this.attendanceStateService.setClockedInState(true, inTime);
+        } else if (hasOpenAttendance) {
+          const inTime = this.parseDateSafe(todayLoggedInAttendance.clockIn || todayLoggedInAttendance.ClockIn);
+          this.attendanceStateService.setClockedInState(true, inTime);
+          // If no active session for logged-in user, check if closed attendance exists today
+          const hasClosedAttendance = todayLoggedInAttendance && this.isRealTime(todayLoggedInAttendance.clockOut || todayLoggedInAttendance.ClockOut);
+          const hasAnyLogs = todayLoggedInLogs.length > 0;
+          if (hasClosedAttendance || (!todayLoggedInAttendance && hasAnyLogs)) {
+            const firstInTime = this.parseDateSafe(todayLoggedInAttendance?.clockIn || todayLoggedInAttendance?.ClockIn) || (todayLoggedInLogs.length > 0 ? this.parseDateSafe(todayLoggedInLogs[0].inTime || todayLoggedInLogs[0].InTime) : null);
+            const lastOutTime = this.parseDateSafe(todayLoggedInAttendance?.clockOut || todayLoggedInAttendance?.ClockOut) || (todayLoggedInLogs.length > 0 ? this.parseDateSafe(todayLoggedInLogs[todayLoggedInLogs.length - 1].outTime || todayLoggedInLogs[todayLoggedInLogs.length - 1].OutTime) : null);
+
+            let totalHoursDecimal = Number(todayLoggedInAttendance?.totalHours ?? todayLoggedInAttendance?.TotalHours ?? todayLoggedInAttendance?.effectiveHours ?? todayLoggedInAttendance?.EffectiveHours ?? 0);
+            if (totalHoursDecimal <= 0 && firstInTime && lastOutTime) {
+              const diffMs = Math.max(0, lastOutTime.getTime() - firstInTime.getTime());
+              totalHoursDecimal = Number((diffMs / (1000 * 60 * 60)).toFixed(2));
+            }
+
+            const durationStr = this.attendanceStateService.formatDurationFromHours(totalHoursDecimal, firstInTime, lastOutTime);
+            this.attendanceStateService.setClockedOutState(firstInTime, lastOutTime, durationStr);
+          } else {
+            this.attendanceStateService.setClockedInState(false, null);
           }
         }
 
@@ -917,8 +987,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
           const eff = match.effectiveHours ? Number(match.effectiveHours) : Math.max(0, totalHrsDec - breakHoursDec);
           effectiveHrsDisplay = this.formatHoursToHm(eff);
         } else {
-          const eff = sumWorkSessions > 0 ? sumWorkSessions : 8.0;
-          totalHrsDec = Number((eff + breakHoursDec).toFixed(2));
+          const eff = sumWorkSessions > 0 ? sumWorkSessions : 0;
+          totalHrsDec = Number((eff + (eff > 0 ? breakHoursDec : 0)).toFixed(2));
           effectiveHrsDisplay = this.formatHoursToHm(eff);
         }
         totalHrsDisplay = this.formatHoursToHm(totalHrsDec);
@@ -1218,6 +1288,12 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       }
     }
 
+    if (this.sortOrder === 'asc') {
+      result.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    } else {
+      result.sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
+    }
+
     this.filteredRows = result;
     this.currentPage = 1;
     this.updatePagination();
@@ -1264,15 +1340,20 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     }
 
     const dialogRef = this.dialog.open(EmployeeAttendComponent, {
-      width: '420px',
+      width: '430px',
       data: {
-        title: 'Confirm Punch In',
-        message: `Are you ready to record your Clock-In for today (${this.currentDateDisplay})?`
+        title: 'Confirm Clock-In',
+        message: `Are you ready to record your Clock-In for today (${this.currentDateDisplay})?`,
+        punchType: 'clockIn',
+        confirmText: 'Clock-In',
+        confirmColor: 'primary'
       }
     });
 
     dialogRef.afterClosed().subscribe(res => {
-      if (res === 'confirm') {
+      if (res === 'success') {
+        this.getAllData();
+      } else if (res === 'confirm') {
         this.startClock();
       }
     });
@@ -1285,15 +1366,22 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     }
 
     const dialogRef = this.dialog.open(EmployeeAttendComponent, {
-      width: '420px',
+      width: '430px',
       data: {
-        title: 'Confirm Punch Out',
-        message: 'Are you sure you want to end your working session and Clock-Out?'
+        title: 'Confirm Clock-Out',
+        message: 'Are you sure you want to end your working session and Clock-Out?',
+        punchType: 'clockOut',
+        confirmText: 'Clock-Out',
+        confirmColor: 'warn'
       }
     });
 
     dialogRef.afterClosed().subscribe(res => {
-      if (res === 'confirm') {
+      if (res === 'success') {
+        this.clockInTime = null;
+        this.activeSessionDuration = '00h 00m 00s';
+        this.getAllData();
+      } else if (res === 'confirm') {
         this.onClockOut();
       }
     });
@@ -1305,38 +1393,9 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const now = new Date();
-    this.isClockedIn = true;
-    this.clockInTime = now;
-
-    const empIdToPunch = Number(this.loggedInEmployeeId || this.employeeId);
-    const nowIso = now.toISOString();
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(`activeClockIn_${empIdToPunch}`, nowIso);
-    }
-
-    const yyyy = now.getFullYear();
-    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
-    const dd = now.getDate().toString().padStart(2, '0');
-    const todayStr = `${yyyy}-${mm}-${dd}`;
-
-    this.services.createData(
-      empIdToPunch,
-      nowIso,
-      null,
-      0,
-      0,
-      'Present',
-      nowIso,
-      todayStr
-    ).subscribe({
-      next: () => {
-        this.toaster.success(`Clocked In at ${this.currentTimeDisplay}`, 'Session Active');
+    this.attendanceStateService.clockIn((success) => {
+      if (success) {
         this.getAllData();
-      },
-      error: (err) => {
-        console.error(err);
-        this.toaster.error('Failed to record Clock-In', 'Error');
       }
     });
   }
@@ -1347,44 +1406,11 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const now = new Date();
-    this.isClockedIn = false;
-    const inTime = this.clockInTime ? this.clockInTime : now;
-    const diffMs = Math.max(0, now.getTime() - inTime.getTime());
-    const totalHours = Number((diffMs / (1000 * 60 * 60)).toFixed(2));
-    const effectiveHours = totalHours;
-
-    const empIdToPunch = Number(this.loggedInEmployeeId || this.employeeId);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(`activeClockIn_${empIdToPunch}`);
-    }
-
-    const nowIso = now.toISOString();
-    const inIso = inTime.toISOString();
-    const yyyy = now.getFullYear();
-    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
-    const dd = now.getDate().toString().padStart(2, '0');
-    const todayStr = `${yyyy}-${mm}-${dd}`;
-
-    this.services.createData(
-      empIdToPunch,
-      inIso,
-      nowIso,
-      totalHours,
-      effectiveHours,
-      'Present',
-      nowIso,
-      todayStr
-    ).subscribe({
-      next: () => {
-        this.toaster.info(`Clocked Out at ${this.currentTimeDisplay}`, 'Session Ended');
+    this.attendanceStateService.clockOut((success) => {
+      if (success) {
         this.clockInTime = null;
         this.activeSessionDuration = '00h 00m 00s';
         this.getAllData();
-      },
-      error: (err) => {
-        console.error(err);
-        this.toaster.error('Failed to record Clock-Out', 'Error');
       }
     });
   }
@@ -1463,7 +1489,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
         canRegularize: row ? row.canRegularize : true,
         regularizationStatus: row ? row.regularizationStatus : null,
         rejectionReason: row ? row.rejectionReason : '',
-        existingRequests: this.allRequests
+        existingRequests: this.allRequests,
+        attendanceRecords: this.cachedRecords,
+        leaves: this.cachedLeaves,
+        holidays: this.cachedHolidays
       }
     });
 

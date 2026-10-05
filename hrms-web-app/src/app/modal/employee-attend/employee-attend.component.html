@@ -1,12 +1,48 @@
-<h2 mat-dialog-title>{{ data.title }}</h2>
+<div class="confirm-dialog-wrapper">
+  <!-- Dialog Header with Context Icon -->
+  <div class="dialog-header-banner" [class.is-clock-out]="isPunchOut">
+    <div class="dialog-icon-circle">
+      <mat-icon>{{ iconName }}</mat-icon>
+    </div>
+    <div class="dialog-header-text">
+      <h2 mat-dialog-title class="dialog-title">{{ data.title }}</h2>
+      <p class="dialog-subtitle">Attendance Punch Confirmation</p>
+    </div>
+  </div>
 
-<mat-dialog-content>
-  <p>{{ data.message }}</p>
-</mat-dialog-content>
+  <mat-dialog-content class="dialog-content-body">
+    <p class="dialog-message">{{ data.message }}</p>
 
-<mat-dialog-actions align="end">
-  <button mat-flat-button (click)="onCancel()">Cancel</button>
-  <button mat-flat-button color="primary" (click)="onConfirm()">
-    Confirm
-  </button>
-</mat-dialog-actions>
+    <!-- Error message banner if action fails -->
+    <div *ngIf="errorMessage" class="dialog-error-banner">
+      <mat-icon class="error-icon">error_outline</mat-icon>
+      <div class="error-text">
+        <strong>Action Failed</strong>
+        <span>{{ errorMessage }}</span>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions-footer">
+    <button
+      type="button"
+      class="btn-dialog-cancel"
+      [disabled]="isSubmitting"
+      (click)="onCancel()"
+    >
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      class="btn-dialog-confirm"
+      [class.btn-clock-out]="isPunchOut"
+      [disabled]="isSubmitting"
+      (click)="onConfirm()"
+    >
+      <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <mat-icon *ngIf="!isSubmitting" class="confirm-icon">{{ iconName }}</mat-icon>
+      <span>{{ isSubmitting ? 'Processing...' : (data.confirmText || 'Confirm') }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

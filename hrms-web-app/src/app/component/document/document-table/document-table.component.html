@@ -1,9 +1,76 @@
 <div class="table-card-container">
+  <!-- Status Tabs Bar (Pending Review, Approved, Rejected, All Documents) -->
+  <div class="document-status-tabs-bar">
+    <div class="tabs-container">
+      <button
+        type="button"
+        class="status-tab pending-tab"
+        [class.active]="activeStatusTab === 'Pending'"
+        (click)="setStatusTab('Pending')"
+      >
+        <span class="tab-indicator"></span>
+        <span class="tab-label">Pending Review</span>
+        <span class="tab-count-badge" [class.has-count]="pendingCount > 0">{{ pendingCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="status-tab approved-tab"
+        [class.active]="activeStatusTab === 'Approved'"
+        (click)="setStatusTab('Approved')"
+      >
+        <span class="tab-indicator"></span>
+        <span class="tab-label">Approved</span>
+        <span class="tab-count-badge">{{ approvedCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="status-tab rejected-tab"
+        [class.active]="activeStatusTab === 'Rejected'"
+        (click)="setStatusTab('Rejected')"
+      >
+        <span class="tab-indicator"></span>
+        <span class="tab-label">Rejected</span>
+        <span class="tab-count-badge" [class.has-count]="rejectedCount > 0">{{ rejectedCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="status-tab all-tab"
+        [class.active]="activeStatusTab === 'All'"
+        (click)="setStatusTab('All')"
+      >
+        <span class="tab-indicator"></span>
+        <span class="tab-label">All Documents</span>
+        <span class="tab-count-badge">{{ totalCount }}</span>
+      </button>
+    </div>
+
+    <!-- Quick Sort Toggle Button -->
+    <div class="tab-actions">
+      <button
+        type="button"
+        class="sort-toggle-btn"
+        (click)="toggleSortOrder()"
+        [title]="'Sorting: ' + (sortOrder === 'desc' ? 'Latest First (Descending)' : 'Oldest First (Ascending)')"
+      >
+        <mat-icon class="sort-icon">{{ sortOrder === 'desc' ? 'south' : 'north' }}</mat-icon>
+        <span class="sort-text">{{ sortOrder === 'desc' ? 'Latest First' : 'Oldest First' }}</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Table Header Controls -->
   <div class="table-header">
     <div class="title-group">
       <mat-icon class="title-icon">history</mat-icon>
-      <h2 class="table-title">Recent Documents</h2>
+      <h2 class="table-title">
+        <span *ngIf="activeStatusTab === 'Pending'">Pending Review</span>
+        <span *ngIf="activeStatusTab === 'Approved'">Approved Documents</span>
+        <span *ngIf="activeStatusTab === 'Rejected'">Rejected Documents</span>
+        <span *ngIf="activeStatusTab === 'All'">All Documents</span>
+      </h2>
     </div>
 
     <div class="header-actions">
@@ -19,16 +86,6 @@
           class="search-input"
           aria-label="Search documents"
         />
-      </div>
-
-      <!-- Status Filter Dropdown -->
-      <div class="filter-dropdown">
-        <select [(ngModel)]="selectedStatus" (change)="filterDocuments()" class="custom-select" aria-label="Filter by Status">
-          <option value="All">Status: All</option>
-          <option value="Approved">Approved</option>
-          <option value="Pending">Pending</option>
-          <option value="Rejected">Rejected</option>
-        </select>
       </div>
 
       <!-- Category Filter Dropdown -->
@@ -127,30 +184,6 @@
           <!-- Actions Dropdown -->
           <td class="col-actions text-right">
             <div class="actions-wrapper">
-              <!-- Inline Quick Approve/Reject for HR & Admin if Pending -->
-              <ng-container *ngIf="(rbacService.isHR() || rbacService.isAdmin()) && doc.status === 'Pending'">
-                <button
-                  type="button"
-                  class="quick-action-btn btn-approve-quick"
-                  matTooltip="Approve Document"
-                  matTooltipPosition="above"
-                  (click)="onApproveDocument(doc)"
-                  aria-label="Approve"
-                >
-                  <mat-icon>check</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="quick-action-btn btn-reject-quick"
-                  matTooltip="Reject Document"
-                  matTooltipPosition="above"
-                  (click)="onRejectDocument(doc)"
-                  aria-label="Reject"
-                >
-                  <mat-icon>close</mat-icon>
-                </button>
-              </ng-container>
-
               <!-- Quick Re-Upload / View Reason for Rejected -->
               <button
                 *ngIf="doc.status === 'Rejected'"
@@ -170,19 +203,6 @@
             </div>
 
             <mat-menu #docMenu="matMenu" xPosition="before">
-              <!-- HR/Admin Quick Actions -->
-              <ng-container *ngIf="(rbacService.isHR() || rbacService.isAdmin()) && doc.status === 'Pending'">
-                <button mat-menu-item (click)="onApproveDocument(doc)">
-                  <mat-icon style="color: #059669;">check_circle</mat-icon>
-                  <span style="color: #059669; font-weight: 600;">Approve Document</span>
-                </button>
-                <button mat-menu-item (click)="onRejectDocument(doc)">
-                  <mat-icon style="color: #dc2626;">cancel</mat-icon>
-                  <span style="color: #dc2626; font-weight: 600;">Reject Document</span>
-                </button>
-                <mat-divider></mat-divider>
-              </ng-container>
-
               <button mat-menu-item *ngIf="doc.status === 'Rejected'" (click)="onShowRejectionReason(doc)">
                 <mat-icon style="color: #e11d48;">upload_file</mat-icon>
                 <span style="color: #e11d48; font-weight: 600;">View Reason & Re-Upload</span>
@@ -214,12 +234,26 @@
           <td colspan="6" class="empty-state">
             <div class="empty-box">
               <mat-icon class="empty-icon">folder_open</mat-icon>
-              <p *ngIf="documents.length === 0">
-                No documents uploaded yet. Click <strong>'Upload Document'</strong> above to add your first file.
-              </p>
-              <p *ngIf="documents.length > 0">
-                No matching documents found for "{{ searchQuery }}".
-              </p>
+              <div *ngIf="documents.length === 0">
+                <p>No documents uploaded yet. Click <strong>'Upload Document'</strong> above to add your first file.</p>
+              </div>
+              <div *ngIf="documents.length > 0">
+                <p *ngIf="searchQuery">No matching documents found for "<strong>{{ searchQuery }}</strong>".</p>
+                <div *ngIf="!searchQuery">
+                  <p *ngIf="activeStatusTab === 'Pending'">
+                    <strong>All caught up!</strong> No documents awaiting review. Switch to <strong>Approved</strong> or <strong>All Documents</strong>.
+                  </p>
+                  <p *ngIf="activeStatusTab === 'Approved'">
+                    No approved documents found in this view.
+                  </p>
+                  <p *ngIf="activeStatusTab === 'Rejected'">
+                    No rejected documents requiring action.
+                  </p>
+                  <p *ngIf="activeStatusTab === 'All'">
+                    No documents available matching the current filter criteria.
+                  </p>
+                </div>
+              </div>
             </div>
           </td>
         </tr>

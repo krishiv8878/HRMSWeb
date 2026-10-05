@@ -244,12 +244,28 @@
       height: 18px;
     }
 
+    &:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-spinner {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
     &.btn-approve {
       background: linear-gradient(135deg, #10b981, #059669);
       border: 1px solid #059669;
       box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: linear-gradient(135deg, #059669, #047857);
         box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
       }
@@ -260,10 +276,14 @@
       border: 1px solid #dc2626;
       box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: linear-gradient(135deg, #dc2626, #b91c1c);
         box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
       }
     }
   }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

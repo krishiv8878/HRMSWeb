@@ -15,24 +15,56 @@
     </button>
   </div>
 
+  <!-- Smart Auto-Selected Absent Banner -->
+  <div class="smart-detection-banner" *ngIf="autoSelectedAbsentNotice">
+    <mat-icon class="smart-icon">auto_fix_high</mat-icon>
+    <div class="smart-text">
+      <strong>Smart Date Selection</strong>
+      <p>{{ autoSelectedAbsentNotice }}</p>
+    </div>
+  </div>
+
   <!-- Form Body -->
   <form [formGroup]="attendaseform" (ngSubmit)="submitdata()" class="regularization-form-body">
-    <!-- Selected Date -->
-    <div class="form-group">
-      <label class="field-label">Selected Date</label>
-      <div class="input-wrapper">
-        <mat-icon class="input-icon">event</mat-icon>
-        <input
-          matInput
-          [matDatepicker]="picker"
-          [min]="minDate"
-          [max]="maxDate"
-          formControlName="selectedDate"
-          class="custom-input"
-          placeholder="Select date to regularize"
-        />
-        <mat-datepicker-toggle matSuffix [for]="picker" class="picker-toggle"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
+    <!-- Selected Date Field -->
+    <div class="form-group date-picker-group">
+      <label class="field-label">Attendance Date to Regularize <span class="required">*</span></label>
+      
+      <div class="date-picker-box">
+        <mat-form-field appearance="outline" class="w-100 full-width-datepicker">
+          <mat-icon matPrefix class="datepicker-prefix-icon">event</mat-icon>
+          <input
+            matInput
+            [matDatepicker]="picker"
+            (click)="picker.open()"
+            [min]="minDate"
+            [max]="maxDate"
+            formControlName="selectedDate"
+            placeholder="Click to pick date from calendar"
+            readonly
+            class="clickable-date-input"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="picker" class="picker-toggle"></mat-datepicker-toggle>
+          <mat-datepicker #picker [dateClass]="dateClassFn" panelClass="attendance-calendar-overlay"></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <!-- Calendar Status Legend -->
+      <div class="calendar-legend-bar">
+        <span class="legend-item"><span class="legend-dot dot-present"></span> Present</span>
+        <span class="legend-item"><span class="legend-dot dot-absent"></span> Absent / Incomplete</span>
+        <span class="legend-item"><span class="legend-dot dot-leave"></span> On Leave</span>
+        <span class="legend-item"><span class="legend-dot dot-pending"></span> Reg. Pending</span>
+        <span class="legend-item"><span class="legend-dot dot-holiday"></span> Holiday</span>
+      </div>
+
+      <!-- Selected Date Status Badge -->
+      <div class="selected-date-status-chip" *ngIf="selectedDateStatusBadge" [ngClass]="'chip-' + selectedDateStatusBadge.type">
+        <mat-icon class="chip-icon">{{ selectedDateStatusBadge.icon }}</mat-icon>
+        <div class="chip-content">
+          <strong class="chip-title">{{ selectedDateStatusBadge.label }}</strong>
+          <span class="chip-details" *ngIf="selectedDateStatusBadge.details">{{ selectedDateStatusBadge.details }}</span>
+        </div>
       </div>
     </div>
 
@@ -97,17 +129,26 @@
       <div class="input-wrapper textarea-wrapper">
         <textarea
           formControlName="Reason"
-          placeholder="Please explain the reason for punch adjustment (e.g. Biometric device failure, client site visit)..."
+          placeholder="Please explain the reason for punch adjustment (e.g. Biometric device failure, client site visit, missed punch-out)..."
           rows="3"
           class="custom-textarea"
         ></textarea>
       </div>
+      <span class="field-hint reason-hint" *ngIf="!attendaseform.get('Reason')?.value">
+        <mat-icon class="hint-icon">info</mat-icon> Reason is required to submit your request for approval.
+      </span>
     </div>
 
     <!-- Status Notice Banner if Already Requested -->
     <div class="alert-banner warning" *ngIf="!canSubmit">
       <mat-icon>info</mat-icon>
-      <span>A regularization request for this date is already <strong>{{ currentStatus || data?.regularizationStatus }}</strong>. You can only submit a new request if the previous one was rejected.</span>
+      <span>{{ statusMessage || ('A regularization request for this date is already ' + (currentStatus || data?.regularizationStatus) + '. You can only submit a new request if the previous one was rejected.') }}</span>
+    </div>
+
+    <!-- Informational Note for Ongoing Days -->
+    <div class="alert-banner info-banner" *ngIf="canSubmit && statusMessage">
+      <mat-icon>info</mat-icon>
+      <span>{{ statusMessage }}</span>
     </div>
 
     <div class="alert-banner error-banner" *ngIf="canSubmit && (currentStatus === 'Rejected' || data?.regularizationStatus === 'Rejected')">
@@ -115,14 +156,21 @@
       <span>Previous request was <strong>Rejected</strong>: {{ rejectionReason || data?.rejectionReason || 'No reason provided' }}. You may adjust your punch times and submit again.</span>
     </div>
 
+    <!-- Submission Error Banner -->
+    <div class="alert-banner error-banner" *ngIf="submitError">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ submitError }}</span>
+    </div>
+
     <!-- Modal Footer Actions -->
     <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeDialog()">
+      <button type="button" class="btn-cancel" [disabled]="isSubmitting" (click)="closeDialog()">
         {{ canSubmit ? 'Cancel' : 'Close' }}
       </button>
-      <button type="submit" class="btn-submit" *ngIf="canSubmit" [disabled]="!attendaseform.valid">
-        <mat-icon>send</mat-icon>
-        Submit Request
+      <button type="submit" class="btn-submit" *ngIf="canSubmit" [disabled]="!attendaseform.valid || isSubmitting">
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+        <span>{{ isSubmitting ? 'Submitting...' : 'Submit Request' }}</span>
       </button>
     </div>
   </form>

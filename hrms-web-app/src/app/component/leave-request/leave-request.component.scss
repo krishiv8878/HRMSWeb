@@ -224,15 +224,224 @@
       font-weight: 600;
     }
   }
+
+  &.clickable-metric {
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      border-color: #cbd5e1;
+    }
+
+    &.active-metric {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+  }
 }
 
 /* Table Container Box */
 .table-card-container {
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
   overflow: hidden;
+}
+
+/* Category Tabs Bar */
+.leave-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  padding: 0 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  .tabs-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    overflow-x: auto;
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #64748b;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+
+      .tab-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+
+        &.text-amber {
+          color: #d97706;
+        }
+
+        &.text-emerald {
+          color: #059669;
+        }
+
+        &.text-slate {
+          color: #64748b;
+        }
+
+        &.text-rose {
+          color: #e11d48;
+        }
+
+        &.text-blue {
+          color: #2563eb;
+        }
+      }
+
+      .tab-count-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2px 7px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+
+        &.pill-amber {
+          background-color: #fef3c7;
+          color: #b45309;
+        }
+
+        &.pill-emerald {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
+
+        &.pill-slate {
+          background-color: #f1f5f9;
+          color: #475569;
+        }
+
+        &.pill-rose {
+          background-color: #ffe4e6;
+          color: #be123c;
+        }
+
+        &.pill-blue {
+          background-color: #eff6ff;
+          color: #1d4ed8;
+        }
+      }
+
+      &:hover {
+        color: #0f172a;
+        background-color: #f8fafc;
+      }
+
+      &.active {
+        color: #1e40af;
+        border-bottom-color: #1e40af;
+        background-color: #f8fafc;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .tabs-actions-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-tab-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 6px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+
+    mat-icon {
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+      color: #2563eb;
+    }
+
+    &:hover {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+  }
+
+  .btn-tab-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 6px;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #64748b;
+    }
+
+    &:hover {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+  }
+}
+
+.results-counter-pill {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  padding: 4px 10px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.empty-heading {
+  margin: 10px 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .table-header {

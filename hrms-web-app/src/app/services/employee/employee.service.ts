@@ -243,6 +243,20 @@ export class EmployeeService {
       payload.managerId = !isNaN(mId) && mId > 0 ? mId : null;
     }
 
+    // Sanitize profileCompleted (bool? in backend)
+    if (payload.profileCompleted !== undefined && payload.profileCompleted !== null) {
+      if (typeof payload.profileCompleted === 'boolean') {
+        // already boolean
+      } else if (typeof payload.profileCompleted === 'number') {
+        payload.profileCompleted = payload.profileCompleted >= 100 || payload.profileCompleted > 0;
+      } else if (typeof payload.profileCompleted === 'string') {
+        const lower = String(payload.profileCompleted).trim().toLowerCase();
+        payload.profileCompleted = lower === 'true' || lower === '1' || parseInt(lower, 10) > 0;
+      } else {
+        payload.profileCompleted = Boolean(payload.profileCompleted);
+      }
+    }
+
     return payload;
   }
 

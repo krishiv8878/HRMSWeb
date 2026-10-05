@@ -29,12 +29,7 @@ export class PaymentinfoService {
   }
 
   createData(data: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data).pipe(
-      catchError((err) => {
-        console.error('Error creating payment info:', err);
-        return of({ success: true });
-      })
-    );
+    return this.http.post<any>(this.apiUrl + `/EmployeePaymentInfo/CreatePaymentInfo`, data);
   }
 
   updateData(data: any): Observable<any> {

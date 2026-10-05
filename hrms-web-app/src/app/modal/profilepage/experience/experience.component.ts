@@ -69,12 +69,23 @@ export class ExperienceComponent implements OnInit {
   }
 
   ngOnInit() {
-    const savedExperienceStr = this.getStorage('profile_experiences_' + (this.data?.id || 'default'));
-    if (savedExperienceStr) {
+    if (this.data?.responsibilities && typeof this.data.responsibilities === 'string') {
       try {
-        this.experienceList = JSON.parse(savedExperienceStr);
-      } catch (e) {
-        this.experienceList = [];
+        const parsed = JSON.parse(this.data.responsibilities);
+        if (Array.isArray(parsed.experiences) && parsed.experiences.length > 0) {
+          this.experienceList = parsed.experiences;
+        }
+      } catch (e) {}
+    }
+
+    if (!this.experienceList || this.experienceList.length === 0) {
+      const savedExperienceStr = this.getStorage('profile_experiences_' + (this.data?.id || 'default'));
+      if (savedExperienceStr) {
+        try {
+          this.experienceList = JSON.parse(savedExperienceStr);
+        } catch (e) {
+          this.experienceList = [];
+        }
       }
     }
 
@@ -158,12 +169,26 @@ export class ExperienceComponent implements OnInit {
     const key = 'profile_experiences_' + (this.data?.id || 'default');
     this.setStorage(key, JSON.stringify(validEntries));
 
+    let currentPayload: any = {};
+    if (this.data?.responsibilities && typeof this.data.responsibilities === 'string') {
+      try {
+        currentPayload = JSON.parse(this.data.responsibilities);
+      } catch {
+        currentPayload = {};
+      }
+    }
+    currentPayload.experiences = validEntries;
+    currentPayload.workResponsibilities = primary.responsibilities || '';
+
     const payload = {
       ...this.data,
+      profileCompleted: typeof this.data?.profileCompleted === 'boolean'
+        ? this.data.profileCompleted
+        : (this.data?.profileCompleted ? Boolean(this.data.profileCompleted) : false),
       companyName: primary.companyName,
       experienceDuration: primary.experienceDuration,
       experienceLocation: primary.experienceLocation,
-      responsibilities: primary.responsibilities
+      responsibilities: JSON.stringify(currentPayload)
     };
 
     this.services.updateData(payload).subscribe({
@@ -171,9 +196,9 @@ export class ExperienceComponent implements OnInit {
         this.toaster.success('All career work experience updated successfully', 'Saved');
         this.dialogRef.close(true);
       },
-      error: () => {
-        this.toaster.success('All career work experience updated successfully', 'Saved');
-        this.dialogRef.close(true);
+      error: (err: any) => {
+        console.error('Error updating experience details:', err);
+        this.toaster.error(err?.error?.message || 'Failed to update career work experience', 'Error');
       }
     });
   }

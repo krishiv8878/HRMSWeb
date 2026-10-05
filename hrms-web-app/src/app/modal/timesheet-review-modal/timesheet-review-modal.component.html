@@ -96,6 +96,27 @@
           <div class="day-title-group">
             <mat-icon class="day-icon">event</mat-icon>
             <span class="day-date">{{ formatDayHeader(day.date || day.Date, day.dayName || day.DayName) }}</span>
+
+            <!-- Day Status Badges (Holiday, Leave, Weekend, Pre-Join) -->
+            <span *ngIf="isDayPriorToJoining(day)" class="badge-day-status badge-pre-join" title="Date is prior to official joining date">
+              <mat-icon>person_off</mat-icon>
+              <span>Pre-Joining</span>
+            </span>
+
+            <span *ngIf="!isDayPriorToJoining(day) && isDayLeave(day)" class="badge-day-status badge-leave" [title]="'Approved Leave: ' + getDayLeaveTypeName(day)">
+              <mat-icon>event_busy</mat-icon>
+              <span>Leave: {{ getDayLeaveTypeName(day) }}</span>
+            </span>
+
+            <span *ngIf="!isDayPriorToJoining(day) && isDayHoliday(day)" class="badge-day-status" [class.badge-holiday]="!isDayOptionalHoliday(day)" [class.badge-holiday-opt]="isDayOptionalHoliday(day)" [title]="getDayHolidayName(day)">
+              <mat-icon>{{ isDayOptionalHoliday(day) ? 'event_note' : 'celebration' }}</mat-icon>
+              <span>{{ getDayHolidayName(day) }}</span>
+            </span>
+
+            <span *ngIf="!isDayPriorToJoining(day) && !isDayLeave(day) && !isDayHoliday(day) && isDayWeekend(day)" class="badge-day-status badge-weekend" title="Weekend">
+              <mat-icon>weekend</mat-icon>
+              <span>Weekend</span>
+            </span>
           </div>
 
           <!-- Attendance Punch Pill -->
@@ -161,7 +182,52 @@
 
           <!-- When No Tasks Logged -->
           <div class="no-tasks-row" *ngIf="getDayTasks(day).length === 0">
-            <span class="no-tasks-text">
+            <!-- Holiday State -->
+            <div class="day-status-card status-card-holiday" *ngIf="isDayHoliday(day)">
+              <div class="status-card-icon">
+                <mat-icon>{{ isDayOptionalHoliday(day) ? 'event_note' : 'celebration' }}</mat-icon>
+              </div>
+              <div class="status-card-text">
+                <span class="status-card-title">{{ getDayHolidayName(day) }}</span>
+                <span class="status-card-sub">{{ isDayOptionalHoliday(day) ? 'Optional / Floating Holiday' : 'Company Holiday' }} &bull; No tasks required</span>
+              </div>
+            </div>
+
+            <!-- Approved Leave State -->
+            <div class="day-status-card status-card-leave" *ngIf="!isDayHoliday(day) && isDayLeave(day)">
+              <div class="status-card-icon">
+                <mat-icon>event_busy</mat-icon>
+              </div>
+              <div class="status-card-text">
+                <span class="status-card-title">On Approved Leave ({{ getDayLeaveTypeName(day) }})</span>
+                <span class="status-card-sub">Employee was on approved leave &bull; No tasks required</span>
+              </div>
+            </div>
+
+            <!-- Weekend State -->
+            <div class="day-status-card status-card-weekend" *ngIf="!isDayHoliday(day) && !isDayLeave(day) && isDayWeekend(day)">
+              <div class="status-card-icon">
+                <mat-icon>weekend</mat-icon>
+              </div>
+              <div class="status-card-text">
+                <span class="status-card-title">Weekend</span>
+                <span class="status-card-sub">Standard non-working day</span>
+              </div>
+            </div>
+
+            <!-- Pre-Joining State -->
+            <div class="day-status-card status-card-prejoin" *ngIf="!isDayHoliday(day) && !isDayLeave(day) && !isDayWeekend(day) && isDayPriorToJoining(day)">
+              <div class="status-card-icon">
+                <mat-icon>person_off</mat-icon>
+              </div>
+              <div class="status-card-text">
+                <span class="status-card-title">Prior to Official Joining Date</span>
+                <span class="status-card-sub">Date is prior to employee's start date</span>
+              </div>
+            </div>
+
+            <!-- Normal Working Day with No Tasks -->
+            <span class="no-tasks-text" *ngIf="!isDayHoliday(day) && !isDayLeave(day) && !isDayWeekend(day) && !isDayPriorToJoining(day)">
               <mat-icon class="muted-icon">remove_circle_outline</mat-icon>
               No tasks logged for this day
             </span>

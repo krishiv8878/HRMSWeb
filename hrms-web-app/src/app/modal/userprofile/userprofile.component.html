@@ -56,6 +56,10 @@
             <span class="status-dot"></span>
             <span>Active Employee</span>
           </span>
+          <span class="status-pill status-completeness" [class.comp-full]="completenessInfo.percentage === 100" [class.comp-partial]="completenessInfo.percentage < 100" [title]="completenessInfo.percentage + '% Profile Completed'">
+            <mat-icon>{{ completenessInfo.percentage === 100 ? 'verified' : 'pending_actions' }}</mat-icon>
+            <span>{{ completenessInfo.percentage }}% Completed</span>
+          </span>
         </div>
 
         <div class="identity-role-row">
@@ -92,6 +96,49 @@
     </div>
   </div>
 
+  <!-- Simple & Minimal Profile Completeness Tracker -->
+  <div class="minimal-completeness-tracker" [class.is-complete]="completenessInfo.percentage === 100">
+    <div class="tracker-header-line">
+      <div class="tracker-status-meta">
+        <mat-icon class="status-icon" [class.icon-success]="completenessInfo.percentage === 100" [class.icon-pending]="completenessInfo.percentage < 100">
+          {{ completenessInfo.percentage === 100 ? 'check_circle' : 'pending_actions' }}
+        </mat-icon>
+        <span class="tracker-title">Profile Completeness</span>
+        <span class="tracker-percent font-mono font-semibold" [class.text-emerald]="completenessInfo.percentage === 100">{{ completenessInfo.percentage }}%</span>
+        <span class="tracker-subtext">
+          <ng-container *ngIf="completenessInfo.percentage === 100">
+            • All required profile details submitted and up to date
+          </ng-container>
+          <ng-container *ngIf="completenessInfo.percentage < 100">
+            • {{ completenessInfo.completedFields }} of {{ completenessInfo.totalFields }} fields completed ({{ completenessInfo.pendingFields }} pending)
+          </ng-container>
+        </span>
+      </div>
+
+      <!-- Minimal slim progress bar (only when < 100%) -->
+      <div class="tracker-bar-wrap" *ngIf="completenessInfo.percentage < 100">
+        <div class="tracker-bar-track">
+          <div class="tracker-bar-fill" [style.width.%]="completenessInfo.percentage"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Minimal Pending Action Chips (Only shown when pending fields exist) -->
+    <div class="tracker-pending-chips" *ngIf="completenessInfo.pendingFields > 0">
+      <span class="chips-label">Complete pending:</span>
+      <button
+        *ngFor="let item of pendingFieldsList"
+        type="button"
+        class="minimal-chip-btn"
+        (click)="openPendingModal(item.actionModal)"
+        [title]="'Click to fill ' + item.label"
+      >
+        <mat-icon>add_circle_outline</mat-icon>
+        <span>{{ item.label }}</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Profile Sections 2-Column Grid -->
   <div class="profile-cards-grid">
     <!-- Card 1: Personal & Contact Information -->
@@ -107,6 +154,14 @@
           </div>
         </div>
         <div class="header-actions-group">
+          <span *ngIf="isSectionComplete('personal')" class="section-badge-pill complete">
+            <mat-icon>check_circle</mat-icon>
+            <span>Complete</span>
+          </span>
+          <button *ngIf="!isSectionComplete('personal')" type="button" class="section-badge-pill pending" (click)="info(employedata)" title="Fill pending personal details">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ getSectionPendingCount('personal') }} Pending</span>
+          </button>
           <button type="button" class="btn-card-edit" (click)="info(employedata)" title="Edit Personal Information">
             <mat-icon>edit</mat-icon>
           </button>
@@ -131,7 +186,11 @@
 
         <div class="data-item">
           <span class="data-label">Mobile Contact</span>
-          <span class="data-value">{{ employedata?.mobileNumber || '—' }}</span>
+          <span class="data-value" *ngIf="employedata?.mobileNumber">{{ employedata?.mobileNumber }}</span>
+          <button *ngIf="!employedata?.mobileNumber" type="button" class="btn-inline-pending" (click)="info(employedata)" title="Click to add mobile number">
+            <mat-icon>add_circle_outline</mat-icon>
+            <span>Add Mobile Number</span>
+          </button>
         </div>
 
         <div class="data-item">
@@ -141,12 +200,20 @@
 
         <div class="data-item">
           <span class="data-label">Date of Birth</span>
-          <span class="data-value">{{ (employedata?.dateOfBirth | date:'dd MMM yyyy') || '—' }}</span>
+          <span class="data-value" *ngIf="employedata?.dateOfBirth">{{ (employedata?.dateOfBirth | date:'dd MMM yyyy') }}</span>
+          <button *ngIf="!employedata?.dateOfBirth" type="button" class="btn-inline-pending" (click)="info(employedata)" title="Click to add date of birth">
+            <mat-icon>add_circle_outline</mat-icon>
+            <span>Add Date of Birth</span>
+          </button>
         </div>
 
         <div class="data-item span-2">
           <span class="data-label">Current Residential Address</span>
-          <span class="data-value">{{ employedata?.currentAddress || '—' }}</span>
+          <span class="data-value" *ngIf="employedata?.currentAddress">{{ employedata?.currentAddress }}</span>
+          <button *ngIf="!employedata?.currentAddress" type="button" class="btn-inline-pending" (click)="info(employedata)" title="Click to add residential address">
+            <mat-icon>add_circle_outline</mat-icon>
+            <span>Add Residential Address</span>
+          </button>
         </div>
 
         <div class="data-item span-2">
@@ -169,6 +236,14 @@
           </div>
         </div>
         <div class="header-actions-group">
+          <span *ngIf="isSectionComplete('emergency')" class="section-badge-pill complete">
+            <mat-icon>check_circle</mat-icon>
+            <span>Complete</span>
+          </span>
+          <button *ngIf="!isSectionComplete('emergency')" type="button" class="section-badge-pill pending" (click)="contact(employedata)" title="Add required emergency contact">
+            <mat-icon>error_outline</mat-icon>
+            <span>1 Pending</span>
+          </button>
           <button type="button" class="btn-card-edit" (click)="contact(employedata)" title="Edit Emergency Contacts">
             <mat-icon>edit</mat-icon>
           </button>
@@ -241,6 +316,14 @@
           </div>
         </div>
         <div class="header-actions-group">
+          <span *ngIf="isSectionComplete('education')" class="section-badge-pill complete">
+            <mat-icon>check_circle</mat-icon>
+            <span>Complete</span>
+          </span>
+          <button *ngIf="!isSectionComplete('education')" type="button" class="section-badge-pill pending" (click)="education(employedata)" title="Add academic qualification">
+            <mat-icon>error_outline</mat-icon>
+            <span>Required</span>
+          </button>
           <!-- + Add Button -->
           <button type="button" class="btn-card-add" (click)="education(employedata)" title="Add another academic qualification">
             <mat-icon>add</mat-icon>
@@ -299,6 +382,14 @@
           </div>
         </div>
         <div class="header-actions-group">
+          <span *ngIf="isSectionComplete('experience')" class="section-badge-pill complete">
+            <mat-icon>check_circle</mat-icon>
+            <span>Complete</span>
+          </span>
+          <button *ngIf="!isSectionComplete('experience')" type="button" class="section-badge-pill pending" (click)="experience(employedata)" title="Add career experience">
+            <mat-icon>error_outline</mat-icon>
+            <span>Required</span>
+          </button>
           <!-- + Add Button -->
           <button type="button" class="btn-card-add" (click)="experience(employedata)" title="Add another work experience">
             <mat-icon>add</mat-icon>
@@ -328,7 +419,7 @@
             </div>
           </div>
 
-          <p class="timeline-desc" *ngIf="exp.responsibilities">
+          <p class="timeline-desc" *ngIf="exp.responsibilities && !isJsonString(exp.responsibilities)">
             {{ exp.responsibilities }}
           </p>
         </div>
@@ -440,6 +531,14 @@
           </div>
         </div>
         <div class="header-actions-group">
+          <span *ngIf="isSectionComplete('banking')" class="section-badge-pill complete">
+            <mat-icon>check_circle</mat-icon>
+            <span>Complete</span>
+          </span>
+          <button *ngIf="!isSectionComplete('banking')" type="button" class="section-badge-pill pending" (click)="bankinfo(paymentdata)" title="Configure bank account coordinates">
+            <mat-icon>error_outline</mat-icon>
+            <span>Required</span>
+          </button>
           <button type="button" class="btn-card-edit" (click)="bankinfo(paymentdata)" title="Edit Banking Details">
             <mat-icon>edit</mat-icon>
           </button>
@@ -564,6 +663,14 @@
           </div>
         </div>
         <div class="header-actions-group">
+          <span *ngIf="isSectionComplete('passport')" class="section-badge-pill complete">
+            <mat-icon>check_circle</mat-icon>
+            <span>Complete</span>
+          </span>
+          <button *ngIf="!isSectionComplete('passport')" type="button" class="section-badge-pill pending" (click)="passportinfo(employedata)" title="Submit passport details">
+            <mat-icon>error_outline</mat-icon>
+            <span>Required</span>
+          </button>
           <button type="button" class="btn-card-edit" (click)="passportinfo(employedata)" title="Edit Passport Details">
             <mat-icon>edit</mat-icon>
           </button>

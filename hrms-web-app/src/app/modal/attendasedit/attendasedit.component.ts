@@ -1,38 +1,75 @@
-import { Component, Inject, inject } from '@angular/core';
+import { Component, Inject, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormField } from '@angular/material/form-field';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { EmployeeeService } from '../../services/attendance/employeee.service';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerModule, MatCalendarCellClassFunction } from '@angular/material/datepicker';
+import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { CommonModule } from '@angular/common';
 import { MatDividerModule } from '@angular/material/divider';
+
+export interface DateStatusBadge {
+  label: string;
+  type: 'present' | 'absent' | 'leave' | 'pending' | 'holiday' | 'neutral';
+  icon: string;
+  details?: string;
+}
+
 @Component({
   selector: 'app-attendasedit',
   standalone: true,
-  imports: [MatInputModule, MatButtonModule,MatFormField, MatDividerModule, ReactiveFormsModule, MatCheckboxModule, MatDatepickerModule, MatNativeDateModule, MatIconModule, MatRadioModule, CommonModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatDividerModule,
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatIconModule,
+    MatRadioModule
+  ],
+  providers: [provideNativeDateAdapter()],
   templateUrl: './attendasedit.component.html',
   styleUrl: './attendasedit.component.scss'
 })
-export class AttendaseditComponent {
-  services = inject(EmployeeeService)
-  formbuilder = inject(FormBuilder)
-  toaster = inject(ToastrService)
+export class AttendaseditComponent implements OnInit {
+  services = inject(EmployeeeService);
+  formbuilder = inject(FormBuilder);
+  toaster = inject(ToastrService);
+
   logs: { clockIn: string; clockOut: string }[] = [];
   canSubmit: boolean = true;
+  isSubmitting: boolean = false;
+  submitError: string = '';
   statusMessage: string = '';
   currentStatus: string = '';
   rejectionReason: string = '';
+  autoSelectedAbsentNotice: string = '';
+  selectedDateStatusBadge: DateStatusBadge | null = null;
+
   hasExistingClockIn: boolean = false;
   existingClockInDisplay: string = '';
   minDate: Date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   maxDate: Date = new Date();
+
+  // Calendar State Sets
+  presentDateMap = new Map<string, { clockIn: string; clockOut: string; status: string }>();
+  absentDateSet = new Set<string>();
+  missingPunchMap = new Map<string, { clockIn: string; clockOut?: string }>();
+  leaveDateSet = new Set<string>();
+  pendingDateSet = new Set<string>();
+  approvedDateSet = new Set<string>();
+  holidayDateSet = new Set<string>();
+  rejectedDateMap = new Map<string, string>();
 
   attendaseform = this.formbuilder.group({
     RequestType: ['Regularization', Validators.required],
@@ -41,6 +78,20 @@ export class AttendaseditComponent {
     clockIn: ['09:30', Validators.required],
     clockOut: ['18:30', Validators.required]
   });
+
+  // Calendar cell highlight function for MatDatepicker
+  dateClassFn: MatCalendarCellClassFunction<Date> = (cellDate: Date, view: string) => {
+    if (view === 'month') {
+      const dateStr = this.toLocalYMD(cellDate);
+      if (this.pendingDateSet.has(dateStr)) return 'cal-cell-pending';
+      if (this.leaveDateSet.has(dateStr)) return 'cal-cell-leave';
+      if (this.missingPunchMap.has(dateStr)) return 'cal-cell-absent';
+      if (this.absentDateSet.has(dateStr)) return 'cal-cell-absent';
+      if (this.presentDateMap.has(dateStr) || this.approvedDateSet.has(dateStr)) return 'cal-cell-present';
+      if (this.holidayDateSet.has(dateStr)) return 'cal-cell-holiday';
+    }
+    return '';
+  };
 
   constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
     this.hasExistingClockIn = !!this.data?.hasExistingClockIn;
@@ -58,7 +109,6 @@ export class AttendaseditComponent {
     }
 
     const parsedDate = this.parseInputDate(this.data);
-    this.evaluateDateRegularization(parsedDate);
 
     this.attendaseform.patchValue({
       selectedDate: parsedDate,
@@ -67,9 +117,12 @@ export class AttendaseditComponent {
       Reason: this.hasExistingClockIn ? 'Forgot to Clock Out' : ''
     });
 
+    if (this.data?.lockDate) {
+      this.attendaseform.get('selectedDate')?.disable();
+    }
+
     if (this.hasExistingClockIn) {
       this.attendaseform.get('clockIn')?.disable();
-      this.attendaseform.get('selectedDate')?.disable();
     }
 
     this.attendaseform.get('selectedDate')?.valueChanges.subscribe((newDate: any) => {
@@ -79,78 +132,376 @@ export class AttendaseditComponent {
     });
   }
 
-  evaluateDateRegularization(date: Date) {
-    if (!date || isNaN(date.getTime())) return;
-    const y = date.getFullYear();
-    const m = (date.getMonth() + 1).toString().padStart(2, '0');
-    const d = date.getDate().toString().padStart(2, '0');
-    const dateStr = `${y}-${m}-${d}`;
+  ngOnInit(): void {
+    const records = this.data?.attendanceRecords || [];
+    const requests = this.data?.existingRequests || [];
+    const leaves = this.data?.leaves || [];
+    const holidays = this.data?.holidays || [];
 
-    if (this.data?.joiningDateStr && dateStr < this.data.joiningDateStr) {
-      this.canSubmit = false;
-      this.currentStatus = 'PreJoining';
-      this.statusMessage = `Cannot regularize attendance prior to your official joining date (${this.data.joiningDateStr}).`;
-      return;
-    }
-
-    const requests = Array.isArray(this.data?.existingRequests) ? this.data.existingRequests : [];
-    const dateRequests = requests.filter((req: any) => {
-      const rawDate = req.requestedDate || req.RequestedDate || req.attendanceDate || req.AttendanceDate;
-      if (!rawDate) return false;
-      const dt = new Date(rawDate);
-      let localDateStr = '';
-      if (!isNaN(dt.getTime())) {
-        const dy = dt.getFullYear();
-        const dm = (dt.getMonth() + 1).toString().padStart(2, '0');
-        const dd = dt.getDate().toString().padStart(2, '0');
-        localDateStr = `${dy}-${dm}-${dd}`;
-      }
-      const sliceStr = String(rawDate).slice(0, 10);
-      return localDateStr === dateStr || sliceStr === dateStr;
-    });
-
-    const activeReq = dateRequests.find((r: any) => {
-      const s = String(r.status || r.Status || '').toLowerCase().trim();
-      return s === 'pending' || s === 'approved';
-    });
-
-    if (activeReq) {
-      this.canSubmit = false;
-      const st = String(activeReq.status || activeReq.Status || 'Pending');
-      this.currentStatus = st.charAt(0).toUpperCase() + st.slice(1).toLowerCase();
-      this.statusMessage = this.currentStatus === 'Approved'
-        ? 'Attendance for this date is already approved and regularized.'
-        : 'A regularization request for this date is currently pending approval.';
+    if (records.length > 0 || requests.length > 0) {
+      this.buildAttendanceSets(records, requests, leaves, holidays);
+      this.autoSelectAbsentIfPresentPassed();
     } else {
-      const rejectedReq = dateRequests.find((r: any) => {
-        const s = String(r.status || r.Status || '').toLowerCase().trim();
-        return s === 'rejected';
-      });
-
-      if (rejectedReq) {
-        this.canSubmit = true;
-        this.currentStatus = 'Rejected';
-        this.rejectionReason = rejectedReq.rejectionReason || rejectedReq.RejectionReason || '';
-      } else {
-        const initialDateStr = this.data?.dateStr || (this.data?.date ? new Date(this.data.date).toISOString().slice(0, 10) : '');
-        if (initialDateStr && initialDateStr === dateStr && (this.data?.regularizationStatus === 'Pending' || this.data?.regularizationStatus === 'Approved')) {
-          this.canSubmit = false;
-          this.currentStatus = this.data.regularizationStatus;
-          this.statusMessage = this.currentStatus === 'Approved'
-            ? 'Attendance for this date is already approved and regularized.'
-            : 'A regularization request for this date is currently pending approval.';
-        } else {
-          this.canSubmit = true;
-          this.currentStatus = '';
-          this.rejectionReason = '';
-          this.statusMessage = '';
+      // Fetch attendance data directly to power the calendar badges
+      this.services.getAllData().subscribe({
+        next: (res: any) => {
+          const list = Array.isArray(res) ? res : (res?.data || res?.result || []);
+          this.buildAttendanceSets(list, requests, leaves, holidays);
+          this.autoSelectAbsentIfPresentPassed();
+        },
+        error: () => {
+          this.buildAttendanceSets([], requests, leaves, holidays);
+          this.autoSelectAbsentIfPresentPassed();
         }
+      });
+    }
+  }
+
+  private buildAttendanceSets(records: any[], requests: any[], leaves: any[], holidays: any[]): void {
+    this.presentDateMap.clear();
+    this.absentDateSet.clear();
+    this.missingPunchMap.clear();
+    this.leaveDateSet.clear();
+    this.pendingDateSet.clear();
+    this.approvedDateSet.clear();
+    this.holidayDateSet.clear();
+    this.rejectedDateMap.clear();
+
+    const empId = this.data?.employeeId ? Number(this.data.employeeId) : this.getLoggedInEmpId();
+
+    // 1. Process Holidays
+    (holidays || []).forEach((h: any) => {
+      const d = new Date(h.holidayDate || h.date);
+      const dStr = this.toLocalYMD(d);
+      if (dStr) this.holidayDateSet.add(dStr);
+    });
+
+    // 2. Process Leaves
+    (leaves || []).forEach((l: any) => {
+      const lEmpId = Number(l.employeeId || l.EmployeeId);
+      if ((!empId || lEmpId === empId) && (l.status === 'Approved' || l.status === 'Pending')) {
+        const start = new Date(l.startDate);
+        const end = new Date(l.endDate || l.startDate);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          const cur = new Date(start);
+          while (cur <= end) {
+            this.leaveDateSet.add(this.toLocalYMD(cur));
+            cur.setDate(cur.getDate() + 1);
+          }
+        }
+      }
+    });
+
+    // 3. Process Regularization Requests
+    (requests || []).forEach((r: any) => {
+      const rEmpId = Number(r.employeeId || r.EmployeeId);
+      if (!empId || rEmpId === empId) {
+        const rawDate = r.requestedDate || r.RequestedDate || r.attendanceDate || r.AttendanceDate;
+        const dStr = this.toLocalYMD(new Date(rawDate));
+        if (dStr) {
+          const st = String(r.status || r.Status || '').toLowerCase().trim();
+          if (st === 'pending') {
+            this.pendingDateSet.add(dStr);
+          } else if (st === 'approved') {
+            this.approvedDateSet.add(dStr);
+          } else if (st === 'rejected') {
+            this.rejectedDateMap.set(dStr, r.rejectionReason || r.RejectionReason || '');
+          }
+        }
+      }
+    });
+
+    // 4. Process Attendance Records
+    (records || []).forEach((a: any) => {
+      const aEmpId = Number(a.employeeId || a.EmployeeId || a.id);
+      if (!empId || aEmpId === empId) {
+        const dStr = this.toLocalYMD(new Date(a.attendanceDate || a.AttendanceDate || a.date || a.Date));
+        if (dStr) {
+          const hasIn = this.isValidTime(a.clockIn || a.ClockIn);
+          const hasOut = this.isValidTime(a.clockOut || a.ClockOut);
+          const st = String(a.attendance || a.Attendance || '').toLowerCase();
+
+          if (hasIn && hasOut) {
+            this.presentDateMap.set(dStr, {
+              clockIn: this.formatTime24(a.clockIn || a.ClockIn),
+              clockOut: this.formatTime24(a.clockOut || a.ClockOut),
+              status: 'Present'
+            });
+          } else if (hasIn && !hasOut) {
+            this.missingPunchMap.set(dStr, {
+              clockIn: this.formatTime24(a.clockIn || a.ClockIn)
+            });
+          } else if (st === 'absent' || (!hasIn && !hasOut)) {
+            this.absentDateSet.add(dStr);
+          }
+        }
+      }
+    });
+
+    // 5. Identify past working days without records as Absent
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const joining = this.data?.joiningDate ? new Date(this.data.joiningDate) : null;
+    if (joining) joining.setHours(0, 0, 0, 0);
+
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+
+      const dStr = this.toLocalYMD(d);
+      const dow = d.getDay(); // 0 = Sun, 6 = Sat
+
+      if (dow === 0 || dow === 6) continue; // skip weekends
+      if (this.holidayDateSet.has(dStr)) continue;
+      if (this.leaveDateSet.has(dStr)) continue;
+      if (joining && d < joining) continue;
+
+      if (!this.presentDateMap.has(dStr) && !this.missingPunchMap.has(dStr) && !this.approvedDateSet.has(dStr)) {
+        this.absentDateSet.add(dStr);
       }
     }
   }
 
+  private autoSelectAbsentIfPresentPassed(): void {
+    if (this.data?.lockDate) {
+      const cur = this.attendaseform.get('selectedDate')?.value;
+      if (cur instanceof Date) this.evaluateDateRegularization(cur);
+      return;
+    }
+
+    const currentSelected = this.attendaseform.get('selectedDate')?.value;
+    if (!(currentSelected instanceof Date)) return;
+
+    const currentYMD = this.toLocalYMD(currentSelected);
+    const isToday = currentYMD === this.toLocalYMD(new Date());
+    const isAlreadyPresent = this.presentDateMap.has(currentYMD) && !this.missingPunchMap.has(currentYMD);
+
+    // If initial date is today or already fully recorded as Present, look for the most recent absent day
+    if (isAlreadyPresent || isToday) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let foundAbsentDate: Date | null = null;
+
+      for (let i = 1; i <= 30; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        const dStr = this.toLocalYMD(d);
+
+        // Skip if already pending or approved
+        if (this.pendingDateSet.has(dStr) || this.approvedDateSet.has(dStr)) continue;
+
+        if (this.missingPunchMap.has(dStr) || this.absentDateSet.has(dStr)) {
+          foundAbsentDate = d;
+          break;
+        }
+      }
+
+      if (foundAbsentDate) {
+        this.attendaseform.patchValue({ selectedDate: foundAbsentDate });
+        const formattedFound = foundAbsentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const reasonText = isAlreadyPresent ? 'already clocked in & out for yesterday' : "today's workday is ongoing";
+        this.autoSelectedAbsentNotice = `Automatically selected your most recent absent/incomplete punch date (${formattedFound}) since you were ${reasonText}.`;
+        this.evaluateDateRegularization(foundAbsentDate);
+      } else {
+        this.evaluateDateRegularization(currentSelected);
+      }
+    } else {
+      this.evaluateDateRegularization(currentSelected);
+    }
+  }
+
+  evaluateDateRegularization(date: Date): void {
+    if (!date || isNaN(date.getTime())) return;
+    const dateStr = this.toLocalYMD(date);
+
+    // 1. Check Pre-joining Date
+    if (this.data?.joiningDateStr && dateStr < this.data.joiningDateStr) {
+      this.canSubmit = false;
+      this.currentStatus = 'PreJoining';
+      this.statusMessage = `Cannot regularize attendance prior to your official joining date (${this.data.joiningDateStr}).`;
+      this.selectedDateStatusBadge = { label: 'Pre-Joining Date', type: 'neutral', icon: 'block', details: `Official joining date is ${this.data.joiningDateStr}.` };
+      return;
+    }
+
+    // 2. Check Pending Request
+    if (this.pendingDateSet.has(dateStr)) {
+      this.canSubmit = false;
+      this.currentStatus = 'Pending';
+      this.statusMessage = 'A regularization request for this date is currently pending manager approval.';
+      this.selectedDateStatusBadge = { label: 'Regularization Pending Approval', type: 'pending', icon: 'hourglass_empty', details: 'A submitted request is awaiting supervisor review.' };
+      return;
+    }
+
+    // 3. Check Approved Request
+    if (this.approvedDateSet.has(dateStr)) {
+      this.canSubmit = false;
+      this.currentStatus = 'Approved';
+      this.statusMessage = 'Attendance for this date has already been approved and regularized.';
+      this.selectedDateStatusBadge = { label: 'Already Regularized & Approved', type: 'present', icon: 'check_circle', details: 'Attendance for this date has already been finalized.' };
+      return;
+    }
+
+    // 4. Check Previously Rejected Request
+    if (this.rejectedDateMap.has(dateStr)) {
+      this.canSubmit = true;
+      this.currentStatus = 'Rejected';
+      this.rejectionReason = this.rejectedDateMap.get(dateStr) || 'No reason provided';
+      this.statusMessage = '';
+      this.selectedDateStatusBadge = {
+        label: 'Previous Request Rejected',
+        type: 'absent',
+        icon: 'replay',
+        details: `Rejected: "${this.rejectionReason}". You may adjust your punch times and submit again.`
+      };
+      this.applyPunchesForDate(dateStr);
+      return;
+    }
+
+    // 5. Check Today (ongoing workday)
+    const todayStr = this.toLocalYMD(new Date());
+    if (dateStr === todayStr) {
+      this.canSubmit = true;
+      this.currentStatus = '';
+      this.rejectionReason = '';
+      this.statusMessage = "Note: Today's workday is currently in progress. Attendance regularization is intended for completed past workdays.";
+      this.selectedDateStatusBadge = { label: "Today's Workday (In Progress)", type: 'neutral', icon: 'timelapse', details: 'Regularization is typically applied to completed past shifts.' };
+      this.applyPunchesForDate(dateStr);
+      return;
+    }
+
+    // 6. Check Leave
+    if (this.leaveDateSet.has(dateStr)) {
+      this.canSubmit = true;
+      this.currentStatus = '';
+      this.rejectionReason = '';
+      this.statusMessage = 'You were scheduled for approved leave on this date. If you worked instead, specify your in/out times.';
+      this.selectedDateStatusBadge = { label: 'On Approved Leave', type: 'leave', icon: 'beach_access', details: 'Approved leave on record for this day.' };
+      this.applyPunchesForDate(dateStr);
+      return;
+    }
+
+    // 7. Check Holiday
+    if (this.holidayDateSet.has(dateStr)) {
+      this.canSubmit = true;
+      this.currentStatus = '';
+      this.rejectionReason = '';
+      this.statusMessage = 'This date is an official company holiday. If you worked on this day, specify your punch timings.';
+      this.selectedDateStatusBadge = { label: 'Company Holiday', type: 'holiday', icon: 'celebration', details: 'Official holiday on company calendar.' };
+      this.applyPunchesForDate(dateStr);
+      return;
+    }
+
+    // 8. Normal Working Day: Missing Punch, Absent, or Present
+    this.canSubmit = true;
+    this.currentStatus = '';
+    this.rejectionReason = '';
+    this.statusMessage = '';
+    this.applyPunchesForDate(dateStr);
+  }
+
+  private applyPunchesForDate(dateStr: string): void {
+    if (this.missingPunchMap.has(dateStr)) {
+      const punch = this.missingPunchMap.get(dateStr)!;
+      this.hasExistingClockIn = true;
+      this.existingClockInDisplay = punch.clockIn;
+      this.attendaseform.patchValue({
+        clockIn: punch.clockIn,
+        clockOut: '18:30'
+      });
+      if (!this.attendaseform.get('Reason')?.value) {
+        this.attendaseform.patchValue({ Reason: 'Forgot to Clock Out' });
+      }
+      this.attendaseform.get('clockIn')?.disable();
+      this.selectedDateStatusBadge = {
+        label: 'Incomplete Punch (Missing Clock-Out)',
+        type: 'absent',
+        icon: 'warning_amber',
+        details: `Clock-In verified at ${punch.clockIn}. Departure punch is missing.`
+      };
+    } else if (this.absentDateSet.has(dateStr)) {
+      this.hasExistingClockIn = false;
+      this.attendaseform.get('clockIn')?.enable();
+      this.attendaseform.patchValue({
+        clockIn: '09:30',
+        clockOut: '18:30'
+      });
+      this.selectedDateStatusBadge = {
+        label: 'Marked as Absent (No Punches)',
+        type: 'absent',
+        icon: 'cancel',
+        details: 'No clock-in/out records found for this workday.'
+      };
+    } else if (this.presentDateMap.has(dateStr)) {
+      const pres = this.presentDateMap.get(dateStr)!;
+      this.hasExistingClockIn = false;
+      this.attendaseform.get('clockIn')?.enable();
+      this.attendaseform.patchValue({
+        clockIn: pres.clockIn || '09:30',
+        clockOut: pres.clockOut || '18:30'
+      });
+      this.selectedDateStatusBadge = {
+        label: 'Marked as Present (Punches Recorded)',
+        type: 'present',
+        icon: 'check_circle',
+        details: `Clock-In: ${pres.clockIn} | Clock-Out: ${pres.clockOut}. Adjust only if timings are incorrect.`
+      };
+    } else {
+      this.hasExistingClockIn = false;
+      this.attendaseform.get('clockIn')?.enable();
+      if (!this.selectedDateStatusBadge) {
+        this.selectedDateStatusBadge = {
+          label: 'Past Workday',
+          type: 'neutral',
+          icon: 'calendar_today',
+          details: 'Enter revised punch times for manager review.'
+        };
+      }
+    }
+  }
+
+  private toLocalYMD(date: Date): string {
+    if (!date || isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const d = date.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  private isValidTime(val: any): boolean {
+    if (!val) return false;
+    if (val === '0001-01-01T00:00:00' || val === '1970-01-01T00:00:00') return false;
+    const d = new Date(val);
+    return !isNaN(d.getTime()) && d.getFullYear() > 2000;
+  }
+
+  private formatTime24(val: any): string {
+    if (!val) return '09:30';
+    const s = String(val).trim();
+    if (/^\d{1,2}:\d{2}$/.test(s)) {
+      const [h, m] = s.split(':');
+      return `${h.padStart(2, '0')}:${m}`;
+    }
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      const h = d.getHours().toString().padStart(2, '0');
+      const m = d.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    }
+    return '09:30';
+  }
+
+  private getLoggedInEmpId(): number {
+    const raw = (typeof localStorage !== 'undefined' ? (localStorage.getItem('employeeId') || localStorage.getItem('userId')) : null)
+      || (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('employeeId') || sessionStorage.getItem('userId')) : null);
+    return raw ? Number(raw) : 1;
+  }
+
   private parseInputDate(data: any): Date {
-    if (!data) return new Date();
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    if (!data) return yesterday;
 
     // 1. Direct Date object
     if (data.dateObj instanceof Date && !isNaN(data.dateObj.getTime())) {
@@ -162,7 +513,7 @@ export class AttendaseditComponent {
 
     // 2. ISO / YYYY-MM-DD string
     const rawStr = data.dateStr || data.date || data.Date;
-    if (typeof rawStr === 'string' && rawStr.trim()) {
+    if (typeof rawStr === 'string' && rawStr.trim() && rawStr !== 'Select Date') {
       const cleanStr = rawStr.trim();
 
       // Standard ISO or YYYY-MM-DD parse
@@ -172,20 +523,16 @@ export class AttendaseditComponent {
       }
 
       // Handle strings like "7 sept, fri", "07 Sep, Mon", "7 September, Friday", etc.
-      // Remove weekday names and trailing commas
       const noWeekday = cleanStr
         .replace(/(,\s*)?(sun|mon|tue|wed|thu|fri|sat)[a-z]*/gi, '')
         .replace(/^[,\s]+|[,\s]+$/g, '');
 
       const currentYear = new Date().getFullYear();
-
-      // Try appending current year if not present
       const withYear = new Date(`${noWeekday} ${currentYear}`);
       if (!isNaN(withYear.getTime())) {
         return withYear;
       }
 
-      // Regex matching: (day: 1-31) (month: Jan-Dec/January-December)
       const match = cleanStr.match(/(\d{1,2})\s+([a-zA-Z]+)/);
       if (match) {
         const day = parseInt(match[1], 10);
@@ -201,7 +548,7 @@ export class AttendaseditComponent {
       }
     }
 
-    return new Date();
+    return yesterday;
   }
 
   addLog() {
@@ -247,6 +594,8 @@ export class AttendaseditComponent {
   }
 
   submitdata(): void {
+    if (this.isSubmitting) return;
+
     if (!this.canSubmit) {
       this.toaster.warning('Regularization is already submitted for this date.');
       return;
@@ -288,20 +637,29 @@ export class AttendaseditComponent {
       clockOut: this.combine(selectedDate, clockOut),
     };
 
+    this.isSubmitting = true;
+    this.submitError = '';
+    this.dialogref.disableClose = true;
+
     this.services.creatRegular(payload).subscribe({
       next: () => {
+        this.isSubmitting = false;
         this.toaster.success('Regularization request submitted');
         this.dialogref.close(true);
       },
       error: (err) => {
+        this.isSubmitting = false;
+        this.dialogref.disableClose = false;
         console.error('API error:', err);
-        const msg = err?.error?.message || err?.error?.Message || 'Submission failed';
+        const msg = err?.error?.message || err?.error?.Message || err?.message || 'Submission failed. Please try again.';
+        this.submitError = msg;
         this.toaster.error(msg, 'Error');
       }
     });
   }
 
   closeDialog() {
+    if (this.isSubmitting) return;
     this.dialogref.close();
   }
 }

@@ -5,6 +5,7 @@
   max-width: 880px;
   width: 100%;
   box-sizing: border-box;
+  overflow-x: hidden;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -90,8 +91,10 @@
   gap: 20px;
   padding: 24px;
   box-sizing: border-box;
+  overflow-x: hidden;
+  width: 100%;
 
-  @media (max-width: 768px) {
+  @media (max-width: 840px) {
     grid-template-columns: 1fr;
   }
 }
@@ -411,7 +414,7 @@
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
       transition: all 0.15s ease;
 
@@ -421,9 +424,31 @@
         height: 18px;
       }
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: linear-gradient(135deg, #1d4ed8, #1e40af);
         box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+      }
+
+      &:disabled {
+        opacity: 0.75;
+        cursor: not-allowed;
+      }
+
+      .btn-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        display: inline-block;
+        animation: btnSpin 0.75s linear infinite;
+        flex-shrink: 0;
+      }
+    }
+
+    @keyframes btnSpin {
+      to {
+        transform: rotate(360deg);
       }
     }
   }

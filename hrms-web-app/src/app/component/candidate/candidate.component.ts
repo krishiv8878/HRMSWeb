@@ -1,7 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,13 +31,16 @@ import { EmployeeService } from '../../services/employee/employee.service';
   templateUrl: './candidate.component.html',
   styleUrl: './candidate.component.scss'
 })
-export class CandidateComponent implements OnInit {
+export class CandidateComponent implements OnInit, OnDestroy {
   services = inject(CandidateService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
   dialog = inject(MatDialog);
   toaster = inject(ToastrService);
   rbacService = inject(RbacService);
   employeeService = inject(EmployeeService);
+
+  private routeSub?: Subscription;
 
   Math = Math;
 
@@ -52,7 +56,20 @@ export class CandidateComponent implements OnInit {
   loggedEmpId: number = 0;
   loggedUserName: string = '';
   loggedUserEmail: string = '';
+  loggedEmployeeFullName: string = '';
   employeeEmails: Set<string> = new Set<string>();
+
+  // Status Tab Navigation State
+  activeTab: 'active' | 'onboarded' | 'rejected' | 'all' = 'active';
+  activeCandidatesCount: number = 0;
+  onboardedCandidatesCount: number = 0;
+  rejectedCandidatesCount: number = 0;
+  allCandidatesCount: number = 0;
+
+  // Role and Sorting Filters
+  availableRoles: string[] = [];
+  selectedRole: string = 'All';
+  sortBy: 'newest' | 'score' | 'name' | 'exp' | 'notice' = 'newest';
 
   get isAdminOrHr(): boolean {
     return this.rbacService.isAdmin() || this.rbacService.isHR();
@@ -91,8 +108,14 @@ export class CandidateComponent implements OnInit {
   ];
 
   ngOnInit() {
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'add') {
+        setTimeout(() => this.openAddForm(), 150);
+      }
+    });
+
     this.loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
-    this.loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || '').toLowerCase().trim() : '';
+    this.loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || localStorage.getItem('UserName') || '').toLowerCase().trim() : '';
     this.loggedUserEmail = typeof window !== 'undefined' ? (localStorage.getItem('userEmail') || '').toLowerCase().trim() : '';
 
     this.employeeService.getData().subscribe({
@@ -106,6 +129,22 @@ export class CandidateComponent implements OnInit {
             this.employeeEmails.add(String(e.emailAddress).toLowerCase().trim());
           }
         });
+
+        // Resolve current logged in employee record for robust interviewer matching
+        const myEmp = list.find((e: any) =>
+          (this.loggedEmpId > 0 && Number(e.id) === this.loggedEmpId) ||
+          (this.loggedUserEmail && e.emailAddress && String(e.emailAddress).toLowerCase().trim() === this.loggedUserEmail)
+        );
+        if (myEmp) {
+          if (!this.loggedEmpId && myEmp.id) {
+            this.loggedEmpId = Number(myEmp.id);
+          }
+          const fullName = `${myEmp.firstName || ''} ${myEmp.lastName || ''}`.trim();
+          if (fullName) {
+            this.loggedEmployeeFullName = fullName.toLowerCase();
+          }
+        }
+
         this.getData();
       },
       error: () => {
@@ -141,11 +180,22 @@ export class CandidateComponent implements OnInit {
           this.allCandidates = [];
         }
 
+        // Derive unique roles for the role filter dropdown
+        const roleSet = new Set<string>();
+        this.allCandidates.forEach(c => {
+          if (c.appliedRole && c.appliedRole.trim()) {
+            roleSet.add(c.appliedRole.trim());
+          }
+        });
+        this.availableRoles = Array.from(roleSet).sort();
+
+        this.calculateTabCounts();
         this.calculatePipelineMetrics();
         this.filterCandidates();
       },
       error: () => {
         this.allCandidates = [];
+        this.calculateTabCounts();
         this.calculatePipelineMetrics();
         this.filterCandidates();
       }
@@ -234,6 +284,7 @@ export class CandidateComponent implements OnInit {
       stage: effectiveStage,
       matchScore: scoreVal,
       lastUpdated: updatedVal,
+      rawCreatedDate: rawDate ? new Date(rawDate) : null,
       isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
       initials: initials.toUpperCase(),
       selected: false,
@@ -323,7 +374,6 @@ export class CandidateComponent implements OnInit {
     });
     const avgDays = candidatesWithNotice > 0 ? Math.round(totalNoticeDays / candidatesWithNotice) : 30;
     this.metrics.timeToFillAvgDays = avgDays;
-    // Standard 60-day enterprise benchmark scale
     this.metrics.timeToFillProgressPercent = Math.min(100, Math.round((avgDays / 60) * 100));
 
     // 4. Offer Acceptance rate dynamically computed
@@ -347,18 +397,53 @@ export class CandidateComponent implements OnInit {
     this.metrics.quarterlyGrowthPositive = growthPercent >= 0;
   }
 
+  calculateTabCounts(): void {
+    this.allCandidatesCount = this.allCandidates.length;
+    this.onboardedCandidatesCount = this.allCandidates.filter(c => c.isOnboarded || c.stage === 'Onboarded').length;
+    this.rejectedCandidatesCount = this.allCandidates.filter(c => c.stage === 'Rejected').length;
+    this.activeCandidatesCount = this.allCandidates.filter(c => !c.isOnboarded && c.stage !== 'Onboarded' && c.stage !== 'Rejected').length;
+  }
+
   isAssignedToCurrentUser(c: CandidateItem): boolean {
-    // Only show if currently assigned to this user and pending their feedback
+    if (this.isCurrentlyAssignedPending(c)) return true;
+
+    // Check active assignment
+    if (this.loggedEmpId > 0 && c.interviewerId && Number(c.interviewerId) === this.loggedEmpId) return true;
+    if (this.loggedUserName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedUserName)) return true;
+    if (this.loggedEmployeeFullName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedEmployeeFullName)) return true;
+
+    // Check if current user conducted an evaluation in candidate interview history
+    if (c.interviewHistory && Array.isArray(c.interviewHistory)) {
+      const match = c.interviewHistory.some((h: any) =>
+        (this.loggedEmpId > 0 && Number(h.interviewerId) === this.loggedEmpId) ||
+        (this.loggedUserName && h.interviewerName && h.interviewerName.toLowerCase().includes(this.loggedUserName)) ||
+        (this.loggedEmployeeFullName && h.interviewerName && h.interviewerName.toLowerCase().includes(this.loggedEmployeeFullName))
+      );
+      if (match) return true;
+    }
+
+    return false;
+  }
+
+  isCurrentlyAssignedPending(c: CandidateItem): boolean {
     if (!c.interviewerId && !c.interviewerName) return false;
+    if (c.stage === 'Rejected' || c.stage === 'Onboarded' || c.isOnboarded) return false;
 
     const statusLower = (c.interviewStatus || '').toLowerCase();
     if (statusLower.includes('feedback submitted') || statusLower.includes('awaiting hr review') || statusLower === 'pending hr decision') {
-      return false; // Feedback already submitted and reassigned to HR!
+      return false; // Feedback already submitted
     }
 
     if (this.loggedEmpId > 0 && c.interviewerId && Number(c.interviewerId) === this.loggedEmpId) return true;
     if (this.loggedUserName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedUserName)) return true;
+    if (this.loggedEmployeeFullName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedEmployeeFullName)) return true;
     return false;
+  }
+
+  switchTab(tab: 'active' | 'onboarded' | 'rejected' | 'all'): void {
+    this.activeTab = tab;
+    this.selectedStage = 'All';
+    this.filterCandidates();
   }
 
   toggleAssignedToMe(): void {
@@ -367,20 +452,49 @@ export class CandidateComponent implements OnInit {
   }
 
   filterCandidates() {
-    if (this.isAdminOrHr) {
-      this.myAssignedCount = this.allCandidates.filter(c => this.isAssignedToCurrentUser(c) && c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
-    } else {
-      this.myAssignedCount = this.allCandidates.filter(c => c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
+    if (!this.isAdminOrHr) {
+      // Non-HR interviewers only see candidates assigned to them
+      this.myAssignedCount = this.allCandidates.filter(c => this.isCurrentlyAssignedPending(c)).length;
+      let result = [...this.allCandidates];
+
+      // Search query filtering
+      if (this.searchQuery && this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        result = result.filter(c =>
+          (c.fullName && c.fullName.toLowerCase().includes(q)) ||
+          (c.firstName && c.firstName.toLowerCase().includes(q)) ||
+          (c.lastName && c.lastName.toLowerCase().includes(q)) ||
+          (c.emailAddress && c.emailAddress.toLowerCase().includes(q)) ||
+          (c.appliedRole && c.appliedRole.toLowerCase().includes(q)) ||
+          (c.stage && c.stage.toLowerCase().includes(q))
+        );
+      }
+
+      this.filteredCandidates = this.sortCandidatesList(result);
+      this.currentPage = 1;
+      this.updatePagination();
+      return;
     }
+
+    this.myAssignedCount = this.allCandidates.filter(c => this.isAssignedToCurrentUser(c) && c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
 
     let result = [...this.allCandidates];
 
-    // Filter to only assigned to current user if enabled
+    // 1. Primary Status Tab Filter
+    if (this.activeTab === 'active') {
+      result = result.filter(c => !c.isOnboarded && c.stage !== 'Onboarded' && c.stage !== 'Rejected');
+    } else if (this.activeTab === 'onboarded') {
+      result = result.filter(c => c.isOnboarded || c.stage === 'Onboarded');
+    } else if (this.activeTab === 'rejected') {
+      result = result.filter(c => c.stage === 'Rejected');
+    }
+
+    // 2. Filter to only assigned to current user if enabled
     if (this.onlyAssignedToMe && this.isAdminOrHr) {
       result = result.filter(c => this.isAssignedToCurrentUser(c));
     }
 
-    // Search query
+    // 3. Search query
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
       result = result.filter(c =>
@@ -394,14 +508,157 @@ export class CandidateComponent implements OnInit {
       );
     }
 
-    // Stage filter
+    // 4. Role filter
+    if (this.selectedRole !== 'All') {
+      result = result.filter(c => c.appliedRole === this.selectedRole);
+    }
+
+    // 5. Stage filter
     if (this.selectedStage !== 'All') {
       result = result.filter(c => c.stage === this.selectedStage);
     }
 
+    // 6. Sorting (Default: Newest / Most Recently Updated First)
+    result = this.sortCandidatesList(result);
+
     this.filteredCandidates = result;
     this.currentPage = 1;
     this.updatePagination();
+  }
+
+  private sortCandidatesList(list: CandidateItem[]): CandidateItem[] {
+    switch (this.sortBy) {
+      case 'newest':
+        return list.sort((a, b) => {
+          const timeA = a.rawCreatedDate && !isNaN(a.rawCreatedDate.getTime()) ? a.rawCreatedDate.getTime() : 0;
+          const timeB = b.rawCreatedDate && !isNaN(b.rawCreatedDate.getTime()) ? b.rawCreatedDate.getTime() : 0;
+          if (timeB !== timeA) return timeB - timeA;
+          return Number(b.id || 0) - Number(a.id || 0);
+        });
+      case 'score':
+        return list.sort((a, b) => Number(b.matchScore || 0) - Number(a.matchScore || 0));
+      case 'name':
+        return list.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+      case 'exp':
+        return list.sort((a, b) => Number(b.totalExperience || 0) - Number(a.totalExperience || 0));
+      case 'notice':
+        return list.sort((a, b) => Number(a.noticePeriod || 30) - Number(b.noticePeriod || 30));
+      default:
+        return list;
+    }
+  }
+
+  get currentStageOptions(): string[] {
+    if (this.activeTab === 'active') {
+      return [
+        'Screening',
+        'HR Screen',
+        'Technical Interview',
+        'Offer Extended',
+        'Offer Accepted',
+        'Selected / Hired',
+        'Sourced'
+      ];
+    }
+    return this.stagesFilterOptions.filter(s => s !== 'All');
+  }
+
+  getTabHeading(): string {
+    if (!this.isAdminOrHr) {
+      return 'My Assigned Interviews';
+    }
+    switch (this.activeTab) {
+      case 'active': return 'Active Candidate Pipeline';
+      case 'onboarded': return 'Onboarded Employees';
+      case 'rejected': return 'Rejected / Talent Pool';
+      case 'all': return 'All Candidates Directory';
+    }
+  }
+
+  getTabSubheading(): string {
+    if (!this.isAdminOrHr) {
+      return 'Candidates assigned to you for technical and behavioral interview evaluations.';
+    }
+    switch (this.activeTab) {
+      case 'active': return 'Candidates currently undergoing screening, interview evaluation, and offer stages.';
+      case 'onboarded': return 'Candidates who accepted job offers and were officially converted into employees.';
+      case 'rejected': return 'Archived candidate records available for review, talent pooling, or reactivation.';
+      case 'all': return 'Complete historical candidate database across all recruitment lifecycle stages.';
+    }
+  }
+
+  rejectCandidate(candidate: CandidateItem): void {
+    const reason = window.prompt(
+      `Enter rejection reason for ${candidate.fullName} (optional):`,
+      'Profile not aligned with current requirements'
+    );
+    if (reason === null) return; // User clicked Cancel
+
+    const updatedPayload = {
+      ...candidate,
+      stage: 'Rejected',
+      relevantExperience: JSON.stringify({
+        years: candidate.relevantExperience,
+        interviewerId: candidate.interviewerId,
+        interviewerName: candidate.interviewerName,
+        remarks: reason,
+        status: 'Rejected'
+      })
+    };
+
+    this.services.UpdateData(updatedPayload, candidate.id).subscribe({
+      next: () => {
+        candidate.stage = 'Rejected';
+        candidate.interviewerRemarks = reason;
+        this.toaster.info(`Candidate '${candidate.fullName}' moved to Rejected tab.`, 'Candidate Disqualified');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      },
+      error: () => {
+        candidate.stage = 'Rejected';
+        candidate.interviewerRemarks = reason;
+        this.toaster.info(`Candidate '${candidate.fullName}' moved to Rejected tab.`, 'Candidate Disqualified');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      }
+    });
+  }
+
+  reactivateCandidate(candidate: CandidateItem): void {
+    const updatedPayload = {
+      ...candidate,
+      stage: 'Screening',
+      isOnboarded: false,
+      relevantExperience: JSON.stringify({
+        years: candidate.relevantExperience,
+        status: 'Reactivated'
+      })
+    };
+
+    this.services.UpdateData(updatedPayload, candidate.id).subscribe({
+      next: () => {
+        candidate.stage = 'Screening';
+        candidate.isOnboarded = false;
+        this.toaster.success(`Candidate '${candidate.fullName}' reactivated and moved to Active Pipeline!`, 'Candidate Reactivated');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      },
+      error: () => {
+        candidate.stage = 'Screening';
+        candidate.isOnboarded = false;
+        this.toaster.success(`Candidate '${candidate.fullName}' reactivated and moved to Active Pipeline!`, 'Candidate Reactivated');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      }
+    });
+  }
+
+  navigateToEmployees(): void {
+    this.router.navigate(['/index/home']);
   }
 
   updatePagination() {
@@ -603,5 +860,11 @@ export class CandidateComponent implements OnInit {
     link.click();
     URL.revokeObjectURL(url);
     this.toaster.success('Talent Management candidate report exported successfully!', 'Export Complete');
+  }
+
+  ngOnDestroy(): void {
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
   }
 }

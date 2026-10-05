@@ -167,11 +167,35 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     // Check query params for employee pre-selection
     this.route.queryParams.subscribe(params => {
       const qEmpId = params['employeeId'];
-      if (qEmpId && Number(qEmpId) > 0 && !this.autoOpenedForEmp && this.isAdminOrHr) {
-        this.autoOpenedForEmp = true;
-        setTimeout(() => {
-          this.openAddForm(Number(qEmpId));
-        }, 400);
+      const qEmpName = params['employeeName'];
+      if (qEmpId && Number(qEmpId) > 0) {
+        if (qEmpName) {
+          this.payrollSearchQuery = qEmpName;
+          this.searchQuery = qEmpName;
+          this.globalFilterService.setEmployee(Number(qEmpId), qEmpName);
+          this.filterPayroll();
+          this.filterPayments();
+        } else {
+          this.employeeService.getData().subscribe((emps: any) => {
+            const list = Array.isArray(emps) ? emps : (emps?.data || emps?.result || []);
+            const found = list.find((e: any) => Number(e.id || e.employeeId) === Number(qEmpId));
+            if (found) {
+              const fullName = `${found.firstName || ''} ${found.lastName || ''}`.trim();
+              this.payrollSearchQuery = fullName;
+              this.searchQuery = fullName;
+              this.globalFilterService.setEmployee(Number(qEmpId), fullName);
+              this.filterPayroll();
+              this.filterPayments();
+            }
+          });
+        }
+
+        if (!this.autoOpenedForEmp && this.isAdminOrHr && params['action'] === 'edit') {
+          this.autoOpenedForEmp = true;
+          setTimeout(() => {
+            this.openAddForm(Number(qEmpId));
+          }, 400);
+        }
       }
     });
 

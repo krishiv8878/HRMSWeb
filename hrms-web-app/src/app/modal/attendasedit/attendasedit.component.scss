@@ -84,6 +84,42 @@
 }
 
 /* Form Body */
+.smart-detection-banner {
+  margin: 16px 24px 0 24px;
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  .smart-icon {
+    color: #2563eb;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .smart-text {
+    strong {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 2px;
+    }
+    p {
+      margin: 0;
+      font-size: 12px;
+      color: #1e3a8a;
+      line-height: 1.4;
+    }
+  }
+}
+
 .regularization-form-body {
   padding: 24px;
   display: flex;
@@ -100,6 +136,178 @@
     }
   }
 
+  .date-picker-group {
+    .date-picker-box {
+      cursor: pointer;
+
+      .full-width-datepicker {
+        width: 100%;
+
+        ::ng-deep .mat-mdc-text-field-wrapper {
+          background-color: #ffffff;
+          border-radius: 6px;
+        }
+
+        ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+          display: none;
+        }
+
+        .datepicker-prefix-icon {
+          color: #64748b;
+          margin-right: 6px;
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+
+        .clickable-date-input {
+          cursor: pointer !important;
+          font-weight: 600;
+          color: #0f172a;
+          font-size: 13.5px;
+        }
+
+        .picker-toggle {
+          color: #2563eb;
+        }
+      }
+    }
+
+    .calendar-legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      padding: 6px 12px;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 500;
+
+        .legend-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+
+          &.dot-present {
+            background-color: #10b981;
+            box-shadow: 0 0 0 2px #d1fae5;
+          }
+
+          &.dot-absent {
+            background-color: #ef4444;
+            box-shadow: 0 0 0 2px #fee2e2;
+          }
+
+          &.dot-leave {
+            background-color: #3b82f6;
+            box-shadow: 0 0 0 2px #dbeafe;
+          }
+
+          &.dot-pending {
+            background-color: #f59e0b;
+            box-shadow: 0 0 0 2px #fef3c7;
+          }
+
+          &.dot-holiday {
+            background-color: #8b5cf6;
+            box-shadow: 0 0 0 2px #ede9fe;
+          }
+        }
+      }
+    }
+
+    .selected-date-status-chip {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border: 1px solid transparent;
+
+      .chip-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .chip-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+
+        .chip-title {
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .chip-details {
+          font-size: 11.5px;
+          line-height: 1.35;
+        }
+      }
+
+      &.chip-present {
+        background-color: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #065f46;
+        .chip-icon { color: #059669; }
+        .chip-details { color: #047857; }
+      }
+
+      &.chip-absent {
+        background-color: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+        .chip-icon { color: #dc2626; }
+        .chip-details { color: #b91c1c; }
+      }
+
+      &.chip-leave {
+        background-color: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1e40af;
+        .chip-icon { color: #2563eb; }
+        .chip-details { color: #1d4ed8; }
+      }
+
+      &.chip-pending {
+        background-color: #fffbeb;
+        border-color: #fde68a;
+        color: #92400e;
+        .chip-icon { color: #d97706; }
+        .chip-details { color: #b45309; }
+      }
+
+      &.chip-holiday {
+        background-color: #f5f3ff;
+        border-color: #ddd6fe;
+        color: #5b21b6;
+        .chip-icon { color: #7c3aed; }
+        .chip-details { color: #6d28d9; }
+      }
+
+      &.chip-neutral {
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        color: #334155;
+        .chip-icon { color: #64748b; }
+        .chip-details { color: #475569; }
+      }
+    }
+  }
+
   .form-group {
     display: flex;
     flex-direction: column;
@@ -112,6 +320,21 @@
 
       .required {
         color: #ef4444;
+      }
+    }
+
+    .reason-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      color: #b45309;
+      margin-top: 5px;
+
+      .hint-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
       }
     }
 
@@ -133,6 +356,18 @@
       .picker-toggle {
         position: absolute;
         right: 4px;
+        z-index: 5;
+      }
+
+      .clickable-date-input {
+        cursor: pointer !important;
+      }
+
+      .field-hint {
+        font-size: 11.5px;
+        color: #64748b;
+        margin-top: 4px;
+        display: block;
       }
 
       .custom-input {
@@ -141,7 +376,7 @@
         background-color: #ffffff;
         border: 1px solid #d1d5db;
         border-radius: 6px;
-        padding: 0 12px 0 34px;
+        padding: 0 38px 0 34px;
         font-size: 13px;
         color: #111827;
         outline: none;
@@ -306,6 +541,16 @@
 
     mat-icon {
       color: #dc2626;
+    }
+  }
+
+  &.info-banner {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+
+    mat-icon {
+      color: #2563eb;
     }
   }
 }
