@@ -1,0 +1,105 @@
+<div class="pms-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="icon-bubble">
+        <mat-icon>handshake</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEditMode ? 'Update 1-on-1 Meeting' : 'Schedule 1-on-1 Check-in' }}</h2>
+        <p class="subtitle">Structured 1-on-1 meeting agenda, collaborative talking points, and action items</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="oneForm" (ngSubmit)="onSubmit()" class="modal-body custom-scroll">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Select Team Member / Colleague <span class="req">*</span></label>
+        <select formControlName="employeeId">
+          <option [ngValue]="null" disabled>Select Employee</option>
+          <option *ngFor="let emp of allEmployees" [value]="emp.id">
+            {{ emp.firstName }} {{ emp.lastName }} ({{ emp.employeeCode }})
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Scheduled Date & Time <span class="req">*</span></label>
+        <input type="datetime-local" formControlName="scheduledDate" />
+      </div>
+
+      <div class="form-group full-width">
+        <label>Meeting Agenda <span class="req">*</span></label>
+        <input type="text" formControlName="agenda" placeholder="e.g. Q4 Milestone Sync & Growth Discussion" />
+      </div>
+
+      <div class="form-group full-width" *ngIf="isEditMode">
+        <label>Meeting Status</label>
+        <select formControlName="status">
+          <option value="Scheduled">Scheduled</option>
+          <option value="Completed">Completed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Talking Points -->
+    <div class="section-row">
+      <div class="section-title">
+        <mat-icon>question_answer</mat-icon>
+        <span>Talking Points</span>
+      </div>
+      <button type="button" class="btn-add-item" (click)="addTalkingPoint()">
+        <mat-icon>add</mat-icon> Add Point
+      </button>
+    </div>
+
+    <div formArrayName="talkingPoints" class="items-list">
+      <div *ngFor="let pt of talkingPointsArray.controls; let i = index" class="item-row">
+        <mat-icon class="drag-icon">drag_indicator</mat-icon>
+        <input type="text" [formControlName]="i" placeholder="Discuss progress on key deliverables..." />
+        <button type="button" class="btn-del-item" (click)="removeTalkingPoint(i)">
+          <mat-icon>delete_outline</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Action Items -->
+    <div class="section-row">
+      <div class="section-title">
+        <mat-icon>task_alt</mat-icon>
+        <span>Action Items / Next Steps</span>
+      </div>
+      <button type="button" class="btn-add-item" (click)="addActionItem()">
+        <mat-icon>add</mat-icon> Add Action Item
+      </button>
+    </div>
+
+    <div formArrayName="actionItems" class="items-list">
+      <div *ngFor="let ai of actionItemsArray.controls; let i = index" [formGroupName]="i" class="item-row">
+        <input type="checkbox" formControlName="done" class="chk-done" />
+        <input type="text" formControlName="task" placeholder="Specific action item and deadline..." />
+        <button type="button" class="btn-del-item" (click)="removeActionItem(i)">
+          <mat-icon>delete_outline</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Meeting Notes / Meeting Summary</label>
+      <textarea rows="3" formControlName="notes" placeholder="Summarize key takeaways, agreements, and outcomes..."></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="close()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">calendar_month</mat-icon>
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update Meeting' : 'Schedule 1-on-1') }}
+      </button>
+    </div>
+  </form>
+</div>

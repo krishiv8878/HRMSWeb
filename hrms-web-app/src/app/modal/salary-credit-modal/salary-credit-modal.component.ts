@@ -19,6 +19,7 @@ import { EmailService } from '../../services/leaveRequest/email.service';
 import { EmployeeeService } from '../../services/attendance/employeee.service';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
+import { PayrollService } from '../../services/payroll/payroll.service';
 
 export interface SalaryDisbursementRecord {
   id: string;
@@ -68,6 +69,7 @@ export class SalaryCreditModalComponent implements OnInit {
   private attendanceService = inject(EmployeeeService);
   private holidayService = inject(HolidayservicesService);
   private attRequestService = inject(AttendanceRequestService);
+  private payrollService = inject(PayrollService);
   private dialog = inject(MatDialog);
   private toaster = inject(ToastrService);
 
@@ -428,6 +430,17 @@ export class SalaryCreditModalComponent implements OnInit {
 
     this.employeeService.updateData(updatedEmployee).subscribe({
       next: () => {
+        // Persist to database salary assignment table
+        this.payrollService.assignSalary({
+          employeeId: this.employee.id,
+          annualCtc: Number(formVal.grossSalary) * 12,
+          basicSalary: this.basicSalary,
+          hra: this.hra,
+          specialAllowance: this.specialAllowance,
+          epfEmployee: this.pfDeduction,
+          remarks: `Credited for ${formVal.monthYear}`
+        }).subscribe({ error: () => {} });
+
         this.isSubmitting = false;
         this.toaster.success(
           `Salary for ${this.employee.firstName} ${this.employee.lastName} marked as Credited for ${formVal.monthYear}!`,

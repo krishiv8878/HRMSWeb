@@ -70,11 +70,57 @@ body {
 .mat-mdc-dialog-container:has(app-leaverequest) .mdc-dialog__surface,
 .mat-mdc-dialog-container:has(app-attendasedit) .mdc-dialog__surface,
 .mat-mdc-dialog-container:has(.regularization-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(app-salary-credit-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.salary-credit-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(app-pay-run-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.payrun-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(app-reimbursement-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.reimbursement-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.modal-card) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(app-fnf-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.fnf-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(app-salary-slip-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.pms-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.expense-modal-container) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.recruitment-modal-container) .mdc-dialog__surface,
 .custom-clean-dialog .mat-mdc-dialog-container .mdc-dialog__surface,
 .custom-clean-dialog .mdc-dialog__surface {
   padding: 0 !important;
   border-radius: 12px !important;
   overflow: hidden !important;
+}
+
+/* Global clean modal close icon button to prevent Bootstrap SVG conflicts */
+.modal-close-icon-btn {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #64748b !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+
+  mat-icon {
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    color: inherit !important;
+  }
+
+  &:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
 }
 
 /* Global button loading state for SingleClickDirective */

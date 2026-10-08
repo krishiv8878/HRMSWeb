@@ -10,7 +10,7 @@
         <p class="modal-subtitle">Record monthly salary disbursement and generate an employee payslip record.</p>
       </div>
     </div>
-    <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
+    <button type="button" class="modal-close-icon-btn" (click)="closeModal()" aria-label="Close modal">
       <mat-icon>close</mat-icon>
     </button>
   </div>
@@ -40,8 +40,9 @@
   </div>
 
   <!-- Form Body -->
-  <form [formGroup]="creditForm" (ngSubmit)="submitSalaryCredit()" class="salary-form-body">
-    <!-- Row 1: Disbursement Month & Payment Date -->
+  <form [formGroup]="creditForm" (ngSubmit)="submitSalaryCredit()" class="salary-form-wrapper">
+    <div class="salary-form-body">
+      <!-- Row 1: Disbursement Month & Payment Date -->
     <div class="form-row-2">
       <div class="form-group">
         <label class="field-label">Disbursement Month / Period <span class="required">*</span></label>
@@ -165,7 +166,7 @@
         <span>Scanning attendance punches and leave requests for {{ creditForm.get('monthYear')?.value }}...</span>
       </div>
 
-      <!-- LOP Metrics & Stepper Row -->
+      <!-- LOP Metrics & Stepper Row (3 Equal Columns) -->
       <div class="lop-calc-body" *ngIf="!isLoadingLopData">
         <div class="calc-metric-pill rate-pill">
           <span class="pill-label">DAILY LOP RATE</span>
@@ -208,9 +209,24 @@
           <span class="pill-val text-red">{{ formatCurrency(calculatedLopDeduction) }}</span>
           <span class="pill-hint">{{ lopDaysCount }} Days × {{ formatCurrency(lopDailyRate) }}</span>
         </div>
+      </div>
 
-        <!-- Action Button -->
-        <div class="lop-action-box">
+      <!-- Dedicated LOP Action Bar -->
+      <div class="lop-action-bar" *ngIf="!isLoadingLopData">
+        <div class="lop-action-note">
+          <mat-icon>info</mat-icon>
+          <span>Calculated LOP deduction can be applied directly to form inputs below.</span>
+        </div>
+        <div class="lop-action-buttons">
+          <button
+            type="button"
+            class="btn-clear-lop"
+            *ngIf="creditForm.get('additionalDeductions')?.value > 0"
+            (click)="clearLopDeduction()"
+            title="Clear deduction from form"
+          >
+            Clear
+          </button>
           <button
             type="button"
             class="btn-apply-lop"
@@ -221,16 +237,6 @@
           >
             <mat-icon>{{ isLopApplied ? 'check_circle' : 'bolt' }}</mat-icon>
             <span>{{ isLopApplied ? 'Applied to Form' : 'Apply Calculation' }}</span>
-          </button>
-
-          <button
-            type="button"
-            class="btn-clear-lop"
-            *ngIf="creditForm.get('additionalDeductions')?.value > 0"
-            (click)="clearLopDeduction()"
-            title="Clear deduction"
-          >
-            Clear
           </button>
         </div>
       </div>
@@ -297,15 +303,16 @@
         <span class="callout-sub">Direct disbursement credit amount for {{ creditForm.get('monthYear')?.value }}</span>
       </div>
     </div>
+  </div>
 
-    <!-- Modal Footer -->
-    <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="isSubmitting">Cancel</button>
-      <button type="submit" class="btn-submit" [disabled]="isSubmitting">
-        <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
-        <span *ngIf="!isSubmitting">Confirm & Mark Salary Credited</span>
-        <span *ngIf="isSubmitting">Processing Disbursement...</span>
-      </button>
-    </div>
+  <!-- Modal Footer (Fixed at bottom) -->
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="isSubmitting">Cancel</button>
+    <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+      <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
+      <span *ngIf="!isSubmitting">Confirm & Mark Salary Credited</span>
+      <span *ngIf="isSubmitting">Processing Disbursement...</span>
+    </button>
+  </div>
   </form>
 </div>

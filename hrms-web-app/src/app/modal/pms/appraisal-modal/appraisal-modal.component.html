@@ -1,0 +1,210 @@
+<div class="pms-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="icon-bubble">
+        <mat-icon>rate_review</mat-icon>
+      </div>
+      <div>
+        <h2>Performance Appraisal Review</h2>
+        <p class="subtitle">
+          {{ data.appraisalDto.employeeName }} ({{ data.appraisalDto.employeeCode }}) • {{ data.appraisalDto.cycle?.cycleName || 'Quarterly Review' }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Stage Navigation Bar -->
+  <div class="stage-tabs">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="mode === 'self'"
+      (click)="mode = 'self'"
+    >
+      <mat-icon>person</mat-icon>
+      <span>1. Self Assessment</span>
+      <span class="status-dot" [class.done]="data.appraisalDto.appraisal.selfSubmittedAt"></span>
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="mode === 'manager'"
+      (click)="mode = 'manager'"
+    >
+      <mat-icon>supervisor_account</mat-icon>
+      <span>2. Manager Evaluation</span>
+      <span class="status-dot" [class.done]="data.appraisalDto.appraisal.managerSubmittedAt"></span>
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="mode === 'hr'"
+      (click)="mode = 'hr'"
+    >
+      <mat-icon>verified</mat-icon>
+      <span>3. HR Finalization</span>
+      <span class="status-dot" [class.done]="data.appraisalDto.appraisal.finalizedAt"></span>
+    </button>
+  </div>
+
+  <div class="modal-body custom-scroll">
+    <!-- Competencies Matrix -->
+    <div class="competencies-card">
+      <div class="card-head">
+        <mat-icon>auto_awesome</mat-icon>
+        <h3>Core Competency Assessment (1 - 5)</h3>
+      </div>
+      <div class="comp-list">
+        <div *ngFor="let comp of competencies" class="comp-row">
+          <div class="comp-details">
+            <span class="comp-name">{{ comp.name }}</span>
+            <span class="comp-desc">{{ comp.description }}</span>
+          </div>
+          <div class="comp-score-box">
+            <div class="score-col">
+              <span class="score-label">Self</span>
+              <div class="stars-picker">
+                <button
+                  type="button"
+                  *ngFor="let s of [1, 2, 3, 4, 5]"
+                  [class.filled]="comp.selfScore >= s"
+                  [disabled]="mode !== 'self'"
+                  (click)="setScore(comp, 'self', s)"
+                >★</button>
+              </div>
+            </div>
+            <div class="score-col">
+              <span class="score-label">Manager</span>
+              <div class="stars-picker">
+                <button
+                  type="button"
+                  *ngFor="let s of [1, 2, 3, 4, 5]"
+                  [class.filled]="comp.mgrScore >= s"
+                  [disabled]="mode !== 'manager'"
+                  (click)="setScore(comp, 'manager', s)"
+                >★</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode 1: Self Review -->
+    <div *ngIf="mode === 'self'" class="review-section">
+      <form [formGroup]="selfForm" (ngSubmit)="submitSelf()">
+        <div class="form-group">
+          <label>Overall Self Rating (1.0 to 5.0) <span class="req">*</span></label>
+          <div class="rating-input-row">
+            <input type="number" step="0.1" min="1" max="5" formControlName="selfRating" />
+            <div class="rating-display-stars">
+              <mat-icon *ngFor="let i of [1,2,3,4,5]" [class.active]="selfForm.get('selfRating')?.value >= i">star</mat-icon>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Self Reflection & Accomplishments <span class="req">*</span></label>
+          <textarea
+            rows="4"
+            formControlName="selfComments"
+            placeholder="Highlight major achievements, learnings, challenges faced, and goals for the next quarter..."
+          ></textarea>
+        </div>
+
+        <div class="action-row" *ngIf="!data.appraisalDto.appraisal.selfSubmittedAt || mode === 'self'">
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+            <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+            <span *ngIf="isSubmitting" class="spinner"></span>
+            {{ isSubmitting ? 'Submitting...' : 'Submit Self Appraisal' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Mode 2: Manager Review -->
+    <div *ngIf="mode === 'manager'" class="review-section">
+      <div class="peer-summary-box" *ngIf="data.appraisalDto.appraisal.selfComments">
+        <div class="box-title"><mat-icon>notes</mat-icon> Employee's Self Assessment Summary:</div>
+        <p class="box-text">"{{ data.appraisalDto.appraisal.selfComments }}"</p>
+        <div class="box-meta">Self Rating: <strong>{{ data.appraisalDto.appraisal.selfRating }} / 5.0</strong></div>
+      </div>
+
+      <form [formGroup]="managerForm" (ngSubmit)="submitManager()">
+        <div class="form-group">
+          <label>Manager Performance Rating (1.0 to 5.0) <span class="req">*</span></label>
+          <div class="rating-input-row">
+            <input type="number" step="0.1" min="1" max="5" formControlName="managerRating" />
+            <div class="rating-display-stars">
+              <mat-icon *ngFor="let i of [1,2,3,4,5]" [class.active]="managerForm.get('managerRating')?.value >= i">star</mat-icon>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Manager Evaluation & Constructive Feedback <span class="req">*</span></label>
+          <textarea
+            rows="4"
+            formControlName="managerComments"
+            placeholder="Provide specific feedback on outcomes delivered, collaboration, and growth opportunities..."
+          ></textarea>
+        </div>
+
+        <div class="action-row">
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+            <mat-icon *ngIf="!isSubmitting">verified_user</mat-icon>
+            <span *ngIf="isSubmitting" class="spinner"></span>
+            {{ isSubmitting ? 'Saving...' : 'Submit Manager Evaluation' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Mode 3: HR Finalization -->
+    <div *ngIf="mode === 'hr'" class="review-section">
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <span class="comp-title">Self Review</span>
+          <span class="comp-score">{{ data.appraisalDto.appraisal.selfRating || '—' }} / 5.0</span>
+          <p class="comp-quote">{{ data.appraisalDto.appraisal.selfComments || 'No self comments' }}</p>
+        </div>
+        <div class="comparison-card highlight">
+          <span class="comp-title">Manager Evaluation</span>
+          <span class="comp-score">{{ data.appraisalDto.appraisal.managerRating || '—' }} / 5.0</span>
+          <p class="comp-quote">{{ data.appraisalDto.appraisal.managerComments || 'No manager comments' }}</p>
+        </div>
+      </div>
+
+      <form [formGroup]="hrForm" (ngSubmit)="finalizeHr()">
+        <div class="form-group">
+          <label>Final Calibrated Rating (1.0 to 5.0) <span class="req">*</span></label>
+          <input type="number" step="0.1" min="1" max="5" formControlName="finalRating" />
+        </div>
+
+        <div class="form-group">
+          <label>HR Calibration Remarks / Action Outcome <span class="req">*</span></label>
+          <textarea
+            rows="3"
+            formControlName="hrComments"
+            placeholder="Recommendations: Promotion, Merit Bonus, Compensation Adjustment, or Next Steps..."
+          ></textarea>
+        </div>
+
+        <div class="action-row">
+          <button type="submit" class="btn-success" [disabled]="isSubmitting">
+            <mat-icon *ngIf="!isSubmitting">workspace_premium</mat-icon>
+            <span *ngIf="isSubmitting" class="spinner"></span>
+            {{ isSubmitting ? 'Publishing...' : 'Finalize & Publish Appraisal' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-secondary" (click)="close()">Close</button>
+  </div>
+</div>

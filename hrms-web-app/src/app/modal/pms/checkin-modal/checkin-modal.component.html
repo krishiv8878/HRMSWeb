@@ -1,0 +1,92 @@
+<div class="pms-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="icon-bubble">
+        <mat-icon>speed</mat-icon>
+      </div>
+      <div>
+        <h2>Goal Progress Check-in</h2>
+        <p class="subtitle">{{ data.goalDto.goal.title }}</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="checkInForm" (ngSubmit)="onSubmit()" class="modal-body">
+    <div class="goal-summary-card">
+      <div class="stat-item">
+        <span class="label">Overall Goal Status</span>
+        <span class="badge" [ngClass]="data.goalDto.goal.status.toLowerCase().replace(' ', '-')">
+          {{ data.goalDto.goal.status }}
+        </span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Current Progress</span>
+        <span class="value">{{ data.goalDto.goal.progressPercentage }}%</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Owner</span>
+        <span class="value">{{ data.goalDto.employeeName }}</span>
+      </div>
+    </div>
+
+    <!-- Key Result Selector -->
+    <div class="form-group" *ngIf="data.goalDto.keyResults.length > 0">
+      <label>Select Key Result to Update</label>
+      <select formControlName="keyResultId">
+        <option *ngFor="let kr of data.goalDto.keyResults" [value]="kr.id">
+          {{ kr.title }} (Target: {{ kr.targetValue }} {{ kr.metricUnit }}, Current: {{ kr.currentValue }})
+        </option>
+      </select>
+    </div>
+
+    <div class="form-group" *ngIf="selectedKr">
+      <label>
+        Updated Current Value (Target: {{ selectedKr.targetValue }} {{ selectedKr.metricUnit }}) <span class="req">*</span>
+      </label>
+      <div class="input-with-suffix">
+        <input type="number" formControlName="newValue" min="0" />
+        <span class="suffix">{{ selectedKr.metricUnit }}</span>
+      </div>
+    </div>
+
+    <!-- Confidence Level Rating -->
+    <div class="form-group">
+      <label>Confidence Rating <span class="req">*</span></label>
+      <div class="confidence-selector">
+        <button
+          type="button"
+          *ngFor="let lvl of confidenceLevels"
+          class="btn-conf"
+          [class.active]="checkInForm.get('confidenceScore')?.value === lvl.score"
+          (click)="setConfidence(lvl.score)"
+          [style.--badge-color]="lvl.color"
+        >
+          <span class="conf-star">{{ lvl.score }} ★</span>
+          <span class="conf-text">{{ lvl.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Check-in Notes / Blocker Updates -->
+    <div class="form-group">
+      <label>Progress Notes / Blockers / Highlights <span class="req">*</span></label>
+      <textarea
+        rows="3"
+        formControlName="notes"
+        placeholder="Share brief context on progress made this week, challenges, or next steps..."
+      ></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="close()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Recording...' : 'Submit Check-in' }}
+      </button>
+    </div>
+  </form>
+</div>

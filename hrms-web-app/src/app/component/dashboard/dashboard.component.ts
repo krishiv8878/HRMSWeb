@@ -1056,7 +1056,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         dateObj: target.date,
         dateStr: target.dateStr,
         hasExistingClockIn: target.hasExistingIn,
-        existingClockInDisplay: target.hasExistingIn ? target.clockIn : null,
+        existingClockInDisplay: target.hasExistingIn ? (target.clockInDisplay || target.clockIn) : null,
         lockDate: false,
         clockIn: target.clockIn,
         clockOut: target.clockOut,
@@ -1079,7 +1079,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl(route);
   }
 
-  private findMostRecentRegularizationDate(): { date: Date; dateStr: string; hasExistingIn: boolean; clockIn: string; clockOut: string } {
+  private findMostRecentRegularizationDate(): { date: Date; dateStr: string; hasExistingIn: boolean; clockIn: string; clockInDisplay?: string; clockOut: string } {
     const attList = this.cachedAttendanceAll || [];
     const reqList = this.cachedAttenRequests || [];
     const holidayList = this.cachedHolidays || [];
@@ -1182,14 +1182,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       if (hasIn && !hasOut) {
         // Missing Punch: clocked in but forgot to clock out!
-        const inDate = new Date(record.clockIn || record.ClockIn);
-        const inH = inDate.getHours().toString().padStart(2, '0');
-        const inM = inDate.getMinutes().toString().padStart(2, '0');
+        const inDate = this.attendanceStateService.parseDateSafe(record.clockIn || record.ClockIn);
+        const inH = inDate ? inDate.getHours().toString().padStart(2, '0') : '09';
+        const inM = inDate ? inDate.getMinutes().toString().padStart(2, '0') : '30';
+        const time24 = `${inH}:${inM}`;
+        const time12 = inDate ? this.attendanceStateService.formatTime12(inDate) : time24;
         return {
           date: checkDate,
           dateStr: checkYMD,
           hasExistingIn: true,
-          clockIn: `${inH}:${inM}`,
+          clockIn: time24,
+          clockInDisplay: time12,
           clockOut: '18:30'
         };
       }

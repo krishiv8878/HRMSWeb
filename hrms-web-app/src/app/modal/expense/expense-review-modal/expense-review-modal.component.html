@@ -1,0 +1,161 @@
+<div class="expense-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon" [ngClass]="stage === 'Finance' ? 'finance-icon' : 'manager-icon'">
+        <mat-icon>{{ stage === 'Finance' ? 'account_balance' : 'fact_check' }}</mat-icon>
+      </div>
+      <div>
+        <h2>{{ stage }} Expense Audit & Review</h2>
+        <p class="subtitle">Review claim line items, receipts, and adjust advance deductions</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-body" *ngIf="report">
+    <!-- Summary Header Cards -->
+    <div class="claim-overview-card">
+      <div class="overview-header">
+        <div>
+          <span class="report-code">{{ report.reportNumber }}</span>
+          <h3>{{ report.title }}</h3>
+          <p class="employee-meta">
+            <strong>{{ report.employeeName }}</strong> ({{ report.employeeCode }}) • {{ report.departmentName || 'General' }}
+          </p>
+        </div>
+        <div class="claim-status-pill" [ngClass]="report.status.toLowerCase()">
+          {{ report.status }}
+        </div>
+      </div>
+
+      <div class="overview-financials">
+        <div class="fin-box">
+          <span class="lbl">Claim Amount</span>
+          <span class="val">₹{{ report.totalClaimAmount | number:'1.2-2' }}</span>
+        </div>
+        <div class="fin-box" *ngIf="report.advanceAdjustedAmount > 0">
+          <span class="lbl">Advance Deducted</span>
+          <span class="val deduction">-₹{{ report.advanceAdjustedAmount | number:'1.2-2' }}</span>
+        </div>
+        <div class="fin-box net">
+          <span class="lbl">Net Payable</span>
+          <span class="val highlight">₹{{ report.netPayableAmount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manager Notes if in Finance Stage -->
+    <div class="manager-notes-card" *ngIf="stage === 'Finance' && report.managerRemarks">
+      <mat-icon>verified</mat-icon>
+      <div>
+        <strong>Manager Approval ({{ report.managerReviewerName }}):</strong>
+        <p>{{ report.managerRemarks }}</p>
+      </div>
+    </div>
+
+    <!-- Line Item Audit Table -->
+    <div class="review-section">
+      <h4 class="section-title"><mat-icon>checklist</mat-icon> Expense Line Items Audit</h4>
+      <div class="table-container">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Category</th>
+              <th>Date</th>
+              <th>Merchant</th>
+              <th>Amount</th>
+              <th>Receipt</th>
+              <th>Line Audit Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of report.items" [class.rejected-row]="!isItemApproved(item.id)">
+              <td>
+                <button
+                  type="button"
+                  class="btn-toggle-status"
+                  [ngClass]="isItemApproved(item.id) ? 'btn-approved' : 'btn-rejected'"
+                  (click)="toggleItemApproval(item.id)"
+                >
+                  <mat-icon>{{ isItemApproved(item.id) ? 'check_circle' : 'cancel' }}</mat-icon>
+                  {{ isItemApproved(item.id) ? 'Approve' : 'Reject' }}
+                </button>
+              </td>
+              <td><strong>{{ item.categoryName }}</strong></td>
+              <td>{{ item.expenseDate | date:'mediumDate' }}</td>
+              <td>{{ item.merchantName || '-' }}</td>
+              <td class="amount-cell">₹{{ item.totalAmount | number:'1.2-2' }}</td>
+              <td>
+                <a *ngIf="item.receiptUrl" [href]="item.receiptUrl" target="_blank" class="receipt-link">
+                  <mat-icon>attachment</mat-icon> View
+                </a>
+                <span *ngIf="!item.receiptUrl" class="text-muted">None</span>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  [(ngModel)]="itemDecisions[item.id].remarks"
+                  placeholder="Item note / reason"
+                  class="line-remarks-input"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mileage Trips if any -->
+    <div class="review-section" *ngIf="report.mileageItems && report.mileageItems.length > 0">
+      <h4 class="section-title"><mat-icon>commute</mat-icon> Mileage Trips</h4>
+      <div class="table-container">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Vehicle</th>
+              <th>Route</th>
+              <th>Distance</th>
+              <th>Rate / km</th>
+              <th>Trip Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of report.mileageItems">
+              <td>{{ m.vehicleType }}</td>
+              <td>{{ m.startLocation }} ➔ {{ m.endLocation }}</td>
+              <td>{{ m.distanceKm }} km</td>
+              <td>₹{{ m.ratePerKm }}/km</td>
+              <td class="amount-cell">₹{{ m.calculatedAmount | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Overall Reviewer Remarks -->
+    <div class="review-section">
+      <h4 class="section-title"><mat-icon>rate_review</mat-icon> Reviewer Comments & Feedback</h4>
+      <textarea
+        [(ngModel)]="overallRemarks"
+        rows="3"
+        placeholder="Enter approval notes or rejection rationale for the employee..."
+        class="overall-remarks-box"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+    <div class="footer-action-group">
+      <button type="button" class="btn-reject" (click)="submitDecision(false)" [disabled]="isSubmitting">
+        <mat-icon>close</mat-icon> Reject Claim
+      </button>
+      <button type="button" class="btn-approve" (click)="submitDecision(true)" [disabled]="isSubmitting">
+        <mat-icon>check</mat-icon> Approve Claim ({{ stage }})
+      </button>
+    </div>
+  </div>
+</div>

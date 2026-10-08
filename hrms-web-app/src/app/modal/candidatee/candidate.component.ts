@@ -11,6 +11,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { ToastrService } from 'ngx-toastr';
 import { CandidateService } from '../../services/candidate/candidate.service';
 import { EmployeeService } from '../../services/employee/employee.service';
+import { RecruitmentService, JobRequisitionDto } from '../../services/recruitment/recruitment.service';
 
 @Component({
   selector: 'app-candidate-modal',
@@ -33,11 +34,13 @@ export class CandidateeComponent implements OnInit {
   private fb = inject(FormBuilder);
   private services = inject(CandidateService);
   private employeeService = inject(EmployeeService);
+  private recruitmentService = inject(RecruitmentService);
   private toaster = inject(ToastrService);
   private dialogRef = inject(MatDialogRef<CandidateeComponent>);
 
   isEdit: boolean = false;
   employees: any[] = [];
+  requisitionsList: JobRequisitionDto[] = [];
 
   rolesList: string[] = [
     'Senior Frontend Engineer',
@@ -77,6 +80,7 @@ export class CandidateeComponent implements OnInit {
     lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]+$')]],
     emailAddress: ['', [Validators.required, Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
+    jobRequisitionId: [null as number | null],
     appliedRole: ['Senior Frontend Engineer'],
     stage: ['Screening'],
     totalExperience: ['', [Validators.required]],
@@ -97,8 +101,11 @@ export class CandidateeComponent implements OnInit {
 
   ngOnInit() {
     this.loadEmployees();
+    this.loadRequisitions();
+
     if (this.data) {
-      this.isEdit = true;
+      this.isEdit = Boolean(this.data.id && Number(this.data.id) > 0);
+      const initialReqId = this.data.jobRequisitionId ? Number(this.data.jobRequisitionId) : null;
       let relExpYears = String(this.data.totalExperience !== undefined ? (this.data.relevantExperience || '') : '');
       let intId = this.data.interviewerId || null;
       let intName = this.data.interviewerName || '';
@@ -124,6 +131,7 @@ export class CandidateeComponent implements OnInit {
         lastName: this.data.lastName || '',
         emailAddress: this.data.emailAddress || '',
         mobileNumber: this.data.mobileNumber || '',
+        jobRequisitionId: initialReqId,
         appliedRole: this.data.appliedRole || 'Senior Frontend Engineer',
         stage: this.data.stage || 'Screening',
         totalExperience: String(this.data.totalExperience || ''),
@@ -149,6 +157,60 @@ export class CandidateeComponent implements OnInit {
         this.CandidateForm.get('interviewerName')?.setValue(`${fName} ${lName}`.trim());
       }
     });
+  }
+
+  private loadRequisitions() {
+    this.recruitmentService.getAllRequisitions().subscribe({
+      next: (res) => {
+        const rawList = Array.isArray(res) ? res : [];
+        const currentReqId = this.CandidateForm.get('jobRequisitionId')?.value;
+
+        // When adding a new candidate (!this.isEdit):
+        // Only include OPEN job openings (exclude Closed, On Hold, Draft).
+        // When editing an existing candidate (this.isEdit):
+        // Include OPEN job openings, PLUS the candidate's currently assigned opening (if any).
+        this.requisitionsList = rawList.filter(r => {
+          const isClosed = (r.status || '').toLowerCase() === 'closed';
+          if (this.isEdit && currentReqId && Number(r.id) === Number(currentReqId)) {
+            return true;
+          }
+          return !isClosed && (r.status || '').toLowerCase() === 'open';
+        });
+
+        if (currentReqId) {
+          const found = this.requisitionsList.find(r => Number(r.id) === Number(currentReqId));
+          if (found) {
+            if (!this.rolesList.includes(found.title)) {
+              this.rolesList.unshift(found.title);
+            }
+            if (!this.isEdit) {
+              this.CandidateForm.patchValue({ appliedRole: found.title });
+            }
+          } else if (!this.isEdit) {
+            // Target opening was closed, so reset to general applicant
+            this.CandidateForm.patchValue({ jobRequisitionId: null });
+          }
+        }
+      },
+      error: () => {
+        this.requisitionsList = [];
+      }
+    });
+  }
+
+  onJobRequisitionChange() {
+    const reqId = this.CandidateForm.get('jobRequisitionId')?.value;
+    if (reqId) {
+      const selected = this.requisitionsList.find(r => Number(r.id) === Number(reqId));
+      if (selected) {
+        if (!this.rolesList.includes(selected.title)) {
+          this.rolesList.unshift(selected.title);
+        }
+        this.CandidateForm.patchValue({
+          appliedRole: selected.title
+        });
+      }
+    }
   }
 
   private loadEmployees() {
@@ -199,6 +261,14 @@ export class CandidateeComponent implements OnInit {
 
     const formVal = this.CandidateForm.value;
 
+    if (!this.isEdit && formVal.jobRequisitionId) {
+      const selReq = this.requisitionsList.find(r => Number(r.id) === Number(formVal.jobRequisitionId));
+      if (selReq && (selReq.status || '').toLowerCase() === 'closed') {
+        this.toaster.error('Selected job opening is closed. Candidates cannot be added to closed requisitions.', 'Opening Closed');
+        return;
+      }
+    }
+
     const isoDate = new Date().toISOString();
 
     let relExpValue = String(formVal.relevantExperience || '').trim();
@@ -223,6 +293,7 @@ export class CandidateeComponent implements OnInit {
       emailAddress: (formVal.emailAddress || '').trim(),
       mobileNumber: String(formVal.mobileNumber || '').trim(),
       appliedRole: formVal.appliedRole || 'Senior Frontend Engineer',
+      jobRequisitionId: formVal.jobRequisitionId ? Number(formVal.jobRequisitionId) : null,
       stage: formVal.stage || 'Screening',
       totalExperience: String(formVal.totalExperience || '').trim(),
       relevantExperience: relExpValue,

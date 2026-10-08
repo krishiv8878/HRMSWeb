@@ -653,3 +653,123 @@
   background-color: #f8faff;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
+
+
+/* Request Type Selector Strip */
+.request-type-selector-strip {
+  margin-bottom: 18px;
+
+  .field-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+    display: block;
+
+    .required {
+      color: #ef4444;
+    }
+  }
+
+  .type-chips-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+
+    .type-chip-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+
+      mat-icon {
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
+        color: #64748b;
+        flex-shrink: 0;
+      }
+
+      .chip-label-box {
+        display: flex;
+        flex-direction: column;
+
+        strong {
+          font-size: 12.5px;
+          color: #1e293b;
+          font-weight: 700;
+        }
+
+        span {
+          font-size: 10.5px;
+          color: #64748b;
+        }
+      }
+
+      &:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+
+      &.active {
+        background: #eff6ff;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+
+        mat-icon {
+          color: #2563eb;
+        }
+
+        .chip-label-box strong {
+          color: #1d4ed8;
+        }
+      }
+    }
+  }
+}
+
+.on-duty-fields-box,
+.wfh-fields-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.wfh-toggle-group {
+  display: flex;
+  gap: 12px;
+
+  .wfh-radio-label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    transition: all 0.15s;
+
+    input[type="radio"] {
+      margin: 0;
+    }
+
+    &.selected {
+      border-color: #2563eb;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+  }
+}

@@ -71,6 +71,7 @@
     </div>
 
     <!-- Tri-View Tabs Bar (Company Disbursements, Company Accounts, HR Personal Payslips) -->
+    <!-- Enterprise Payroll Suite Navigation Tabs -->
     <div class="payroll-tabs-bar">
       <button
         type="button"
@@ -79,10 +80,52 @@
         (click)="switchTab('disbursements')"
       >
         <mat-icon class="tab-icon">payments</mat-icon>
-        <span class="tab-title">Monthly Payroll & Disbursements</span>
+        <span class="tab-title">Payroll Matrix</span>
         <span class="tab-badge" [class.badge-pending]="pendingCount > 0">
           {{ creditedCount }}/{{ allPayrollEmployees.length }} Credited
         </span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'payruns'"
+        (click)="switchTab('payruns')"
+      >
+        <mat-icon class="tab-icon">history_edu</mat-icon>
+        <span class="tab-title">Pay Run Batches</span>
+        <span class="tab-badge">{{ allPayRuns.length }} Batches</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'ctc-calculator'"
+        (click)="switchTab('ctc-calculator')"
+      >
+        <mat-icon class="tab-icon">calculate</mat-icon>
+        <span class="tab-title">Salary Structures & Tax</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'reimbursements'"
+        (click)="switchTab('reimbursements')"
+      >
+        <mat-icon class="tab-icon">receipt</mat-icon>
+        <span class="tab-title">Reimbursements & FBP</span>
+        <span class="tab-badge badge-pending" *ngIf="allReimbursements.length > 0">{{ allReimbursements.length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'fnf'"
+        (click)="switchTab('fnf')"
+      >
+        <mat-icon class="tab-icon">account_balance_wallet</mat-icon>
+        <span class="tab-title">FnF Settlement</span>
       </button>
 
       <button
@@ -92,8 +135,8 @@
         (click)="switchTab('accounts')"
       >
         <mat-icon class="tab-icon">account_balance</mat-icon>
-        <span class="tab-title">Direct Deposit Bank Accounts</span>
-        <span class="tab-badge">{{ totalAccountsCount }} Accounts</span>
+        <span class="tab-title">Bank Accounts</span>
+        <span class="tab-badge">{{ totalAccountsCount }}</span>
       </button>
 
       <button
@@ -103,14 +146,13 @@
         (click)="switchTab('my-payslips')"
       >
         <mat-icon class="tab-icon">receipt_long</mat-icon>
-        <span class="tab-title">My Payslips & Compensation</span>
-        <span class="tab-badge badge-personal">{{ myDisbursements.length }} Slips</span>
+        <span class="tab-title">My Payslips</span>
       </button>
     </div>
 
     <!-- ================= TAB 1: MONTHLY DISBURSEMENTS ================= -->
     <ng-container *ngIf="activeTab === 'disbursements'">
-      <!-- Disbursement Period Selector Bar -->
+      <!-- Disbursement Period Selector Bar & Quick Run Payroll Actions -->
       <div class="period-selector-banner">
         <div class="selector-left">
           <div class="period-icon-box">
@@ -126,11 +168,97 @@
             </div>
           </div>
         </div>
-        <div class="selector-summary">
-          <span class="status-chip is-disbursed">
-            <mat-icon>check_circle</mat-icon>
-            <span>{{ formatCurrency(totalCreditedAmount) }} Disbursed for {{ selectedMonth }}</span>
-          </span>
+
+        <!-- Unified Option A Actions: Run Monthly Payroll / Batch Status -->
+        <div class="selector-actions-group">
+          <!-- Case 1: No Batch Exists Yet for this Month -->
+          <ng-container *ngIf="!getPayRunForCurrentSelectedMonth()">
+            <button
+              *ngIf="isAdminOrHr"
+              type="button"
+              class="btn-run-payroll-main"
+              (click)="runPayrollForSelectedMonth()"
+              [disabled]="isCreatingPayRun || isFutureSelectedMonth()"
+              [title]="isFutureSelectedMonth() ? 'Cannot run payroll for future months' : 'Calculate attendance LOP, EPF/ESI/PT/TDS, and approved claims for all personnel in 1-click'"
+            >
+              <mat-icon class="spin-icon" *ngIf="isCreatingPayRun">sync</mat-icon>
+              <mat-icon *ngIf="!isCreatingPayRun">bolt</mat-icon>
+              <span>{{ isCreatingPayRun ? 'Processing Cycle...' : ('Run Monthly Payroll for ' + selectedMonth) }}</span>
+            </button>
+            <span class="status-chip is-pending-batch" *ngIf="isFutureSelectedMonth()">
+              <mat-icon>schedule</mat-icon>
+              <span>Future Cycle (Not Ready)</span>
+            </span>
+          </ng-container>
+
+          <!-- Case 2: Batch Exists and is Pre-Disbursed (Draft / Submitted / Approved) -->
+          <ng-container *ngIf="getPayRunForCurrentSelectedMonth() as currentRun">
+            <div *ngIf="currentRun.status !== 'Disbursed'" class="batch-action-cluster">
+              <span class="status-chip is-pending-batch">
+                <mat-icon>pending_actions</mat-icon>
+                <span>Batch #PR-{{ currentRun.id }} ({{ currentRun.status }})</span>
+              </span>
+
+              <button
+                type="button"
+                class="btn-review-batch"
+                (click)="openPayRunDetails(currentRun)"
+                title="Review attendance, LOP deductions, reimbursements, and totals"
+              >
+                <mat-icon>visibility</mat-icon>
+                <span>Review Batch</span>
+              </button>
+
+              <button
+                *ngIf="isAdminOrHr"
+                type="button"
+                class="btn-disburse-batch"
+                (click)="disbursePayRunDirect(currentRun)"
+                title="Publish digital payslips to all employees immediately and mark cycle as completed"
+              >
+                <mat-icon>paid</mat-icon>
+                <span>Disburse & Publish Payslips</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-bank-csv"
+                (click)="downloadBankPayoutCsv(currentRun.id)"
+                title="Download bulk NEFT/RTGS bank payout file"
+              >
+                <mat-icon>download</mat-icon>
+                <span>Bank CSV</span>
+              </button>
+            </div>
+
+            <!-- Case 3: Batch is Disbursed -->
+            <div *ngIf="currentRun.status === 'Disbursed'" class="batch-action-cluster">
+              <span class="status-chip is-disbursed">
+                <mat-icon>check_circle</mat-icon>
+                <span>Batch #PR-{{ currentRun.id }} Disbursed & Published</span>
+              </span>
+
+              <button
+                type="button"
+                class="btn-review-batch"
+                (click)="openPayRunDetails(currentRun)"
+                title="View finalized batch summary and employee breakdowns"
+              >
+                <mat-icon>receipt_long</mat-icon>
+                <span>Batch Breakdown</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-bank-csv"
+                (click)="downloadBankPayoutCsv(currentRun.id)"
+                title="Re-download bulk NEFT/RTGS payout file"
+              >
+                <mat-icon>download</mat-icon>
+                <span>Bank CSV</span>
+              </button>
+            </div>
+          </ng-container>
         </div>
       </div>
 
@@ -296,7 +424,17 @@
 
                 <!-- Status for Selected Month -->
                 <td class="col-status">
-                  <div *ngIf="emp.isCreditedThisMonth" class="credited-block">
+                  <!-- 1. If Joined After Selected Month -->
+                  <div *ngIf="emp.isJoinedAfterSelectedMonth" class="na-block">
+                    <span class="status-badge badge-na">
+                      <mat-icon class="badge-icon">event_busy</mat-icon>
+                      <span>Joined {{ emp.dateOfJoining | date:'mediumDate' }}</span>
+                    </span>
+                    <span class="pending-hint">Not employed during {{ selectedMonth }}</span>
+                  </div>
+
+                  <!-- 2. If Employed and Credited -->
+                  <div *ngIf="!emp.isJoinedAfterSelectedMonth && emp.isCreditedThisMonth" class="credited-block">
                     <span class="status-badge badge-active">
                       <span class="dot"></span>
                       <span>Credited</span>
@@ -312,21 +450,29 @@
                     </div>
                   </div>
 
-                  <div *ngIf="!emp.isCreditedThisMonth" class="pending-block">
+                  <!-- 3. If Employed and Pending Credit -->
+                  <div *ngIf="!emp.isJoinedAfterSelectedMonth && !emp.isCreditedThisMonth" class="pending-block">
                     <span class="status-badge badge-pending">
                       <span class="dot-amber-pulse"></span>
-                      <span>Pending Credit</span>
+                      <span *ngIf="emp.linkedPayRun && emp.linkedPayRun.status !== 'Disbursed'">Pay Run #PR-{{ emp.linkedPayRun.id }} ({{ emp.linkedPayRun.status }})</span>
+                      <span *ngIf="!emp.linkedPayRun || emp.linkedPayRun.status === 'Disbursed'">Pending Credit</span>
                     </span>
-                    <span class="pending-hint">Awaiting Disbursement</span>
+                    <span class="pending-hint" *ngIf="emp.linkedPayRun && emp.linkedPayRun.status !== 'Disbursed'">Batch Created &bull; Awaiting Disburse</span>
+                    <span class="pending-hint" *ngIf="!emp.linkedPayRun || emp.linkedPayRun.status === 'Disbursed'">Awaiting Disbursement</span>
                   </div>
                 </td>
 
                 <!-- Actions -->
                 <td class="col-actions text-right">
                   <div class="action-btn-group">
+                    <!-- If Joined After Selected Month: Not Employed -->
+                    <span *ngIf="emp.isJoinedAfterSelectedMonth" class="not-employed-label">
+                      Not Employed
+                    </span>
+
                     <!-- If Credited: View Payslip Button -->
                     <button
-                      *ngIf="emp.isCreditedThisMonth"
+                      *ngIf="!emp.isJoinedAfterSelectedMonth && emp.isCreditedThisMonth"
                       type="button"
                       class="btn-payslip-action"
                       (click)="openSalarySlip(emp)"
@@ -336,16 +482,29 @@
                       <span>View Payslip</span>
                     </button>
 
-                    <!-- If Pending & Admin/HR: Mark Salary Credited Button -->
+                    <!-- If Linked to a Pending Pay Run & Admin/HR: Disburse Batch Button -->
                     <button
-                      *ngIf="!emp.isCreditedThisMonth && isAdminOrHr"
+                      *ngIf="!emp.isJoinedAfterSelectedMonth && !emp.isCreditedThisMonth && emp.linkedPayRun && emp.linkedPayRun.status !== 'Disbursed' && isAdminOrHr"
+                      type="button"
+                      class="btn-credit-action"
+                      style="background: #16a34a; border-color: #16a34a; color: white;"
+                      (click)="disbursePayRunDirect(emp.linkedPayRun)"
+                      title="Disburse Batch #PR-{{ emp.linkedPayRun.id }} and publish payslips immediately"
+                    >
+                      <mat-icon>paid</mat-icon>
+                      <span>Disburse Batch</span>
+                    </button>
+
+                    <!-- If Pending & Admin/HR: Credit Salary Button -->
+                    <button
+                      *ngIf="!emp.isJoinedAfterSelectedMonth && !emp.isCreditedThisMonth && (!emp.linkedPayRun || emp.linkedPayRun.status === 'Disbursed') && isAdminOrHr"
                       type="button"
                       class="btn-credit-action"
                       (click)="openSalaryCredit(emp)"
                       title="Record Salary Disbursement & Generate UTR"
                     >
                       <mat-icon>check_circle</mat-icon>
-                      <span>Mark Credited</span>
+                      <span>Credit Salary</span>
                     </button>
 
                     <!-- Add Bank if missing -->
@@ -694,6 +853,427 @@
     <ng-container *ngIf="activeTab === 'my-payslips'">
       <ng-container *ngTemplateOutlet="employeePersonalView"></ng-container>
     </ng-container>
+
+    <!-- ================= TAB 4: MONTHLY PAY RUN ENGINE ================= -->
+    <ng-container *ngIf="activeTab === 'payruns'">
+      <div class="period-selector-banner">
+        <div class="selector-left">
+          <div class="period-icon-box">
+            <mat-icon>event_repeat</mat-icon>
+          </div>
+          <div class="selector-text">
+            <span class="selector-label">AUTOMATED PAY RUN ENGINE</span>
+            <span class="page-subtitle" style="margin: 0; font-size: 13px;">Attendance LOP deduction, statutory EPF/ESI/PT/TDS, maker-checker approval.</span>
+          </div>
+        </div>
+
+        <div class="selector-summary" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <select [(ngModel)]="selectedPayRunMonth" class="month-select" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff;">
+            <option [value]="1">January</option>
+            <option [value]="2">February</option>
+            <option [value]="3">March</option>
+            <option [value]="4">April</option>
+            <option [value]="5">May</option>
+            <option [value]="6">June</option>
+            <option [value]="7">July</option>
+            <option [value]="8">August</option>
+            <option [value]="9">September</option>
+            <option [value]="10">October</option>
+            <option [value]="11">November</option>
+            <option [value]="12">December</option>
+          </select>
+          <input type="number" [(ngModel)]="selectedPayRunYear" class="month-select" style="width: 85px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff;" />
+          
+          <button
+            type="button"
+            class="btn-add-account"
+            (click)="createPayRun()"
+            [disabled]="isCreatingPayRun || isFuturePayRunSelected() || !!getExistingPayRunForSelected()"
+            [title]="isFuturePayRunSelected() ? 'Cannot run payroll for future months' : (getExistingPayRunForSelected() ? 'A pay run for this month already exists' : 'Initiate monthly payroll batch')"
+          >
+            <mat-icon class="btn-icon">play_arrow</mat-icon>
+            <span>{{ isCreatingPayRun ? 'Processing...' : 'Run Monthly Payroll' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Warning if future month selected or duplicate exists -->
+      <div *ngIf="isFuturePayRunSelected()" style="margin-top: 10px; padding: 10px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; color: #92400e; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">warning</mat-icon>
+        <span>Cannot create pay run for future months (selected period {{ selectedPayRunMonth }}/{{ selectedPayRunYear }} has not occurred yet).</span>
+      </div>
+
+      <div *ngIf="getExistingPayRunForSelected() as existingRun" style="margin-top: 10px; padding: 10px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: #1e40af; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <mat-icon style="font-size: 18px; width: 18px; height: 18px;">info</mat-icon>
+          <span>A pay run for {{ selectedPayRunMonth }}/{{ selectedPayRunYear }} already exists: <strong>Batch #PR-{{ existingRun.id }}</strong> (Status: <strong>{{ existingRun.status }}</strong>).</span>
+        </div>
+        <button type="button" class="btn-add-account" style="height: 28px; padding: 0 10px; font-size: 12px;" (click)="openPayRunDetails(existingRun)">
+          <span>Open Batch #PR-{{ existingRun.id }}</span>
+        </button>
+      </div>
+
+      <div class="table-card" style="margin-top: 16px;">
+        <table class="payroll-table">
+          <thead>
+            <tr>
+              <th>Batch ID</th>
+              <th>Pay Period</th>
+              <th>Employees</th>
+              <th>Total Gross</th>
+              <th>Deductions</th>
+              <th>Net Payout</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let run of allPayRuns">
+              <td><strong>#PR-{{ run.id }}</strong></td>
+              <td>{{ run.month }}/{{ run.year }} ({{ run.payPeriodStart | date:'mediumDate' }} - {{ run.payPeriodEnd | date:'mediumDate' }})</td>
+              <td>{{ run.totalEmployees }} Employees</td>
+              <td>{{ formatCurrency(run.totalGrossPay) }}</td>
+              <td class="text-danger">{{ formatCurrency(run.totalDeductions) }}</td>
+              <td class="net-salary-cell">{{ formatCurrency(run.totalNetPay) }}</td>
+              <td>
+                <span class="status-pill status-{{ run.status.toLowerCase() }}">{{ run.status }}</span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 8px;">
+                  <button *ngIf="run.status !== 'Disbursed'" type="button" class="action-btn" style="color: #16a34a;" (click)="disbursePayRunDirect(run)" title="Disburse Batch & Publish Payslips">
+                    <mat-icon>paid</mat-icon>
+                  </button>
+                  <button type="button" class="action-btn" (click)="openPayRunDetails(run)" title="Review Line Items & Approvals">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                  <button type="button" class="action-btn" (click)="downloadBankPayoutCsv(run.id)" title="Export Bank Payout File">
+                    <mat-icon>download</mat-icon>
+                  </button>
+                  <button *ngIf="run.status === 'Draft'" type="button" class="action-btn btn-danger-icon" (click)="deleteDraftPayRun(run)" title="Discard Draft Pay Run">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="allPayRuns.length === 0">
+              <td colspan="8" style="text-align: center; padding: 30px; color: #64748b;">
+                No pay runs generated yet. Select an eligible completed month and click "Run Monthly Payroll" above.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <!-- ================= TAB 5: SALARY STRUCTURES & CTC DIRECTORY ================= -->
+    <ng-container *ngIf="activeTab === 'ctc-calculator'">
+      <div class="ctc-directory-container">
+        <!-- Left Panel: Employee CTC Directory & Search -->
+        <div class="table-card">
+          <div class="ctc-search-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="ctc-search-title">Personnel Compensation Directory</span>
+              <span class="status-pill status-approved" style="font-size: 10.5px;">{{ configuredCtcCount }}/{{ allPayrollEmployees.length }} Configured</span>
+            </div>
+            <p class="ctc-search-sub">Select an employee to inspect or customize their CTC structure.</p>
+            <div class="ctc-search-input-box">
+              <mat-icon>search</mat-icon>
+              <input
+                type="text"
+                [(ngModel)]="searchCtcQuery"
+                (input)="filterCtcEmployees()"
+                placeholder="Search by name, ID, or department..."
+              />
+            </div>
+          </div>
+
+          <div class="ctc-employee-list">
+            <div
+              *ngFor="let emp of filteredCtcEmployees"
+              class="ctc-emp-row"
+              [class.selected]="selectedEmpForCtc === emp.id"
+              (click)="selectEmployeeForCtc(emp)"
+            >
+              <div class="ctc-emp-left">
+                <div class="emp-avatar-circle">
+                  {{ emp.initials }}
+                </div>
+                <div class="emp-info-text">
+                  <div class="name">{{ emp.fullName }}</div>
+                  <div class="dept">EMP-{{ (emp.id + '').padStart(4, '0') }} &bull; {{ emp.department }}</div>
+                </div>
+              </div>
+
+              <div>
+                <span
+                  class="ctc-status-badge"
+                  [ngClass]="(emp.annualCtc || 0) > 0 ? 'configured' : 'unconfigured'"
+                >
+                  {{ (emp.annualCtc || 0) > 0 ? formatLpa(emp.annualCtc) : 'Not Configured' }}
+                </span>
+              </div>
+            </div>
+
+            <div *ngIf="filteredCtcEmployees.length === 0" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 13px;">
+              No employees match "{{ searchCtcQuery }}"
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: CTC Calculator & Structure Editor -->
+        <div class="table-card" style="padding: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <div>
+              <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">
+                {{ selectedCtcEmployee ? ('Structure: ' + selectedCtcEmployee.fullName) : 'Indian CTC Salary Structure Config' }}
+              </h3>
+              <p style="margin: 4px 0 0; font-size: 12.5px; color: #64748b;">
+                {{ selectedCtcEmployee ? ('EMP-' + selectedCtcEmployee.id + ' • ' + selectedCtcEmployee.department + ' • ' + (selectedCtcEmployee.annualCtc > 0 ? ('Currently saved at ' + formatLpa(selectedCtcEmployee.annualCtc)) : 'Unconfigured')) : 'Select an employee on the left to review their saved CTC.' }}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn-add-account"
+              (click)="assignCtcToEmployee()"
+              [disabled]="isSavingAssignment || !selectedEmpForCtc"
+            >
+              <mat-icon class="btn-icon">save</mat-icon>
+              <span>{{ isSavingAssignment ? 'Saving...' : 'Save Structure to DB' }}</span>
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+            <div class="form-group">
+              <label style="font-size: 13px; font-weight: 600; color: #334155;">Annual CTC (₹)</label>
+              <input
+                type="number"
+                [(ngModel)]="calcAnnualCtc"
+                (input)="calculateLiveCtc()"
+                class="month-select"
+                style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"
+                placeholder="e.g. 800000"
+              />
+            </div>
+
+            <div class="form-group">
+              <label style="font-size: 13px; font-weight: 600; color: #334155;">Tax Regime</label>
+              <select
+                [(ngModel)]="calcRegime"
+                (change)="calculateLiveCtc()"
+                class="month-select"
+                style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"
+              >
+                <option value="New">New Tax Regime (Section 115BAC)</option>
+                <option value="Old">Old Tax Regime (With standard deductions)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+            <div class="form-group">
+              <label style="font-size: 13px; font-weight: 600; color: #334155;">Basic Salary (% of CTC)</label>
+              <input
+                type="number"
+                [(ngModel)]="calcBasicPercent"
+                (input)="calculateLiveCtc()"
+                class="month-select"
+                style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"
+              />
+            </div>
+
+            <div class="form-group">
+              <label style="font-size: 13px; font-weight: 600; color: #334155;">HRA (% of Basic)</label>
+              <input
+                type="number"
+                [(ngModel)]="calcHraPercent"
+                (input)="calculateLiveCtc()"
+                class="month-select"
+                style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"
+              />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px; margin-bottom: 16px; padding: 10px 14px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: #334155;">
+              <input type="checkbox" [(ngModel)]="calcIncludePf" (change)="calculateLiveCtc()" /> Include EPF (12% of Basic)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: #334155;">
+              <input type="checkbox" [(ngModel)]="calcIncludeEsic" (change)="calculateLiveCtc()" /> Include ESIC (0.75% of Gross)
+            </label>
+          </div>
+
+          <!-- Computed Breakdown Display -->
+          <div *ngIf="calcResult">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 12px; color: #64748b;">Annual CTC</div>
+                <div style="font-size: 18px; font-weight: 700; color: #0f172a;">{{ formatCurrency(calcResult.annualCtc) }}</div>
+              </div>
+              <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 12px; color: #64748b;">Monthly CTC</div>
+                <div style="font-size: 18px; font-weight: 700; color: #0f172a;">{{ formatCurrency(calcResult.monthlyCtc) }}</div>
+              </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th style="padding: 8px 12px; text-align: left;">Earnings Component</th>
+                  <th style="padding: 8px 12px; text-align: right;">Monthly (₹)</th>
+                  <th style="padding: 8px 12px; text-align: left;">Deduction Component</th>
+                  <th style="padding: 8px 12px; text-align: right;">Monthly (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">Basic Salary</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ formatCurrency(calcResult.basicSalary) }}</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">EPF (Employee 12%)</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.epfEmployee) }}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">House Rent Allowance (HRA)</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ formatCurrency(calcResult.hra) }}</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">ESIC (Employee 0.75%)</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.esicEmployee) }}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">Special Allowance</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ formatCurrency(calcResult.specialAllowance) }}</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">Professional Tax (PT)</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.professionalTax) }}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;"></td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;"></td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">Estimated TDS</td>
+                  <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.monthlyTds) }}</td>
+                </tr>
+                <tr style="font-weight: 700; background: #f8fafc;">
+                  <td style="padding: 10px 12px;">Gross Salary</td>
+                  <td style="padding: 10px 12px; text-align: right;">{{ formatCurrency(calcResult.monthlyGross) }}</td>
+                  <td style="padding: 10px 12px;">Total Deductions</td>
+                  <td style="padding: 10px 12px; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.totalMonthlyDeductions) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style="margin-top: 16px; background: linear-gradient(135deg, #4f46e5, #6366f1); color: white; padding: 16px 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 11px; text-transform: uppercase; opacity: 0.9;">Estimated Net In-Hand Take Home</div>
+                <div style="font-size: 22px; font-weight: 800; margin-top: 2px;">{{ formatCurrency(calcResult.monthlyNetTakeHome) }} / month</div>
+              </div>
+              <div style="text-align: right; font-size: 12px; opacity: 0.9;">
+                <div>{{ calcResult.taxRegime }} Regime</div>
+                <div style="font-size: 11px; opacity: 0.8;">Standard ₹75,000 deduction included</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ================= TAB 6: REIMBURSEMENTS & FBP ================= -->
+    <ng-container *ngIf="activeTab === 'reimbursements'">
+      <div class="period-selector-banner">
+        <div class="selector-left">
+          <div class="period-icon-box">
+            <mat-icon>receipt</mat-icon>
+          </div>
+          <div class="selector-text">
+            <span class="selector-label">FLEXIBLE BENEFIT PLAN & REIMBURSEMENTS</span>
+            <span class="page-subtitle" style="margin: 0; font-size: 13px;">Manage proof submission, cafeteria claims, and payroll additions.</span>
+          </div>
+        </div>
+
+        <div class="selector-summary">
+          <button type="button" class="btn-add-account" (click)="openSubmitReimbursement()">
+            <mat-icon class="btn-icon">add</mat-icon>
+            <span>Submit New Claim</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-top: 20px;">
+        <table class="payroll-table">
+          <thead>
+            <tr>
+              <th>Claim ID</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Bill Date</th>
+              <th>Merchant / Bill No</th>
+              <th>Status</th>
+              <th>Approved Amount</th>
+              <th *ngIf="isAdminOrHr">Review Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of (isAdminOrHr ? allReimbursements : myReimbursements)">
+              <td><strong>#CLM-{{ c.id }}</strong></td>
+              <td>{{ c.category }}</td>
+              <td><strong>{{ formatCurrency(c.amount) }}</strong></td>
+              <td>{{ c.billDate | date:'mediumDate' }}</td>
+              <td>{{ c.merchantName || c.billNumber || '—' }}</td>
+              <td>
+                <span class="status-pill status-{{ c.status.toLowerCase() }}">{{ c.status }}</span>
+              </td>
+              <td class="text-success">{{ formatCurrency(c.approvedAmount) }}</td>
+              <td *ngIf="isAdminOrHr">
+                <div style="display: flex; gap: 8px;" *ngIf="c.status === 'Pending'">
+                  <button type="button" class="action-btn" (click)="reviewReimbursement(c.id, 'Approved')" title="Approve Claim" style="color: #16a34a;">
+                    <mat-icon>check_circle</mat-icon>
+                  </button>
+                  <button type="button" class="action-btn" (click)="reviewReimbursement(c.id, 'Rejected')" title="Reject Claim" style="color: #dc2626;">
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="(isAdminOrHr ? allReimbursements : myReimbursements).length === 0">
+              <td [attr.colspan]="isAdminOrHr ? 8 : 7" style="text-align: center; padding: 30px; color: #64748b;">
+                No reimbursement claims submitted. Click "Submit New Claim" to file an expense.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <!-- ================= TAB 7: FULL & FINAL (FNF) SETTLEMENT ================= -->
+    <ng-container *ngIf="activeTab === 'fnf'">
+      <div class="period-selector-banner">
+        <div class="selector-left">
+          <div class="period-icon-box">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <div class="selector-text">
+            <span class="selector-label">FULL & FINAL (FNF) SETTLEMENT ENGINE</span>
+            <span class="page-subtitle" style="margin: 0; font-size: 13px;">Automated Gratuity calculation, leave encashment, notice period recovery, and clearance.</span>
+          </div>
+        </div>
+
+        <div class="selector-summary" *ngIf="isAdminOrHr">
+          <button type="button" class="btn-add-account" (click)="openFnfModal()">
+            <mat-icon class="btn-icon">calculate</mat-icon>
+            <span>Compute FnF Settlement</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-top: 20px; padding: 30px; text-align: center;">
+        <mat-icon style="font-size: 48px; width: 48px; height: 48px; color: #6366f1; margin-bottom: 12px;">fact_check</mat-icon>
+        <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #0f172a;">Full & Final Settlement Clearance Workflow</h3>
+        <p style="margin: 0 auto 20px; max-width: 600px; color: #64748b; font-size: 14px;">
+          When an employee resigns, calculate their exact statutory gratuity (tenure >= 5 yrs: 15 &times; Basic &times; Tenure / 26), unutilized paid leave encashment, notice period shortfall recovery, and unpaid reimbursements.
+        </p>
+        <button type="button" class="btn-add-account" (click)="openFnfModal()" style="display: inline-flex;">
+          <mat-icon class="btn-icon">play_arrow</mat-icon>
+          <span>Open FnF Settlement Engine</span>
+        </button>
+      </div>
+    </ng-container>
   </ng-container>
 
   <!-- ========================================================================= -->
@@ -754,217 +1334,442 @@
       </div>
     </div>
 
-    <!-- Top 3 Personal Summary Cards -->
-    <div class="employee-metrics-grid">
-      <!-- Card 1: Annual CTC -->
-      <div class="metric-card card-blue">
-        <div class="card-header">
-          <span class="card-title">ANNUAL COST TO COMPANY (CTC)</span>
-          <div class="icon-box icon-blue">
-            <mat-icon>monetization_on</mat-icon>
-          </div>
-        </div>
-        <div class="card-value font-mono">{{ formatLpa(myEmployeeRecord?.annualCtc || 0) }}</div>
-        <div class="card-subtitle is-neutral">
-          <span class="dot-indicator dot-blue"></span>
-          <span>{{ formatCurrency(myEmployeeRecord?.annualCtc || 0) }} per annum</span>
-        </div>
-      </div>
+    <!-- Sub-navigation Tabs for Employee Self-Service -->
+    <div class="payroll-tabs-bar" style="margin-bottom: 20px;">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="empActiveTab === 'my-payslips'"
+        (click)="switchEmpTab('my-payslips')"
+      >
+        <mat-icon class="tab-icon">receipt_long</mat-icon>
+        <span class="tab-title">My Payslips</span>
+        <span class="tab-badge">{{ filteredEmployeePayslips.length }}</span>
+      </button>
 
-      <!-- Card 2: Net Monthly Take-Home -->
-      <div class="metric-card card-emerald">
-        <div class="card-header">
-          <span class="card-title">ESTIMATED MONTHLY TAKE-HOME</span>
-          <div class="icon-box icon-emerald">
-            <mat-icon>account_balance_wallet</mat-icon>
-          </div>
-        </div>
-        <div class="card-value font-mono text-emerald">{{ formatCurrency(myEmployeeRecord?.monthlyNet || 0) }}</div>
-        <div class="card-subtitle is-good">
-          <span class="dot-indicator dot-green"></span>
-          <span>Gross: {{ formatCurrency(myEmployeeRecord?.monthlyGross || 0) }} / month</span>
-        </div>
-      </div>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="empActiveTab === 'my-structure'"
+        (click)="switchEmpTab('my-structure')"
+      >
+        <mat-icon class="tab-icon">calculate</mat-icon>
+        <span class="tab-title">My Salary Structure</span>
+      </button>
 
-      <!-- Card 3: Active Direct Deposit Coordinates -->
-      <div class="metric-card card-purple bank-summary-card">
-        <div class="card-header">
-          <span class="card-title">ACTIVE DIRECT DEPOSIT ACCOUNT</span>
-          <div class="icon-box icon-purple">
-            <mat-icon>account_balance</mat-icon>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="empActiveTab === 'my-reimbursements'"
+        (click)="switchEmpTab('my-reimbursements')"
+      >
+        <mat-icon class="tab-icon">receipt</mat-icon>
+        <span class="tab-title">My Reimbursements</span>
+        <span class="tab-badge" *ngIf="myReimbursements.length > 0">{{ myReimbursements.length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="empActiveTab === 'bank-details'"
+        (click)="switchEmpTab('bank-details')"
+      >
+        <mat-icon class="tab-icon">account_balance</mat-icon>
+        <span class="tab-title">Bank Coordinates</span>
+      </button>
+    </div>
+
+    <!-- ================= SUB-TAB 1: MY PAYSLIPS ================= -->
+    <ng-container *ngIf="empActiveTab === 'my-payslips'">
+      <!-- Top 3 Personal Summary Cards -->
+      <div class="employee-metrics-grid">
+        <!-- Card 1: Annual CTC -->
+        <div class="metric-card card-blue">
+          <div class="card-header">
+            <span class="card-title">ANNUAL COST TO COMPANY (CTC)</span>
+            <div class="icon-box icon-blue">
+              <mat-icon>monetization_on</mat-icon>
+            </div>
+          </div>
+          <div class="card-value font-mono">{{ formatLpa(myEmployeeRecord?.annualCtc || 0) }}</div>
+          <div class="card-subtitle is-neutral">
+            <span class="dot-indicator dot-blue"></span>
+            <span>{{ formatCurrency(myEmployeeRecord?.annualCtc || 0) }} per annum</span>
           </div>
         </div>
-        
-        <div *ngIf="myEmployeeRecord?.hasBankConfigured" class="bank-card-content">
-          <div class="bank-primary-info">
-            <span class="bank-title-name">{{ myEmployeeRecord?.bankAccount?.bankName }}</span>
-            <div class="acc-num-row">
-              <span class="bank-acc-masked font-mono">
-                {{ myEmployeeRecord?.bankAccount?.showFullAccount ? myEmployeeRecord?.bankAccount?.accountNumber : myEmployeeRecord?.bankAccount?.maskedAccount }}
+
+        <!-- Card 2: Net Monthly Take-Home -->
+        <div class="metric-card card-emerald">
+          <div class="card-header">
+            <span class="card-title">ESTIMATED MONTHLY TAKE-HOME</span>
+            <div class="icon-box icon-emerald">
+              <mat-icon>account_balance_wallet</mat-icon>
+            </div>
+          </div>
+          <div class="card-value font-mono text-emerald">{{ formatCurrency(myEmployeeRecord?.monthlyNet || 0) }}</div>
+          <div class="card-subtitle is-good">
+            <span class="dot-indicator dot-green"></span>
+            <span>Gross: {{ formatCurrency(myEmployeeRecord?.monthlyGross || 0) }} / month</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Active Direct Deposit Coordinates -->
+        <div class="metric-card card-purple bank-summary-card">
+          <div class="card-header">
+            <span class="card-title">ACTIVE DIRECT DEPOSIT ACCOUNT</span>
+            <div class="icon-box icon-purple">
+              <mat-icon>account_balance</mat-icon>
+            </div>
+          </div>
+          
+          <div *ngIf="myEmployeeRecord?.hasBankConfigured" class="bank-card-content">
+            <div class="bank-primary-info">
+              <span class="bank-title-name">{{ myEmployeeRecord?.bankAccount?.bankName }}</span>
+              <div class="acc-num-row">
+                <span class="bank-acc-masked font-mono">
+                  {{ myEmployeeRecord?.bankAccount?.showFullAccount ? myEmployeeRecord?.bankAccount?.accountNumber : myEmployeeRecord?.bankAccount?.maskedAccount }}
+                </span>
+                <button
+                  type="button"
+                  class="btn-toggle-eye-mini"
+                  (click)="myEmployeeRecord && myEmployeeRecord.bankAccount && toggleAccountMask(myEmployeeRecord.bankAccount)"
+                  [title]="myEmployeeRecord?.bankAccount?.showFullAccount ? 'Hide Account Number' : 'Show Account Number'"
+                >
+                  <mat-icon>{{ myEmployeeRecord?.bankAccount?.showFullAccount ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+              </div>
+            </div>
+            <div class="bank-secondary-info">
+              <span>IFSC: <strong class="font-mono">{{ myEmployeeRecord?.bankAccount?.ifscCode }}</strong></span>
+              <span>A/C Holder: <strong>{{ myEmployeeRecord?.bankAccount?.nameOnAccount }}</strong></span>
+            </div>
+            <div class="bank-card-footer">
+              <span class="status-badge badge-active">
+                <span class="dot"></span>
+                <span>Active & Verified</span>
               </span>
-              <button
-                type="button"
-                class="btn-toggle-eye-mini"
-                (click)="myEmployeeRecord && myEmployeeRecord.bankAccount && toggleAccountMask(myEmployeeRecord.bankAccount)"
-                [title]="myEmployeeRecord?.bankAccount?.showFullAccount ? 'Hide Account Number' : 'Show Account Number'"
-              >
-                <mat-icon>{{ myEmployeeRecord?.bankAccount?.showFullAccount ? 'visibility_off' : 'visibility' }}</mat-icon>
+              <button type="button" class="btn-card-update" (click)="openRequestBankUpdate()" title="Submit change request to HR">
+                <mat-icon>edit</mat-icon>
+                <span>Request Update</span>
               </button>
             </div>
           </div>
-          <div class="bank-secondary-info">
-            <span>IFSC: <strong class="font-mono">{{ myEmployeeRecord?.bankAccount?.ifscCode }}</strong></span>
-            <span>A/C Holder: <strong>{{ myEmployeeRecord?.bankAccount?.nameOnAccount }}</strong></span>
-          </div>
-          <div class="bank-card-footer">
-            <span class="status-badge badge-active">
-              <span class="dot"></span>
-              <span>Active & Verified</span>
-            </span>
-            <button type="button" class="btn-card-update" (click)="openRequestBankUpdate()" title="Submit change request to HR">
-              <mat-icon>edit</mat-icon>
-              <span>Request Update</span>
+
+          <div *ngIf="!myEmployeeRecord?.hasBankConfigured" class="bank-card-empty">
+            <div class="empty-bank-text">
+              <mat-icon>warning_amber</mat-icon>
+              <span>No bank details registered yet</span>
+            </div>
+            <button type="button" class="btn-card-add" (click)="openRequestBankUpdate()">
+              <mat-icon>add</mat-icon>
+              <span>Add Bank Coordinates</span>
             </button>
           </div>
         </div>
+      </div>
 
-        <div *ngIf="!myEmployeeRecord?.hasBankConfigured" class="bank-card-empty">
-          <div class="empty-bank-text">
-            <mat-icon>warning_amber</mat-icon>
-            <span>No bank details registered yet</span>
+      <!-- All Payslips Register Table Card -->
+      <div class="table-card-container">
+        <div class="table-header-bar">
+          <div class="table-title">
+            <h2>Official Monthly Salary Slips ({{ filteredEmployeePayslips.length }})</h2>
+            <p class="table-subtitle-note">View and download official digital payslips across all credited disbursement periods.</p>
           </div>
-          <button type="button" class="btn-card-add" (click)="openRequestBankUpdate()">
-            <mat-icon>add</mat-icon>
-            <span>Add Bank Coordinates</span>
+
+          <div class="table-controls-right">
+            <!-- Search Input -->
+            <div class="search-box">
+              <mat-icon class="search-icon">search</mat-icon>
+              <input
+                type="text"
+                [(ngModel)]="employeePayslipSearch"
+                (input)="filterEmployeePayslips()"
+                placeholder="Search by month, UTR, amount..."
+                class="search-input"
+              />
+            </div>
+
+            <!-- Month Filter Dropdown -->
+            <div class="filter-dropdown">
+              <select [(ngModel)]="selectedPayslipMonth" (change)="filterEmployeePayslips()" class="custom-select">
+                <option value="All">All Months ({{ myDisbursements.length }})</option>
+                <option *ngFor="let m of employeePayslipMonths" [value]="m">{{ m }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Body -->
+        <div class="table-responsive">
+          <table class="payment-table">
+            <thead>
+              <tr>
+                <th>SALARY PERIOD / MONTH</th>
+                <th>CREDITED DATE</th>
+                <th>GROSS SALARY</th>
+                <th>DEDUCTIONS</th>
+                <th>NET TAKE-HOME</th>
+                <th>TRANSACTION REF (UTR)</th>
+                <th>STATUS</th>
+                <th class="text-right">OFFICIAL PAYSLIP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let disb of filteredEmployeePayslips">
+                <!-- Period -->
+                <td>
+                  <div class="period-badge-cell">
+                    <mat-icon class="period-icon">event_available</mat-icon>
+                    <span class="period-name font-semibold">{{ disb.monthYear || disb.month }}</span>
+                  </div>
+                </td>
+
+                <!-- Date -->
+                <td class="font-mono">
+                  {{ disb.paymentDate || (disb.creditDate | date:'mediumDate') }}
+                </td>
+
+                <!-- Gross -->
+                <td class="font-mono">
+                  {{ formatCurrency(disb.grossSalary || myEmployeeRecord?.monthlyGross || 0) }}
+                </td>
+
+                <!-- Deductions -->
+                <td class="font-mono text-muted">
+                  {{ formatCurrency((disb.pfDeduction || 0) + (disb.additionalDeductions || 0)) }}
+                </td>
+
+                <!-- Net Take-Home -->
+                <td class="font-mono font-bold text-emerald">
+                  {{ formatCurrency(disb.netSalaryCredited || disb.netSalary || myEmployeeRecord?.monthlyNet || 0) }}
+                </td>
+
+                <!-- UTR -->
+                <td>
+                  <span class="utr-pill font-mono" [title]="disb.transactionRef">
+                    {{ disb.transactionRef || '—' }}
+                  </span>
+                </td>
+
+                <!-- Status -->
+                <td>
+                  <span class="status-badge badge-active">
+                    <span class="dot"></span>
+                    <span>Credited</span>
+                  </span>
+                </td>
+
+                <!-- Action: View Payslip -->
+                <td class="col-actions text-right">
+                  <div class="action-btn-group">
+                    <button
+                      type="button"
+                      class="btn-payslip-action"
+                      (click)="openEmployeePayslip(disb)"
+                      title="View & Download Official Payslip"
+                    >
+                      <mat-icon>receipt_long</mat-icon>
+                      <span>View / Download Slip</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Empty State -->
+              <tr *ngIf="filteredEmployeePayslips.length === 0">
+                <td colspan="8" class="empty-state">
+                  <div class="empty-box">
+                    <mat-icon class="empty-icon">receipt_long</mat-icon>
+                    <p *ngIf="myDisbursements.length === 0">
+                      No salary disbursements recorded yet. When monthly salary credits are processed, official payslips will appear here for viewing and download.
+                    </p>
+                    <p *ngIf="myDisbursements.length > 0">
+                      No salary slips match your filter or search query.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ================= SUB-TAB 2: MY SALARY STRUCTURE ================= -->
+    <ng-container *ngIf="empActiveTab === 'my-structure'">
+      <div class="table-card" style="padding: 24px; max-width: 900px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">Personal Salary Structure Breakdown</h3>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Annual Cost to Company (CTC) and monthly take-home computation.</p>
+          </div>
+          <span class="status-pill status-approved">{{ formatLpa(myEmployeeRecord?.annualCtc || 0) }} CTC</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px;">
+          <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b;">Annual CTC</div>
+            <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ formatCurrency(myEmployeeRecord?.annualCtc || 0) }}</div>
+          </div>
+          <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b;">Monthly Gross Salary</div>
+            <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ formatCurrency(myEmployeeRecord?.monthlyGross || 0) }}</div>
+          </div>
+          <div style="background: #ecfdf5; padding: 14px; border-radius: 8px; border: 1px solid #a7f3d0;">
+            <div style="font-size: 12px; color: #065f46;">Estimated Take-Home</div>
+            <div style="font-size: 20px; font-weight: 700; color: #059669; margin-top: 2px;">{{ formatCurrency(myEmployeeRecord?.monthlyNet || 0) }}</div>
+          </div>
+        </div>
+
+        <div *ngIf="calcResult">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13.5px;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th style="padding: 10px 14px; text-align: left;">Earnings Components</th>
+                <th style="padding: 10px 14px; text-align: right;">Monthly (₹)</th>
+                <th style="padding: 10px 14px; text-align: left;">Statutory Deductions</th>
+                <th style="padding: 10px 14px; text-align: right;">Monthly (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">Basic Salary (40%)</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ formatCurrency(calcResult.basicSalary) }}</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">EPF (12% of Basic)</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.epfEmployee) }}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">House Rent Allowance (HRA 50%)</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ formatCurrency(calcResult.hra) }}</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">ESIC (0.75%)</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.esicEmployee) }}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">Special Allowance (Balancing)</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; text-align: right;">{{ formatCurrency(calcResult.specialAllowance) }}</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">Professional Tax (PT)</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.professionalTax) }}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;"></td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;"></td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">Estimated Monthly TDS</td>
+                <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.monthlyTds) }}</td>
+              </tr>
+              <tr style="font-weight: 700; background: #f8fafc;">
+                <td style="padding: 12px 14px;">Gross Total Earnings</td>
+                <td style="padding: 12px 14px; text-align: right;">{{ formatCurrency(calcResult.monthlyGross) }}</td>
+                <td style="padding: 12px 14px;">Total Deductions</td>
+                <td style="padding: 12px 14px; text-align: right; color: #dc2626;">{{ formatCurrency(calcResult.totalMonthlyDeductions) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ================= SUB-TAB 3: MY REIMBURSEMENTS ================= -->
+    <ng-container *ngIf="empActiveTab === 'my-reimbursements'">
+      <div class="period-selector-banner">
+        <div class="selector-left">
+          <div class="period-icon-box">
+            <mat-icon>receipt</mat-icon>
+          </div>
+          <div class="selector-text">
+            <span class="selector-label">MY EXPENSE REIMBURSEMENTS & FBP</span>
+            <span class="page-subtitle" style="margin: 0; font-size: 13px;">File claims with receipt proof and monitor approval status.</span>
+          </div>
+        </div>
+
+        <div class="selector-summary">
+          <button type="button" class="btn-add-account" (click)="openSubmitReimbursement()">
+            <mat-icon class="btn-icon">add</mat-icon>
+            <span>Submit New Claim</span>
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- All Payslips Register Table Card -->
-    <div class="table-card-container">
-      <div class="table-header-bar">
-        <div class="table-title">
-          <h2>Official Monthly Salary Slips ({{ filteredEmployeePayslips.length }})</h2>
-          <p class="table-subtitle-note">View and download official digital payslips across all credited disbursement periods.</p>
-        </div>
-
-        <div class="table-controls-right">
-          <!-- Search Input -->
-          <div class="search-box">
-            <mat-icon class="search-icon">search</mat-icon>
-            <input
-              type="text"
-              [(ngModel)]="employeePayslipSearch"
-              (input)="filterEmployeePayslips()"
-              placeholder="Search by month, UTR, amount..."
-              class="search-input"
-            />
-          </div>
-
-          <!-- Month Filter Dropdown -->
-          <div class="filter-dropdown">
-            <select [(ngModel)]="selectedPayslipMonth" (change)="filterEmployeePayslips()" class="custom-select">
-              <option value="All">All Months ({{ myDisbursements.length }})</option>
-              <option *ngFor="let m of employeePayslipMonths" [value]="m">{{ m }}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Table Body -->
-      <div class="table-responsive">
-        <table class="payment-table">
+      <div class="table-card" style="margin-top: 16px;">
+        <table class="payroll-table">
           <thead>
             <tr>
-              <th>SALARY PERIOD / MONTH</th>
-              <th>CREDITED DATE</th>
-              <th>GROSS SALARY</th>
-              <th>DEDUCTIONS</th>
-              <th>NET TAKE-HOME</th>
-              <th>TRANSACTION REF (UTR)</th>
-              <th>STATUS</th>
-              <th class="text-right">OFFICIAL PAYSLIP</th>
+              <th>Claim ID</th>
+              <th>Category</th>
+              <th>Claim Amount</th>
+              <th>Bill Date</th>
+              <th>Merchant / Bill No</th>
+              <th>Status</th>
+              <th>Approved Amount</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let disb of filteredEmployeePayslips">
-              <!-- Period -->
+            <tr *ngFor="let c of myReimbursements">
+              <td><strong>#CLM-{{ c.id }}</strong></td>
+              <td>{{ c.category }}</td>
+              <td><strong>{{ formatCurrency(c.amount) }}</strong></td>
+              <td>{{ c.billDate | date:'mediumDate' }}</td>
+              <td>{{ c.merchantName || c.billNumber || '—' }}</td>
               <td>
-                <div class="period-badge-cell">
-                  <mat-icon class="period-icon">event_available</mat-icon>
-                  <span class="period-name font-semibold">{{ disb.monthYear || disb.month }}</span>
-                </div>
+                <span class="status-pill status-{{ c.status.toLowerCase() }}">{{ c.status }}</span>
               </td>
-
-              <!-- Date -->
-              <td class="font-mono">
-                {{ disb.paymentDate || (disb.creditDate | date:'mediumDate') }}
-              </td>
-
-              <!-- Gross -->
-              <td class="font-mono">
-                {{ formatCurrency(disb.grossSalary || myEmployeeRecord?.monthlyGross || 0) }}
-              </td>
-
-              <!-- Deductions -->
-              <td class="font-mono text-muted">
-                {{ formatCurrency((disb.pfDeduction || 0) + (disb.additionalDeductions || 0)) }}
-              </td>
-
-              <!-- Net Take-Home -->
-              <td class="font-mono font-bold text-emerald">
-                {{ formatCurrency(disb.netSalaryCredited || disb.netSalary || myEmployeeRecord?.monthlyNet || 0) }}
-              </td>
-
-              <!-- UTR -->
-              <td>
-                <span class="utr-pill font-mono" [title]="disb.transactionRef">
-                  {{ disb.transactionRef || '—' }}
-                </span>
-              </td>
-
-              <!-- Status -->
-              <td>
-                <span class="status-badge badge-active">
-                  <span class="dot"></span>
-                  <span>Credited</span>
-                </span>
-              </td>
-
-              <!-- Action: View Payslip -->
-              <td class="col-actions text-right">
-                <div class="action-btn-group">
-                  <button
-                    type="button"
-                    class="btn-payslip-action"
-                    (click)="openEmployeePayslip(disb)"
-                    title="View & Download Official Payslip"
-                  >
-                    <mat-icon>receipt_long</mat-icon>
-                    <span>View / Download Slip</span>
-                  </button>
-                </div>
-              </td>
+              <td class="text-success">{{ formatCurrency(c.approvedAmount) }}</td>
             </tr>
-
-            <!-- Empty State -->
-            <tr *ngIf="filteredEmployeePayslips.length === 0">
-              <td colspan="8" class="empty-state">
-                <div class="empty-box">
-                  <mat-icon class="empty-icon">receipt_long</mat-icon>
-                  <p *ngIf="myDisbursements.length === 0">
-                    No salary disbursements recorded yet. When monthly salary credits are processed, official payslips will appear here for viewing and download.
-                  </p>
-                  <p *ngIf="myDisbursements.length > 0">
-                    No salary slips match your filter or search query.
-                  </p>
-                </div>
+            <tr *ngIf="myReimbursements.length === 0">
+              <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
+                You have not submitted any reimbursement claims yet. Click <strong>"Submit New Claim"</strong> above to file an expense.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </ng-container>
+
+    <!-- ================= SUB-TAB 4: BANK DETAILS ================= -->
+    <ng-container *ngIf="empActiveTab === 'bank-details'">
+      <div class="table-card" style="padding: 24px; max-width: 650px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">Direct Deposit Coordinates</h3>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Active banking coordinates on file for monthly salary disbursement.</p>
+          </div>
+          <button type="button" class="btn-add-account" (click)="openRequestBankUpdate()">
+            <mat-icon class="btn-icon">edit</mat-icon>
+            <span>{{ myEmployeeRecord?.hasBankConfigured ? 'Request Bank Update' : 'Add Bank Coordinates' }}</span>
+          </button>
+        </div>
+
+        <div *ngIf="myEmployeeRecord?.hasBankConfigured" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <div style="font-size: 12px; color: #64748b;">Bank Name</div>
+              <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ myEmployeeRecord?.bankAccount?.bankName }}</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #64748b;">Account Number</div>
+              <div style="font-size: 15px; font-family: ui-monospace, monospace; font-weight: 700; color: #0f172a; margin-top: 2px;">
+                {{ myEmployeeRecord?.bankAccount?.showFullAccount ? myEmployeeRecord?.bankAccount?.accountNumber : myEmployeeRecord?.bankAccount?.maskedAccount }}
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #64748b;">IFSC Code</div>
+              <div style="font-size: 15px; font-family: ui-monospace, monospace; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ myEmployeeRecord?.bankAccount?.ifscCode }}</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #64748b;">Account Holder Name</div>
+              <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ myEmployeeRecord?.bankAccount?.nameOnAccount }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!myEmployeeRecord?.hasBankConfigured" style="padding: 30px; text-align: center; color: #64748b;">
+          <mat-icon style="font-size: 40px; width: 40px; height: 40px; color: #d97706; margin-bottom: 10px;">warning_amber</mat-icon>
+          <p style="margin: 0 0 16px; font-size: 14px;">No direct deposit coordinates configured on file yet.</p>
+          <button type="button" class="btn-add-account" (click)="openRequestBankUpdate()">
+            <mat-icon class="btn-icon">add</mat-icon>
+            <span>Register Bank Account</span>
+          </button>
+        </div>
+      </div>
+    </ng-container>
   </ng-template>
 </div>

@@ -13,10 +13,13 @@ import { EmailService } from '../../services/leaveRequest/email.service';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { EmployeeAttendComponent } from '../../modal/employee-attend/employee-attend.component';
 import { AttendaseditComponent } from '../../modal/attendasedit/attendasedit.component';
+import { ShiftSwapModalComponent } from '../../modal/shift-swap-modal/shift-swap-modal.component';
+import { WorkModelPolicyService, WorkModelType } from '../../services/work-model/work-model-policy.service';
 import { CancelLeaveModalComponent } from '../../modal/cancel-leave-modal/cancel-leave-modal.component';
 import { EmployeeService } from '../../services/employee/employee.service';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
 import { AttendanceStateService } from '../../services/attendance/attendance-state.service';
+import { RbacService } from '../../core/rbac.service';
 import { Subscription } from 'rxjs';
 
 export interface BreakInterval {
@@ -79,6 +82,34 @@ export interface CalendarDay extends AttendanceRow {
   leaveType?: string;
 }
 
+export interface RegisterDayCell {
+  dayNumber: number;
+  dateStr: string;
+  dayName: string;
+  code: 'P' | 'A' | 'HD' | 'WFH' | 'OD' | 'WO' | 'H' | 'L' | 'LOP' | '-';
+  label: string;
+  badgeClass: string;
+  details?: string;
+}
+
+export interface RegisterEmployeeRow {
+  employeeId: number;
+  employeeName: string;
+  employeeCode: string;
+  department: string;
+  designation: string;
+  days: RegisterDayCell[];
+  presentCount: number;
+  wfhCount: number;
+  onDutyCount: number;
+  halfDayCount: number;
+  leaveCount: number;
+  holidayCount: number;
+  weeklyOffCount: number;
+  absentCount: number;
+  payableDays: number;
+}
+
 @Component({
   selector: 'app-employee-attendance',
   standalone: true,
@@ -102,6 +133,11 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   private toaster = inject(ToastrService);
   private globalFilterService = inject(GlobalFilterService);
   private attendanceStateService = inject(AttendanceStateService);
+  public workModelService = inject(WorkModelPolicyService);
+  private rbacService = inject(RbacService);
+  public isHrOrAdmin: boolean = false;
+  todayWorkMode: WorkModelType = 'WFO';
+  weeklyHybridProgress: any = null;
   private route = inject(ActivatedRoute);
   private filterSub?: Subscription;
   private routeSub?: Subscription;
@@ -116,8 +152,18 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   joiningDate: Date | null = null;
   joiningDateStr: string = '';
 
-  // View state: 'calendar' or 'table'
-  viewMode: 'calendar' | 'table' = 'calendar';
+  // View state: 'calendar', 'table', or 'register'
+  viewMode: 'calendar' | 'table' | 'register' = 'calendar';
+
+  // Register Matrix State
+  registerDate: Date = new Date();
+  registerDaysHeaders: { dayNumber: number; dayName: string; isWeekend: boolean }[] = [];
+  registerRows: RegisterEmployeeRow[] = [];
+  filteredRegisterRows: RegisterEmployeeRow[] = [];
+  registerDepartment: string = 'All';
+  registerSearch: string = '';
+  allWorkforceEmployees: any[] = [];
+  registerDepartmentsList: string[] = [];
 
   // Calendar State
   calendarDate: Date = new Date();
@@ -218,6 +264,16 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    const roles = this.rbacService.getUserRoles();
+    const isStrictEmployee = roles.length === 1 && roles[0].toLowerCase() === 'employee';
+    if (isStrictEmployee) {
+      this.isHrOrAdmin = false;
+      if (this.viewMode === 'register') {
+        this.viewMode = 'calendar';
+      }
+    } else {
+      this.isHrOrAdmin = this.rbacService.hasAnyRole(['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management']);
+    }
     if (typeof window !== 'undefined') {
       this.initClock();
       if (typeof localStorage !== 'undefined') {
@@ -1445,7 +1501,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     return '09:30';
   }
 
-  openRegularizationModal(row?: AttendanceRow) {
+  openRegularizationModal(row?: AttendanceRow | any, initialType: string = 'Regularization') {
     if (this.isViewingOtherEmployee) {
       this.toaster.info('Regularization requests can only be submitted by the employee directly. As a supervisor, review pending requests under Requests & Approvals.', 'Supervisor View');
       return;
@@ -1489,6 +1545,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
         canRegularize: row ? row.canRegularize : true,
         regularizationStatus: row ? row.regularizationStatus : null,
         rejectionReason: row ? row.rejectionReason : '',
+        requestType: initialType,
         existingRequests: this.allRequests,
         attendanceRecords: this.cachedRecords,
         leaves: this.cachedLeaves,
@@ -1571,6 +1628,386 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
             this.toaster.error(err?.error?.message || 'Failed to cancel leave request.', 'Error');
           }
         });
+      }
+    });
+  }
+
+  // =========================================================================
+  // ATTENDANCE REGISTER MATRIX IMPLEMENTATION
+  // =========================================================================
+
+  switchToRegisterView(): void {
+    if (!this.isHrOrAdmin) {
+      this.toaster.warning('The Monthly Attendance Register is restricted to HR and Managers.', 'Access Denied');
+      this.viewMode = 'calendar';
+      return;
+    }
+    this.viewMode = 'register';
+    if (this.allWorkforceEmployees.length === 0) {
+      this.loadWorkforceForRegister();
+    } else {
+      this.buildAttendanceRegister();
+    }
+  }
+
+  loadWorkforceForRegister(): void {
+    this.employeeService.getData().subscribe({
+      next: (res: any) => {
+        let list: any[] = [];
+        if (Array.isArray(res)) list = res;
+        else if (res?.data && Array.isArray(res.data)) list = res.data;
+        else if (res?.employeedata?.data && Array.isArray(res.employeedata.data)) list = res.employeedata.data;
+        else if (res?.result && Array.isArray(res.result)) list = res.result;
+
+        this.allWorkforceEmployees = list.filter((e: any) => !e.isDeleted);
+        const depts = new Set<string>();
+        this.allWorkforceEmployees.forEach((e: any) => {
+          if (e.department) depts.add(e.department.trim());
+          if (e.branch) depts.add(e.branch.trim());
+        });
+        this.registerDepartmentsList = Array.from(depts);
+        this.buildAttendanceRegister();
+      },
+      error: () => {
+        this.allWorkforceEmployees = [];
+        this.buildAttendanceRegister();
+      }
+    });
+  }
+
+  prevRegisterMonth(): void {
+    this.registerDate = new Date(this.registerDate.getFullYear(), this.registerDate.getMonth() - 1, 1);
+    this.buildAttendanceRegister();
+  }
+
+  nextRegisterMonth(): void {
+    this.registerDate = new Date(this.registerDate.getFullYear(), this.registerDate.getMonth() + 1, 1);
+    this.buildAttendanceRegister();
+  }
+
+  todayRegisterMonth(): void {
+    this.registerDate = new Date();
+    this.buildAttendanceRegister();
+  }
+
+  getRegisterMonthLabel(): string {
+    return this.registerDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  buildAttendanceRegister(): void {
+    const y = this.registerDate.getFullYear();
+    const m = this.registerDate.getMonth();
+    const totalDaysInMonth = new Date(y, m + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const headers: { dayNumber: number; dayName: string; isWeekend: boolean }[] = [];
+    for (let day = 1; day <= totalDaysInMonth; day++) {
+      const d = new Date(y, m, day);
+      const dOfWeek = d.getDay();
+      headers.push({
+        dayNumber: day,
+        dayName: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
+        isWeekend: dOfWeek === 0 || dOfWeek === 6
+      });
+    }
+    this.registerDaysHeaders = headers;
+
+    const rows: RegisterEmployeeRow[] = [];
+    const getEmpId = (item: any) => String(item.employeeId ?? item.EmployeeId ?? item.requestedBy ?? item.RequestedBy ?? item.employee?.id ?? item.Employee?.Id ?? '').trim();
+
+    for (const emp of this.allWorkforceEmployees) {
+      const empIdStr = String(emp.id || emp.employeeId).trim();
+      const empRecords = this.cachedRecords.filter(r => getEmpId(r) === empIdStr);
+      const empLogs = this.cachedLogs.filter(l => getEmpId(l) === empIdStr);
+      const empRequests = this.cachedRequests.filter(r => getEmpId(r) === empIdStr);
+      const empLeaves = this.cachedLeaves.filter(l => getEmpId(l) === empIdStr && (l.status === 'Approved' || l.status === 'approved'));
+
+      let pCount = 0;
+      let wfhCount = 0;
+      let odCount = 0;
+      let hdCount = 0;
+      let leaveCount = 0;
+      let holidayCount = 0;
+      let woCount = 0;
+      let absentCount = 0;
+
+      const dayCells: RegisterDayCell[] = [];
+
+      for (let day = 1; day <= totalDaysInMonth; day++) {
+        const d = new Date(y, m, day);
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayOfWeek = d.getDay();
+        const isFuture = d > today;
+
+        // 1. Holiday Check
+        const isHoliday = this.cachedHolidays.some(h => {
+          const hd = h.holidayDate || h.HolidayDate || h.date;
+          return hd && this.toYMD(hd) === dateStr;
+        });
+
+        if (isHoliday) {
+          holidayCount++;
+          dayCells.push({
+            dayNumber: day,
+            dateStr,
+            dayName: headers[day - 1].dayName,
+            code: 'H',
+            label: 'Holiday',
+            badgeClass: 'cell-badge-holiday'
+          });
+          continue;
+        }
+
+        // 2. Sunday or Weekly Off
+        if (dayOfWeek === 0) {
+          woCount++;
+          dayCells.push({
+            dayNumber: day,
+            dateStr,
+            dayName: headers[day - 1].dayName,
+            code: 'WO',
+            label: 'Weekly Off',
+            badgeClass: 'cell-badge-wo'
+          });
+          continue;
+        }
+
+        // 3. Approved Leave
+        const matchedLeave = empLeaves.find(l => {
+          const start = this.toYMD(l.startDate || l.StartDate);
+          const end = this.toYMD(l.endDate || l.EndDate) || start;
+          return dateStr >= start && dateStr <= end;
+        });
+
+        if (matchedLeave) {
+          const lTypeName = String(matchedLeave.leaveTypeName || matchedLeave.type || '').toLowerCase();
+          const isLop = lTypeName.includes('lop') || lTypeName.includes('unpaid') || lTypeName.includes('loss of pay');
+          if (isLop) {
+            dayCells.push({
+              dayNumber: day,
+              dateStr,
+              dayName: headers[day - 1].dayName,
+              code: 'LOP',
+              label: 'Loss of Pay',
+              badgeClass: 'cell-badge-lop'
+            });
+          } else {
+            leaveCount++;
+            dayCells.push({
+              dayNumber: day,
+              dateStr,
+              dayName: headers[day - 1].dayName,
+              code: 'L',
+              label: 'Approved Leave',
+              badgeClass: 'cell-badge-leave'
+            });
+          }
+          continue;
+        }
+
+        // 4. Approved Attendance Request (WFH / OD / Regularized)
+        const matchedReq = empRequests.find(r => {
+          const reqD = this.toYMD(r.requestedDate || r.RequestedDate || r.attendanceDate);
+          return reqD === dateStr && String(r.status || '').toLowerCase() === 'approved';
+        });
+
+        if (matchedReq) {
+          const rType = String(matchedReq.requestType || '').toLowerCase();
+          if (rType.includes('home') || rType.includes('wfh')) {
+            wfhCount++;
+            dayCells.push({
+              dayNumber: day,
+              dateStr,
+              dayName: headers[day - 1].dayName,
+              code: 'WFH',
+              label: 'Work From Home',
+              badgeClass: 'cell-badge-wfh'
+            });
+            continue;
+          } else if (rType.includes('duty') || rType.includes('od')) {
+            odCount++;
+            dayCells.push({
+              dayNumber: day,
+              dateStr,
+              dayName: headers[day - 1].dayName,
+              code: 'OD',
+              label: 'On-Duty',
+              badgeClass: 'cell-badge-od'
+            });
+            continue;
+          }
+        }
+
+        // 5. Punch Checks
+        const matchedAtt = empRecords.find(r => {
+          const ad = this.toYMD(r.attendanceDate || r.AttendanceDate || r.clockIn);
+          return ad === dateStr;
+        });
+
+        const matchedLog = empLogs.find(l => {
+          const ld = this.toYMD(l.attendanceDate || l.AttendanceDate || l.inTime);
+          return ld === dateStr;
+        });
+
+        if (matchedAtt || matchedLog) {
+          const effHours = Number(matchedAtt?.effectiveHours || matchedAtt?.totalHours || matchedLog?.duration || 8.5);
+          if (effHours >= 4.5) {
+            pCount++;
+            dayCells.push({
+              dayNumber: day,
+              dateStr,
+              dayName: headers[day - 1].dayName,
+              code: 'P',
+              label: 'Present',
+              badgeClass: 'cell-badge-present'
+            });
+          } else {
+            hdCount++;
+            dayCells.push({
+              dayNumber: day,
+              dateStr,
+              dayName: headers[day - 1].dayName,
+              code: 'HD',
+              label: 'Half Day',
+              badgeClass: 'cell-badge-halfday'
+            });
+          }
+          continue;
+        }
+
+        // 6. Future or Absent
+        if (isFuture) {
+          dayCells.push({
+            dayNumber: day,
+            dateStr,
+            dayName: headers[day - 1].dayName,
+            code: '-',
+            label: 'Upcoming',
+            badgeClass: 'cell-badge-future'
+          });
+        } else {
+          absentCount++;
+          dayCells.push({
+            dayNumber: day,
+            dateStr,
+            dayName: headers[day - 1].dayName,
+            code: 'A',
+            label: 'Absent',
+            badgeClass: 'cell-badge-absent'
+          });
+        }
+      }
+
+      const payableDays = pCount + wfhCount + odCount + (hdCount * 0.5) + leaveCount + holidayCount + woCount;
+
+      rows.push({
+        employeeId: Number(emp.id),
+        employeeName: `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || `Employee #${emp.id}`,
+        employeeCode: `EMP-${emp.id}`,
+        department: emp.department || emp.branch || 'General',
+        designation: emp.designation || 'Team Member',
+        days: dayCells,
+        presentCount: pCount,
+        wfhCount: wfhCount,
+        onDutyCount: odCount,
+        halfDayCount: hdCount,
+        leaveCount: leaveCount,
+        holidayCount: holidayCount,
+        weeklyOffCount: woCount,
+        absentCount: absentCount,
+        payableDays: Number(payableDays.toFixed(1))
+      });
+    }
+
+    this.registerRows = rows;
+    this.filterRegister();
+  }
+
+  filterRegister(): void {
+    let list = [...this.registerRows];
+    if (this.registerDepartment !== 'All') {
+      list = list.filter(r => r.department.toLowerCase() === this.registerDepartment.toLowerCase());
+    }
+    if (this.registerSearch && this.registerSearch.trim()) {
+      const q = this.registerSearch.toLowerCase().trim();
+      list = list.filter(r =>
+        r.employeeName.toLowerCase().includes(q) ||
+        r.employeeCode.toLowerCase().includes(q) ||
+        r.designation.toLowerCase().includes(q)
+      );
+    }
+    this.filteredRegisterRows = list;
+  }
+
+  exportRegisterCSV(): void {
+    if (typeof window === 'undefined') return;
+    const y = this.registerDate.getFullYear();
+    const m = this.registerDate.toLocaleString('en-US', { month: 'short' });
+
+    const dayHeaders = this.registerDaysHeaders.map(h => `"D${h.dayNumber}"`).join(',');
+    const headers = `"Employee Code","Employee Name","Department","Designation",${dayHeaders},"Present","WFH","On-Duty","Half-Day","Leaves","Holidays","Weekly Offs","Absent","Payable Days"`;
+
+    const rows = this.filteredRegisterRows.map(r => {
+      const dayValues = r.days.map(d => `"${d.code}"`).join(',');
+      return `"${r.employeeCode}","${r.employeeName}","${r.department}","${r.designation}",${dayValues},${r.presentCount},${r.wfhCount},${r.onDutyCount},${r.halfDayCount},${r.leaveCount},${r.holidayCount},${r.weeklyOffCount},${r.absentCount},${r.payableDays}`;
+    });
+
+    const csv = [headers, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Attendance_Register_Matrix_${m}_${y}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    this.toaster.success('Monthly attendance register exported successfully!', 'Export Complete');
+  }
+
+  // --- Work Model & Shift Swap Integration ---
+  loadWorkModelState(): void {
+    const empId = Number(this.loggedInEmployeeId || this.employeeId || 1);
+    this.todayWorkMode = this.workModelService.getTodayWorkModel(empId);
+    this.weeklyHybridProgress = this.workModelService.getWeeklyHybridProgress(empId, this.calendarDate);
+  }
+
+  selectWorkMode(mode: WorkModelType): void {
+    const empId = Number(this.loggedInEmployeeId || this.employeeId || 1);
+    const canDirect = this.workModelService.canEmployeeDirectSelect();
+
+    if (canDirect) {
+      this.workModelService.setTodayWorkModel(empId, mode);
+      this.todayWorkMode = mode;
+      this.loadWorkModelState();
+      const label = mode === 'WFO' ? 'Office' : mode === 'WFH' ? 'Work From Home' : 'On-Duty';
+      this.toaster.success(`Your work mode for today is recorded as ${label}.`, 'Work Mode Updated');
+    } else {
+      if (mode === 'WFO') {
+        this.workModelService.setTodayWorkModel(empId, mode);
+        this.todayWorkMode = mode;
+        this.loadWorkModelState();
+        this.toaster.success('Work mode set to Office.', 'Work Mode');
+      } else {
+        const typeStr = mode === 'WFH' ? 'Work From Home' : 'On-Duty';
+        this.toaster.info(`Your project requires approval for ${typeStr}. Opening request form.`, 'Approval Policy');
+        this.openRegularizationModal(null, typeStr);
+      }
+    }
+  }
+
+  openShiftSwapModal(): void {
+    const empId = Number(this.loggedInEmployeeId || this.employeeId || 1);
+    const dialogRef = this.dialog.open(ShiftSwapModalComponent, {
+      width: '620px',
+      data: {
+        currentEmployeeId: empId,
+        isSelfService: true
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res) {
+        this.toaster.info('Shift swap request submitted. You will be notified upon manager review.', 'Swap Proposed');
       }
     });
   }

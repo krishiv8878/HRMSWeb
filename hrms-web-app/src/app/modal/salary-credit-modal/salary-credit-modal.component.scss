@@ -4,9 +4,9 @@
   background: #ffffff;
   border-radius: 16px;
   overflow: hidden;
-  max-width: 680px;
+  max-width: 740px;
   width: 100%;
-  max-height: 88vh;
+  max-height: 90vh;
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
   font-family: inherit;
 }
@@ -171,12 +171,21 @@
   }
 }
 
+.salary-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .salary-form-body {
   padding: 1.25rem 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   min-height: 0;
 }
@@ -370,15 +379,14 @@
 }
 
 .modal-footer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid #f1f5f9;
-  position: sticky;
-  bottom: 0;
-  background: #ffffff;
+  padding: 1rem 1.75rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
   z-index: 10;
 
   .btn-cancel {
@@ -563,9 +571,9 @@
 
   .lop-calc-body {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 1.2fr auto;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    align-items: center;
+    align-items: stretch;
   }
 
   .calc-metric-pill {
@@ -576,6 +584,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 
     .pill-label {
       font-size: 9.5px;
@@ -583,6 +592,9 @@
       color: #92400e;
       text-transform: uppercase;
       letter-spacing: 0.03em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .pill-val {
@@ -663,60 +675,90 @@
     }
   }
 
-  .lop-action-box {
+  /* Dedicated Action Bar beneath metrics */
+  .lop-action-bar {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #fde68a;
+    flex-wrap: wrap;
 
-    .btn-apply-lop {
-      display: inline-flex;
+    .lop-action-note {
+      display: flex;
       align-items: center;
-      gap: 5px;
-      background: #d97706;
-      color: #ffffff;
-      border: 1px solid #b45309;
-      border-radius: 6px;
-      padding: 7px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s ease;
-      box-shadow: 0 1px 3px rgba(217, 119, 6, 0.25);
+      gap: 6px;
+      font-size: 11.5px;
+      color: #92400e;
 
       mat-icon {
         font-size: 16px;
         width: 16px;
         height: 16px;
-      }
-
-      &:hover:not(:disabled) {
-        background: #b45309;
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      &.btn-applied {
-        background: #059669;
-        border-color: #047857;
+        color: #d97706;
       }
     }
 
-    .btn-clear-lop {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      font-size: 11px;
-      cursor: pointer;
-      text-align: center;
-      padding: 2px;
+    .lop-action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
 
-      &:hover {
-        color: #ef4444;
-        text-decoration: underline;
+      .btn-apply-lop {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #d97706;
+        color: #ffffff;
+        border: 1px solid #b45309;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+        box-shadow: 0 1px 3px rgba(217, 119, 6, 0.25);
+
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+
+        &:hover:not(:disabled) {
+          background: #b45309;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        &.btn-applied {
+          background: #059669;
+          border-color: #047857;
+        }
+      }
+
+      .btn-clear-lop {
+        background: #ffffff;
+        border: 1px solid #fde68a;
+        border-radius: 6px;
+        color: #b45309;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 6px 10px;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: #fee2e2;
+          border-color: #fca5a5;
+          color: #dc2626;
+        }
       }
     }
   }
@@ -733,11 +775,15 @@
 
 @media (max-width: 640px) {
   .smart-lop-card .lop-calc-body {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
-
-    .lop-action-box {
-      grid-column: span 2;
+  }
+  .smart-lop-card .lop-action-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    .lop-action-buttons {
+      width: 100%;
+      justify-content: flex-end;
     }
   }
 }

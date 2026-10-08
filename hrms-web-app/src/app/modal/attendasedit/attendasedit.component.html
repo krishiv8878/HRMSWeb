@@ -26,6 +26,99 @@
 
   <!-- Form Body -->
   <form [formGroup]="attendaseform" (ngSubmit)="submitdata()" class="regularization-form-body">
+    <!-- Request Type Selector Strip -->
+    <div class="request-type-selector-strip">
+      <label class="field-label">Request Category <span class="required">*</span></label>
+      <div class="type-chips-grid">
+        <button
+          type="button"
+          class="type-chip-btn"
+          [class.active]="attendaseform.get('RequestType')?.value === 'Regularization'"
+          (click)="onRequestTypeChange('Regularization')"
+        >
+          <mat-icon>edit_calendar</mat-icon>
+          <div class="chip-label-box">
+            <strong>Missed Punch</strong>
+            <span>In/Out Time Correction</span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          class="type-chip-btn"
+          [class.active]="attendaseform.get('RequestType')?.value === 'Work From Home'"
+          (click)="onRequestTypeChange('Work From Home')"
+        >
+          <mat-icon>home_work</mat-icon>
+          <div class="chip-label-box">
+            <strong>Work From Home</strong>
+            <span>Remote Work Day</span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          class="type-chip-btn"
+          [class.active]="attendaseform.get('RequestType')?.value === 'On-Duty'"
+          (click)="onRequestTypeChange('On-Duty')"
+        >
+          <mat-icon>business_center</mat-icon>
+          <div class="chip-label-box">
+            <strong>On-Duty (OD)</strong>
+            <span>Client Site / Meeting</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- On-Duty Specific Fields -->
+    <div class="on-duty-fields-box" *ngIf="attendaseform.get('RequestType')?.value === 'On-Duty'">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label">Client / Organization Name <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">corporate_fare</mat-icon>
+            <input
+              type="text"
+              formControlName="clientName"
+              placeholder="e.g. Acme Corp / Infosys Tech"
+              class="custom-input"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Meeting / Site Location</label>
+          <div class="input-wrapper">
+            <mat-icon class="input-icon">location_on</mat-icon>
+            <input
+              type="text"
+              formControlName="workLocation"
+              placeholder="e.g. Client HQ, Whitefield, Bangalore"
+              class="custom-input"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WFH Specific Fields -->
+    <div class="wfh-fields-box" *ngIf="attendaseform.get('RequestType')?.value === 'Work From Home'">
+      <div class="form-group">
+        <label class="field-label">WFH Coverage Mode</label>
+        <div class="wfh-toggle-group">
+          <label class="wfh-radio-label" [class.selected]="attendaseform.get('wfhDuration')?.value === 'Full Day'">
+            <input type="radio" formControlName="wfhDuration" value="Full Day" />
+            <span>Full Day (09:30 - 18:30)</span>
+          </label>
+          <label class="wfh-radio-label" [class.selected]="attendaseform.get('wfhDuration')?.value === 'Half Day'">
+            <input type="radio" formControlName="wfhDuration" value="Half Day" />
+            <span>Half Day (09:30 - 14:00)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <!-- Selected Date Field -->
     <div class="form-group date-picker-group">
       <label class="field-label">Attendance Date to Regularize <span class="required">*</span></label>

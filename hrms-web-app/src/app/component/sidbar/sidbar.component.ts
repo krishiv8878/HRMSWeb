@@ -47,7 +47,7 @@ export class SidbarComponent implements OnInit {
       items: [
         { label: 'Dashboard', icon: 'grid_view', route: '/index/dashboard' },
         { label: 'Employee Directory', icon: 'people', route: '/index/home', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] },
-        { label: 'Candidate', icon: 'person_search', route: '/index/candidate', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] },
+        { label: 'Recruitment (ATS)', icon: 'person_search', route: '/index/candidate', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] },
         { label: 'Skill', icon: 'psychology', route: '/index/skill', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
         { label: 'Role', icon: 'account_tree', route: '/index/rolemaster', roles: ['Admin', 'System Admin'] },
         { label: 'Designation', icon: 'badge', route: '/index/designation', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
@@ -58,11 +58,12 @@ export class SidbarComponent implements OnInit {
       items: [
         { label: 'Time Attendance', icon: 'schedule', route: '/index/attendance' },
         { label: 'Timesheet', icon: 'more_time', route: '/index/timesheet' },
-        { label: 'Shift', icon: 'calendar_month', route: '/index/shift', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
+        { label: 'Shift', icon: 'calendar_month', route: '/index/shift', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] },
         { label: 'Holiday', icon: 'event', route: '/index/holiday' },
         { label: 'Leave', icon: 'event_busy', route: '/index/leavetype', roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] },
         { label: 'Leave Requests', icon: 'pending_actions', route: '/index/leaveRequest' },
-        { label: 'Request Approvals', icon: 'fact_check', route: '/index/request' }
+        { label: 'Request Approvals', icon: 'fact_check', route: '/index/request' },
+        { label: 'Performance (PMS)', icon: 'trending_up', route: '/index/pms' }
       ]
     },
     {
@@ -72,6 +73,7 @@ export class SidbarComponent implements OnInit {
         { label: 'Assets', icon: 'inventory_2', route: '/index/assets' },
         { label: 'Docs', icon: 'description', route: '/index/document' },
         { label: 'Payroll & Payslips', icon: 'payments', route: '/index/paymentinfo' },
+        { label: 'Expense & Travel', icon: 'receipt_long', route: '/index/expense' },
         { label: 'Email Templates', icon: 'mail', route: '/index/email-templates', roles: ['Admin', 'System Admin'] }
       ]
     }

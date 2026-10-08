@@ -64,7 +64,7 @@ export class AttendaseditComponent implements OnInit {
   // Calendar State Sets
   presentDateMap = new Map<string, { clockIn: string; clockOut: string; status: string }>();
   absentDateSet = new Set<string>();
-  missingPunchMap = new Map<string, { clockIn: string; clockOut?: string }>();
+  missingPunchMap = new Map<string, { clockIn: string; clockOut?: string; clockInRaw?: any }>();
   leaveDateSet = new Set<string>();
   pendingDateSet = new Set<string>();
   approvedDateSet = new Set<string>();
@@ -76,8 +76,26 @@ export class AttendaseditComponent implements OnInit {
     selectedDate: [new Date(), Validators.required],
     Reason: ['', Validators.required],
     clockIn: ['09:30', Validators.required],
-    clockOut: ['18:30', Validators.required]
+    clockOut: ['18:30', Validators.required],
+    clientName: [''],
+    workLocation: [''],
+    wfhDuration: ['Full Day']
   });
+
+  onRequestTypeChange(type: string): void {
+    this.attendaseform.patchValue({ RequestType: type });
+    if (type === 'Regularization') {
+      this.maxDate = new Date();
+    } else {
+      // WFH and On-Duty can be requested in advance
+      this.maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      this.attendaseform.get('clockIn')?.enable();
+      this.attendaseform.patchValue({
+        clockIn: '09:30',
+        clockOut: type === 'Work From Home' && this.attendaseform.get('wfhDuration')?.value === 'Half Day' ? '14:00' : '18:30'
+      });
+    }
+  }
 
   // Calendar cell highlight function for MatDatepicker
   dateClassFn: MatCalendarCellClassFunction<Date> = (cellDate: Date, view: string) => {
@@ -95,7 +113,9 @@ export class AttendaseditComponent implements OnInit {
 
   constructor(private dialogref: MatDialogRef<AttendaseditComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
     this.hasExistingClockIn = !!this.data?.hasExistingClockIn;
-    this.existingClockInDisplay = this.data?.existingClockInDisplay || '';
+    this.existingClockInDisplay = this.data?.existingClockInDisplay
+      ? this.formatTime12(this.data.existingClockInDisplay)
+      : (this.data?.clockIn ? this.formatTime12(this.data.clockIn) : '');
 
     // Clamp minDate to joiningDate if joiningDate is later than 30 days ago
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -112,8 +132,8 @@ export class AttendaseditComponent implements OnInit {
 
     this.attendaseform.patchValue({
       selectedDate: parsedDate,
-      clockIn: this.data?.clockIn || '09:30',
-      clockOut: this.data?.clockOut || '18:30',
+      clockIn: this.data?.clockIn ? this.formatTime24(this.data.clockIn) : '09:30',
+      clockOut: this.data?.clockOut ? this.formatTime24(this.data.clockOut) : '18:30',
       Reason: this.hasExistingClockIn ? 'Forgot to Clock Out' : ''
     });
 
@@ -137,6 +157,10 @@ export class AttendaseditComponent implements OnInit {
     const requests = this.data?.existingRequests || [];
     const leaves = this.data?.leaves || [];
     const holidays = this.data?.holidays || [];
+
+    if (this.data?.requestType) {
+      this.onRequestTypeChange(this.data.requestType);
+    }
 
     if (records.length > 0 || requests.length > 0) {
       this.buildAttendanceSets(records, requests, leaves, holidays);
@@ -215,7 +239,7 @@ export class AttendaseditComponent implements OnInit {
     (records || []).forEach((a: any) => {
       const aEmpId = Number(a.employeeId || a.EmployeeId || a.id);
       if (!empId || aEmpId === empId) {
-        const dStr = this.toLocalYMD(new Date(a.attendanceDate || a.AttendanceDate || a.date || a.Date));
+        const dStr = this.toLocalYMD(a.attendanceDate || a.AttendanceDate || a.date || a.Date);
         if (dStr) {
           const hasIn = this.isValidTime(a.clockIn || a.ClockIn);
           const hasOut = this.isValidTime(a.clockOut || a.ClockOut);
@@ -229,7 +253,8 @@ export class AttendaseditComponent implements OnInit {
             });
           } else if (hasIn && !hasOut) {
             this.missingPunchMap.set(dStr, {
-              clockIn: this.formatTime24(a.clockIn || a.ClockIn)
+              clockIn: this.formatTime24(a.clockIn || a.ClockIn),
+              clockInRaw: a.clockIn || a.ClockIn
             });
           } else if (st === 'absent' || (!hasIn && !hasOut)) {
             this.absentDateSet.add(dStr);
@@ -406,7 +431,7 @@ export class AttendaseditComponent implements OnInit {
     if (this.missingPunchMap.has(dateStr)) {
       const punch = this.missingPunchMap.get(dateStr)!;
       this.hasExistingClockIn = true;
-      this.existingClockInDisplay = punch.clockIn;
+      this.existingClockInDisplay = this.formatTime12(punch.clockInRaw || punch.clockIn);
       this.attendaseform.patchValue({
         clockIn: punch.clockIn,
         clockOut: '18:30'
@@ -419,10 +444,11 @@ export class AttendaseditComponent implements OnInit {
         label: 'Incomplete Punch (Missing Clock-Out)',
         type: 'absent',
         icon: 'warning_amber',
-        details: `Clock-In verified at ${punch.clockIn}. Departure punch is missing.`
+        details: `Clock-In verified at ${this.existingClockInDisplay}. Departure punch is missing.`
       };
     } else if (this.absentDateSet.has(dateStr)) {
       this.hasExistingClockIn = false;
+      this.existingClockInDisplay = '';
       this.attendaseform.get('clockIn')?.enable();
       this.attendaseform.patchValue({
         clockIn: '09:30',
@@ -437,6 +463,7 @@ export class AttendaseditComponent implements OnInit {
     } else if (this.presentDateMap.has(dateStr)) {
       const pres = this.presentDateMap.get(dateStr)!;
       this.hasExistingClockIn = false;
+      this.existingClockInDisplay = '';
       this.attendaseform.get('clockIn')?.enable();
       this.attendaseform.patchValue({
         clockIn: pres.clockIn || '09:30',
@@ -446,10 +473,11 @@ export class AttendaseditComponent implements OnInit {
         label: 'Marked as Present (Punches Recorded)',
         type: 'present',
         icon: 'check_circle',
-        details: `Clock-In: ${pres.clockIn} | Clock-Out: ${pres.clockOut}. Adjust only if timings are incorrect.`
+        details: `Clock-In: ${this.formatTime12(pres.clockIn)} | Clock-Out: ${this.formatTime12(pres.clockOut)}. Adjust only if timings are incorrect.`
       };
     } else {
       this.hasExistingClockIn = false;
+      this.existingClockInDisplay = '';
       this.attendaseform.get('clockIn')?.enable();
       if (!this.selectedDateStatusBadge) {
         this.selectedDateStatusBadge = {
@@ -462,19 +490,44 @@ export class AttendaseditComponent implements OnInit {
     }
   }
 
-  private toLocalYMD(date: Date): string {
-    if (!date || isNaN(date.getTime())) return '';
-    const y = date.getFullYear();
-    const m = (date.getMonth() + 1).toString().padStart(2, '0');
-    const d = date.getDate().toString().padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  private parseDateSafe(val: any): Date | null {
+    if (!val) return null;
+    if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+    let s = String(val).trim();
+    if (!s || s === 'null' || s === 'undefined' || s.startsWith('0001-01-01') || s.startsWith('1970-01-01')) return null;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const [y, m, d] = s.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    if (s.endsWith('Z') || s.includes('+') || s.match(/-\d{2}:\d{2}$/)) {
+      const dt = new Date(s);
+      return isNaN(dt.getTime()) ? null : dt;
+    }
+
+    const withZ = new Date(s + 'Z');
+    if (!isNaN(withZ.getTime())) return withZ;
+
+    const dt = new Date(s);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  private toLocalYMD(date: Date | string | null | undefined): string {
+    if (!date) return '';
+    const d = date instanceof Date ? date : this.parseDateSafe(date);
+    if (!d || isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+    const dNum = d.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${dNum}`;
   }
 
   private isValidTime(val: any): boolean {
     if (!val) return false;
     if (val === '0001-01-01T00:00:00' || val === '1970-01-01T00:00:00') return false;
-    const d = new Date(val);
-    return !isNaN(d.getTime()) && d.getFullYear() > 2000;
+    const d = this.parseDateSafe(val);
+    return !d ? false : (!isNaN(d.getTime()) && d.getFullYear() > 2000);
   }
 
   private formatTime24(val: any): string {
@@ -484,13 +537,41 @@ export class AttendaseditComponent implements OnInit {
       const [h, m] = s.split(':');
       return `${h.padStart(2, '0')}:${m}`;
     }
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) {
+    const matchAmpm = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (matchAmpm) {
+      let h = parseInt(matchAmpm[1], 10);
+      const m = matchAmpm[2];
+      const isPm = matchAmpm[3].toUpperCase() === 'PM';
+      if (isPm && h < 12) h += 12;
+      if (!isPm && h === 12) h = 0;
+      return `${h.toString().padStart(2, '0')}:${m}`;
+    }
+    const d = this.parseDateSafe(val);
+    if (d && !isNaN(d.getTime())) {
       const h = d.getHours().toString().padStart(2, '0');
       const m = d.getMinutes().toString().padStart(2, '0');
       return `${h}:${m}`;
     }
     return '09:30';
+  }
+
+  private formatTime12(val: any): string {
+    if (!val) return '';
+    const s = String(val).trim();
+    if (/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.test(s)) {
+      return s.toUpperCase();
+    }
+    if (/^\d{1,2}:\d{2}$/.test(s)) {
+      let [h, m] = s.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+    }
+    const d = this.parseDateSafe(val);
+    if (d && !isNaN(d.getTime())) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    return s;
   }
 
   private getLoggedInEmpId(): number {
@@ -578,12 +659,9 @@ export class AttendaseditComponent implements OnInit {
  
   combine(date: Date, time: string): string {
     const [h, m] = (time || '00:00').split(':').map(Number);
-    const y = date.getFullYear();
-    const mon = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = (h || 0).toString().padStart(2, '0');
-    const mins = (m || 0).toString().padStart(2, '0');
-    return `${y}-${mon}-${day}T${hours}:${mins}:00`;
+    // Construct local Date in browser's local timezone, then convert to UTC ISO string
+    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h || 0, m || 0, 0);
+    return localDate.toISOString();
   }
 
   formatDateOnly(date: Date): string {
@@ -606,9 +684,9 @@ export class AttendaseditComponent implements OnInit {
       return;
     }
 
-    const { selectedDate, clockIn, clockOut, Reason } = this.attendaseform.getRawValue();
+    const { RequestType, selectedDate, clockIn, clockOut, Reason, clientName, workLocation, wfhDuration } = this.attendaseform.getRawValue();
 
-    if (!selectedDate || !clockIn || !clockOut || !Reason) {
+    if (!selectedDate || !Reason) {
       this.toaster.warning('All fields are required');
       return;
     }
@@ -619,7 +697,7 @@ export class AttendaseditComponent implements OnInit {
       const d = selectedDate.getDate().toString().padStart(2, '0');
       const dateStr = `${y}-${m}-${d}`;
       if (this.data?.joiningDateStr && dateStr < this.data.joiningDateStr) {
-        this.toaster.error(`Cannot regularize attendance prior to your official joining date (${this.data.joiningDateStr}).`);
+        this.toaster.error(`Cannot submit attendance request prior to your official joining date (${this.data.joiningDateStr}).`);
         return;
       }
     }
@@ -628,13 +706,20 @@ export class AttendaseditComponent implements OnInit {
       || (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('employeeId') || sessionStorage.getItem('userId')) : null);
     const employeeId = this.data?.employeeId ? Number(this.data.employeeId) : (loggedUser ? Number(loggedUser) : null);
 
+    let finalReason = Reason.trim();
+    if (RequestType === 'On-Duty' && clientName) {
+      finalReason = `[Client: ${clientName.trim()}${workLocation ? ', Location: ' + workLocation.trim() : ''}] ${finalReason}`;
+    } else if (RequestType === 'Work From Home' && wfhDuration) {
+      finalReason = `[${wfhDuration}] ${finalReason}`;
+    }
+
     const payload = {
       EmployeeId: employeeId,
-      RequestType: 'Regularization',
-      Reason,
+      RequestType: RequestType || 'Regularization',
+      Reason: finalReason,
       RequestedDate: this.formatDateOnly(selectedDate),
-      clockIn: this.combine(selectedDate, clockIn),
-      clockOut: this.combine(selectedDate, clockOut),
+      clockIn: this.combine(selectedDate, clockIn || '09:30'),
+      clockOut: this.combine(selectedDate, clockOut || '18:30'),
     };
 
     this.isSubmitting = true;
@@ -644,7 +729,8 @@ export class AttendaseditComponent implements OnInit {
     this.services.creatRegular(payload).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.toaster.success('Regularization request submitted');
+        const typeLabel = RequestType === 'Work From Home' ? 'Work From Home' : (RequestType === 'On-Duty' ? 'On-Duty' : 'Regularization');
+        this.toaster.success(`${typeLabel} request submitted successfully for approval`);
         this.dialogref.close(true);
       },
       error: (err) => {

@@ -1,0 +1,81 @@
+<div class="modal-card">
+  <div class="modal-header">
+    <div class="header-title-box">
+      <div class="icon-avatar">
+        <mat-icon>receipt</mat-icon>
+      </div>
+      <div>
+        <h3 class="title">Submit Reimbursement Claim</h3>
+        <p class="subtitle">Flexible Benefit Plan (FBP) & Business Expense Reimbursement</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="claimForm" (ngSubmit)="submit()">
+    <div class="modal-body">
+      <!-- Admin / HR Employee Selection -->
+      <div class="form-group" *ngIf="isAdminOrHr">
+        <label>Employee <span class="required">*</span></label>
+        <select formControlName="employeeId" class="form-control">
+          <option [ngValue]="null" disabled>Select Employee</option>
+          <option *ngFor="let emp of allEmployees" [value]="emp.id">
+            {{ emp.firstName }} {{ emp.lastName }} (EMP-{{ emp.id }}) - {{ emp.department || 'General' }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Category <span class="required">*</span></label>
+          <select formControlName="category" class="form-control">
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+
+        <div class="form-group half">
+          <label>Claim Amount (₹) <span class="required">*</span></label>
+          <input type="number" formControlName="amount" class="form-control" placeholder="e.g. 1500" min="1" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Bill Date <span class="required">*</span></label>
+          <input type="date" formControlName="billDate" class="form-control" />
+        </div>
+
+        <div class="form-group half">
+          <label>Invoice / Bill Number</label>
+          <input type="text" formControlName="billNumber" class="form-control" placeholder="e.g. INV-2024-998" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Merchant / Vendor Name</label>
+        <input type="text" formControlName="merchantName" class="form-control" placeholder="e.g. Airtel, Shell, Uber, Apollo Pharmacy" />
+      </div>
+
+      <div class="form-group">
+        <label>Receipt URL / Document Proof</label>
+        <input type="text" formControlName="receiptUrl" class="form-control" placeholder="Paste link or document reference" />
+      </div>
+
+      <div class="form-group">
+        <label>Purpose / Description</label>
+        <textarea formControlName="description" class="form-control" rows="3" placeholder="Brief explanation of business or allowance expense"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="close()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+        <span *ngIf="!isSubmitting">Submit Claim</span>
+        <span *ngIf="isSubmitting">Submitting...</span>
+      </button>
+    </div>
+  </form>
+</div>

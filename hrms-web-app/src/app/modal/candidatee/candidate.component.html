@@ -15,10 +15,11 @@
     </button>
   </div>
 
-  <!-- Form Body -->
-  <form [formGroup]="CandidateForm" (ngSubmit)="submitdata()" class="candidate-form-body">
-    <!-- Row 1: First Name & Last Name -->
-    <div class="form-row-2">
+  <!-- Form Container with Fixed Footer -->
+  <form [formGroup]="CandidateForm" (ngSubmit)="submitdata()" class="candidate-form-wrapper">
+    <div class="candidate-form-scrollable">
+      <!-- Row 1: First Name & Last Name -->
+      <div class="form-row-2">
       <div class="form-group">
         <label class="field-label">First Name <span class="required">*</span></label>
         <div class="input-wrapper">
@@ -88,6 +89,22 @@
         <span class="error-text" *ngIf="CandidateForm.get('mobileNumber')?.touched && CandidateForm.get('mobileNumber')?.invalid">
           10-digit mobile number required
         </span>
+      </div>
+    </div>
+
+    <!-- Target Job Opening (Requisition) -->
+    <div class="form-row-1" style="margin-bottom: 16px;">
+      <div class="form-group full-width" style="width: 100%;">
+        <label class="field-label">Target Job Opening (Requisition)</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">business_center</mat-icon>
+          <select formControlName="jobRequisitionId" class="custom-select" (change)="onJobRequisitionChange()">
+            <option [ngValue]="null">-- General Applicant / No Opening Linked --</option>
+            <option *ngFor="let req of requisitionsList" [value]="req.id">
+              {{ req.jobCode }} — {{ req.title }} ({{ req.department }} • {{ req.location }}){{ (req.status || '').toLowerCase() === 'closed' ? ' [Closed - Current Assignment]' : '' }}
+            </option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -290,16 +307,17 @@
       </label>
       <p class="checkbox-hint">Enables candidate tracking in live recruitment pipeline velocity.</p>
     </div>
+  </div>
 
-    <!-- Modal Footer Actions -->
-    <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeModal()">
-        Cancel
-      </button>
-      <button type="submit" class="btn-submit">
-        <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
-        {{ isEdit ? 'Update Candidate' : 'Save Candidate' }}
-      </button>
-    </div>
+  <!-- Modal Footer Actions (Fixed at bottom) -->
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="closeModal()">
+      Cancel
+    </button>
+    <button type="submit" class="btn-submit">
+      <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
+      {{ isEdit ? 'Update Candidate' : 'Save Candidate' }}
+    </button>
+  </div>
   </form>
 </div>

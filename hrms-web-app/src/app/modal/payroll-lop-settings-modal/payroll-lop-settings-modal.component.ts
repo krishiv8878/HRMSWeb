@@ -36,6 +36,9 @@ export class PayrollLopSettingsModalComponent implements OnInit {
     divisorBasis: 'actual_days',
     includeUnpaidLeaves: true,
     includeUnexcusedAbsents: true,
+    includeLatePenalties: true,
+    freeLateMarksPerMonth: 3,
+    latePenaltyDeductionDays: 0.5,
     customBasePercentage: 100
   };
 

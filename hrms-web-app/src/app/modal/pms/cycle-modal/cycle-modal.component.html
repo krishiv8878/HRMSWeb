@@ -1,0 +1,66 @@
+<div class="pms-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="icon-bubble">
+        <mat-icon>published_with_changes</mat-icon>
+      </div>
+      <div>
+        <h2>Launch Review Cycle</h2>
+        <p class="subtitle">Initiate an appraisal cycle across the organization with structured evaluation deadlines</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="cycleForm" (ngSubmit)="onSubmit()" class="modal-body custom-scroll">
+    <div class="form-grid">
+      <div class="form-group full-width">
+        <label>Cycle Name <span class="req">*</span></label>
+        <input type="text" formControlName="cycleName" placeholder="e.g. Q4 2026 Talent Performance Cycle" />
+      </div>
+
+      <div class="form-group full-width">
+        <label>Cycle Description</label>
+        <textarea rows="2" formControlName="description" placeholder="Brief message explaining expectations..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Evaluation Frequency <span class="req">*</span></label>
+        <select formControlName="period">
+          <option *ngFor="let p of periods" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Start Date <span class="req">*</span></label>
+        <input type="date" formControlName="startDate" />
+      </div>
+
+      <div class="form-group">
+        <label>Self Review Deadline <span class="req">*</span></label>
+        <input type="date" formControlName="selfReviewDeadline" />
+      </div>
+
+      <div class="form-group">
+        <label>Manager Evaluation Deadline <span class="req">*</span></label>
+        <input type="date" formControlName="managerReviewDeadline" />
+      </div>
+
+      <div class="form-group full-width">
+        <label>Cycle Closing Date <span class="req">*</span></label>
+        <input type="date" formControlName="endDate" />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="close()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">rocket_launch</mat-icon>
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Launching...' : 'Launch Cycle' }}
+      </button>
+    </div>
+  </form>
+</div>

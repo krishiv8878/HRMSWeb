@@ -97,6 +97,41 @@
       <span class="preview-badge">Standard 8h Work + 1h Break</span>
     </div>
 
+    <!-- Grace Period & Break Duration -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Late Arrival Grace Period (Minutes)</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">timelapse</mat-icon>
+          <input
+            type="number"
+            min="0"
+            max="120"
+            formControlName="gracePeriodMinutes"
+            placeholder="15"
+            class="custom-input font-mono"
+          />
+        </div>
+        <span class="field-hint">e.g. 15 mins allowed after shift start</span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Break Duration (Minutes)</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">free_breakfast</mat-icon>
+          <input
+            type="number"
+            min="0"
+            max="240"
+            formControlName="breakDurationMinutes"
+            placeholder="60"
+            class="custom-input font-mono"
+          />
+        </div>
+        <span class="field-hint">Lunch / Rest break deducted from gross time</span>
+      </div>
+    </div>
+
     <!-- Active Status Card Switch -->
     <div class="status-card-group">
       <div class="status-text-left">

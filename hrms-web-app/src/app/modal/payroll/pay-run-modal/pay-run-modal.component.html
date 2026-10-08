@@ -1,0 +1,187 @@
+<div class="payrun-modal-container">
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>request_quote</mat-icon>
+      </div>
+      <div>
+        <h2 class="modal-title">Monthly Pay Run Engine</h2>
+        <p class="modal-subtitle" *ngIf="payRun">
+          {{ monthNames[payRun.month] }} {{ payRun.year }} &bull; Batch #PR-{{ payRun.id }}
+        </p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="status-pill status-{{ payRun?.status?.toLowerCase() }}">{{ payRun?.status }}</span>
+      <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close dialog">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-body" *ngIf="!isLoading && payRun">
+    <!-- Pay Run Purpose & Next Steps Explainer Card -->
+    <div class="lifecycle-banner" [ngClass]="'banner-' + payRun.status.toLowerCase()">
+      <div class="lifecycle-icon">
+        <mat-icon>{{ payRun.status === 'Disbursed' ? 'task_alt' : (payRun.status === 'Approved' ? 'check_circle' : 'info') }}</mat-icon>
+      </div>
+      <div class="lifecycle-content">
+        <div class="lifecycle-title">
+          <span *ngIf="payRun.status === 'Draft'">Stage 1 of 3: Draft Calculation Review</span>
+          <span *ngIf="payRun.status === 'Submitted'">Stage 2 of 3: Awaiting Maker-Checker Approval</span>
+          <span *ngIf="payRun.status === 'Approved'">Stage 3 of 3: Approved & Ready to Disburse</span>
+          <span *ngIf="payRun.status === 'Disbursed'">Completed: Payroll Disbursed & Payslips Published</span>
+        </div>
+        <p class="lifecycle-desc">
+          <span *ngIf="payRun.status === 'Draft'">
+            Calculated automatically from employee attendance, Loss of Pay (LOP) days, Indian statutory taxes (EPF, ESIC, PT, TDS), and pending reimbursement claims. Verify the figures below, then submit for approval or discard if adjustments are needed.
+          </span>
+          <span *ngIf="payRun.status === 'Submitted'">
+            This batch has been locked by HR and submitted to Finance / Approvers. Once verified, click <strong>"Approve Pay Run"</strong> to authorize bank disbursement.
+          </span>
+          <span *ngIf="payRun.status === 'Approved'">
+            <strong>What happens when you click "Disburse & Publish Payslips":</strong>
+            1) Generates official digital payslips in employee self-service portals; 
+            2) Marks approved reimbursements as "Paid"; 
+            3) Finalizes the NEFT/RTGS bank payout file.
+          </span>
+          <span *ngIf="payRun.status === 'Disbursed'">
+            Salaries were disbursed on <strong>{{ payRun.disbursedDate | date:'mediumDate' }}</strong>. Official payslips are available for employees to view and download. You can re-download the bank payout CSV at any time below.
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="card-label">Employees Included</div>
+        <div class="card-value">{{ payRun.totalEmployees }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label">Total Gross Salary</div>
+        <div class="card-value">{{ formatCurrency(payRun.totalGrossPay) }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label">Total Deductions (PF/ESI/PT/TDS/LOP)</div>
+        <div class="card-value text-red">{{ formatCurrency(payRun.totalDeductions) }}</div>
+      </div>
+      <div class="summary-card card-primary">
+        <div class="card-label">Net Payout Amount</div>
+        <div class="card-value">{{ formatCurrency(payRun.totalNetPay) }}</div>
+      </div>
+    </div>
+
+    <!-- Maker-Checker Workflow Action Bar -->
+    <div class="workflow-bar">
+      <div class="workflow-info">
+        <span class="info-title">Workflow Actions:</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Draft'">Review calculations or discard to regenerate.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Submitted'">Pending finance approval.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Approved'">Ready to publish payslips and disburse.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Disbursed'">Cycle completed successfully.</span>
+      </div>
+
+      <div class="workflow-actions">
+        <!-- Discard Draft Button -->
+        <button
+          *ngIf="payRun.status === 'Draft'"
+          type="button"
+          class="btn btn-danger"
+          [disabled]="isUpdating"
+          (click)="discardPayRun()"
+          title="Discard this draft run and release reimbursements"
+        >
+          <mat-icon>delete_forever</mat-icon> Discard Draft
+        </button>
+
+        <button
+          *ngIf="payRun.status === 'Draft'"
+          type="button"
+          class="btn btn-outline"
+          [disabled]="isUpdating"
+          (click)="updateStatus('Submitted')"
+        >
+          <mat-icon>send</mat-icon> Submit for Approval
+        </button>
+
+        <button
+          *ngIf="payRun.status === 'Submitted'"
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isUpdating"
+          (click)="updateStatus('Approved')"
+        >
+          <mat-icon>check_circle</mat-icon> Approve Pay Run
+        </button>
+
+        <button
+          *ngIf="payRun.status !== 'Disbursed'"
+          type="button"
+          class="btn btn-success"
+          [disabled]="isUpdating"
+          (click)="updateStatus('Disbursed')"
+          title="Disburse salaries and publish digital payslips immediately"
+        >
+          <mat-icon>paid</mat-icon> Disburse & Publish Payslips
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-export"
+          (click)="downloadBankPayoutCsv()"
+          title="Download NEFT/RTGS batch transfer file"
+        >
+          <mat-icon>download</mat-icon> Export Bank CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Employee Line Items Table -->
+    <div class="table-container">
+      <table class="details-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Work / LOP Days</th>
+            <th>Gross Pay</th>
+            <th>LOP Loss</th>
+            <th>Reimbursements</th>
+            <th>PF & ESI</th>
+            <th>PT & TDS</th>
+            <th>Total Deductions</th>
+            <th>Net Take Home</th>
+            <th>Bank & IFSC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let emp of employees">
+            <td>
+              <div class="emp-name">{{ emp.employeeName }}</div>
+              <div class="emp-code">{{ emp.employeeCode }}</div>
+            </td>
+            <td>
+              <span class="days-badge">{{ emp.presentDays }} / {{ emp.totalWorkingDays }}d</span>
+              <span class="lop-badge" *ngIf="emp.lopDays > 0">-{{ emp.lopDays }}d LOP</span>
+            </td>
+            <td>{{ formatCurrency(emp.grossPay) }}</td>
+            <td class="text-danger">{{ formatCurrency(emp.lopDeduction) }}</td>
+            <td class="text-success">+{{ formatCurrency(emp.reimbursements) }}</td>
+            <td>{{ formatCurrency(emp.epfDeduction + emp.esicDeduction) }}</td>
+            <td>{{ formatCurrency(emp.ptDeduction + emp.tdsDeduction) }}</td>
+            <td class="text-danger">{{ formatCurrency(emp.totalDeductions) }}</td>
+            <td class="net-pay-cell">{{ formatCurrency(emp.netPay) }}</td>
+            <td>
+              <div class="bank-name">{{ emp.bankName }}</div>
+              <div class="bank-ifsc">{{ emp.ifscCode }} &bull; {{ emp.accountNumber || '—' }}</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-outline" (click)="close()">Close</button>
+  </div>
+</div>

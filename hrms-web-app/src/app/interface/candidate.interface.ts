@@ -35,6 +35,11 @@ export interface CandidateItem {
   interviewStatus?: 'Not Scheduled' | 'Scheduled' | 'Feedback Submitted' | 'Passed' | 'Rejected' | string;
   interviewHistory?: any[];
   isOnboarded?: boolean;
+  jobRequisitionId?: number;
+  jobRequisitionTitle?: string;
+  jobCode?: string;
+  resumeUrl?: string;
+  source?: string;
 }
 
 export interface TalentMetrics {

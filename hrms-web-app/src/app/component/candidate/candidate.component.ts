@@ -16,6 +16,18 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { CandidateItem, TalentMetrics } from '../../interface/candidate.interface';
 import { RbacService } from '../../core/rbac.service';
 import { EmployeeService } from '../../services/employee/employee.service';
+import {
+  RecruitmentService,
+  JobRequisitionDto,
+  CandidatePipelineItemDto,
+  JobInterviewDto,
+  JobOfferDto,
+  RecruitmentDashboardMetricsDto
+} from '../../services/recruitment/recruitment.service';
+import { JobRequisitionModalComponent } from '../../modal/recruitment/job-requisition-modal/job-requisition-modal.component';
+import { InterviewScheduleModalComponent } from '../../modal/recruitment/interview-schedule-modal/interview-schedule-modal.component';
+import { InterviewScorecardModalComponent } from '../../modal/recruitment/interview-scorecard-modal/interview-scorecard-modal.component';
+import { JobOfferModalComponent } from '../../modal/recruitment/job-offer-modal/job-offer-modal.component';
 
 @Component({
   selector: 'app-candidate',
@@ -39,6 +51,18 @@ export class CandidateComponent implements OnInit, OnDestroy {
   toaster = inject(ToastrService);
   rbacService = inject(RbacService);
   employeeService = inject(EmployeeService);
+  recruitmentService = inject(RecruitmentService);
+
+  // ATS Main Suite Navigation & State
+  mainTab: 'pipeline' | 'openings' | 'candidates' | 'interviews' | 'offers' = 'pipeline';
+  selectedRequisitionFilter: number | null = null;
+
+  requisitions: JobRequisitionDto[] = [];
+  pipelineCandidates: CandidatePipelineItemDto[] = [];
+  pipelineStages = ['Sourced', 'Screening', 'Interview', 'Offered', 'Hired', 'Rejected'];
+  interviewsList: JobInterviewDto[] = [];
+  offersList: JobOfferDto[] = [];
+  recruitmentMetrics?: RecruitmentDashboardMetricsDto;
 
   private routeSub?: Subscription;
 
@@ -114,6 +138,10 @@ export class CandidateComponent implements OnInit, OnDestroy {
       }
     });
 
+    if (!this.isAdminOrHr) {
+      this.mainTab = 'interviews';
+    }
+
     this.loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
     this.loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || localStorage.getItem('UserName') || '').toLowerCase().trim() : '';
     this.loggedUserEmail = typeof window !== 'undefined' ? (localStorage.getItem('userEmail') || '').toLowerCase().trim() : '';
@@ -146,9 +174,11 @@ export class CandidateComponent implements OnInit, OnDestroy {
         }
 
         this.getData();
+        this.loadRecruitmentData();
       },
       error: () => {
         this.getData();
+        this.loadRecruitmentData();
       }
     });
   }
@@ -296,7 +326,10 @@ export class CandidateComponent implements OnInit, OnDestroy {
       currentRound: curRound,
       interviewStatus: intStatus,
       interviewHistory: intHistory,
-      isOnboarded: isOnboarded
+      isOnboarded: isOnboarded,
+      jobRequisitionId: item.jobRequisitionId ? Number(item.jobRequisitionId) : undefined,
+      jobRequisitionTitle: item.jobRequisitionTitle || undefined,
+      jobCode: item.jobCode || undefined
     };
   }
 
@@ -329,7 +362,36 @@ export class CandidateComponent implements OnInit, OnDestroy {
     return [];
   }
 
+  getInterviewForCandidate(candidate: CandidateItem): JobInterviewDto | undefined {
+    return this.interviewsList.find(i => i.candidateId === candidate.id && (i.status === 'Scheduled' || i.status === 'Rescheduled'))
+      || this.interviewsList.find(i => i.candidateId === candidate.id);
+  }
+
+  hasInterviewForCandidate(candidate: CandidateItem): boolean {
+    return !!this.getInterviewForCandidate(candidate);
+  }
+
+  openScorecardForCandidate(candidate: CandidateItem): void {
+    const interview = this.getInterviewForCandidate(candidate);
+    if (interview) {
+      this.openScorecardModal(interview);
+    } else {
+      if (this.isAdminOrHr) {
+        this.toaster.info('No active interview session found. Opening interview schedule dialog...', 'Schedule Interview');
+        this.openScheduleInterviewModal(candidate);
+      } else {
+        this.toaster.warning('No active interview session found for this candidate.', 'Interview Not Scheduled');
+      }
+    }
+  }
+
   openInterviewModal(candidate: CandidateItem) {
+    const interview = this.getInterviewForCandidate(candidate);
+    if (interview) {
+      this.openScorecardModal(interview);
+      return;
+    }
+
     const dialogRef = this.dialog.open(CandidateInterviewModalComponent, {
       width: '680px',
       maxHeight: '90vh',
@@ -339,6 +401,8 @@ export class CandidateComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe((res: any) => {
       if (res) {
         this.getData();
+        this.loadPipeline();
+        this.loadInterviews();
       }
     });
   }
@@ -724,6 +788,8 @@ export class CandidateComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe((res) => {
       if (res) {
         this.getData();
+        this.loadOffers();
+        this.loadPipeline();
       }
     });
   }
@@ -735,28 +801,45 @@ export class CandidateComponent implements OnInit, OnDestroy {
     return 'score-low';
   }
 
-  openAddForm() {
+  openAddForm(reqId?: any) {
+    let targetReqId = reqId !== undefined && reqId !== null ? Number(reqId) : (this.selectedRequisitionFilter || null);
+    if (targetReqId) {
+      const targetReq = this.requisitions.find(r => Number(r.id) === Number(targetReqId));
+      if (targetReq && (targetReq.status || '').toLowerCase() === 'closed') {
+        this.toaster.info(`Job opening '${targetReq.title}' is closed. Candidates can only be added to open requisitions.`, 'Opening Closed');
+        targetReqId = null;
+      }
+    }
     const dialogRef = this.dialog.open(CandidateeComponent, {
-      width: '620px',
-      data: null
+      width: '660px',
+      data: {
+        jobRequisitionId: targetReqId
+      }
     });
 
     dialogRef.afterClosed().subscribe((res) => {
       if (res) {
         this.getData();
+        this.loadPipeline();
+        this.loadRecruitmentData();
       }
     });
   }
 
   Edit(candidate: CandidateItem) {
     const dialogRef = this.dialog.open(CandidateeComponent, {
-      width: '620px',
-      data: candidate
+      width: '660px',
+      data: {
+        ...candidate,
+        jobRequisitionId: candidate.jobRequisitionId || null
+      }
     });
 
     dialogRef.afterClosed().subscribe((res) => {
       if (res) {
         this.getData();
+        this.loadPipeline();
+        this.loadRecruitmentData();
       }
     });
   }
@@ -860,6 +943,362 @@ export class CandidateComponent implements OnInit, OnDestroy {
     link.click();
     URL.revokeObjectURL(url);
     this.toaster.success('Talent Management candidate report exported successfully!', 'Export Complete');
+  }
+
+  // ==========================================
+  // ATS RECRUITMENT SUITE METHODS
+  // ==========================================
+  loadRecruitmentData(): void {
+    this.loadRequisitions();
+    this.loadPipeline();
+    this.loadInterviews();
+    this.loadOffers();
+    this.loadRecruitmentMetrics();
+  }
+
+  loadRequisitions(): void {
+    this.recruitmentService.getAllRequisitions().subscribe({
+      next: (res) => {
+        this.requisitions = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.requisitions = [];
+      }
+    });
+  }
+
+  getActiveOpeningsCount(): number {
+    return (this.requisitions || []).filter(r => (r.status || '').toLowerCase() === 'open').length;
+  }
+
+  loadPipeline(): void {
+    this.recruitmentService.getPipeline(this.selectedRequisitionFilter || undefined).subscribe({
+      next: (res) => {
+        this.pipelineCandidates = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.pipelineCandidates = [];
+      }
+    });
+  }
+
+  loadInterviews(): void {
+    const interviewerId = (!this.isAdminOrHr && this.loggedEmpId > 0) ? this.loggedEmpId : undefined;
+    this.recruitmentService.getInterviews(undefined, interviewerId).subscribe({
+      next: (res) => {
+        this.interviewsList = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.interviewsList = [];
+      }
+    });
+  }
+
+  loadOffers(): void {
+    this.recruitmentService.getOffers().subscribe({
+      next: (res) => {
+        this.offersList = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.offersList = [];
+      }
+    });
+  }
+
+  loadRecruitmentMetrics(): void {
+    this.recruitmentService.getMetrics().subscribe({
+      next: (res) => {
+        this.recruitmentMetrics = res;
+      },
+      error: () => {}
+    });
+  }
+
+  getCandidatesForStage(stage: string): CandidatePipelineItemDto[] {
+    return (this.pipelineCandidates || []).filter((c) => {
+      const s = (c.stage || 'Sourced').toLowerCase();
+      if (stage.toLowerCase() === 'interview') {
+        return s === 'interview' || s.startsWith('round') || s.includes('interview');
+      }
+      return s === stage.toLowerCase();
+    });
+  }
+
+  openPostJobModal(req?: JobRequisitionDto): void {
+    const ref = this.dialog.open(JobRequisitionModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '720px',
+      data: { requisition: req }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadRequisitions();
+        this.loadRecruitmentMetrics();
+      }
+    });
+  }
+
+  toggleRequisitionStatus(req: JobRequisitionDto, newStatus: string): void {
+    this.recruitmentService.updateRequisitionStatus(req.id, newStatus).subscribe({
+      next: () => {
+        this.toaster.success(`Job opening marked as ${newStatus}`, 'Status Updated');
+        this.loadRequisitions();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to update requisition status', 'Error')
+    });
+  }
+
+  deleteRequisition(req: JobRequisitionDto): void {
+    if (!confirm(`Delete job opening "${req.title}"?`)) return;
+    this.recruitmentService.deleteRequisition(req.id).subscribe({
+      next: () => {
+        this.toaster.success('Job requisition deleted', 'Deleted');
+        this.loadRequisitions();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to delete requisition', 'Error')
+    });
+  }
+
+  openScheduleInterviewModal(cand: any): void {
+    const pipelineItem: CandidatePipelineItemDto = {
+      id: cand.id,
+      firstName: cand.firstName || '',
+      lastName: cand.lastName || '',
+      fullName: cand.fullName || `${cand.firstName} ${cand.lastName}`.trim(),
+      emailAddress: cand.emailAddress || '',
+      mobileNumber: cand.mobileNumber || '',
+      totalExperience: cand.totalExperience || '0',
+      relevantExperience: cand.relevantExperience || '0',
+      appliedRole: cand.appliedRole || '',
+      stage: cand.stage || 'Sourced',
+      jobRequisitionId: cand.jobRequisitionId,
+      createdAt: cand.createdAt || new Date().toISOString(),
+      interviews: []
+    };
+
+    const ref = this.dialog.open(InterviewScheduleModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '600px',
+      data: { candidate: pipelineItem }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadPipeline();
+        this.loadInterviews();
+        this.getData();
+      }
+    });
+  }
+
+  openScorecardModal(interview: JobInterviewDto): void {
+    const ref = this.dialog.open(InterviewScorecardModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '650px',
+      data: { interview }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadInterviews();
+        this.loadPipeline();
+        this.getData();
+      }
+    });
+  }
+
+  cancelInterview(interview: JobInterviewDto): void {
+    const reason = prompt('Reason for cancelling interview:', 'Interviewer unavailable / rescheduled');
+    if (!reason) return;
+    this.recruitmentService.cancelInterview(interview.id, reason).subscribe({
+      next: () => {
+        this.toaster.success('Interview cancelled', 'Success');
+        this.loadInterviews();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to cancel interview', 'Error')
+    });
+  }
+
+  openCreateOfferModal(cand: any): void {
+    const pipelineItem: CandidatePipelineItemDto = {
+      id: cand.id,
+      firstName: cand.firstName || '',
+      lastName: cand.lastName || '',
+      fullName: cand.fullName || `${cand.firstName} ${cand.lastName}`.trim(),
+      emailAddress: cand.emailAddress || '',
+      mobileNumber: cand.mobileNumber || '',
+      totalExperience: cand.totalExperience || '0',
+      relevantExperience: cand.relevantExperience || '0',
+      currentSalary: cand.currentSalary,
+      expectedSalary: cand.expectedSalary,
+      appliedRole: cand.appliedRole || '',
+      stage: cand.stage || 'Interview',
+      jobRequisitionId: cand.jobRequisitionId,
+      createdAt: cand.createdAt || new Date().toISOString(),
+      interviews: []
+    };
+
+    const ref = this.dialog.open(JobOfferModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '600px',
+      data: { candidate: pipelineItem }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadOffers();
+        this.loadPipeline();
+        this.getData();
+      }
+    });
+  }
+
+  advanceCandidateStage(candId: number, nextStage: string): void {
+    this.recruitmentService.updateCandidateStage(candId, nextStage).subscribe({
+      next: () => {
+        this.toaster.success(`Candidate moved to ${nextStage} stage`, 'Pipeline Updated');
+        this.loadPipeline();
+        this.getData();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to update candidate stage', 'Error')
+    });
+  }
+
+  updateOfferStatus(offer: JobOfferDto, newStatus: string): void {
+    this.recruitmentService.updateOfferStatus(offer.id, newStatus).subscribe({
+      next: () => {
+        this.toaster.success(`Offer status marked as ${newStatus}`, 'Success');
+        this.loadOffers();
+        this.loadPipeline();
+        this.getData();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to update offer status', 'Error')
+    });
+  }
+
+  onboardCandidateFromATS(cand: any): void {
+    const candidateItem: CandidateItem = {
+      id: cand.id,
+      firstName: cand.firstName,
+      lastName: cand.lastName,
+      fullName: cand.fullName,
+      emailAddress: cand.emailAddress,
+      mobileNumber: cand.mobileNumber,
+      totalExperience: cand.totalExperience,
+      relevantExperience: cand.relevantExperience,
+      appliedRole: cand.appliedRole,
+      stage: cand.stage,
+      matchScore: cand.matchScore,
+      currentSalary: cand.currentSalary,
+      expectedSalary: cand.expectedSalary,
+      noticePeriod: cand.noticePeriod,
+      isActive: true,
+      lastUpdated: 'Just now'
+    };
+
+    this.openOnboardModal(candidateItem);
+  }
+
+  onboardOfferCandidate(offer: JobOfferDto): void {
+    const existing = this.allCandidates.find(c => c.id === offer.candidateId);
+    if (existing) {
+      this.openOnboardModal(existing);
+    } else {
+      this.onboardCandidateFromATS({
+        id: offer.candidateId,
+        fullName: offer.candidateName,
+        emailAddress: offer.candidateEmail,
+        appliedRole: offer.designation || offer.jobTitle || 'New Hire',
+        stage: 'Offer Accepted'
+      });
+    }
+  }
+
+  isOfferCandidateOnboarded(offer: JobOfferDto): boolean {
+    if (offer.status === 'Onboarded') return true;
+    if (offer.isCandidateOnboarded) return true;
+    const cand = this.allCandidates.find(c => c.id === offer.candidateId);
+    if (cand && (cand.isOnboarded || cand.stage === 'Onboarded' || cand.stage === 'Hired')) {
+      return true;
+    }
+    return false;
+  }
+
+  // Interview Hub Sub-Navigation & Filter State
+  interviewSubTab: 'all' | 'scheduled' | 'round1' | 'round2' | 'completed' | 'cancelled' = 'all';
+  interviewSearchQuery: string = '';
+
+  get filteredInterviewsList(): JobInterviewDto[] {
+    let list = this.interviewsList || [];
+
+    if (this.interviewSubTab === 'scheduled') {
+      list = list.filter(i => i.status === 'Scheduled' || i.status === 'Rescheduled');
+    } else if (this.interviewSubTab === 'round1') {
+      list = list.filter(i => {
+        const r = (i.roundName || '').toLowerCase();
+        return r.includes('round 1') || r.includes('screening') || r.includes('initial');
+      });
+    } else if (this.interviewSubTab === 'round2') {
+      list = list.filter(i => {
+        const r = (i.roundName || '').toLowerCase();
+        return r.includes('round 2') || r.includes('technical round 2') || r.includes('managerial') || r.includes('final') || r.includes('round 3');
+      });
+    } else if (this.interviewSubTab === 'completed') {
+      list = list.filter(i => i.status === 'Completed');
+    } else if (this.interviewSubTab === 'cancelled') {
+      list = list.filter(i => i.status === 'Cancelled');
+    }
+
+    if (this.interviewSearchQuery && this.interviewSearchQuery.trim()) {
+      const q = this.interviewSearchQuery.toLowerCase().trim();
+      list = list.filter(i =>
+        (i.candidateName && i.candidateName.toLowerCase().includes(q)) ||
+        (i.candidateEmail && i.candidateEmail.toLowerCase().includes(q)) ||
+        (i.candidateRole && i.candidateRole.toLowerCase().includes(q)) ||
+        (i.interviewerName && i.interviewerName.toLowerCase().includes(q)) ||
+        (i.roundName && i.roundName.toLowerCase().includes(q)) ||
+        (i.jobTitle && i.jobTitle.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }
+
+  get scheduledInterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => i.status === 'Scheduled' || i.status === 'Rescheduled').length;
+  }
+
+  get round1InterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => {
+      const r = (i.roundName || '').toLowerCase();
+      return r.includes('round 1') || r.includes('screening') || r.includes('initial');
+    }).length;
+  }
+
+  get round2InterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => {
+      const r = (i.roundName || '').toLowerCase();
+      return r.includes('round 2') || r.includes('technical round 2') || r.includes('managerial') || r.includes('final') || r.includes('round 3');
+    }).length;
+  }
+
+  get completedInterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => i.status === 'Completed').length;
+  }
+
+  get cancelledInterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => i.status === 'Cancelled').length;
+  }
+
+  viewRequisitionPipeline(reqId: number): void {
+    this.selectedRequisitionFilter = reqId;
+    this.mainTab = 'pipeline';
+    this.loadPipeline();
   }
 
   ngOnDestroy(): void {

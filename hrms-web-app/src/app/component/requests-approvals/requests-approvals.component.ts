@@ -444,9 +444,21 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             const empName = a.employeeName || 'Employee';
             const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
             const s = (a.status || '').toLowerCase().trim();
+            const isClosed = s.includes('closed');
+            const remarksCombined = ((a.adminRemarks || '') + ' ' + (a.remarks || '') + ' ' + (a.inspectionRemarks || '')).toLowerCase();
+            const hasRejectLog = a.logs && Array.isArray(a.logs) && a.logs.some((l: any) =>
+              (l.toStatus || '').toLowerCase().includes('reject') ||
+              (l.fromStatus || '').toLowerCase().includes('reject') ||
+              (l.remarks || '').toLowerCase().includes('reject')
+            );
+            const isRejected = s.includes('reject') || (isClosed && (remarksCombined.includes('reject') || hasRejectLog));
+            const isApproved = s.includes('approved') || s.includes('completed') || s.includes('received') ||
+              s.includes('repair') || s.includes('dispatch') || s.includes('transit') || s.includes('deliver') ||
+              (isClosed && !isRejected);
+
             const statusStr: 'Pending' | 'Approved' | 'Rejected' =
-              s.includes('reject') ? 'Rejected' :
-              (s.includes('approved') || s.includes('completed') || s.includes('received') ? 'Approved' : 'Pending');
+              isRejected ? 'Rejected' :
+              (isApproved ? 'Approved' : 'Pending');
 
             return {
               id: Number(a.id),
@@ -458,8 +470,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               startDate: a.createdDate,
               endDate: a.updatedDate,
               durationText: a.createdDate ? new Date(a.createdDate).toLocaleDateString('en-GB') : 'Recent',
-              reasonPreview: s.includes('reject')
-                ? `Rejected: ${a.adminRemarks || a.remarks || 'No remarks provided'}`
+              reasonPreview: isRejected
+                ? `Rejected${isClosed ? ' (Closed)' : ''}: ${a.adminRemarks || a.remarks || 'No remarks provided'}`
                 : (a.reason || a.description || `Ticket #${a.id} (${a.status})`),
               status: statusStr,
               actionBy: a.actionByEmployeeId,
@@ -1338,8 +1350,10 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     const t = type.toUpperCase();
     if (t.includes('ANNUAL') || t.includes('PL') || t.includes('LEAVE')) return 'badge-type-annual';
     if (t.includes('SICK') || t.includes('CL')) return 'badge-type-sick';
+    if (t.includes('WORK FROM HOME') || t.includes('WFH')) return 'badge-type-wfh';
+    if (t.includes('ON-DUTY') || t.includes('DUTY') || t.includes('OD')) return 'badge-type-od';
     if (t.includes('EXPENSE')) return 'badge-type-expense';
-    if (t.includes('SHIFT') || t.includes('CLOCK')) return 'badge-type-shift';
+    if (t.includes('SHIFT') || t.includes('CLOCK') || t.includes('REGULAR')) return 'badge-type-shift';
     if (t.includes('ASSET') || t.includes('REPAIR') || t.includes('REPLACE') || t.includes('RETURN')) return 'badge-type-asset';
     if (t.includes('DOC') || t.includes('VERIF')) return 'badge-type-doc';
     if (t.includes('INTERVIEW') || t.includes('ROUND')) return 'badge-type-interview';

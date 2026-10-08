@@ -1,0 +1,135 @@
+<div class="pms-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="icon-bubble">
+        <mat-icon>{{ isEditMode ? 'edit_note' : 'flag' }}</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEditMode ? 'Edit Goal & OKRs' : 'Create New Goal & OKR' }}</h2>
+        <p class="subtitle">Define measurable objectives and key results aligned with strategic goals</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="goalForm" (ngSubmit)="onSubmit()" class="modal-body custom-scroll">
+    <!-- Basic Information Section -->
+    <div class="section-title">
+      <mat-icon>info</mat-icon>
+      <span>Goal Information</span>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group full-width">
+        <label>Goal / Objective Title <span class="req">*</span></label>
+        <input type="text" formControlName="title" placeholder="e.g. Elevate Core Product Reliability & Reduce Latency by 30%" />
+      </div>
+
+      <div class="form-group full-width">
+        <label>Description / Strategic Context</label>
+        <textarea rows="2" formControlName="description" placeholder="Briefly describe what success looks like..."></textarea>
+      </div>
+
+      <div class="form-group" *ngIf="isAdminOrManager">
+        <label>Assigned Employee <span class="req">*</span></label>
+        <select formControlName="employeeId">
+          <option [ngValue]="null" disabled>Select Employee</option>
+          <option *ngFor="let emp of allEmployees" [value]="emp.id">
+            {{ emp.firstName }} {{ emp.lastName }} ({{ emp.employeeCode }})
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group" [class.full-width]="!isAdminOrManager">
+        <label>Category <span class="req">*</span></label>
+        <select formControlName="category">
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Department</label>
+        <input type="text" formControlName="department" placeholder="e.g. Engineering, Sales, HR" />
+      </div>
+
+      <div class="form-group">
+        <label>Review Period / Quarter <span class="req">*</span></label>
+        <select formControlName="period">
+          <option *ngFor="let p of periods" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Weightage (%) <span class="req">*</span></label>
+        <input type="number" formControlName="weightage" min="1" max="100" />
+      </div>
+
+      <div class="form-group">
+        <label>Target Due Date</label>
+        <input type="date" formControlName="dueDate" />
+      </div>
+    </div>
+
+    <!-- Key Results Section -->
+    <div class="section-header-row">
+      <div class="section-title mb-0">
+        <mat-icon>track_changes</mat-icon>
+        <span>Key Results (Measurable Milestones)</span>
+      </div>
+      <button type="button" class="btn-add-kr" (click)="addKeyResult()">
+        <mat-icon>add</mat-icon> Add Key Result
+      </button>
+    </div>
+
+    <div formArrayName="keyResults" class="kr-list">
+      <div *ngFor="let kr of keyResultsArray.controls; let i = index" [formGroupName]="i" class="kr-card">
+        <div class="kr-card-top">
+          <span class="kr-badge">KR #{{ i + 1 }}</span>
+          <button type="button" class="btn-remove-kr" (click)="removeKeyResult(i)" title="Remove Key Result">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </div>
+        
+        <div class="form-group mb-2">
+          <label>Key Result Title <span class="req">*</span></label>
+          <input type="text" formControlName="title" placeholder="e.g. Reduce P99 API response time below 150ms" />
+        </div>
+
+        <div class="kr-metrics-row">
+          <div class="form-group">
+            <label>Current Value</label>
+            <input type="number" formControlName="currentValue" min="0" />
+          </div>
+
+          <div class="form-group">
+            <label>Target Value <span class="req">*</span></label>
+            <input type="number" formControlName="targetValue" min="1" />
+          </div>
+
+          <div class="form-group">
+            <label>Metric Unit <span class="req">*</span></label>
+            <select formControlName="metricUnit">
+              <option *ngFor="let u of metricUnits" [value]="u">{{ u }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Weight (%)</label>
+            <input type="number" formControlName="weightage" min="1" max="100" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="close()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">save</mat-icon>
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update Goal' : 'Create Goal & OKRs') }}
+      </button>
+    </div>
+  </form>
+</div>

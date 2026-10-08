@@ -124,11 +124,17 @@ export class AssetTrackingModalComponent implements OnInit {
     return (s.includes('pickup scheduled') || s.includes('awaiting courier pickup')) && !s.includes('picked up') && !isFinished;
   }
 
+  get isRejected(): boolean {
+    const s = (this.request?.status || '').toLowerCase();
+    const isClosed = s.includes('closed');
+    return s.includes('reject') || (isClosed && ((this.request?.adminRemarks || '') + ' ' + (this.request?.remarks || '')).toLowerCase().includes('reject'));
+  }
+
   // Lifecycle steps for visual stepper
   get timelineSteps(): Array<{ title: string; subtitle: string; isCompleted: boolean; isCurrent: boolean; isRejected?: boolean; icon: string }> {
     const s = (this.request?.status || '').toLowerCase();
     const isClosed = s.includes('closed');
-    const isRejected = s.includes('reject') || (isClosed && ((this.request?.adminRemarks || '') + ' ' + (this.request?.remarks || '')).toLowerCase().includes('reject'));
+    const isRejected = this.isRejected;
 
     if (isRejected) {
       return [
@@ -356,7 +362,8 @@ export class AssetTrackingModalComponent implements OnInit {
       error: (err) => {
         this.isProcessingAction = false;
         console.error('Error submitting employee handover:', err);
-        this.toastr.error('Failed to submit shipping details.', 'Error');
+        const msg = err?.error?.message || err?.error?.Message || err?.message || 'Failed to submit shipping details.';
+        this.toastr.error(msg, 'Error');
       }
     });
   }
@@ -373,7 +380,7 @@ export class AssetTrackingModalComponent implements OnInit {
       actionByName: currentUserName,
       remarks: this.isAdmin
         ? `Ticket officially closed and archived by Administrator (${currentUserName}). Initial decision: Rejected.`
-        : `Ticket closed and acknowledged by Employee (${currentUserName}). Asset remains Active.`
+        : `Ticket closed and acknowledged by Employee (${currentUserName}). Initial decision: Rejected. Asset remains Active.`
     };
 
     this.requestService.updateStatus(payload).subscribe({
@@ -395,7 +402,8 @@ export class AssetTrackingModalComponent implements OnInit {
       error: (err) => {
         this.isClosingTicket = false;
         console.error('Error closing ticket:', err);
-        this.toastr.error('Failed to close ticket.', 'Error');
+        const msg = err?.error?.message || err?.error?.Message || err?.message || 'Failed to close ticket.';
+        this.toastr.error(msg, 'Error');
       }
     });
   }
@@ -424,7 +432,8 @@ export class AssetTrackingModalComponent implements OnInit {
       error: (err) => {
         this.isConfirmingReceipt = false;
         console.error('Error confirming asset receipt:', err);
-        this.toastr.error('Failed to update status. Please try again.', 'Error');
+        const msg = err?.error?.message || err?.error?.Message || err?.message || 'Failed to update status. Please try again.';
+        this.toastr.error(msg, 'Error');
       }
     });
   }
@@ -554,7 +563,8 @@ export class AssetTrackingModalComponent implements OnInit {
       error: (err) => {
         this.isConfirmingPickup = false;
         console.error('Error confirming pickup:', err);
-        this.toastr.error('Failed to update pickup status.', 'Error');
+        const msg = err?.error?.message || err?.error?.Message || err?.message || 'Failed to update pickup status.';
+        this.toastr.error(msg, 'Error');
       }
     });
   }
@@ -587,7 +597,8 @@ export class AssetTrackingModalComponent implements OnInit {
       error: (err) => {
         this.isProcessingAction = false;
         console.error('Error confirming desk handover receipt:', err);
-        this.toastr.error('Failed to confirm desk handover receipt.', 'Error');
+        const msg = err?.error?.message || err?.error?.Message || err?.message || 'Failed to confirm desk handover receipt.';
+        this.toastr.error(msg, 'Error');
       }
     });
   }

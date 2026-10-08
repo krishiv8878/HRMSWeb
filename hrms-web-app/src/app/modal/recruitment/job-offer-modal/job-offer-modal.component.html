@@ -1,0 +1,80 @@
+<div class="recruitment-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon offer-icon">
+        <mat-icon>approval</mat-icon>
+      </div>
+      <div>
+        <h2>Generate & Release Offer Letter</h2>
+        <p class="subtitle">Specify offered designation, annual CTC, and joining timeline</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="offerForm" (ngSubmit)="submit()" class="modal-body" *ngIf="candidate">
+    <!-- Candidate Info Header -->
+    <div class="candidate-summary-badge">
+      <div class="cand-info">
+        <h3>{{ candidate.fullName }}</h3>
+        <p>{{ candidate.appliedRole }} • {{ candidate.emailAddress }}</p>
+      </div>
+      <div class="ctc-meta">
+        <span>Current: ₹{{ candidate.currentSalary || 0 | number }}</span>
+        <span class="highlight">Expected: ₹{{ candidate.expectedSalary || 0 | number }}</span>
+      </div>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-group full-width">
+        <label>Offered Official Designation <span class="required">*</span></label>
+        <input type="text" formControlName="designation" placeholder="e.g. Senior Software Engineer" />
+        <span class="error-msg" *ngIf="offerForm.get('designation')?.touched && offerForm.get('designation')?.hasError('required')">
+          Designation is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Offered Annual CTC (₹) <span class="required">*</span></label>
+        <input type="number" formControlName="offeredCtc" min="100000" step="50000" />
+        <span class="error-msg" *ngIf="offerForm.get('offeredCtc')?.touched && offerForm.get('offeredCtc')?.hasError('required')">
+          Offered CTC is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Target Joining Date <span class="required">*</span></label>
+        <input type="date" formControlName="joiningDate" />
+        <span class="error-msg" *ngIf="offerForm.get('joiningDate')?.touched && offerForm.get('joiningDate')?.hasError('required')">
+          Joining date is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Offer Acceptance Expiry Date</label>
+        <input type="date" formControlName="expiryDate" />
+      </div>
+
+      <div class="form-group">
+        <label>Monthly Gross Estimate</label>
+        <div class="estimated-box">
+          ₹{{ (offerForm.get('offeredCtc')?.value || 0) / 12 | number:'1.0-0' }} / month
+        </div>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Special Terms & Offer Notes</label>
+        <textarea formControlName="notes" rows="3" placeholder="e.g. Joining bonus ₹1,00,000 upon 90 days completion; 6-month probation period."></textarea>
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+    <button type="button" class="btn-submit" (click)="submit()" [disabled]="isSubmitting">
+      <mat-icon>send</mat-icon> Release Offer
+    </button>
+  </div>
+</div>

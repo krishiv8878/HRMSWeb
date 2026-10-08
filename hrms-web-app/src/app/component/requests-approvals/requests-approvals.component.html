@@ -502,7 +502,9 @@
             <td class="col-type">
               <span class="type-badge" [ngClass]="getTypeBadgeClass(item.requestType)">
                 <mat-icon class="badge-icon" *ngIf="item.category === 'Leave'">flight_takeoff</mat-icon>
-                <mat-icon class="badge-icon" *ngIf="item.category === 'Attendance'">schedule</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.category === 'Attendance' && item.requestType.includes('Home')">home_work</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.category === 'Attendance' && (item.requestType.includes('Duty') || item.requestType.includes('OD'))">business_center</mat-icon>
+                <mat-icon class="badge-icon" *ngIf="item.category === 'Attendance' && !item.requestType.includes('Home') && !item.requestType.includes('Duty') && !item.requestType.includes('OD')">schedule</mat-icon>
                 <span>{{ item.requestType }}</span>
               </span>
             </td>

@@ -524,7 +524,7 @@
         <mat-icon class="control-icon">person</mat-icon>
         <select
           class="ribbon-select"
-          [ngModel]="activeFilters.employeeId?.toString()"
+          [ngModel]="activeFilters.employeeId"
           (change)="onFilterEmployeeSelect($any($event.target).value)"
         >
           <option value="All">All Personnel</option>
