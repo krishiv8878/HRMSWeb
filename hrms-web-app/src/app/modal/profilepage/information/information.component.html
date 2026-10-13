@@ -45,11 +45,19 @@
             type="text"
             formControlName="firstName"
             placeholder="Enter first name"
+            maxlength="50"
+            (keypress)="allowOnlyLetters($event)"
             class="custom-input"
           />
         </div>
-        <span class="error-text" *ngIf="getControl('firstName')?.touched && getControl('firstName')?.invalid">
+        <span class="error-text" *ngIf="getControl('firstName')?.touched && getControl('firstName')?.hasError('required')">
           First name is required
+        </span>
+        <span class="error-text" *ngIf="getControl('firstName')?.touched && !getControl('firstName')?.hasError('required') && getControl('firstName')?.hasError('pattern')">
+          First name can only contain letters and spaces
+        </span>
+        <span class="error-text" *ngIf="getControl('firstName')?.touched && getControl('firstName')?.hasError('minlength')">
+          First name must be at least 2 characters
         </span>
       </div>
 
@@ -61,11 +69,16 @@
             type="text"
             formControlName="lastName"
             placeholder="Enter last name"
+            maxlength="50"
+            (keypress)="allowOnlyLetters($event)"
             class="custom-input"
           />
         </div>
-        <span class="error-text" *ngIf="getControl('lastName')?.touched && getControl('lastName')?.invalid">
+        <span class="error-text" *ngIf="getControl('lastName')?.touched && getControl('lastName')?.hasError('required')">
           Last name is required
+        </span>
+        <span class="error-text" *ngIf="getControl('lastName')?.touched && !getControl('lastName')?.hasError('required') && getControl('lastName')?.hasError('pattern')">
+          Last name can only contain letters and spaces
         </span>
       </div>
     </div>
@@ -80,11 +93,12 @@
             type="email"
             formControlName="emailAddress"
             placeholder="name@krishiv.com"
+            maxlength="100"
             class="custom-input"
           />
         </div>
         <span class="error-text" *ngIf="getControl('emailAddress')?.touched && getControl('emailAddress')?.invalid">
-          Valid email address is required
+          Valid corporate email address is required
         </span>
       </div>
 
@@ -95,12 +109,20 @@
           <input
             type="text"
             formControlName="mobileNumber"
-            placeholder="+1 (555) 000-0000"
+            placeholder="e.g. 9876543210"
+            maxlength="10"
+            inputmode="numeric"
+            (keypress)="allowOnlyNumbers($event)"
+            (input)="onNumberInput($event, 'mobileNumber')"
+            (paste)="onNumberPaste($event, 'mobileNumber')"
             class="custom-input"
           />
         </div>
-        <span class="error-text" *ngIf="getControl('mobileNumber')?.touched && getControl('mobileNumber')?.invalid">
+        <span class="error-text" *ngIf="getControl('mobileNumber')?.touched && getControl('mobileNumber')?.hasError('required')">
           Mobile number is required
+        </span>
+        <span class="error-text" *ngIf="getControl('mobileNumber')?.touched && !getControl('mobileNumber')?.hasError('required') && getControl('mobileNumber')?.hasError('pattern')">
+          Must be a valid 10-digit mobile number (numbers only)
         </span>
       </div>
     </div>

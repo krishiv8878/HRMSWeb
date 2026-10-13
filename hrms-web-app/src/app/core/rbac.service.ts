@@ -14,32 +14,32 @@ export class RbacService {
       return [];
     }
 
-    // 1. Check RoleType stored directly during login
-    const rawRoles = localStorage.getItem('RoleType');
-    if (rawRoles) {
-      return rawRoles
-        .split(',')
-        .map(r => r.trim())
-        .filter(r => r.length > 0);
-    }
-
-    // 2. Fallback: Parse roles from LoginTokan JWT payload
+    // 1. Prioritize roles decoded directly from the signed JWT payload (tamper-proof)
     const token = localStorage.getItem('LoginTokan');
     if (token) {
       try {
         const parts = token.split('.');
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]));
-          const roleClaim = payload['role'] || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-          if (Array.isArray(roleClaim)) {
+          const roleClaim = payload['role'] || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload['roleType'];
+          if (Array.isArray(roleClaim) && roleClaim.length > 0) {
             return roleClaim;
-          } else if (typeof roleClaim === 'string') {
-            return roleClaim.split(',').map((r: string) => r.trim());
+          } else if (typeof roleClaim === 'string' && roleClaim.trim()) {
+            return roleClaim.split(',').map((r: string) => r.trim()).filter(r => r.length > 0);
           }
         }
       } catch (e) {
         console.warn('Could not decode roles from token:', e);
       }
+    }
+
+    // 2. Fallback: Check RoleType stored during login
+    const rawRoles = localStorage.getItem('RoleType');
+    if (rawRoles) {
+      return rawRoles
+        .split(',')
+        .map(r => r.trim())
+        .filter(r => r.length > 0);
     }
 
     return ['Employee'];

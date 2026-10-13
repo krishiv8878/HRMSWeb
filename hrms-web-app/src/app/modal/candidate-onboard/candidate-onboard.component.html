@@ -141,8 +141,8 @@
           <div class="form-field-wrapper">
             <label class="field-label">Reporting Manager</label>
             <select formControlName="managerId" class="form-select">
-              <option [value]="0">-- None / Senior Leadership --</option>
-              <option *ngFor="let m of managersList" [value]="m.id">{{ m.firstName }} {{ m.lastName }} ({{ m.designation || 'Manager' }})</option>
+              <option [value]="0">-- None / Senior Leadership / Direct to CEO --</option>
+              <option *ngFor="let m of managersList" [value]="m.id">{{ m.name }} ({{ m.designation }})</option>
             </select>
           </div>
           <div class="form-field-wrapper">

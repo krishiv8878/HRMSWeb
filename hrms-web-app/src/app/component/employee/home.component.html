@@ -2,13 +2,18 @@
   <!-- Top Header Bar -->
   <div class="header-section">
     <div class="title-group">
-      <h1 class="page-title">Employee Directory & Workforce</h1>
+      <h1 class="page-title">Employee Directory &amp; Workforce</h1>
       <p class="page-subtitle">
         Overview of corporate headcount, department distribution, and personnel profiles.
       </p>
     </div>
 
     <div class="header-actions">
+      <!-- Export Button -->
+      <button type="button" class="btn-export" (click)="onExportDirectory()" title="Export directory as CSV">
+        <mat-icon class="btn-icon">download</mat-icon>
+        <span>Export CSV</span>
+      </button>
       <!-- Add Employee Button -->
       <button type="button" class="btn-add-employee" (click)="openAddForm()">
         <mat-icon class="btn-icon">person_add</mat-icon>
@@ -60,7 +65,7 @@
       <div class="card-value">+{{ newJoinersCount }} <small class="unit-text">Recent</small></div>
       <div class="card-subtitle is-good">
         <span class="dot-indicator dot-green"></span>
-        <span>{{ onboardingCompletionPercent }}% Profile completion</span>
+        <span>{{ onboardingCompletionPercent }}% Avg profile completion</span>
       </div>
     </div>
 
@@ -80,12 +85,12 @@
     </div>
   </div>
 
-  <!-- Employee Directory Table Card -->
+  <!-- Employee Directory Table/Card Container -->
   <div class="table-card-container">
     <!-- Table Controls Header Bar -->
     <div class="table-header-bar">
       <div class="table-title">
-        <h2>Personnel Records ({{ allEmployees.length }})</h2>
+        <h2>Personnel Records ({{ filteredEmployees.length }})</h2>
       </div>
 
       <div class="table-controls-right">
@@ -96,16 +101,26 @@
             type="text"
             [(ngModel)]="searchQuery"
             (input)="filterEmployees()"
-            placeholder="Search name, email, skills..."
+            placeholder="Search name, email, dept..."
             class="search-input"
           />
+        </div>
+
+        <!-- Department Filter -->
+        <div class="filter-dropdown">
+          <select [(ngModel)]="selectedDepartment" (change)="filterEmployees()" class="custom-select">
+            <option *ngFor="let d of departmentsList" [value]="d">
+              {{ d === 'All' ? 'All Depts' : d }}
+            </option>
+          </select>
         </div>
 
         <!-- Role Filter Dropdown -->
         <div class="filter-dropdown">
           <select [(ngModel)]="selectedRole" (change)="filterEmployees()" class="custom-select">
-            <option value="All">All Roles</option>
-            <option *ngFor="let r of rolesList" [value]="r">{{ r }}</option>
+            <option *ngFor="let r of rolesList" [value]="r">
+              {{ r === 'All' ? 'All Roles' : r }}
+            </option>
           </select>
         </div>
 
@@ -117,129 +132,260 @@
             <option value="Inactive">Inactive</option>
           </select>
         </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle-group">
+          <button
+            type="button"
+            class="view-toggle-btn"
+            [class.active]="viewMode === 'table'"
+            (click)="setViewMode('table')"
+            title="Table view"
+          >
+            <mat-icon>table_rows</mat-icon>
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            [class.active]="viewMode === 'card'"
+            (click)="setViewMode('card')"
+            title="Card view"
+          >
+            <mat-icon>grid_view</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Employee Table -->
-    <div class="table-responsive">
-      <table class="employee-table">
-        <thead>
-          <tr>
-            <th>EMPLOYEE</th>
-            <th>ROLE & DEPARTMENT</th>
-            <th>REPORTING MANAGER</th>
-            <th>CONTACT</th>
-            <th>JOINING DATE</th>
-            <th>SKILLS</th>
-            <th>STATUS</th>
-            <th class="text-right">ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let emp of paginatedEmployees">
-            <!-- Employee Avatar & Name -->
-            <td class="col-employee">
-              <div class="employee-avatar-group clickable-employee" (click)="viewEmployeeProfile(emp)" title="Click to view complete employee details">
-                <img
-                  *ngIf="emp.avatarUrl"
-                  [src]="emp.avatarUrl"
-                  [alt]="emp.fullName"
-                  class="avatar-img"
-                />
-                <div *ngIf="!emp.avatarUrl" class="avatar-circle">
-                  {{ emp.initials || 'EM' }}
+    <!-- ═══════════════ TABLE VIEW ═══════════════ -->
+    <ng-container *ngIf="viewMode === 'table'">
+      <div class="table-responsive">
+        <table class="employee-table">
+          <thead>
+            <tr>
+              <th>EMPLOYEE</th>
+              <th>ROLE &amp; DEPARTMENT</th>
+              <th>REPORTING MANAGER</th>
+              <th>CONTACT</th>
+              <th>JOINING DATE</th>
+              <th>SKILLS</th>
+              <th>PROFILE</th>
+              <th>STATUS</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of paginatedEmployees">
+              <!-- Employee Avatar & Name -->
+              <td class="col-employee">
+                <div class="employee-avatar-group clickable-employee" (click)="viewEmployeeProfile(emp)" title="View employee profile">
+                  <img
+                    *ngIf="emp.avatarUrl"
+                    [src]="emp.avatarUrl"
+                    [alt]="emp.fullName"
+                    class="avatar-img"
+                  />
+                  <div *ngIf="!emp.avatarUrl" class="avatar-circle">
+                    {{ emp.initials || 'EM' }}
+                  </div>
+                  <div class="name-info">
+                    <span class="emp-name">{{ emp.fullName }}</span>
+                    <span class="emp-email">{{ emp.emailAddress }}</span>
+                  </div>
                 </div>
-                <div class="name-info">
-                  <span class="emp-name">{{ emp.fullName }}</span>
-                  <span class="emp-email">{{ emp.emailAddress }}</span>
+              </td>
+
+              <!-- Role & Department -->
+              <td class="col-role">
+                <div class="role-wrapper">
+                  <span class="role-badge">{{ emp.roleDisplay || 'Employee' }}</span>
+                  <span class="dept-text">{{ emp.department || 'General' }}</span>
                 </div>
+              </td>
+
+              <!-- Reporting Manager -->
+              <td class="col-manager">
+                <div class="manager-wrapper">
+                  <mat-icon class="manager-icon">supervisor_account</mat-icon>
+                  <span class="manager-name">{{ emp.managerName || '—' }}</span>
+                </div>
+              </td>
+
+              <!-- Contact -->
+              <td class="col-contact">
+                <span class="phone-text">{{ emp.mobileNumber }}</span>
+              </td>
+
+              <!-- Joining Date -->
+              <td class="col-date">
+                <span class="date-text">{{ emp.formattedJoinDate }}</span>
+              </td>
+
+              <!-- Skills Stack -->
+              <td class="col-skills">
+                <div class="skills-tags-wrapper">
+                  <span class="skill-tag" *ngFor="let s of (emp.skillsList || []) | slice:0:2">{{ s }}</span>
+                  <span class="skill-tag skill-more" *ngIf="(emp.skillsList || []).length > 2">+{{ (emp.skillsList || []).length - 2 }}</span>
+                  <span class="skill-tag skill-none" *ngIf="(emp.skillsList || []).length === 0">—</span>
+                </div>
+              </td>
+
+              <!-- #3 Profile Completeness -->
+              <td class="col-profile">
+                <div class="profile-complete-wrap">
+                  <div class="profile-bar-track">
+                    <div
+                      class="profile-bar-fill"
+                      [style.width.%]="emp.profileCompleteness || 0"
+                      [style.background-color]="getCompletenessColor(emp.profileCompleteness || 0)"
+                    ></div>
+                  </div>
+                  <span class="profile-pct" [style.color]="getCompletenessColor(emp.profileCompleteness || 0)">
+                    {{ emp.profileCompleteness || 0 }}%
+                  </span>
+                </div>
+              </td>
+
+              <!-- Active Status Badge -->
+              <td class="col-status">
+                <span class="status-badge" [ngClass]="emp.isActive ? 'badge-active' : 'badge-inactive'">
+                  <span class="dot"></span>
+                  <span>{{ emp.isActive ? 'Active' : 'Inactive' }}</span>
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="col-actions text-right">
+                <div class="action-btn-group">
+                  <!-- #10 Attendance quick link -->
+                  <button type="button" class="btn-action-icon attend-btn" (click)="navigateToAttendance(emp)" title="View Attendance">
+                    <mat-icon>access_time</mat-icon>
+                  </button>
+                  <!-- #10 Leave quick link -->
+                  <button type="button" class="btn-action-icon leave-btn" (click)="navigateToLeave(emp)" title="Leave History">
+                    <mat-icon>event_available</mat-icon>
+                  </button>
+                  <button type="button" class="btn-action-icon payroll-btn" (click)="navigateToPayroll(emp)" title="Banking &amp; Payroll">
+                    <mat-icon>account_balance</mat-icon>
+                  </button>
+                  <button type="button" class="btn-action-icon edit-btn" (click)="Edit(emp)" title="Edit Employee">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-action-icon"
+                    [class.btn-toggle-off]="emp.isActive !== false"
+                    [class.btn-toggle-on]="emp.isActive === false"
+                    (click)="onToggleActive(emp)"
+                    [title]="emp.isActive !== false ? 'Active (Click to Deactivate)' : 'Inactive (Click to Activate)'"
+                  >
+                    <mat-icon>{{ emp.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="paginatedEmployees.length === 0">
+              <td colspan="9" class="empty-state">
+                <div class="empty-box">
+                  <mat-icon class="empty-icon">group_off</mat-icon>
+                  <p *ngIf="allEmployees.length === 0">
+                    No employee records found. Click <strong>'+ Add Employee'</strong> to create your first personnel profile.
+                  </p>
+                  <p *ngIf="allEmployees.length > 0">
+                    No employees match your search or filter criteria.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <!-- ═══════════════ CARD VIEW (#5) ═══════════════ -->
+    <ng-container *ngIf="viewMode === 'card'">
+      <div class="card-grid-view" *ngIf="paginatedEmployees.length > 0; else emptyCard">
+        <div class="emp-card" *ngFor="let emp of paginatedEmployees">
+          <!-- Card Header -->
+          <div class="emp-card-header" (click)="viewEmployeeProfile(emp)" title="View profile">
+            <img *ngIf="emp.avatarUrl" [src]="emp.avatarUrl" [alt]="emp.fullName" class="card-avatar-img" />
+            <div *ngIf="!emp.avatarUrl" class="card-avatar-circle">{{ emp.initials }}</div>
+            <span class="card-status-dot" [ngClass]="emp.isActive ? 'dot-active' : 'dot-inactive'" [title]="emp.isActive ? 'Active' : 'Inactive'"></span>
+          </div>
+          <!-- Card Body -->
+          <div class="emp-card-body">
+            <p class="card-emp-name" (click)="viewEmployeeProfile(emp)">{{ emp.fullName }}</p>
+            <p class="card-emp-role">{{ emp.roleDisplay || 'Employee' }}</p>
+            <p class="card-emp-dept">
+              <mat-icon class="card-icon">domain</mat-icon>{{ emp.department || 'General' }}
+            </p>
+            <p class="card-emp-manager">
+              <mat-icon class="card-icon">supervisor_account</mat-icon>{{ emp.managerName || '—' }}
+            </p>
+            <p class="card-emp-email">
+              <mat-icon class="card-icon">email</mat-icon>{{ emp.emailAddress }}
+            </p>
+            <!-- Profile Completeness Bar -->
+            <div class="card-profile-row">
+              <span class="card-profile-label">Profile</span>
+              <div class="card-profile-bar-track">
+                <div
+                  class="card-profile-bar-fill"
+                  [style.width.%]="emp.profileCompleteness || 0"
+                  [style.background-color]="getCompletenessColor(emp.profileCompleteness || 0)"
+                ></div>
               </div>
-            </td>
-
-            <!-- Role & Department -->
-            <td class="col-role">
-              <div class="role-wrapper">
-                <span class="role-badge">{{ emp.roleDisplay || 'Employee' }}</span>
-                <span class="dept-text">{{ emp.department || 'General' }}</span>
-              </div>
-            </td>
-
-            <!-- Reporting Manager -->
-            <td class="col-manager">
-              <div class="manager-wrapper">
-                <mat-icon class="manager-icon">supervisor_account</mat-icon>
-                <span class="manager-name">{{ emp.managerName || 'Direct Report' }}</span>
-              </div>
-            </td>
-
-            <!-- Contact -->
-            <td class="col-contact">
-              <span class="phone-text">{{ emp.mobileNumber }}</span>
-            </td>
-
-            <!-- Joining Date -->
-            <td class="col-date">
-              <span class="date-text">{{ emp.formattedJoinDate }}</span>
-            </td>
-
-            <!-- Skills Stack -->
-            <td class="col-skills">
-              <div class="skills-tags-wrapper">
-                <span class="skill-tag" *ngFor="let s of (emp.skillsList || []) | slice:0:3">{{ s }}</span>
-                <span class="skill-tag skill-more" *ngIf="(emp.skillsList || []).length > 3">+{{ (emp.skillsList || []).length - 3 }}</span>
-              </div>
-            </td>
-
-            <!-- Active Status (Display Only Badge) -->
-            <td class="col-status">
-              <span class="status-badge" [ngClass]="emp.isActive ? 'badge-active' : 'badge-inactive'">
-                <span class="dot"></span>
-                <span>{{ emp.isActive ? 'Active' : 'Inactive' }}</span>
+              <span class="card-profile-pct" [style.color]="getCompletenessColor(emp.profileCompleteness || 0)">
+                {{ emp.profileCompleteness || 0 }}%
               </span>
-            </td>
+            </div>
+            <!-- Skills -->
+            <div class="card-skills-row" *ngIf="(emp.skillsList || []).length > 0">
+              <span class="skill-tag" *ngFor="let s of (emp.skillsList || []) | slice:0:3">{{ s }}</span>
+              <span class="skill-tag skill-more" *ngIf="(emp.skillsList || []).length > 3">+{{ (emp.skillsList || []).length - 3 }}</span>
+            </div>
+          </div>
+          <!-- Card Footer Actions -->
+          <div class="emp-card-footer">
+            <button type="button" class="btn-action-icon attend-btn" (click)="navigateToAttendance(emp)" title="Attendance">
+              <mat-icon>access_time</mat-icon>
+            </button>
+            <button type="button" class="btn-action-icon leave-btn" (click)="navigateToLeave(emp)" title="Leave History">
+              <mat-icon>event_available</mat-icon>
+            </button>
+            <button type="button" class="btn-action-icon payroll-btn" (click)="navigateToPayroll(emp)" title="Payroll">
+              <mat-icon>account_balance</mat-icon>
+            </button>
+            <button type="button" class="btn-action-icon edit-btn" (click)="Edit(emp)" title="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button
+              type="button"
+              class="btn-action-icon"
+              [class.btn-toggle-off]="emp.isActive !== false"
+              [class.btn-toggle-on]="emp.isActive === false"
+              (click)="onToggleActive(emp)"
+              [title]="emp.isActive ? 'Deactivate' : 'Activate'"
+            >
+              <mat-icon>{{ emp.isActive ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      <ng-template #emptyCard>
+        <div class="empty-state" style="padding: 40px 20px;">
+          <div class="empty-box">
+            <mat-icon class="empty-icon">group_off</mat-icon>
+            <p *ngIf="allEmployees.length === 0">No employee records found. Click <strong>'+ Add Employee'</strong> to get started.</p>
+            <p *ngIf="allEmployees.length > 0">No employees match your current filters.</p>
+          </div>
+        </div>
+      </ng-template>
+    </ng-container>
 
-            <!-- Actions -->
-            <td class="col-actions text-right">
-              <div class="action-btn-group">
-                <button type="button" class="btn-action-icon payroll-btn" (click)="navigateToPayroll(emp)" title="Banking & Payroll Details">
-                  <mat-icon>account_balance</mat-icon>
-                </button>
-                <button type="button" class="btn-action-icon edit-btn" (click)="Edit(emp)" title="Edit Employee Profile">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="btn-action-icon"
-                  [class.btn-toggle-off]="emp.isActive !== false"
-                  [class.btn-toggle-on]="emp.isActive === false"
-                  (click)="onToggleActive(emp)"
-                  [title]="emp.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
-                >
-                  <mat-icon>{{ emp.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Empty State -->
-          <tr *ngIf="paginatedEmployees.length === 0">
-            <td colspan="8" class="empty-state">
-              <div class="empty-box">
-                <mat-icon class="empty-icon">group_off</mat-icon>
-                <p *ngIf="allEmployees.length === 0">
-                  No employee records found in the database. Click <strong>'+ Add Employee'</strong> above to create your first personnel profile.
-                </p>
-                <p *ngIf="allEmployees.length > 0">
-                  No employees match your search or filter criteria.
-                </p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Table Pagination Footer -->
+    <!-- Pagination Footer -->
     <div class="table-footer">
       <span class="entry-count" *ngIf="filteredEmployees.length > 0">
         Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredEmployees.length) }} of {{ filteredEmployees.length }} employees
@@ -247,16 +393,9 @@
       <span class="entry-count" *ngIf="filteredEmployees.length === 0">0 employees</span>
 
       <div class="pagination-controls">
-        <button
-          type="button"
-          class="page-nav-btn"
-          [disabled]="currentPage === 1"
-          (click)="prevPage()"
-          aria-label="Previous Page"
-        >
+        <button type="button" class="page-nav-btn" [disabled]="currentPage === 1" (click)="prevPage()" aria-label="Previous">
           <mat-icon>chevron_left</mat-icon>
         </button>
-
         <button
           *ngFor="let p of pages"
           type="button"
@@ -266,14 +405,7 @@
         >
           {{ p }}
         </button>
-
-        <button
-          type="button"
-          class="page-nav-btn"
-          [disabled]="currentPage === totalPages || filteredEmployees.length === 0"
-          (click)="nextPage()"
-          aria-label="Next Page"
-        >
+        <button type="button" class="page-nav-btn" [disabled]="currentPage === totalPages || filteredEmployees.length === 0" (click)="nextPage()" aria-label="Next">
           <mat-icon>chevron_right</mat-icon>
         </button>
       </div>

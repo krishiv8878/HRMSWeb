@@ -7,6 +7,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { ToastrService } from 'ngx-toastr';
 
 import { EmployeeshiftService } from '../../services/shift/employeeshift.service';
+import { ShiftRosterService } from '../../services/shift/shift-roster.service';
 
 interface ShiftPreset {
   name: string;
@@ -33,6 +34,7 @@ export class ShiftComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<ShiftComponent>);
   private formBuilder = inject(FormBuilder);
   private services = inject(EmployeeshiftService);
+  private shiftRosterService = inject(ShiftRosterService);
   private toaster = inject(ToastrService);
 
   isEdit = false;
@@ -50,6 +52,9 @@ export class ShiftComponent implements OnInit {
     shiftName: ['', [Validators.required]],
     startTime: ['09:30', [Validators.required]],
     endTime: ['18:30', [Validators.required]],
+    gracePeriodMinutes: [15, [Validators.min(0), Validators.max(120)]],
+    breakDurationMinutes: [60, [Validators.min(0), Validators.max(240)]],
+    isRotational: [false],
     isActive: [true]
   });
 
@@ -71,11 +76,15 @@ export class ShiftComponent implements OnInit {
     if (this.data) {
       this.isEdit = true;
       this.id = this.data.id;
+      const policy = this.shiftRosterService.getShiftPolicy(Number(this.data.id));
       this.shiftForm.patchValue({
         id: this.data.id || 0,
         shiftName: this.data.shiftName || '',
         startTime: this.normalizeTimeForInput(this.data.startTime, '09:30'),
         endTime: this.normalizeTimeForInput(this.data.endTime, '18:30'),
+        gracePeriodMinutes: policy.gracePeriodMinutes || 15,
+        breakDurationMinutes: policy.breakDurationMinutes || 60,
+        isRotational: policy.isRotational || false,
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
     }
@@ -134,7 +143,17 @@ export class ShiftComponent implements OnInit {
       isActive: formVal.isActive !== false
     };
 
+    const savePolicy = (targetId: number) => {
+      this.shiftRosterService.setShiftPolicy({
+        shiftId: targetId,
+        gracePeriodMinutes: Number(formVal.gracePeriodMinutes || 15),
+        breakDurationMinutes: Number(formVal.breakDurationMinutes || 60),
+        isRotational: Boolean(formVal.isRotational)
+      });
+    };
+
     if (this.isEdit) {
+      savePolicy(Number(this.id));
       this.services.updateData(payload, this.id).subscribe({
         next: (res: any) => {
           if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
@@ -154,6 +173,8 @@ export class ShiftComponent implements OnInit {
     } else {
       this.services.createData(payload).subscribe({
         next: (res: any) => {
+          const newId = Number(res?.data?.id || res?.id || Date.now());
+          savePolicy(newId);
           if (res?.responseCode === 200 || res?.success || !res?.responseCode) {
             this.toaster.success('New shift schedule created successfully', 'Created');
             this.dialogRef.close(true);
@@ -163,6 +184,7 @@ export class ShiftComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error creating shift:', err);
+          savePolicy(Date.now());
           const msg = err?.error?.responseMessage || err?.error?.message || 'New shift schedule created successfully';
           this.toaster.success(msg, 'Created');
           this.dialogRef.close(true);

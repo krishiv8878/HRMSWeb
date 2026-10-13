@@ -1,0 +1,104 @@
+<div class="recruitment-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon">
+        <mat-icon>{{ isEditMode ? 'edit_note' : 'work' }}</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEditMode ? 'Edit Job Opening' : 'Post New Job Opening / Requisition' }}</h2>
+        <p class="subtitle">Define target headcount, experience levels, CTC budget, and assign hiring managers</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="reqForm" (ngSubmit)="submit()" class="modal-body">
+    <div class="form-grid-2">
+      <div class="form-group full-width">
+        <label>Job Title <span class="required">*</span></label>
+        <input type="text" formControlName="title" placeholder="e.g. Senior Frontend Angular Engineer" />
+        <span class="error-msg" *ngIf="reqForm.get('title')?.touched && reqForm.get('title')?.hasError('required')">
+          Job title is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Department <span class="required">*</span></label>
+        <select formControlName="department">
+          <option *ngFor="let dep of departments" [value]="dep">{{ dep }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Work Location <span class="required">*</span></label>
+        <input type="text" formControlName="location" placeholder="e.g. Bangalore / Remote / Hybrid" />
+      </div>
+
+      <div class="form-group">
+        <label>Employment Type <span class="required">*</span></label>
+        <select formControlName="employmentType">
+          <option *ngFor="let emp of employmentTypes" [value]="emp">{{ emp }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Headcount Openings <span class="required">*</span></label>
+        <input type="number" formControlName="openPositions" min="1" />
+      </div>
+
+      <div class="form-group">
+        <label>Min Experience (Years)</label>
+        <input type="number" formControlName="experienceMin" min="0" step="0.5" />
+      </div>
+
+      <div class="form-group">
+        <label>Max Experience (Years)</label>
+        <input type="number" formControlName="experienceMax" min="0" step="0.5" />
+      </div>
+
+      <div class="form-group">
+        <label>Min Annual Budget (₹)</label>
+        <input type="number" formControlName="budgetMin" min="0" step="50000" />
+      </div>
+
+      <div class="form-group">
+        <label>Max Annual Budget (₹)</label>
+        <input type="number" formControlName="budgetMax" min="0" step="50000" />
+      </div>
+
+      <div class="form-group">
+        <label>Assign Hiring Manager</label>
+        <select formControlName="hiringManagerId">
+          <option [ngValue]="null">-- Select Hiring Manager --</option>
+          <option *ngFor="let e of employees" [value]="e.id">
+            {{ e.firstName }} {{ e.lastName }} ({{ e.designation || 'Staff' }})
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Target Close Date</label>
+        <input type="date" formControlName="targetCloseDate" />
+      </div>
+
+      <div class="form-group full-width">
+        <label>Job Description & Responsibilities <span class="required">*</span></label>
+        <textarea formControlName="description" rows="3" placeholder="Overview of the position, team, and day-to-day work..."></textarea>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Key Technical Requirements & Skills</label>
+        <textarea formControlName="requirements" rows="2" placeholder="Required qualifications, framework proficiency, etc..."></textarea>
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+    <button type="button" class="btn-submit" (click)="submit()" [disabled]="isSubmitting">
+      <mat-icon>check_circle</mat-icon> {{ isEditMode ? 'Update Requisition' : 'Post Requisition' }}
+    </button>
+  </div>
+</div>

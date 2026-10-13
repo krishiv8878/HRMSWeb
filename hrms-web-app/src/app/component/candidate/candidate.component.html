@@ -9,10 +9,13 @@
     </div>
 
     <div class="header-actions">
-      <!-- New Candidate / Requisition Button (HR & Admin Only) -->
+      <button *ngIf="isAdminOrHr" type="button" class="btn-secondary-ats" (click)="openPostJobModal()">
+        <mat-icon class="btn-icon">work_outline</mat-icon>
+        <span>+ Post Job Opening</span>
+      </button>
       <button *ngIf="isAdminOrHr" type="button" class="btn-new-requisition" (click)="openAddForm()">
-        <mat-icon class="btn-icon">add</mat-icon>
-        <span>New Requisition</span>
+        <mat-icon class="btn-icon">person_add</mat-icon>
+        <span>+ Add Candidate</span>
       </button>
     </div>
   </div>
@@ -131,12 +134,789 @@
     </div>
   </div>
 
-  <!-- Candidate Directory Table Card -->
-  <div class="table-card-container">
+  <!-- ATS Main Navigation Tabs -->
+  <div class="ats-suite-tabs-nav">
+    <ng-container *ngIf="isAdminOrHr">
+      <button
+        type="button"
+        class="ats-tab-btn"
+        [class.active]="mainTab === 'pipeline'"
+        (click)="mainTab = 'pipeline'"
+      >
+        <mat-icon class="ats-tab-icon">view_kanban</mat-icon>
+        <span class="ats-tab-label">Hiring Pipeline</span>
+        <span class="ats-tab-badge">{{ pipelineCandidates.length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="ats-tab-btn"
+        [class.active]="mainTab === 'openings'"
+        (click)="mainTab = 'openings'"
+      >
+        <mat-icon class="ats-tab-icon">work_outline</mat-icon>
+        <span class="ats-tab-label">Job Openings</span>
+        <span class="ats-tab-badge">{{ requisitions.length }}</span>
+      </button>
+    </ng-container>
+
+    <button
+      *ngIf="!isAdminOrHr"
+      type="button"
+      class="ats-tab-btn"
+      [class.active]="mainTab === 'interviews'"
+      (click)="mainTab = 'interviews'"
+    >
+      <mat-icon class="ats-tab-icon">event_note</mat-icon>
+      <span class="ats-tab-label">My Assigned Interviews</span>
+      <span class="ats-tab-badge">{{ interviewsList.length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="ats-tab-btn"
+      [class.active]="mainTab === 'candidates'"
+      (click)="mainTab = 'candidates'"
+    >
+      <mat-icon class="ats-tab-icon">people_outline</mat-icon>
+      <span class="ats-tab-label">{{ isAdminOrHr ? 'Candidate Directory' : 'Assigned Candidate Profiles' }}</span>
+      <span class="ats-tab-badge">{{ allCandidates.length }}</span>
+    </button>
+
+    <ng-container *ngIf="isAdminOrHr">
+      <button
+        type="button"
+        class="ats-tab-btn"
+        [class.active]="mainTab === 'interviews'"
+        (click)="mainTab = 'interviews'"
+      >
+        <mat-icon class="ats-tab-icon">event_note</mat-icon>
+        <span class="ats-tab-label">Interview Hub</span>
+        <span class="ats-tab-badge">{{ interviewsList.length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="ats-tab-btn"
+        [class.active]="mainTab === 'offers'"
+        (click)="mainTab = 'offers'"
+      >
+        <mat-icon class="ats-tab-icon">card_giftcard</mat-icon>
+        <span class="ats-tab-label">Offers & Onboarding</span>
+        <span class="ats-tab-badge">{{ offersList.length }}</span>
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- TAB 1: HIRING PIPELINE (KANBAN BOARD) -->
+  <div *ngIf="mainTab === 'pipeline' && isAdminOrHr" class="ats-view-container kanban-pipeline-view">
+    <!-- Pipeline Filter Bar -->
+    <div class="ats-toolbar">
+      <div class="toolbar-left">
+        <div class="filter-group">
+          <label class="filter-label">Job Opening:</label>
+          <select class="ats-select" [(ngModel)]="selectedRequisitionFilter" (ngModelChange)="loadPipeline()">
+            <option [ngValue]="null">All Openings ({{ requisitions.length }}) &bull; {{ getActiveOpeningsCount() }} Active</option>
+            <option *ngFor="let req of requisitions" [ngValue]="req.id">
+              {{ req.jobCode }} - {{ req.title }} ({{ req.department }}){{ (req.status || '').toLowerCase() === 'closed' ? ' [Closed]' : ((req.status || '').toLowerCase() === 'on hold' ? ' [On Hold]' : '') }}
+            </option>
+          </select>
+        </div>
+        <div class="pipeline-summary-pill">
+          <span>Showing <strong>{{ pipelineCandidates.length }}</strong> candidates across <strong>{{ pipelineStages.length }}</strong> stages</span>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button type="button" class="btn-ats-secondary" (click)="openPostJobModal()">
+          <mat-icon>add</mat-icon>
+          <span>Post Job</span>
+        </button>
+        <button type="button" class="btn-ats-primary" (click)="openAddForm(selectedRequisitionFilter)">
+          <mat-icon>person_add</mat-icon>
+          <span>Add Candidate</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Kanban Board Grid -->
+    <div class="kanban-board-grid">
+      <div class="kanban-column" *ngFor="let stage of pipelineStages" [attr.data-stage]="stage">
+        <!-- Stage Header -->
+        <div class="column-header" [ngClass]="'stage-header-' + stage.toLowerCase()">
+          <div class="stage-title-wrap">
+            <span class="stage-title">{{ stage }}</span>
+            <span class="stage-count">{{ getCandidatesForStage(stage).length }}</span>
+          </div>
+          <div class="stage-indicator-bar"></div>
+        </div>
+
+        <!-- Stage Cards List -->
+        <div class="column-cards-list">
+          <div
+            class="kanban-card"
+            *ngFor="let cand of getCandidatesForStage(stage)"
+            [class.card-highlight-high]="cand.matchScore && cand.matchScore >= 80"
+          >
+            <!-- Card Header: Avatar, Name, Score -->
+            <div class="card-top-row">
+              <div class="cand-avatar-wrap">
+                <div class="cand-avatar-circle">
+                  {{ (cand.firstName ? cand.firstName[0] : 'C') + (cand.lastName ? cand.lastName[0] : '') }}
+                </div>
+                <div class="cand-name-meta">
+                  <div class="cand-fullname">{{ cand.fullName }}</div>
+                  <div class="cand-role">{{ cand.appliedRole }}</div>
+                </div>
+              </div>
+              <div class="cand-score-pill" *ngIf="cand.matchScore" [ngClass]="getScoreBarClass(cand.matchScore)">
+                {{ cand.matchScore }}%
+              </div>
+            </div>
+
+            <!-- Job Opening / Source Tag -->
+            <div class="card-opening-tag" *ngIf="cand.jobRequisitionTitle || cand.jobCode">
+              <mat-icon class="tiny-icon">work_outline</mat-icon>
+              <span>{{ cand.jobCode ? cand.jobCode + ': ' : '' }}{{ cand.jobRequisitionTitle || 'Requisition' }}</span>
+            </div>
+
+            <!-- Experience & Salary Stats -->
+            <div class="card-details-grid">
+              <div class="detail-item" title="Total Experience">
+                <mat-icon class="detail-icon">work_history</mat-icon>
+                <span>{{ cand.totalExperience || '0' }} yrs exp</span>
+              </div>
+              <div class="detail-item" title="Notice Period" *ngIf="cand.noticePeriod">
+                <mat-icon class="detail-icon">timelapse</mat-icon>
+                <span>{{ cand.noticePeriod }}d notice</span>
+              </div>
+              <div class="detail-item salary-item" *ngIf="cand.expectedSalary" title="Expected CTC">
+                <mat-icon class="detail-icon">payments</mat-icon>
+                <span>Exp: ₹{{ cand.expectedSalary | number }}</span>
+              </div>
+            </div>
+
+            <!-- Interview Status Mini Pill (if any) -->
+            <div class="card-interview-status" *ngIf="cand.interviews && cand.interviews.length > 0">
+              <div class="interview-status-row">
+                <span class="round-name">{{ cand.interviews[cand.interviews.length - 1].roundName }}</span>
+                <span class="interview-result-badge" [ngClass]="'rec-' + (cand.interviews[cand.interviews.length - 1].recommendation || 'pending').toLowerCase().replace(' ', '-')">
+                  {{ cand.interviews[cand.interviews.length - 1].recommendation || cand.interviews[cand.interviews.length - 1].status }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Card Quick Action Footer -->
+            <div class="card-actions-bar">
+              <!-- Move Stage Menu -->
+              <button
+                type="button"
+                class="card-action-btn btn-stage-move"
+                [matMenuTriggerFor]="cardStageMenu"
+                title="Advance Candidate Stage"
+              >
+                <span>Move</span>
+                <mat-icon class="action-icon">arrow_drop_down</mat-icon>
+              </button>
+              <mat-menu #cardStageMenu="matMenu">
+                <div class="menu-header-label">Move {{ cand.firstName }} to:</div>
+                <button
+                  mat-menu-item
+                  *ngFor="let s of pipelineStages"
+                  [disabled]="s.toLowerCase() === (cand.stage || '').toLowerCase()"
+                  (click)="advanceCandidateStage(cand.id, s)"
+                >
+                  <mat-icon>forward</mat-icon>
+                  <span>{{ s }}</span>
+                </button>
+              </mat-menu>
+
+              <!-- Schedule Interview Button -->
+              <button
+                type="button"
+                class="card-action-btn btn-schedule"
+                (click)="openScheduleInterviewModal(cand)"
+                title="Schedule Interview"
+              >
+                <mat-icon class="action-icon">calendar_month</mat-icon>
+                <span>Schedule</span>
+              </button>
+
+              <!-- Extend Offer Button -->
+              <button
+                type="button"
+                class="card-action-btn btn-offer"
+                (click)="openCreateOfferModal(cand)"
+                title="Generate CTC Offer"
+              >
+                <mat-icon class="action-icon">card_giftcard</mat-icon>
+                <span>Offer</span>
+              </button>
+
+              <!-- Quick Onboard Button (If Offered or Hired) -->
+              <button
+                *ngIf="cand.stage === 'Offered' || cand.stage === 'Hired'"
+                type="button"
+                class="card-action-btn btn-onboard"
+                (click)="onboardCandidateFromATS(cand)"
+                title="1-Click Onboard Employee"
+              >
+                <mat-icon class="action-icon">how_to_reg</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State in Column -->
+          <div class="kanban-empty-state" *ngIf="getCandidatesForStage(stage).length === 0">
+            <mat-icon class="empty-icon">inbox</mat-icon>
+            <p>No candidates in {{ stage }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: JOB OPENINGS (REQUISITIONS) -->
+  <div *ngIf="mainTab === 'openings' && isAdminOrHr" class="ats-view-container job-openings-view">
+    <div class="ats-toolbar">
+      <div class="toolbar-left">
+        <div class="toolbar-title-wrap">
+          <h2 class="view-section-title">Job Requisitions Master</h2>
+          <p class="view-section-sub">Manage active recruitment pipelines, headcount budgets, and hiring manager roles.</p>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button type="button" class="btn-ats-primary" (click)="openPostJobModal()">
+          <mat-icon>add</mat-icon>
+          <span>+ Post Job Opening</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="requisitions-grid">
+      <div class="req-card" *ngFor="let req of requisitions">
+        <div class="req-card-header">
+          <div class="req-title-wrap">
+            <span class="req-code-badge">{{ req.jobCode }}</span>
+            <h3 class="req-title">{{ req.title }}</h3>
+            <span class="req-dept-pill">{{ req.department }} • {{ req.location }}</span>
+          </div>
+          <div class="req-status-wrap">
+            <span class="req-status-badge" [ngClass]="'status-' + req.status.toLowerCase().replace(' ', '-')">
+              {{ req.status }}
+            </span>
+          </div>
+        </div>
+
+        <div class="req-card-body">
+          <!-- Headcount Progress Bar -->
+          <div class="headcount-progress-section">
+            <div class="headcount-label-row">
+              <span class="headcount-label">Headcount Progress</span>
+              <span class="headcount-val"><strong>{{ req.filledPositions }}</strong> / {{ req.openPositions }} Filled</span>
+            </div>
+            <div class="headcount-track">
+              <div
+                class="headcount-fill"
+                [style.width.%]="req.openPositions > 0 ? (req.filledPositions / req.openPositions) * 100 : 0"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Specs Grid -->
+          <div class="req-specs-grid">
+            <div class="spec-cell">
+              <span class="spec-label">Experience</span>
+              <span class="spec-val">{{ req.experienceMin }} - {{ req.experienceMax }} Years</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">Budget</span>
+              <span class="spec-val">₹{{ req.budgetMin }} - ₹{{ req.budgetMax }} LPA</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">Type</span>
+              <span class="spec-val">{{ req.employmentType }}</span>
+            </div>
+            <div class="spec-cell" *ngIf="req.targetCloseDate">
+              <span class="spec-label">Target Close</span>
+              <span class="spec-val">{{ req.targetCloseDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+
+          <!-- Hiring Team Chips -->
+          <div class="hiring-team-row">
+            <div class="team-chip" *ngIf="req.hiringManagerName">
+              <mat-icon class="chip-icon">person</mat-icon>
+              <span>HM: {{ req.hiringManagerName }}</span>
+            </div>
+            <div class="team-chip" *ngIf="req.recruiterName">
+              <mat-icon class="chip-icon">badge</mat-icon>
+              <span>Recruiter: {{ req.recruiterName }}</span>
+            </div>
+          </div>
+
+          <!-- Mini Funnel Breakdown -->
+          <div class="funnel-counter-bar">
+            <div class="funnel-item">
+              <span class="funnel-num">{{ req.totalApplicants }}</span>
+              <span class="funnel-name">Total</span>
+            </div>
+            <div class="funnel-item">
+              <span class="funnel-num">{{ req.screeningCount }}</span>
+              <span class="funnel-name">Screening</span>
+            </div>
+            <div class="funnel-item">
+              <span class="funnel-num">{{ req.interviewCount }}</span>
+              <span class="funnel-name">Interview</span>
+            </div>
+            <div class="funnel-item">
+              <span class="funnel-num">{{ req.offeredCount }}</span>
+              <span class="funnel-name">Offered</span>
+            </div>
+            <div class="funnel-item highlight-hired">
+              <span class="funnel-num">{{ req.hiredCount }}</span>
+              <span class="funnel-name">Hired</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="req-card-footer">
+          <button type="button" class="btn-view-pipeline" (click)="viewRequisitionPipeline(req.id)">
+            <mat-icon>view_kanban</mat-icon>
+            <span>View Pipeline</span>
+          </button>
+
+          <div class="footer-actions-right">
+            <button type="button" class="btn-req-edit" (click)="openPostJobModal(req)" title="Edit Job Opening">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button
+              type="button"
+              class="btn-req-more"
+              [matMenuTriggerFor]="reqMenu"
+              title="More Actions"
+            >
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #reqMenu="matMenu">
+              <button mat-menu-item (click)="toggleRequisitionStatus(req, 'Open')">
+                <mat-icon>check_circle</mat-icon>
+                <span>Set Status: Open</span>
+              </button>
+              <button mat-menu-item (click)="toggleRequisitionStatus(req, 'On Hold')">
+                <mat-icon>pause_circle</mat-icon>
+                <span>Set Status: On Hold</span>
+              </button>
+              <button mat-menu-item (click)="toggleRequisitionStatus(req, 'Closed')">
+                <mat-icon>lock</mat-icon>
+                <span>Set Status: Closed</span>
+              </button>
+              <button mat-menu-item class="danger-menu-item" (click)="deleteRequisition(req)">
+                <mat-icon>delete</mat-icon>
+                <span>Delete Requisition</span>
+              </button>
+            </mat-menu>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: INTERVIEW HUB & SCORECARDS -->
+  <div *ngIf="mainTab === 'interviews'" class="ats-view-container interviews-hub-view">
+    <div class="ats-toolbar">
+      <div class="toolbar-left">
+        <div class="toolbar-title-wrap">
+          <h2 class="view-section-title">{{ isAdminOrHr ? 'Interview Hub & Structured Scorecards' : 'My Scheduled Interviews & Scorecards' }}</h2>
+          <p class="view-section-sub">{{ isAdminOrHr ? 'Track scheduled technical, managerial, and HR rounds with interviewer recommendations.' : 'Conduct technical evaluations, record scores, and submit your hiring recommendations.' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interview Hub Sub-Navigation Sections & Search Filter -->
+    <div class="interview-subtabs-bar">
+      <div class="subtabs-group">
+        <button
+          type="button"
+          class="subtab-btn"
+          [class.active]="interviewSubTab === 'all'"
+          (click)="interviewSubTab = 'all'"
+        >
+          <span>All Interviews</span>
+          <span class="subtab-badge">{{ interviewsList.length }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="subtab-btn"
+          [class.active]="interviewSubTab === 'scheduled'"
+          (click)="interviewSubTab = 'scheduled'"
+        >
+          <span class="status-dot dot-scheduled"></span>
+          <span>Upcoming / Scheduled</span>
+          <span class="subtab-badge badge-scheduled">{{ scheduledInterviewsCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="subtab-btn"
+          [class.active]="interviewSubTab === 'round1'"
+          (click)="interviewSubTab = 'round1'"
+        >
+          <span>Round 1 (Screening / Tech 1)</span>
+          <span class="subtab-badge">{{ round1InterviewsCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="subtab-btn"
+          [class.active]="interviewSubTab === 'round2'"
+          (click)="interviewSubTab = 'round2'"
+        >
+          <span>Round 2+ (Advanced / Final)</span>
+          <span class="subtab-badge">{{ round2InterviewsCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="subtab-btn"
+          [class.active]="interviewSubTab === 'completed'"
+          (click)="interviewSubTab = 'completed'"
+        >
+          <span class="status-dot dot-completed"></span>
+          <span>Evaluated / Completed</span>
+          <span class="subtab-badge badge-completed">{{ completedInterviewsCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="subtab-btn"
+          [class.active]="interviewSubTab === 'cancelled'"
+          (click)="interviewSubTab = 'cancelled'"
+        >
+          <span class="status-dot dot-cancelled"></span>
+          <span>Cancelled</span>
+          <span class="subtab-badge badge-cancelled">{{ cancelledInterviewsCount }}</span>
+        </button>
+      </div>
+
+      <div class="search-wrap">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          placeholder="Search candidate, round, interviewer..."
+          [(ngModel)]="interviewSearchQuery"
+          class="subtab-search-input"
+        />
+        <button
+          type="button"
+          *ngIf="interviewSearchQuery"
+          class="btn-clear-search"
+          (click)="interviewSearchQuery = ''"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="ats-table-card">
+      <table class="ats-data-table">
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Job Opening</th>
+            <th>Round</th>
+            <th>Interviewer</th>
+            <th>Date & Time</th>
+            <th>Status / Outcome</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let int of filteredInterviewsList">
+            <td>
+              <div class="table-cand-cell">
+                <div class="cand-name-primary">{{ int.candidateName }}</div>
+                <div class="cand-meta-sub">{{ int.candidateRole }} • {{ int.candidateEmail }}</div>
+              </div>
+            </td>
+            <td>
+              <span class="job-code-chip">{{ int.jobTitle || 'General' }}</span>
+            </td>
+            <td>
+              <span class="round-badge">{{ int.roundName }}</span>
+            </td>
+            <td>
+              <div class="interviewer-cell">
+                <mat-icon class="user-icon">account_circle</mat-icon>
+                <span>{{ int.interviewerName }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="datetime-cell">
+                <div class="dt-main">{{ int.scheduledAt | date:'mediumDate' }}, {{ int.scheduledAt | date:'shortTime' }}</div>
+                <div class="dt-sub">{{ int.durationMinutes }} Minutes</div>
+              </div>
+            </td>
+            <td>
+              <div *ngIf="int.status === 'Completed'" class="scorecard-outcome">
+                <div class="rating-stars" *ngIf="int.rating">
+                  <span *ngFor="let s of [1,2,3,4,5]" class="star-icon" [class.star-filled]="s <= int.rating">★</span>
+                  <strong class="rating-num">({{ int.rating }}/5)</strong>
+                </div>
+                <span class="rec-badge" [ngClass]="'rec-' + (int.recommendation || 'hire').toLowerCase().replace(' ', '-')">
+                  {{ int.recommendation }}
+                </span>
+              </div>
+              <div *ngIf="int.status !== 'Completed'">
+                <span class="status-chip" [ngClass]="'status-' + int.status.toLowerCase()">
+                  {{ int.status }}
+                </span>
+              </div>
+            </td>
+            <td class="text-right">
+              <div class="table-actions-cell">
+                <a
+                  *ngIf="int.meetingLink && int.status !== 'Cancelled'"
+                  [href]="int.meetingLink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn-join-call"
+                  title="Join Video Meeting"
+                >
+                  <mat-icon>videocam</mat-icon>
+                  <span>Join</span>
+                </a>
+                <button
+                  *ngIf="int.status !== 'Cancelled'"
+                  type="button"
+                  class="btn-table-primary"
+                  (click)="openScorecardModal(int)"
+                  [title]="int.status === 'Completed' ? 'View/Update Scorecard' : 'Submit Scorecard Evaluation'"
+                >
+                  <mat-icon>rate_review</mat-icon>
+                  <span>{{ int.status === 'Completed' ? 'Scorecard' : 'Evaluate' }}</span>
+                </button>
+                <button
+                  *ngIf="int.status === 'Scheduled'"
+                  type="button"
+                  class="btn-table-icon danger"
+                  (click)="cancelInterview(int)"
+                  title="Cancel Interview"
+                >
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredInterviewsList.length === 0">
+            <td colspan="7" class="empty-table-cell">
+              <div class="empty-state-wrap">
+                <mat-icon class="empty-icon">{{ interviewsList.length === 0 ? 'event_busy' : 'search_off' }}</mat-icon>
+                <p *ngIf="interviewsList.length === 0">No interviews scheduled yet. Open the Hiring Pipeline or Candidate Directory to schedule rounds.</p>
+                <p *ngIf="interviewsList.length > 0">No interviews found in the selected section or search query.</p>
+                <button
+                  *ngIf="interviewsList.length > 0 && (interviewSubTab !== 'all' || interviewSearchQuery)"
+                  type="button"
+                  class="btn-reset-filter"
+                  (click)="interviewSubTab = 'all'; interviewSearchQuery = ''"
+                >
+                  Show All Interviews ({{ interviewsList.length }})
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 5: OFFERS & ONBOARDING -->
+  <div *ngIf="mainTab === 'offers' && isAdminOrHr" class="ats-view-container offers-hub-view">
+    <div class="ats-toolbar">
+      <div class="toolbar-left">
+        <div class="toolbar-title-wrap">
+          <h2 class="view-section-title">Job Offers & 1-Click Onboarding</h2>
+          <p class="view-section-sub">Generate CTC offer letters, track acceptance status, and convert candidates directly into active employees.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ats-table-card">
+      <table class="ats-data-table">
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Designation</th>
+            <th>Offered CTC</th>
+            <th>Joining Date</th>
+            <th>Status</th>
+            <th>Approved By</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let offer of offersList">
+            <td>
+              <div class="table-cand-cell">
+                <div class="cand-name-primary">{{ offer.candidateName }}</div>
+                <div class="cand-meta-sub">{{ offer.candidateEmail }}</div>
+              </div>
+            </td>
+            <td>
+              <span class="role-chip">{{ offer.designation }}</span>
+            </td>
+            <td>
+              <div class="ctc-val-cell">
+                <strong>₹{{ offer.offeredCtc | number }}</strong>
+                <span class="ctc-sub">per annum</span>
+              </div>
+            </td>
+            <td>
+              <div class="joining-date-cell">
+                <span>{{ offer.joiningDate | date:'mediumDate' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="offer-status-badge" [ngClass]="'offer-' + offer.status.toLowerCase()">
+                {{ offer.status }}
+              </span>
+            </td>
+            <td>
+              <span class="approver-name">{{ offer.approvedBy || 'HR Admin' }}</span>
+            </td>
+            <td class="text-right">
+              <div class="table-actions-cell">
+                <!-- Status Change Dropdown -->
+                <button
+                  type="button"
+                  class="btn-table-secondary"
+                  [matMenuTriggerFor]="offerStatusMenu"
+                  title="Update Offer Status"
+                >
+                  <span>Status</span>
+                  <mat-icon>arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #offerStatusMenu="matMenu">
+                  <button mat-menu-item (click)="updateOfferStatus(offer, 'Sent')">
+                    <mat-icon>send</mat-icon>
+                    <span>Mark as Sent</span>
+                  </button>
+                  <button mat-menu-item (click)="updateOfferStatus(offer, 'Accepted')">
+                    <mat-icon>check_circle</mat-icon>
+                    <span>Mark as Accepted</span>
+                  </button>
+                  <button mat-menu-item (click)="updateOfferStatus(offer, 'Declined')">
+                    <mat-icon>cancel</mat-icon>
+                    <span>Mark as Declined</span>
+                  </button>
+                  <button mat-menu-item (click)="updateOfferStatus(offer, 'Revoked')">
+                    <mat-icon>block</mat-icon>
+                    <span>Revoke Offer</span>
+                  </button>
+                </mat-menu>
+
+                <!-- If already onboarded, show Onboarded Badge & Directory Button -->
+                <div *ngIf="isOfferCandidateOnboarded(offer)" class="onboarded-pill-group">
+                  <span class="badge-onboarded-pill">
+                    <mat-icon>check_circle</mat-icon>
+                    <span>Onboarded</span>
+                  </span>
+                  <button
+                    type="button"
+                    class="btn-view-employee"
+                    (click)="navigateToEmployees()"
+                    title="Candidate successfully onboarded as Employee. Click to view in Employee Directory."
+                  >
+                    <mat-icon>badge</mat-icon>
+                    <span>Directory</span>
+                  </button>
+                </div>
+
+                <!-- 1-Click Onboard Button: Only if NOT onboarded and status is Accepted -->
+                <button
+                  *ngIf="!isOfferCandidateOnboarded(offer)"
+                  type="button"
+                  class="btn-table-primary onboard-highlight"
+                  [disabled]="offer.status !== 'Accepted'"
+                  (click)="onboardOfferCandidate(offer)"
+                  [title]="offer.status === 'Accepted' ? '1-Click Convert to Employee Directory' : 'Candidate must accept offer before onboarding'"
+                >
+                  <mat-icon>how_to_reg</mat-icon>
+                  <span>1-Click Onboard</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="offersList.length === 0">
+            <td colspan="7" class="empty-table-cell">
+              <div class="empty-state-wrap">
+                <mat-icon class="empty-icon">card_giftcard</mat-icon>
+                <p>No job offers released yet. Create an offer from the Hiring Pipeline or Candidate Directory.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: CANDIDATE DIRECTORY TABLE CARD -->
+  <div class="table-card-container" *ngIf="mainTab === 'candidates'">
+    <!-- Top Lifecycle Status Tabs (HR and Admin Only) -->
+    <div *ngIf="isAdminOrHr" class="candidate-tabs-header">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'active'"
+        (click)="switchTab('active')"
+      >
+        <mat-icon class="tab-icon">flash_on</mat-icon>
+        <span class="tab-text">Active Pipeline</span>
+        <span class="tab-badge badge-active-count">{{ activeCandidatesCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'onboarded'"
+        (click)="switchTab('onboarded')"
+      >
+        <mat-icon class="tab-icon">how_to_reg</mat-icon>
+        <span class="tab-text">Onboarded / Hired</span>
+        <span class="tab-badge badge-onboarded-count">{{ onboardedCandidatesCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'rejected'"
+        (click)="switchTab('rejected')"
+      >
+        <mat-icon class="tab-icon">cancel</mat-icon>
+        <span class="tab-text">Rejected / Archived</span>
+        <span class="tab-badge badge-rejected-count">{{ rejectedCandidatesCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'all'"
+        (click)="switchTab('all')"
+      >
+        <mat-icon class="tab-icon">view_list</mat-icon>
+        <span class="tab-text">All Candidates</span>
+        <span class="tab-badge badge-all-count">{{ allCandidatesCount }}</span>
+      </button>
+    </div>
+
     <!-- Table Header Controls Bar -->
     <div class="table-header-bar">
       <div class="table-title">
-        <h2>{{ isAdminOrHr ? 'Candidate Directory' : 'Assigned Candidate Interviews' }}</h2>
+        <h2>
+          {{ getTabHeading() }}
+          <span class="title-count">({{ filteredCandidates.length }})</span>
+        </h2>
+        <p class="title-sub">{{ getTabSubheading() }}</p>
       </div>
 
       <div class="table-controls-right">
@@ -155,31 +935,50 @@
 
         <!-- Search Input -->
         <div class="search-box">
-          <mat-icon class="search-icon">filter_list</mat-icon>
+          <mat-icon class="search-icon">search</mat-icon>
           <input
             type="text"
             [(ngModel)]="searchQuery"
             (input)="filterCandidates()"
-            placeholder="Filter candidates..."
+            placeholder="Search candidates by name, email, role..."
             class="search-input"
           />
+          <button *ngIf="searchQuery" type="button" class="clear-search-btn" (click)="searchQuery = ''; filterCandidates()" title="Clear search">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
 
-        <!-- Stage Filter Dropdown -->
-        <div class="filter-dropdown">
-          <select [(ngModel)]="selectedStage" (change)="filterCandidates()" class="custom-select">
-            <option *ngFor="let st of stagesFilterOptions" [value]="st">
-              {{ st === 'All' ? 'All Stages' : st }}
-            </option>
+        <!-- Role Filter Dropdown (HR & Admin Only) -->
+        <div class="filter-dropdown" *ngIf="isAdminOrHr && availableRoles.length > 0">
+          <select [(ngModel)]="selectedRole" (change)="filterCandidates()" class="custom-select" title="Filter by Applied Role">
+            <option value="All">All Roles</option>
+            <option *ngFor="let r of availableRoles" [value]="r">{{ r }}</option>
           </select>
         </div>
 
-        <!-- Tool Icons -->
-        <button type="button" class="tool-icon-btn" title="Filter settings">
-          <mat-icon>tune</mat-icon>
-        </button>
-        <button type="button" class="tool-icon-btn" title="Toggle columns">
-          <mat-icon>view_column</mat-icon>
+        <!-- Stage Filter Dropdown (HR & Admin Only) -->
+        <div class="filter-dropdown" *ngIf="isAdminOrHr && (activeTab === 'active' || activeTab === 'all')">
+          <select [(ngModel)]="selectedStage" (change)="filterCandidates()" class="custom-select" title="Filter by Stage">
+            <option value="All">{{ activeTab === 'active' ? 'All Active Stages' : 'All Stages' }}</option>
+            <option *ngFor="let st of currentStageOptions" [value]="st">{{ st }}</option>
+          </select>
+        </div>
+
+        <!-- Sort By Dropdown (HR & Admin Only) -->
+        <div class="filter-dropdown sort-dropdown" *ngIf="isAdminOrHr">
+          <select [(ngModel)]="sortBy" (change)="filterCandidates()" class="custom-select sort-select" title="Sort candidate directory">
+            <option value="newest">🕒 Most Recent First</option>
+            <option value="score">🎯 Highest Match Score</option>
+            <option value="name">🔤 Name (A - Z)</option>
+            <option value="exp">💼 Highest Experience</option>
+            <option value="notice">⚡ Shortest Notice Period</option>
+          </select>
+        </div>
+
+        <!-- Export CSV Button (HR & Admin Only) -->
+        <button *ngIf="isAdminOrHr" type="button" class="btn-export-inline" (click)="onExportReport()" title="Export filtered candidates to CSV">
+          <mat-icon>download</mat-icon>
+          <span>Export</span>
         </button>
       </div>
     </div>
@@ -189,7 +988,7 @@
       <table class="candidate-table">
         <thead>
           <tr>
-            <th class="col-checkbox">
+            <th class="col-checkbox" *ngIf="isAdminOrHr">
               <input
                 type="checkbox"
                 [checked]="selectAllChecked"
@@ -201,17 +1000,17 @@
             <th>CANDIDATE NAME</th>
             <th>APPLIED ROLE</th>
             <th>STAGE</th>
-            <th>MATCH SCORE</th>
-            <th>EXPERIENCE & CTC</th>
-            <th>STATUS</th>
+            <th *ngIf="isAdminOrHr">MATCH SCORE</th>
+            <th>{{ isAdminOrHr ? 'EXPERIENCE & CTC' : 'EXPERIENCE' }}</th>
+            <th *ngIf="isAdminOrHr">STATUS</th>
             <th>LAST UPDATED</th>
             <th class="text-right">ACTIONS</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let candidate of paginatedCandidates" [class.is-inactive-row]="candidate.isActive === false">
-            <!-- Checkbox Selection -->
-            <td class="col-checkbox">
+            <!-- Checkbox Selection (HR & Admin Only) -->
+            <td class="col-checkbox" *ngIf="isAdminOrHr">
               <input
                 type="checkbox"
                 [(ngModel)]="candidate.selected"
@@ -251,9 +1050,9 @@
               </span>
               <ng-container *ngIf="candidate.stage !== 'Onboarded' && candidate.stage !== 'Rejected' && !candidate.isOnboarded">
                 <div *ngIf="candidate.interviewerName" class="interviewer-mini-tag" [class.assigned-to-you]="isAssignedToCurrentUser(candidate)" [title]="'Assigned Interviewer: ' + candidate.interviewerName + (candidate.interviewerRemarks ? '&#10;Remarks: ' + candidate.interviewerRemarks : '')">
-                  <mat-icon>{{ isAssignedToCurrentUser(candidate) ? 'stars' : 'person' }}</mat-icon>
+                  <mat-icon>{{ isCurrentlyAssignedPending(candidate) ? 'stars' : 'person' }}</mat-icon>
                   <span class="int-name">{{ candidate.interviewerName }}</span>
-                  <span *ngIf="isAssignedToCurrentUser(candidate)" class="you-badge">You</span>
+                  <span *ngIf="isCurrentlyAssignedPending(candidate)" class="you-badge">You</span>
                   <span *ngIf="candidate.interviewRating" class="star-pill">★{{ candidate.interviewRating }}</span>
                 </div>
                 <div *ngIf="!candidate.interviewerName && (candidate.interviewStatus?.includes('Awaiting HR') || candidate.interviewerRemarks)" class="interviewer-mini-tag tag-pending-hr" [title]="'Feedback submitted' + (candidate.interviewerRemarks ? ': ' + candidate.interviewerRemarks : '') + '. Awaiting HR review.'">
@@ -262,10 +1061,16 @@
                   <span *ngIf="candidate.interviewRating" class="star-pill">★{{ candidate.interviewRating }}</span>
                 </div>
               </ng-container>
+
+              <!-- Rejection feedback note if rejected -->
+              <div *ngIf="candidate.stage === 'Rejected' && candidate.interviewerRemarks" class="rejection-feedback-note" [title]="candidate.interviewerRemarks">
+                <mat-icon>feedback</mat-icon>
+                <span>{{ candidate.interviewerRemarks }}</span>
+              </div>
             </td>
 
-            <!-- Match Score with Progress Bar -->
-            <td class="col-score">
+            <!-- Match Score with Progress Bar (HR & Admin Only) -->
+            <td class="col-score" *ngIf="isAdminOrHr">
               <div class="match-score-wrapper">
                 <div class="score-progress-track">
                   <div class="score-progress-fill" [style.width.%]="candidate.matchScore || 75"></div>
@@ -274,16 +1079,16 @@
               </div>
             </td>
 
-            <!-- Experience & CTC -->
+            <!-- Experience & CTC (CTC hidden for non-HR) -->
             <td class="col-exp">
               <div class="exp-wrapper">
                 <span class="exp-text"><strong>{{ candidate.totalExperience }}</strong> Yrs (Rel: {{ candidate.relevantExperience }} Yrs)</span>
-                <span class="ctc-text">{{ candidate.expectedSalary }}</span>
+                <span *ngIf="isAdminOrHr" class="ctc-text">{{ candidate.expectedSalary }}</span>
               </div>
             </td>
 
-            <!-- Status (Display Only Badge) -->
-            <td class="col-status">
+            <!-- Status (Display Only Badge - HR & Admin Only) -->
+            <td class="col-status" *ngIf="isAdminOrHr">
               <span class="status-badge" [ngClass]="candidate.isActive ? 'badge-active' : 'badge-inactive'">
                 <span class="dot"></span>
                 <span>{{ candidate.isActive ? 'Active' : 'Inactive' }}</span>
@@ -298,69 +1103,148 @@
             <!-- Actions Menu -->
             <td class="col-actions text-right">
               <div class="action-btn-group">
-                <!-- Interviewer Assignment & Pipeline Hub (Hidden if Candidate is Rejected or Onboarded; for HR/Admin or Assigned Interviewer) -->
-                <button
-                  *ngIf="candidate.stage !== 'Rejected' && candidate.stage !== 'Onboarded' && !candidate.isOnboarded && (isAdminOrHr || isAssignedToCurrentUser(candidate))"
-                  type="button"
-                  class="btn-action-icon btn-interview"
-                  [class.btn-interview-assigned]="isAssignedToCurrentUser(candidate)"
-                  (click)="openInterviewModal(candidate)"
-                  [title]="isAssignedToCurrentUser(candidate) ? 'Conduct Your Assigned Interview & Enter Evaluation' : 'Assign Interviewer & Manage Rounds'"
-                >
-                  <mat-icon>{{ isAssignedToCurrentUser(candidate) ? 'rate_review' : 'how_to_vote' }}</mat-icon>
-                </button>
+                <!-- Non-HR Interviewer Single Action: Conduct Evaluation or View Submitted -->
+                <ng-container *ngIf="!isAdminOrHr">
+                  <button
+                    *ngIf="getInterviewForCandidate(candidate)?.status === 'Scheduled' || getInterviewForCandidate(candidate)?.status === 'Rescheduled' || isCurrentlyAssignedPending(candidate)"
+                    type="button"
+                    class="btn-interviewer-eval"
+                    (click)="openScorecardForCandidate(candidate)"
+                    title="Evaluate Assigned Candidate & Submit Scorecard"
+                  >
+                    <mat-icon>rate_review</mat-icon>
+                    <span>Evaluate</span>
+                  </button>
 
-                <!-- Onboard Action: Only shown for HR / Admin AND if Candidate is Selected/Offered AND NOT already onboarded -->
-                <button
-                  *ngIf="isAdminOrHr && (candidate.stage === 'Selected / Hired' || candidate.stage === 'Offer Extended' || candidate.stage === 'Offer Accepted') && !candidate.isOnboarded"
-                  type="button"
-                  class="btn-action-icon btn-hire"
-                  (click)="openOnboardModal(candidate)"
-                  title="Onboard Candidate as Employee"
-                >
-                  <mat-icon>how_to_reg</mat-icon>
-                </button>
+                  <button
+                    *ngIf="getInterviewForCandidate(candidate)?.status === 'Completed' || (!isCurrentlyAssignedPending(candidate) && hasInterviewForCandidate(candidate))"
+                    type="button"
+                    class="btn-interviewer-view"
+                    (click)="openScorecardForCandidate(candidate)"
+                    title="View submitted interview evaluation scorecard"
+                  >
+                    <mat-icon>check_circle</mat-icon>
+                    <span>View Scorecard</span>
+                  </button>
+                </ng-container>
 
-                <!-- Verified Onboarded Badge (Replaces onboard button once hired/onboarded) -->
-                <span
-                  *ngIf="candidate.stage === 'Onboarded' || candidate.isOnboarded"
-                  class="badge-onboarded-pill"
-                  title="Candidate successfully onboarded as Employee"
-                >
-                  <mat-icon>check_circle</mat-icon>
-                  <span>Onboarded</span>
-                </span>
-                <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon edit-btn" (click)="Edit(candidate)" title="Edit Candidate">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                  *ngIf="isAdminOrHr"
-                  type="button"
-                  class="btn-action-icon"
-                  [class.btn-toggle-off]="candidate.isActive !== false"
-                  [class.btn-toggle-on]="candidate.isActive === false"
-                  (click)="onToggleActive(candidate)"
-                  [title]="candidate.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
-                >
-                  <mat-icon>{{ candidate.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                </button>
-                <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon btn-delete" (click)="Delete(candidate.id)" title="Delete Candidate">
-                  <mat-icon>delete</mat-icon>
-                </button>
+                <!-- HR / Admin Actions -->
+                <ng-container *ngIf="isAdminOrHr">
+                  <!-- Schedule Interview Round -->
+                  <button
+                    *ngIf="candidate.stage !== 'Rejected' && candidate.stage !== 'Onboarded' && !candidate.isOnboarded"
+                    type="button"
+                    class="btn-action-icon btn-interview"
+                    (click)="openScheduleInterviewModal(candidate)"
+                    title="Schedule Interview Round"
+                  >
+                    <mat-icon>event_note</mat-icon>
+                  </button>
+
+                  <!-- Scorecard / Evaluation Action -->
+                  <button
+                    *ngIf="hasInterviewForCandidate(candidate)"
+                    type="button"
+                    class="btn-action-icon btn-scorecard"
+                    (click)="openScorecardForCandidate(candidate)"
+                    [title]="getInterviewForCandidate(candidate)?.status === 'Completed' ? 'View/Update Scorecard' : 'Conduct Scorecard Evaluation'"
+                  >
+                    <mat-icon>rate_review</mat-icon>
+                  </button>
+
+                  <!-- Offer Action: for candidates in interview or selected stage -->
+                  <button
+                    *ngIf="candidate.stage !== 'Rejected' && candidate.stage !== 'Onboarded' && !candidate.isOnboarded && (candidate.stage === 'Selected / Hired' || candidate.stage === 'Interview' || candidate.stage === 'Technical Interview' || candidate.stage === 'Offered')"
+                    type="button"
+                    class="btn-action-icon btn-offer"
+                    (click)="openCreateOfferModal(candidate)"
+                    title="Generate Job Offer"
+                  >
+                    <mat-icon>card_giftcard</mat-icon>
+                  </button>
+
+                  <!-- Onboard Action: Only shown for HR/Admin AND if Candidate is Selected/Offered AND NOT already onboarded -->
+                  <button
+                    *ngIf="isAdminOrHr && (candidate.stage === 'Selected / Hired' || candidate.stage === 'Offer Extended' || candidate.stage === 'Offer Accepted' || candidate.stage === 'Offered' || candidate.stage === 'Hired') && !candidate.isOnboarded"
+                    type="button"
+                    class="btn-action-icon btn-hire"
+                    (click)="openOnboardModal(candidate)"
+                    title="Onboard Candidate as Employee"
+                  >
+                    <mat-icon>how_to_reg</mat-icon>
+                  </button>
+
+                  <!-- Onboarded Candidate Badge & Link to Employee Directory -->
+                  <button
+                    *ngIf="candidate.stage === 'Onboarded' || candidate.isOnboarded"
+                    type="button"
+                    class="btn-view-employee"
+                    (click)="navigateToEmployees()"
+                    title="Candidate successfully onboarded as Employee. Click to view in Employee Directory."
+                  >
+                    <mat-icon>badge</mat-icon>
+                    <span>View in Directory</span>
+                  </button>
+
+                  <!-- Reject Action for Active Candidates (HR / Admin only) -->
+                  <button
+                    *ngIf="isAdminOrHr && candidate.stage !== 'Rejected' && candidate.stage !== 'Onboarded' && !candidate.isOnboarded"
+                    type="button"
+                    class="btn-action-icon btn-disqualify"
+                    (click)="rejectCandidate(candidate)"
+                    title="Disqualify / Move to Rejected"
+                  >
+                    <mat-icon>block</mat-icon>
+                  </button>
+
+                  <!-- Reactivate Action for Rejected Candidates (HR / Admin only) -->
+                  <button
+                    *ngIf="isAdminOrHr && candidate.stage === 'Rejected'"
+                    type="button"
+                    class="btn-action-icon btn-reactivate"
+                    (click)="reactivateCandidate(candidate)"
+                    title="Reactivate Candidate back to Active Pipeline"
+                  >
+                    <mat-icon>replay</mat-icon>
+                  </button>
+
+                  <!-- Edit Candidate Details -->
+                  <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon edit-btn" (click)="Edit(candidate)" title="Edit Candidate">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+
+                  <!-- Active / Inactive Toggle -->
+                  <button
+                    *ngIf="isAdminOrHr"
+                    type="button"
+                    class="btn-action-icon"
+                    [class.btn-toggle-off]="candidate.isActive !== false"
+                    [class.btn-toggle-on]="candidate.isActive === false"
+                    (click)="onToggleActive(candidate)"
+                    [title]="candidate.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
+                  >
+                    <mat-icon>{{ candidate.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                  </button>
+
+                  <!-- Delete Candidate -->
+                  <button *ngIf="isAdminOrHr" type="button" class="btn-action-icon btn-delete" (click)="Delete(candidate.id)" title="Delete Candidate">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </ng-container>
               </div>
             </td>
           </tr>
 
           <!-- Empty State -->
           <tr *ngIf="paginatedCandidates.length === 0">
-            <td colspan="9" class="empty-state">
+            <td [attr.colspan]="isAdminOrHr ? 9 : 5" class="empty-state">
               <div class="empty-box">
                 <mat-icon class="empty-icon">person_search</mat-icon>
                 <p *ngIf="allCandidates.length === 0 && isAdminOrHr">
                   No candidates found in the database. Click <strong>'+ New Requisition'</strong> to add your first candidate.
                 </p>
                 <p *ngIf="allCandidates.length === 0 && !isAdminOrHr">
-                  No candidate interviews are currently assigned to you. When HR or Admin assigns an interview round to you, it will appear here.
+                  You currently have no candidate interviews assigned to you. When HR or Admin assigns an interview round to you, it will appear here.
                 </p>
                 <p *ngIf="allCandidates.length > 0">
                   No candidates match your search filter criteria.

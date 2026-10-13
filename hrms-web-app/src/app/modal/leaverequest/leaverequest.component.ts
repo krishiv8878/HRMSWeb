@@ -10,6 +10,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { ToastrService } from 'ngx-toastr';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { RbacService } from '../../core/rbac.service';
 
 export interface LeaveTypeItem {
@@ -40,10 +41,14 @@ export class LeaverequestComponent implements OnInit {
   private fb = inject(FormBuilder);
   private emailService = inject(EmailService);
   private leaveTypeService = inject(LeavetypeService);
+  private holidayService = inject(HolidayservicesService);
   private toastr = inject(ToastrService);
   public rbacService = inject(RbacService);
 
+  holidays: any[] = [];
+
   isEdit = false;
+  isSubmitting = false;
   leaveForm!: FormGroup;
   leaveTypes: LeaveTypeItem[] = [];
   selectedFileName: string | null = null;
@@ -73,11 +78,30 @@ export class LeaverequestComponent implements OnInit {
     this.initForm();
     this.loadLeaveTypes();
     this.loadLeaveBalances();
+    this.loadHolidays();
 
     this.leaveForm.get('leaveTypeId')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('startDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('endDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('leaveMode')?.valueChanges.subscribe(() => this.updateCalculatedDays());
+  }
+
+  loadHolidays() {
+    this.holidayService.getHoliday().subscribe({
+      next: (res: any) => {
+        let list: any[] = [];
+        if (Array.isArray(res)) {
+          list = res;
+        } else if (res && Array.isArray(res.data)) {
+          list = res.data;
+        }
+        this.holidays = list;
+        this.updateCalculatedDays();
+      },
+      error: () => {
+        this.holidays = [];
+      }
+    });
   }
 
   loadLeaveBalances() {
@@ -111,12 +135,6 @@ export class LeaverequestComponent implements OnInit {
       return;
     }
 
-    if (mode && mode.toLowerCase().includes('half')) {
-      this.calculatedDays = 0.5;
-      this.recalculateLop();
-      return;
-    }
-
     const start = new Date(s);
     const end = new Date(e);
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
@@ -125,18 +143,7 @@ export class LeaverequestComponent implements OnInit {
       return;
     }
 
-    // Exclude Sundays
-    let count = 0;
-    const cur = new Date(start);
-    while (cur <= end) {
-      const day = cur.getDay();
-      if (day !== 0) { // Sunday excluded
-        count++;
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-
-    this.calculatedDays = Math.max(1, count);
+    this.calculatedDays = this.emailService.calculateWorkingLeaveDays(start, end, mode, this.holidays);
     this.recalculateLop();
   }
 
@@ -184,10 +191,23 @@ export class LeaverequestComponent implements OnInit {
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      return d.toISOString().split('T')[0];
+      const y = d.getFullYear();
+      const m = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      return `${y}-${m}-${day}`;
     } catch {
       return dateStr;
     }
+  }
+
+  private formatDateOnly(dateVal: any): string {
+    if (!dateVal) return new Date().toISOString();
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return new Date().toISOString();
+    const y = d.getFullYear();
+    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${day}T12:00:00`;
   }
 
   private initForm() {
@@ -244,11 +264,20 @@ export class LeaverequestComponent implements OnInit {
   }
 
   onSubmitRequest() {
+    if (this.isSubmitting) return;
+
     if (this.leaveForm.invalid) {
       this.leaveForm.markAllAsTouched();
       this.toastr.warning('Please fill in all required leave details.');
       return;
     }
+
+    if (this.calculatedDays <= 0) {
+      this.toastr.warning('The selected date range falls entirely on weekends or company holidays (0 working days). Please choose valid working days.', 'Invalid Leave Dates');
+      return;
+    }
+
+    this.isSubmitting = true;
 
     const formVal = this.leaveForm.getRawValue();
     const loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
@@ -263,8 +292,8 @@ export class LeaverequestComponent implements OnInit {
       employeeId: empId,
       leaveTypeId: Number(formVal.leaveTypeId) || 1,
       leaveMode: formVal.leaveMode || 'Full Day',
-      startDate: formVal.startDate ? new Date(formVal.startDate).toISOString() : new Date().toISOString(),
-      endDate: formVal.endDate ? new Date(formVal.endDate).toISOString() : new Date().toISOString(),
+      startDate: this.formatDateOnly(formVal.startDate),
+      endDate: this.formatDateOnly(formVal.endDate),
       leaveReason: (formVal.leaveReason || '').trim(),
       status: 'Pending',
       actionBy: null,
@@ -276,13 +305,14 @@ export class LeaverequestComponent implements OnInit {
 
     this.emailService.Leaverequest(payload).subscribe({
       next: () => {
+        this.isSubmitting = false;
         this.toastr.success('Leave Request submitted successfully!', 'Success');
         this.dialogRef?.close(payload);
       },
       error: (err) => {
         console.error('Leaverequest submit error:', err);
-        this.toastr.success('Leave Request submitted successfully!', 'Success');
-        this.dialogRef?.close(payload);
+        this.isSubmitting = false;
+        this.toastr.error(err.error?.message || 'Failed to submit leave request. Please try again.', 'Submission Error');
       }
     });
   }

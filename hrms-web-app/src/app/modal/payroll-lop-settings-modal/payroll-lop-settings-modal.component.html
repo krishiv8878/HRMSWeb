@@ -123,6 +123,23 @@
             <span class="slider round"></span>
           </label>
         </div>
+
+        <div class="toggle-divider"></div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Include Progressive Late-Arrival Penalty Rule</span>
+            <p class="toggle-sub">Enforces corporate policy: First {{ settings.freeLateMarksPerMonth || 3 }} late marks in a month are exempt. Every 3 excess late marks trigger a 0.5-day LOP salary deduction.</p>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              [(ngModel)]="settings.includeLatePenalties"
+              (change)="updateSimulation()"
+            />
+            <span class="slider round"></span>
+          </label>
+        </div>
       </div>
     </div>
 

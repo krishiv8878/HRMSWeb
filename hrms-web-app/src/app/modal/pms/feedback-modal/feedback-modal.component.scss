@@ -1,0 +1,222 @@
+.pms-modal-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+    border-bottom: 1px solid #fbcfe8;
+
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+
+      .icon-bubble {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(236, 72, 153, 0.15);
+        color: #db2777;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #831843;
+      }
+
+      .subtitle {
+        margin: 2px 0 0 0;
+        font-size: 0.825rem;
+        color: #9d174d;
+      }
+    }
+
+    .btn-close {
+      color: #9d174d;
+      &:hover { color: #831843; }
+    }
+  }
+
+  .modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    &.custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    &.custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #475569;
+
+      .req { color: #ef4444; }
+    }
+
+    select, textarea {
+      padding: 9px 12px;
+      font-size: 0.875rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      outline: none;
+
+      &:focus {
+        border-color: #ec4899;
+        box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+        background: #ffffff;
+      }
+    }
+  }
+
+  .badges-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+
+    .badge-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+
+      .badge-icon-box {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 6px;
+
+        mat-icon {
+          font-size: 1.25rem;
+          width: 1.25rem;
+          height: 1.25rem;
+        }
+      }
+
+      .badge-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+
+      .badge-sub {
+        font-size: 0.65rem;
+        color: #64748b;
+        margin-top: 2px;
+        line-height: 1.15;
+      }
+
+      &:hover {
+        border-color: #cbd5e1;
+        background: #ffffff;
+      }
+
+      &.selected {
+        border-color: #ec4899;
+        background: #fdf2f8;
+        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.25);
+      }
+    }
+  }
+
+  .privacy-toggle {
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+
+    .switch-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+
+      .text {
+        font-size: 0.8rem;
+        color: #475569;
+      }
+    }
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+
+    .btn-secondary {
+      padding: 9px 18px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      &:hover { background: #e2e8f0; }
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 20px;
+      background: #db2777;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+
+      &:hover:not(:disabled) { background: #be185d; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
+    }
+  }
+}

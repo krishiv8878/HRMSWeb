@@ -1,0 +1,103 @@
+<div class="recruitment-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon interview-icon">
+        <mat-icon>event</mat-icon>
+      </div>
+      <div>
+        <h2>Schedule Interview Round</h2>
+        <p class="subtitle">Assign panelists, choose date/time, and generate meeting links</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="scheduleForm" (ngSubmit)="submit()" class="modal-body" *ngIf="candidate">
+    <!-- Active Interview in Progress Alert -->
+    <div *ngIf="hasActiveScheduledInterview" class="active-interview-alert-box">
+      <mat-icon class="alert-icon">warning_amber</mat-icon>
+      <div class="alert-content">
+        <div class="alert-title">Active Interview Round in Progress</div>
+        <div class="alert-msg">
+          <strong>{{ candidate.fullName }}</strong> already has <strong>{{ activeInterview?.roundName }}</strong> scheduled with <strong>{{ activeInterview?.interviewerName }}</strong> on {{ activeInterview?.scheduledAt | date:'medium' }}.
+          Please complete the evaluation scorecard in the Interview Hub or cancel this round before scheduling another round.
+        </div>
+      </div>
+    </div>
+
+    <!-- Candidate Info Header -->
+    <div class="candidate-summary-badge">
+      <div class="cand-info">
+        <h3>{{ candidate.fullName }}</h3>
+        <p>{{ candidate.appliedRole }} • {{ candidate.emailAddress }} • {{ candidate.totalExperience }} Yrs Exp</p>
+      </div>
+      <span class="stage-tag">{{ candidate.stage }}</span>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-group full-width">
+        <label>Interview Progression Round <span class="required">*</span></label>
+        <select formControlName="roundName" [class.field-disabled]="hasActiveScheduledInterview">
+          <option *ngFor="let r of roundOptions" [value]="r.name" [disabled]="r.disabled">
+            {{ r.name }} {{ r.badgeText }}
+          </option>
+        </select>
+        <span class="field-hint" *ngIf="!hasActiveScheduledInterview">
+          Rounds follow sequential progression. Completed and passed rounds cannot be re-scheduled.
+        </span>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Assign Interviewer / Panelist <span class="required">*</span></label>
+        <select formControlName="interviewerId" [class.field-disabled]="hasActiveScheduledInterview">
+          <option [ngValue]="null">-- Select Interviewer --</option>
+          <option *ngFor="let e of employees" [value]="e.id">
+            {{ e.firstName }} {{ e.lastName }} ({{ e.designation || 'Staff' }} - {{ e.department || 'General' }})
+          </option>
+        </select>
+        <span class="error-msg" *ngIf="scheduleForm.get('interviewerId')?.touched && scheduleForm.get('interviewerId')?.hasError('required')">
+          Interviewer is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Date & Time <span class="required">*</span></label>
+        <input type="datetime-local" formControlName="scheduledAt" [class.field-disabled]="hasActiveScheduledInterview" />
+      </div>
+
+      <div class="form-group">
+        <label>Duration (Minutes) <span class="required">*</span></label>
+        <select formControlName="durationMinutes" [class.field-disabled]="hasActiveScheduledInterview">
+          <option [value]="30">30 Minutes</option>
+          <option [value]="45">45 Minutes</option>
+          <option [value]="60">60 Minutes (1 Hour)</option>
+          <option [value]="90">90 Minutes</option>
+        </select>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Video Conference / Meeting Link <span class="required">*</span></label>
+        <input type="text" formControlName="meetingLink" placeholder="e.g. https://meet.google.com/xyz-abc-def or MS Teams / Zoom link" [class.field-disabled]="hasActiveScheduledInterview" />
+        <span class="error-msg" *ngIf="scheduleForm.get('meetingLink')?.touched && scheduleForm.get('meetingLink')?.hasError('required')">
+          Meeting link is required
+        </span>
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Close</button>
+    <button
+      type="button"
+      class="btn-submit"
+      (click)="submit()"
+      [disabled]="hasActiveScheduledInterview || isSubmitting"
+      [class.btn-disabled-state]="hasActiveScheduledInterview"
+    >
+      <mat-icon>{{ hasActiveScheduledInterview ? 'lock' : 'send' }}</mat-icon>
+      <span>{{ hasActiveScheduledInterview ? 'Active Round in Progress' : 'Schedule & Notify' }}</span>
+    </button>
+  </div>
+</div>

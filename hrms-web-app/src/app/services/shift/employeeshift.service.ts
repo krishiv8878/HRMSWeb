@@ -10,6 +10,8 @@ export interface ShiftModel {
   endTime: string;
   isActive: boolean;
   assignedCount?: number;
+  gracePeriodMinutes?: number;
+  breakDurationMinutes?: number;
   rawRecord?: any;
 }
 

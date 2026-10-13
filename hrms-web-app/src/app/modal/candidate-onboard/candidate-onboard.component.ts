@@ -1,4 +1,4 @@
-﻿import { Component, Inject, inject, OnInit } from '@angular/core';
+import { Component, Inject, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -141,14 +141,39 @@ export class CandidateOnboardModalComponent implements OnInit {
       }
     });
 
-    // 2. Managers
+    // 2. Managers (Filtering strictly to managerial and leadership profiles)
     this.employeeService.getData().subscribe({
       next: (res: any) => {
-        const list = Array.isArray(res) ? res : (res?.data || res?.employeedata?.data || []);
-        this.managersList = list.filter((e: any) => !e.isDeleted);
+        const list: any[] = Array.isArray(res) ? res : (res?.data || res?.employeedata?.data || []);
+        const activeEmps = list.filter((e: any) => !e.isDeleted);
+
+        const managerKeywords = [
+          'manager', 'lead', 'director', 'head', 'vp', 'chief', 'principal',
+          'supervisor', 'admin', 'system admin', 'management', 'hr operations', 'hr'
+        ];
+
+        const filtered = activeEmps.filter((e: any) => {
+          const roleStr = `${e.roleName || ''} ${(e.rolenames || []).join(' ')} ${(e.roles || []).join(' ')}`.toLowerCase();
+          const desigStr = `${e.designation || ''} ${e.designationName || ''}`.toLowerCase();
+          return managerKeywords.some(kw => roleStr.includes(kw) || desigStr.includes(kw));
+        });
+
+        const sourceList = filtered.length > 0 ? filtered : activeEmps;
+        this.managersList = sourceList.map((m: any) => ({
+          id: Number(m.id || m.employeeId),
+          name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.managerName || 'Manager',
+          designation: m.designation || m.roleName || 'Manager'
+        })).sort((a: any, b: any) => a.name.localeCompare(b.name));
+
         if (this.managersList.length > 0) {
           this.onboardForm.patchValue({ managerId: this.managersList[0].id });
+        } else {
+          this.onboardForm.patchValue({ managerId: 0 });
         }
+      },
+      error: () => {
+        this.managersList = [];
+        this.onboardForm.patchValue({ managerId: 0 });
       }
     });
 

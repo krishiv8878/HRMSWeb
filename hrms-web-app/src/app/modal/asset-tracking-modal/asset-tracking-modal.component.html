@@ -387,7 +387,7 @@
     </div>
 
     <!-- Prominent Rejection Notice Card (When Request was Rejected) -->
-    <div *ngIf="request.status.toLowerCase().includes('reject')" class="rejection-alert-card">
+    <div *ngIf="isRejected" class="rejection-alert-card">
       <div class="rejection-card-left">
         <div class="rejection-circle-icon">
           <mat-icon>block</mat-icon>

@@ -1,11 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { BehaviorSubject, combineLatest, forkJoin, map, Observable, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, forkJoin, map, Observable, take, Subscription } from 'rxjs';
 import { AssetItem, AssetMetricCard } from '../../interface/asset.interface';
 import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.service';
 import { AssetRequestService } from '../../services/asset-request/asset-request.service';
@@ -17,7 +17,6 @@ import { AssetsmastersComponent } from '../../modal/assetsmasters/assetsmasters.
 import { AssetTicketHistoryModalComponent } from '../../modal/asset-ticket-history-modal/asset-ticket-history-modal.component';
 import { RbacService } from '../../core/rbac.service';
 import { EmployeeService } from '../../services/employee/employee.service';
-import { ProjectsService } from '../../services/project/projects.service';
 
 @Component({
   selector: 'app-assetsmaster',
@@ -34,16 +33,15 @@ import { ProjectsService } from '../../services/project/projects.service';
   templateUrl: './assetsmaster.component.html',
   styleUrl: './assetsmaster.component.scss'
 })
-export class AssetsmasterComponent implements OnInit {
+export class AssetsmasterComponent implements OnInit, OnDestroy {
   private assetService = inject(AssetsmasterService);
   private requestService = inject(AssetRequestService);
   private dialog = inject(MatDialog);
   private toastr = inject(ToastrService);
   private rbacService = inject(RbacService);
   private employeeService = inject(EmployeeService);
-  private projectsService = inject(ProjectsService);
-
-  assignedProjects: any[] = [];
+  private route = inject(ActivatedRoute);
+  private routeSub?: Subscription;
 
   dispatchedTicket$: Observable<AssetRequestItem | undefined> = this.requestService.requests$.pipe(
     map(reqs => {
@@ -197,46 +195,17 @@ export class AssetsmasterComponent implements OnInit {
   );
 
   ngOnInit() {
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'add') {
+        setTimeout(() => this.openAddAssetModal(), 150);
+      }
+    });
+
     this.assetService.fetchAssetsFromApi();
-    this.loadAssignedProjects();
     const currentEmpId = typeof window !== 'undefined' && typeof localStorage !== 'undefined'
       ? (Number(localStorage.getItem('employeeId')) || undefined)
       : undefined;
     this.requestService.fetchRequests(this.isAdmin ? undefined : currentEmpId).subscribe();
-  }
-
-  loadAssignedProjects() {
-    const currentEmpId = typeof window !== 'undefined' && typeof localStorage !== 'undefined'
-      ? (Number(localStorage.getItem('employeeId')) || 0)
-      : 0;
-    if (currentEmpId > 0) {
-      this.employeeService.getEmployeeById(currentEmpId).subscribe({
-        next: (empRes: any) => {
-          const emp = empRes?.data || empRes || null;
-          const rawProjectIds = emp?.projectIds || emp?.ProjectIds || [];
-          let pIds: number[] = [];
-          if (Array.isArray(rawProjectIds)) {
-            pIds = rawProjectIds.map((id: any) => Number(id));
-          } else if (typeof rawProjectIds === 'string' && rawProjectIds.trim()) {
-            try {
-              const parsed = JSON.parse(rawProjectIds);
-              if (Array.isArray(parsed)) pIds = parsed.map((id: any) => Number(id));
-            } catch {
-              pIds = rawProjectIds.split(',').map((s: string) => Number(s.trim())).filter((n: number) => !isNaN(n));
-            }
-          }
-
-          if (pIds.length > 0) {
-            this.projectsService.getAllData().subscribe({
-              next: (projRes: any) => {
-                const list = Array.isArray(projRes) ? projRes : (projRes?.data || projRes?.result || []);
-                this.assignedProjects = list.filter((p: any) => pIds.includes(Number(p.id || p.projectMasterId)));
-              }
-            });
-          }
-        }
-      });
-    }
   }
 
   onExport() {
@@ -309,5 +278,11 @@ export class AssetsmasterComponent implements OnInit {
       this.requestService.fetchRequests(this.isAdmin ? undefined : currentEmpId).subscribe();
       this.assetService.fetchAssetsFromApi();
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
@@ -14,6 +15,7 @@ import { DocumentDetailsComponent } from '../../../modal/document-details/docume
 import { DeleteModalComponent } from '../../delete-modal/delete-modal.component';
 import { RequestsApprovalsModalComponent } from '../../../modal/requests-approvals-modal/requests-approvals-modal.component';
 import { RbacService } from '../../../core/rbac.service';
+import { GlobalFilterService } from '../../../services/filter/global-filter.service';
 
 @Component({
   selector: 'app-document-table',
@@ -37,10 +39,21 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
   private dialog = inject(MatDialog);
   private toastr = inject(ToastrService);
   public rbacService = inject(RbacService);
+  private globalFilterService = inject(GlobalFilterService);
+  private route = inject(ActivatedRoute);
   private searchSub?: Subscription;
+  private globalFilterSub?: Subscription;
+  private routeSub?: Subscription;
+
+  activeStatusTab: 'Pending' | 'Approved' | 'Rejected' | 'All' = 'Pending';
+  sortOrder: 'desc' | 'asc' = 'desc';
+
+  pendingCount: number = 0;
+  approvedCount: number = 0;
+  rejectedCount: number = 0;
+  totalCount: number = 0;
 
   searchQuery: string = '';
-  selectedStatus: string = 'All';
   selectedCategory: string = 'All';
   selectedOwner: string = 'All';
 
@@ -57,6 +70,7 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
   paginatedDocuments: DocumentItem[] = [];
 
   ngOnInit() {
+    this.updateCounts();
     this.updateFilterOptions();
     this.filterDocuments();
 
@@ -64,17 +78,67 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
       this.searchQuery = query;
       this.filterDocuments();
     });
+
+    this.globalFilterSub = this.globalFilterService.filters$.subscribe(f => {
+      let changed = false;
+      if (f.sortOrder && f.sortOrder !== this.sortOrder) {
+        this.sortOrder = f.sortOrder;
+        changed = true;
+      }
+      if (f.search !== undefined && f.search !== this.searchQuery) {
+        this.searchQuery = f.search;
+        changed = true;
+      }
+      if (changed) {
+        this.filterDocuments();
+      }
+    });
+
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      const tabParam = params['tab'];
+      if (tabParam) {
+        const normalized = tabParam.charAt(0).toUpperCase() + tabParam.slice(1).toLowerCase();
+        if (normalized === 'Pending' || normalized === 'Approved' || normalized === 'Rejected' || normalized === 'All') {
+          this.activeStatusTab = normalized as any;
+          this.currentPage = 1;
+          this.filterDocuments();
+        }
+      }
+    });
   }
 
   ngOnDestroy() {
     this.searchSub?.unsubscribe();
+    this.globalFilterSub?.unsubscribe();
+    this.routeSub?.unsubscribe();
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['documents']) {
+      this.updateCounts();
       this.updateFilterOptions();
       this.filterDocuments();
     }
+  }
+
+  updateCounts(): void {
+    if (!this.documents) return;
+    this.totalCount = this.documents.length;
+    this.pendingCount = this.documents.filter(d => (d.status || '').toLowerCase() === 'pending').length;
+    this.approvedCount = this.documents.filter(d => (d.status || 'approved').toLowerCase() === 'approved').length;
+    this.rejectedCount = this.documents.filter(d => (d.status || '').toLowerCase() === 'rejected').length;
+  }
+
+  setStatusTab(tab: 'Pending' | 'Approved' | 'Rejected' | 'All'): void {
+    this.activeStatusTab = tab;
+    this.currentPage = 1;
+    this.filterDocuments();
+  }
+
+  toggleSortOrder(): void {
+    this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+    this.globalFilterService.setSortOrder(this.sortOrder);
+    this.filterDocuments();
   }
 
   updateFilterOptions() {
@@ -88,8 +152,12 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
   filterDocuments() {
     let result = [...this.documents];
 
-    if (this.selectedStatus !== 'All') {
-      result = result.filter(doc => (doc.status || 'Approved').toLowerCase() === this.selectedStatus.toLowerCase());
+    // Filter by Active Status Tab
+    if (this.activeStatusTab !== 'All') {
+      result = result.filter(doc => {
+        const s = (doc.status || 'Approved').toLowerCase();
+        return s === this.activeStatusTab.toLowerCase();
+      });
     }
 
     if (this.selectedCategory !== 'All') {
@@ -103,13 +171,36 @@ export class DocumentTableComponent implements OnInit, OnDestroy, OnChanges {
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
       result = result.filter(doc =>
-        doc.name.toLowerCase().includes(q) ||
-        doc.category.toLowerCase().includes(q) ||
-        doc.ownerName.toLowerCase().includes(q) ||
-        doc.accessLevel.toLowerCase().includes(q) ||
-        doc.fileType.toLowerCase().includes(q)
+        (doc.name && doc.name.toLowerCase().includes(q)) ||
+        (doc.category && doc.category.toLowerCase().includes(q)) ||
+        (doc.ownerName && doc.ownerName.toLowerCase().includes(q)) ||
+        (doc.accessLevel && doc.accessLevel.toLowerCase().includes(q)) ||
+        (doc.fileType && doc.fileType.toLowerCase().includes(q))
       );
     }
+
+    // Default Sorting: Latest first (descending), with sortOrder support
+    const getTime = (doc: DocumentItem): number => {
+      if (doc.lastModified) {
+        const t = new Date(doc.lastModified).getTime();
+        if (!isNaN(t)) return t;
+      }
+      const idNum = parseInt(doc.id, 10);
+      return !isNaN(idNum) ? idNum : 0;
+    };
+
+    result.sort((a, b) => {
+      const tA = getTime(a);
+      const tB = getTime(b);
+      const idA = parseInt(a.id, 10) || 0;
+      const idB = parseInt(b.id, 10) || 0;
+
+      if (this.sortOrder === 'asc') {
+        return (tA - tB) || (idA - idB);
+      } else {
+        return (tB - tA) || (idB - idA);
+      }
+    });
 
     this.filteredDocuments = result;
     this.currentPage = 1;

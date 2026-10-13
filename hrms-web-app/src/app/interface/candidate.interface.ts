@@ -19,6 +19,7 @@ export interface CandidateItem {
   stage?: 'Sourced' | 'Screening' | 'Technical Interview' | 'HR Screen' | 'Interview' | 'Offer Extended' | 'Offer Accepted' | 'Selected / Hired' | 'Offer' | 'Rejected' | string;
   matchScore?: number;
   lastUpdated?: string;
+  rawCreatedDate?: Date | null;
   noticePeriod?: string | number;
   isActive?: boolean;
   isDeleted?: boolean;
@@ -34,6 +35,11 @@ export interface CandidateItem {
   interviewStatus?: 'Not Scheduled' | 'Scheduled' | 'Feedback Submitted' | 'Passed' | 'Rejected' | string;
   interviewHistory?: any[];
   isOnboarded?: boolean;
+  jobRequisitionId?: number;
+  jobRequisitionTitle?: string;
+  jobCode?: string;
+  resumeUrl?: string;
+  source?: string;
 }
 
 export interface TalentMetrics {

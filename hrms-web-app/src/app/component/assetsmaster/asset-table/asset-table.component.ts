@@ -123,6 +123,13 @@ export class AssetTableComponent implements OnInit, OnChanges, OnDestroy {
       result = result.filter(a => a.location === this.selectedLocation);
     }
 
+    // Default Ordering: Descending (latest assets first)
+    result.sort((a, b) => {
+      const numA = parseInt((a.id || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt((b.id || '').replace(/\D/g, ''), 10) || 0;
+      return numB - numA;
+    });
+
     this.filteredAssets = result;
     this.currentPage = 1;
     this.updatePagination();

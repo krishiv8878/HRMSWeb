@@ -14,6 +14,8 @@ import { CandidateService } from '../../services/candidate/candidate.service';
 import { RbacService } from '../../core/rbac.service';
 import { NotificationService, AppNotification } from '../../services/notification/notification.service';
 import { ExportCenterModalComponent } from '../../modal/export-center-modal/export-center-modal.component';
+import { AttendanceStateService } from '../../services/attendance/attendance-state.service';
+import { EmployeeAttendComponent } from '../../modal/employee-attend/employee-attend.component';
 import {
   GlobalFilterService,
   PageFilterConfig,
@@ -61,6 +63,15 @@ export class HeaderComponent implements OnInit {
   rbacService = inject(RbacService);
   notificationService = inject(NotificationService);
   globalFilterService = inject(GlobalFilterService);
+  attendanceStateService = inject(AttendanceStateService);
+
+  // Top Header Punch State
+  loggedInEmployeeId: string = '';
+  isClockedIn: boolean = false;
+  hasClockedOutToday: boolean = false;
+  sessionElapsedDisplay: string = '00h 00m 00s';
+  clockInTimeDisplay: string = '--';
+  clockOutTimeDisplay: string = '--';
 
   // Universal Filter Bar State
   pageConfig: PageFilterConfig | null = null;
@@ -72,9 +83,10 @@ export class HeaderComponent implements OnInit {
     month: 'All',
     category: 'All',
     dateStart: null,
-    dateEnd: null
+    dateEnd: null,
+    sortOrder: 'desc'
   };
-  isFilterRibbonOpen: boolean = true;
+  isFilterRibbonOpen: boolean = false;
   allEmployeesForFilter: any[] = [];
   availableFilterMonths: string[] = [];
   isAdminOrHrOrManager: boolean = false;
@@ -103,6 +115,7 @@ export class HeaderComponent implements OnInit {
   allFilteredResults: SearchResultItem[] = [];
 
   readonly systemModules: SearchResultItem[] = [
+    { id: 'mod-dashboard', title: 'Dashboard', subtitle: 'Role-based workforce overview, metrics & workspace', category: 'Module', icon: 'dashboard', route: '/index/dashboard' },
     { id: 'mod-home', title: 'Employee Directory', subtitle: 'Manage staff, employee profiles, roles & teams', category: 'Module', icon: 'badge', route: '/index/home' },
     { id: 'mod-shift', title: 'Shift Management', subtitle: 'Work schedules, shift allocations & timings', category: 'Module', icon: 'schedule', route: '/index/shift' },
     { id: 'mod-holiday', title: 'Holiday Calendar', subtitle: 'Public holidays, company offs & calendar', category: 'Module', icon: 'event_available', route: '/index/holiday' },
@@ -145,6 +158,73 @@ export class HeaderComponent implements OnInit {
     });
 
     this.initFilterContext();
+    this.initPunchState();
+  }
+
+  initPunchState(): void {
+    if (typeof localStorage !== 'undefined') {
+      this.loggedInEmployeeId = localStorage.getItem('employeeId') || '';
+    }
+
+    this.attendanceStateService.isClockedIn$.subscribe(isClocked => {
+      this.isClockedIn = isClocked;
+    });
+
+    this.attendanceStateService.hasClockedOutToday$.subscribe(hasOut => {
+      this.hasClockedOutToday = hasOut;
+    });
+
+    this.attendanceStateService.sessionElapsed$.subscribe(duration => {
+      this.sessionElapsedDisplay = duration;
+    });
+
+    this.attendanceStateService.clockInTime$.subscribe(d => {
+      this.clockInTimeDisplay = this.attendanceStateService.formatTime12(d);
+    });
+
+    this.attendanceStateService.clockOutTime$.subscribe(d => {
+      this.clockOutTimeDisplay = this.attendanceStateService.formatTime12(d);
+    });
+  }
+
+  openHeaderClockInDialog(): void {
+    const dialogRef = this.dialog.open(EmployeeAttendComponent, {
+      width: '430px',
+      data: {
+        title: this.hasClockedOutToday ? 'Confirm Clock-In (New Session)' : 'Confirm Clock-In',
+        message: this.hasClockedOutToday
+          ? 'You have already clocked out for today. Would you like to record an additional working session?'
+          : 'Are you ready to record your arrival punch and begin your working session for today?',
+        punchType: 'clockIn',
+        confirmText: this.hasClockedOutToday ? 'Clock-In Again' : 'Clock-In',
+        confirmColor: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res === 'confirm') {
+        this.attendanceStateService.clockIn();
+      }
+    });
+  }
+
+  openHeaderClockOutDialog(): void {
+    const dialogRef = this.dialog.open(EmployeeAttendComponent, {
+      width: '430px',
+      data: {
+        title: 'Confirm Clock-Out',
+        message: 'Are you sure you want to end your working session and record your departure punch for today?',
+        punchType: 'clockOut',
+        confirmText: 'Clock-Out',
+        confirmColor: 'warn'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (res === 'confirm') {
+        this.attendanceStateService.clockOut();
+      }
+    });
   }
 
   initFilterContext(): void {
@@ -213,6 +293,10 @@ export class HeaderComponent implements OnInit {
 
   onFilterMonthSelect(month: string): void {
     this.globalFilterService.setMonth(month);
+  }
+
+  onFilterSortSelect(order: 'desc' | 'asc'): void {
+    this.globalFilterService.setSortOrder(order);
   }
 
   resetAllFilters(): void {
@@ -370,11 +454,14 @@ export class HeaderComponent implements OnInit {
     this.isSearchOpen = true;
     this.selectedIndex = 0;
 
-    // Filter Modules
-    this.filteredModules = this.systemModules.filter(m =>
-      m.title.toLowerCase().includes(q) ||
-      m.subtitle.toLowerCase().includes(q)
-    );
+    // Filter Modules (respect admin privileges for admin modules)
+    const isAdmin = this.rbacService.isAdmin();
+    this.filteredModules = this.systemModules.filter(m => {
+      if ((m.route === '/index/email-templates' || m.route === '/index/rolemaster') && !isAdmin) {
+        return false;
+      }
+      return m.title.toLowerCase().includes(q) || m.subtitle.toLowerCase().includes(q);
+    });
 
     // Filter Employees
     this.filteredEmployees = this.cachedEmployees.filter(e =>
@@ -501,11 +588,9 @@ export class HeaderComponent implements OnInit {
     return this.employeeService.getProfileAvatar() || this.documentService.getLoggedInUser().avatar;
   }
 
-  getUserRole() {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      return localStorage.getItem('RoleType') || 'Employee';
-    }
-    return 'Employee';
+  getUserRole(): string {
+    const roles = this.rbacService.getUserRoles();
+    return roles.length > 0 ? roles[0] : 'Employee';
   }
 
   get filteredNotifications(): AppNotification[] {
@@ -586,6 +671,10 @@ export class HeaderComponent implements OnInit {
   }
 
   logout() {
+    this.attendanceStateService.reinit();
+    this.employeeService.clearAvatar();
+    this.notificationService.clear();
+    this.globalFilterService.resetAllFilters();
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.clear();
     }

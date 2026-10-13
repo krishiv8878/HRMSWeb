@@ -38,6 +38,7 @@ export class DocumentsComponent implements OnInit {
   selectedFileName: string = '';
   selectedFileSize: string = '';
   isDragging = false;
+  isReupload = false;
 
   categories = [
     'Employee Docs',
@@ -49,6 +50,7 @@ export class DocumentsComponent implements OnInit {
   accessLevels: AccessLevel[] = ['Public', 'Restricted', 'Private'];
 
   ngOnInit() {
+    this.isReupload = Boolean(this.data?.reuploadDocId || this.data?.isReupload);
     this.documentForm = this.fb.group({
       documentName: [this.data?.documentName || '', [Validators.required, Validators.minLength(2)]],
       category: [this.data?.category || 'Employee Docs', [Validators.required]],
@@ -124,9 +126,17 @@ export class DocumentsComponent implements OnInit {
     formData.append('uploadedDate', new Date().toISOString());
     formData.append('file', this.selectedFile);
 
+    const reuploadId = this.data?.reuploadDocId || this.data?.id;
+    if (reuploadId) {
+      formData.append('documentId', String(reuploadId));
+    }
+
     this.documentService.creatDocument(formData).subscribe({
       next: () => {
-        this.toastr.success('Document uploaded successfully!', 'Success');
+        const msg = this.isReupload 
+          ? 'Document re-uploaded successfully and submitted for review!' 
+          : 'Document uploaded successfully!';
+        this.toastr.success(msg, 'Success');
         this.documentService.fetchDocumentsFromApi();
         this.dialogRef.close(true);
       },

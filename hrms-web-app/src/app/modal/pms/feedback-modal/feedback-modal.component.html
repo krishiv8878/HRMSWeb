@@ -1,0 +1,74 @@
+<div class="pms-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="icon-bubble">
+        <mat-icon>volunteer_activism</mat-icon>
+      </div>
+      <div>
+        <h2>Give Praise & Continuous Feedback</h2>
+        <p class="subtitle">Recognize peer contributions, celebrate achievements, and provide constructive growth feedback</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="feedbackForm" (ngSubmit)="onSubmit()" class="modal-body custom-scroll">
+    <div class="form-group">
+      <label>Who do you want to appreciate? <span class="req">*</span></label>
+      <select formControlName="toEmployeeId">
+        <option [ngValue]="null" disabled>Select Colleague / Peer</option>
+        <option *ngFor="let emp of allEmployees" [value]="emp.id">
+          {{ emp.firstName }} {{ emp.lastName }} ({{ emp.designationName || emp.departmentName || emp.employeeCode }})
+        </option>
+      </select>
+    </div>
+
+    <!-- Badge Selector -->
+    <div class="form-group">
+      <label>Select a Recognition Badge <span class="req">*</span></label>
+      <div class="badges-grid">
+        <div
+          *ngFor="let b of badges"
+          class="badge-card"
+          [class.selected]="feedbackForm.get('badge')?.value === b.name"
+          (click)="selectBadge(b.name)"
+        >
+          <div class="badge-icon-box" [style.background-color]="b.color + '1a'" [style.color]="b.color">
+            <mat-icon>{{ b.icon }}</mat-icon>
+          </div>
+          <span class="badge-title">{{ b.name }}</span>
+          <span class="badge-sub">{{ b.desc }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Feedback Message / Kudos <span class="req">*</span></label>
+      <textarea
+        rows="4"
+        formControlName="message"
+        placeholder="e.g. Thanks for the quick support during the sprint demo! Your attention to edge cases really made a big difference..."
+      ></textarea>
+    </div>
+
+    <div class="privacy-toggle">
+      <label class="switch-label">
+        <input type="checkbox" formControlName="isPrivate" />
+        <span class="text">
+          <strong>Make feedback private</strong> (Only visible to recipient and their reporting manager)
+        </span>
+      </label>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="close()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">celebration</mat-icon>
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Sending...' : 'Send Praise' }}
+      </button>
+    </div>
+  </form>
+</div>

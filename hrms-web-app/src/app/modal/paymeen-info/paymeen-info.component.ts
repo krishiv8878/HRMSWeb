@@ -213,9 +213,9 @@ export class PaymeenInfoComponent implements OnInit {
                 this.toaster.success('Bank details change request submitted to HR for verification.', 'Request Submitted');
                 this.dialogRef.close({ isRequest: true, bankRequest });
               },
-              error: () => {
-                this.toaster.success('Bank details change request submitted to HR for verification.', 'Request Submitted');
-                this.dialogRef.close({ isRequest: true, bankRequest });
+              error: (err: any) => {
+                console.error('Error submitting bank details change request:', err);
+                this.toaster.error(err?.error?.message || 'Failed to submit bank details change request.', 'Request Failed');
               }
             });
           } else {

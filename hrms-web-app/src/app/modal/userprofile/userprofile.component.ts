@@ -20,6 +20,20 @@ import { PassportinfoComponent } from '../profilepage/passportinfo/passportinfo.
 import { CtcBreakdownModalComponent } from '../ctc-breakdown/ctc-breakdown-modal.component';
 import { SalarySlipModalComponent } from '../salary-slip-modal/salary-slip-modal.component';
 
+export interface ProfileFieldItem {
+  id: string;
+  fieldKey: string;
+  label: string;
+  category: 'Personal' | 'Emergency' | 'Education' | 'Experience' | 'Banking' | 'Identity';
+  section?: string;
+  isCompleted: boolean;
+  isComplete?: boolean;
+  actionModal: 'info' | 'contact' | 'education' | 'experience' | 'bankinfo' | 'passportinfo';
+  actionPrompt: string;
+  icon: string;
+  currentValue?: string;
+}
+
 @Component({
   selector: 'app-userprofile',
   standalone: true,
@@ -54,6 +68,19 @@ export class UserprofileComponent implements OnInit {
   isAdminOrHr: boolean = false;
   ctcBreakdown: any = null;
   disbursementsList: any[] = [];
+
+  // Profile Completeness System
+  profileCompleteness: number = 0;
+  completenessInfo = {
+    percentage: 0,
+    completedFields: 0,
+    totalFields: 0,
+    pendingFields: 0
+  };
+  mandatoryFieldsList: ProfileFieldItem[] = [];
+  pendingFieldsList: ProfileFieldItem[] = [];
+  completedFieldsList: ProfileFieldItem[] = [];
+  completenessFilter: 'pending' | 'completed' | 'all' = 'pending';
 
   ngOnInit() {
     this.isAdminOrHr = this.rbacService.hasAnyRole(['Admin', 'System Admin', 'HR', 'HR Operations']);
@@ -133,6 +160,7 @@ export class UserprofileComponent implements OnInit {
       this.parseCtcBreakdown();
       this.loadSkills();
       this.loadBankInfo();
+      this.calculateProfileCompleteness();
     };
 
     if (userId) {
@@ -180,6 +208,7 @@ export class UserprofileComponent implements OnInit {
 
     const handleBankResult = (pay: any) => {
       this.paymentdata = pay || null;
+      this.calculateProfileCompleteness();
     };
 
     if (userId) {
@@ -303,6 +332,17 @@ export class UserprofileComponent implements OnInit {
   }
 
   getEducationsList(): EducationEntry[] {
+    // 1. Direct from Database Responsibilities JSON
+    if (this.employedata?.responsibilities) {
+      try {
+        const parsed = JSON.parse(this.employedata.responsibilities);
+        if (Array.isArray(parsed.educations) && parsed.educations.length > 0) {
+          return parsed.educations;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Fallback to localStorage
     const id = this.employedata?.id || 'default';
     const saved = this.getStorage('profile_educations_' + id);
     if (saved) {
@@ -312,6 +352,7 @@ export class UserprofileComponent implements OnInit {
       } catch (e) {}
     }
 
+    // 3. Fallback to primary columns in Database
     if (this.employedata?.degree || this.employedata?.university) {
       return [
         {
@@ -326,17 +367,51 @@ export class UserprofileComponent implements OnInit {
     return [];
   }
 
+  isJsonString(val: any): boolean {
+    if (!val || typeof val !== 'string') return false;
+    const trimmed = val.trim();
+    return (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
+  }
+
   getExperiencesList(): ExperienceEntry[] {
+    // 1. Direct from Database Responsibilities JSON
+    if (this.employedata?.responsibilities) {
+      try {
+        const parsed = JSON.parse(this.employedata.responsibilities);
+        if (Array.isArray(parsed.experiences) && parsed.experiences.length > 0) {
+          return parsed.experiences.map((item: any) => ({
+            ...item,
+            responsibilities: this.isJsonString(item.responsibilities) ? '' : (item.responsibilities || '')
+          }));
+        }
+      } catch (e) {}
+    }
+
+    // 2. Fallback to localStorage
     const id = this.employedata?.id || 'default';
     const saved = this.getStorage('profile_experiences_' + id);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((item: any) => ({
+            ...item,
+            responsibilities: this.isJsonString(item.responsibilities) ? '' : (item.responsibilities || '')
+          }));
+        }
       } catch (e) {}
     }
 
     if (this.employedata?.companyName) {
+      let resp = this.employedata.responsibilities || '';
+      if (this.isJsonString(resp)) {
+        try {
+          const parsed = JSON.parse(resp);
+          resp = parsed.workResponsibilities || '';
+        } catch {
+          resp = '';
+        }
+      }
       return [
         {
           companyName: this.employedata.companyName,
@@ -345,7 +420,7 @@ export class UserprofileComponent implements OnInit {
           experienceEndDate: null,
           experienceDuration: this.employedata.experienceDuration || '',
           experienceLocation: this.employedata.experienceLocation || '',
-          responsibilities: this.employedata.responsibilities || ''
+          responsibilities: resp
         }
       ];
     }
@@ -499,5 +574,268 @@ export class UserprofileComponent implements OnInit {
   formatLpa(val: number): string {
     if (!val) return '0 LPA';
     return (val / 100000).toFixed(2) + ' LPA';
+  }
+
+  // ==========================================
+  // Profile Completeness & Action Methods
+  // ==========================================
+
+  openPendingModal(action: 'info' | 'contact' | 'education' | 'experience' | 'bankinfo' | 'passportinfo') {
+    switch (action) {
+      case 'info':
+        this.info(this.employedata);
+        break;
+      case 'contact':
+        this.contact(this.employedata);
+        break;
+      case 'education':
+        this.education(this.employedata);
+        break;
+      case 'experience':
+        this.experience(this.employedata);
+        break;
+      case 'bankinfo':
+        this.bankinfo(this.paymentdata);
+        break;
+      case 'passportinfo':
+        this.passportinfo(this.employedata);
+        break;
+    }
+  }
+
+  setCompletenessFilter(filter: 'pending' | 'completed' | 'all') {
+    this.completenessFilter = filter;
+  }
+
+  isSectionComplete(categoryOrSection: string): boolean {
+    const norm = (categoryOrSection || '').toLowerCase();
+    const secFields = this.mandatoryFieldsList.filter(f => {
+      const cat = f.category.toLowerCase();
+      return cat === norm || (norm === 'passport' && cat === 'identity');
+    });
+    return secFields.length > 0 && secFields.every(f => f.isCompleted);
+  }
+
+  getSectionPendingCount(categoryOrSection: string): number {
+    const norm = (categoryOrSection || '').toLowerCase();
+    return this.mandatoryFieldsList.filter(f => {
+      const cat = f.category.toLowerCase();
+      const match = cat === norm || (norm === 'passport' && cat === 'identity');
+      return match && !f.isCompleted;
+    }).length;
+  }
+
+  isFieldPending(fieldKey: string): boolean {
+    const item = this.mandatoryFieldsList.find(f => f.fieldKey === fieldKey || f.id === fieldKey);
+    return item ? !item.isCompleted : false;
+  }
+
+  calculateProfileCompleteness(): void {
+    const emp = this.employedata || {};
+    const pay = this.paymentdata || {};
+    const educations = this.getEducationsList();
+    const experiences = this.getExperiencesList();
+
+    const isVal = (v: any) => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '—' && String(v).trim() !== 'Not Specified' && String(v).trim() !== '0';
+
+    const fields: ProfileFieldItem[] = [
+      {
+        id: 'legalName',
+        fieldKey: 'firstName',
+        label: 'First & Last Legal Name',
+        category: 'Personal',
+        isCompleted: isVal(emp.firstName) && isVal(emp.lastName),
+        actionModal: 'info',
+        actionPrompt: 'Fill Legal Name',
+        icon: 'badge',
+        currentValue: isVal(emp.firstName) ? `${emp.firstName} ${emp.lastName || ''}`.trim() : undefined
+      },
+      {
+        id: 'emailAddress',
+        fieldKey: 'emailAddress',
+        label: 'Corporate Email Address',
+        category: 'Personal',
+        isCompleted: isVal(emp.emailAddress),
+        actionModal: 'info',
+        actionPrompt: 'Add Corporate Email',
+        icon: 'mail',
+        currentValue: emp.emailAddress
+      },
+      {
+        id: 'mobileNumber',
+        fieldKey: 'mobileNumber',
+        label: 'Primary Mobile Contact',
+        category: 'Personal',
+        isCompleted: isVal(emp.mobileNumber),
+        actionModal: 'info',
+        actionPrompt: 'Add Mobile Phone',
+        icon: 'phone',
+        currentValue: emp.mobileNumber
+      },
+      {
+        id: 'gender',
+        fieldKey: 'gender',
+        label: 'Gender Designation',
+        category: 'Personal',
+        isCompleted: isVal(emp.gender) && emp.gender !== 'Not Specified',
+        actionModal: 'info',
+        actionPrompt: 'Specify Gender',
+        icon: 'wc',
+        currentValue: emp.gender
+      },
+      {
+        id: 'dateOfBirth',
+        fieldKey: 'dateOfBirth',
+        label: 'Date of Birth',
+        category: 'Personal',
+        isCompleted: isVal(emp.dateOfBirth),
+        actionModal: 'info',
+        actionPrompt: 'Set Date of Birth',
+        icon: 'cake',
+        currentValue: emp.dateOfBirth
+      },
+      {
+        id: 'currentAddress',
+        fieldKey: 'currentAddress',
+        label: 'Current Residential Address',
+        category: 'Personal',
+        isCompleted: isVal(emp.currentAddress),
+        actionModal: 'info',
+        actionPrompt: 'Add Current Address',
+        icon: 'home',
+        currentValue: emp.currentAddress
+      },
+      {
+        id: 'permanentAddress',
+        fieldKey: 'permanentAddress',
+        label: 'Permanent Domicile Address',
+        category: 'Personal',
+        isCompleted: isVal(emp.permanentAddress),
+        actionModal: 'info',
+        actionPrompt: 'Add Permanent Domicile',
+        icon: 'location_city',
+        currentValue: emp.permanentAddress
+      },
+      {
+        id: 'emergencyContactName',
+        fieldKey: 'primaryContactName',
+        label: 'Primary Emergency Contact Person',
+        category: 'Emergency',
+        isCompleted: isVal(emp.primaryContactName),
+        actionModal: 'contact',
+        actionPrompt: 'Add Emergency Contact',
+        icon: 'contact_phone',
+        currentValue: emp.primaryContactName
+      },
+      {
+        id: 'emergencyContactPhone',
+        fieldKey: 'primaryContactPhone',
+        label: 'Emergency Contact Phone Number',
+        category: 'Emergency',
+        isCompleted: isVal(emp.primaryContactPhone),
+        actionModal: 'contact',
+        actionPrompt: 'Add Emergency Phone',
+        icon: 'ring_volume',
+        currentValue: emp.primaryContactPhone
+      },
+      {
+        id: 'emergencyContactRel',
+        fieldKey: 'primaryContactRelationship',
+        label: 'Emergency Responder Relationship',
+        category: 'Emergency',
+        isCompleted: isVal(emp.primaryContactRelationship),
+        actionModal: 'contact',
+        actionPrompt: 'Specify Relationship',
+        icon: 'people',
+        currentValue: emp.primaryContactRelationship
+      },
+      {
+        id: 'bankName',
+        fieldKey: 'bankName',
+        label: 'Salary Bank Institution Name',
+        category: 'Banking',
+        isCompleted: isVal(pay.bankName),
+        actionModal: 'bankinfo',
+        actionPrompt: 'Add Bank Name',
+        icon: 'account_balance',
+        currentValue: pay.bankName
+      },
+      {
+        id: 'accountNumber',
+        fieldKey: 'accountNumber',
+        label: 'Direct Deposit Account Number',
+        category: 'Banking',
+        isCompleted: isVal(pay.accountNumber),
+        actionModal: 'bankinfo',
+        actionPrompt: 'Enter Account Number',
+        icon: 'tag',
+        currentValue: pay.accountNumber
+      },
+      {
+        id: 'ifscCode',
+        fieldKey: 'ifscCode',
+        label: 'Bank Branch IFSC Code',
+        category: 'Banking',
+        isCompleted: isVal(pay.ifscCode),
+        actionModal: 'bankinfo',
+        actionPrompt: 'Enter IFSC Code',
+        icon: 'domain_verification',
+        currentValue: pay.ifscCode
+      },
+      {
+        id: 'education',
+        fieldKey: 'education',
+        label: 'Educational Degree & College',
+        category: 'Education',
+        isCompleted: isVal(emp.degree) || isVal(emp.university) || educations.length > 0,
+        actionModal: 'education',
+        actionPrompt: 'Add Degree & College',
+        icon: 'school',
+        currentValue: emp.degree || (educations.length > 0 ? educations[0].degree : undefined)
+      },
+      {
+        id: 'experience',
+        fieldKey: 'experience',
+        label: 'Previous Professional Experience',
+        category: 'Experience',
+        isCompleted: isVal(emp.companyName) || experiences.length > 0,
+        actionModal: 'experience',
+        actionPrompt: 'Add Work History',
+        icon: 'work_history',
+        currentValue: emp.companyName || (experiences.length > 0 ? experiences[0].companyName : undefined)
+      },
+      {
+        id: 'identity',
+        fieldKey: 'identity',
+        label: 'Passport or National Identity ID',
+        category: 'Identity',
+        isCompleted: isVal(emp.passportNumber) || isVal(emp.nationality),
+        actionModal: 'passportinfo',
+        actionPrompt: 'Add Identity Details',
+        icon: 'fingerprint',
+        currentValue: emp.passportNumber || emp.nationality
+      }
+    ];
+
+    this.mandatoryFieldsList = fields.map(f => ({
+      ...f,
+      section: f.category,
+      isComplete: f.isCompleted
+    }));
+    this.completedFieldsList = this.mandatoryFieldsList.filter(f => f.isCompleted);
+    this.pendingFieldsList = this.mandatoryFieldsList.filter(f => !f.isCompleted);
+
+    this.profileCompleteness = Math.round((this.completedFieldsList.length / this.mandatoryFieldsList.length) * 100);
+    this.completenessInfo = {
+      percentage: this.profileCompleteness,
+      completedFields: this.completedFieldsList.length,
+      totalFields: this.mandatoryFieldsList.length,
+      pendingFields: this.pendingFieldsList.length
+    };
+
+    if (this.employedata) {
+      this.employedata.profileCompleted = this.profileCompleteness >= 100;
+      this.employedata.profileCompleteness = this.profileCompleteness;
+    }
   }
 }

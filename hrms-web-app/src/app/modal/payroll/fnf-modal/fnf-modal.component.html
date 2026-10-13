@@ -1,0 +1,141 @@
+<div class="fnf-modal-container">
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <mat-icon>account_balance_wallet</mat-icon>
+      </div>
+      <div>
+        <h2 class="modal-title">Full & Final (FnF) Settlement Engine</h2>
+        <p class="modal-subtitle">Gratuity, Leave Encashment, Notice Recovery & Final Payout</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-body">
+    <form [formGroup]="fnfForm" (ngSubmit)="calculate()">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Employee <span class="required">*</span></label>
+          <select formControlName="employeeId" class="form-control">
+            <option value="" disabled>Select resigning employee</option>
+            <option *ngFor="let emp of employeesList" [value]="emp.id">
+              {{ emp.firstName }} {{ emp.lastName }} ({{ emp.employeeCode || emp.id }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Official Relieving Date <span class="required">*</span></label>
+          <input type="date" formControlName="relievingDate" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label>Required Notice Period (Days)</label>
+          <input type="number" formControlName="noticePeriodDays" class="form-control" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Notice Period Served (Days)</label>
+          <input type="number" formControlName="noticePeriodServedDays" class="form-control" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Pending Salary Days (Relieving Month)</label>
+          <input type="number" formControlName="pendingSalaryDays" class="form-control" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Other Allowances (₹)</label>
+          <input type="number" formControlName="otherAllowances" class="form-control" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Other Deductions (₹)</label>
+          <input type="number" formControlName="otherDeductions" class="form-control" min="0" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Remarks / Settlement Notes</label>
+          <input type="text" formControlName="remarks" class="form-control" placeholder="Optional notes for final clearance" />
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="isCalculating">
+          <mat-icon>calculate</mat-icon> Calculate Settlement
+        </button>
+      </div>
+    </form>
+
+    <!-- Calculation Breakdown Display -->
+    <div class="breakdown-section" *ngIf="settlementResult">
+      <h3 class="section-title">Settlement Breakdown & Computation</h3>
+
+      <div class="tenure-banner">
+        <span>Tenure: <strong>{{ settlementResult.tenureYears }} Years</strong></span>
+        <span>Last Drawn Basic: <strong>{{ formatCurrency(settlementResult.lastDrawnBasicSalary) }}</strong></span>
+        <span>Last Drawn Gross: <strong>{{ formatCurrency(settlementResult.lastDrawnGrossSalary) }}</strong></span>
+      </div>
+
+      <div class="breakdown-grid">
+        <!-- Earnings / Additions Column -->
+        <div class="breakdown-col earnings">
+          <h4>Payable / Additions</h4>
+          <div class="item-row">
+            <span>Pending Salary ({{ settlementResult.pendingSalaryDays }}d)</span>
+            <span class="val">{{ formatCurrency(settlementResult.pendingSalaryAmount) }}</span>
+          </div>
+          <div class="item-row">
+            <span>Leave Encashment ({{ settlementResult.unutilizedLeaveDays }}d)</span>
+            <span class="val">{{ formatCurrency(settlementResult.leaveEncashmentAmount) }}</span>
+          </div>
+          <div class="item-row">
+            <span>Gratuity ({{ settlementResult.isGratuityEligible ? 'Eligible' : 'Tenure < 5 yrs' }})</span>
+            <span class="val">{{ formatCurrency(settlementResult.gratuityAmount) }}</span>
+          </div>
+          <div class="item-row">
+            <span>Approved Reimbursements</span>
+            <span class="val">{{ formatCurrency(settlementResult.approvedReimbursements) }}</span>
+          </div>
+          <div class="item-row" *ngIf="settlementResult.otherAllowances > 0">
+            <span>Other Allowances</span>
+            <span class="val">{{ formatCurrency(settlementResult.otherAllowances) }}</span>
+          </div>
+        </div>
+
+        <!-- Recoveries / Deductions Column -->
+        <div class="breakdown-col deductions">
+          <h4>Recoveries / Deductions</h4>
+          <div class="item-row">
+            <span>Notice Shortfall ({{ settlementResult.noticePeriodShortfallDays }}d)</span>
+            <span class="val text-danger">{{ formatCurrency(settlementResult.noticeRecoveryAmount) }}</span>
+          </div>
+          <div class="item-row" *ngIf="settlementResult.otherDeductions > 0">
+            <span>Other Deductions</span>
+            <span class="val text-danger">{{ formatCurrency(settlementResult.otherDeductions) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Settlement Total Card -->
+      <div class="net-settlement-card">
+        <div class="net-info">
+          <span class="net-label">Net Full & Final Payable</span>
+          <span class="net-amount">{{ formatCurrency(settlementResult.netSettlementAmount) }}</span>
+        </div>
+        <div class="status-action">
+          <button class="btn btn-success" [disabled]="isSaving" (click)="approveSettlement()">
+            <mat-icon>check_circle</mat-icon> Approve Settlement
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-outline" (click)="close()">Close</button>
+  </div>
+</div>

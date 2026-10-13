@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class RequestsApprovalsModalComponent {
   rejectionReason: string = '';
+  isSubmitting: boolean = false;
 
   constructor(
     public dialogRef: MatDialogRef<RequestsApprovalsModalComponent>,
@@ -21,6 +22,8 @@ export class RequestsApprovalsModalComponent {
   ) {}
 
   confirmSend(): void {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
     this.dialogRef.close({
       confirmed: true,
       rejectionReason: this.rejectionReason

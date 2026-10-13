@@ -9,6 +9,10 @@ export interface PayrollLopSettings {
   divisorBasis: LopDivisorBasis;
   includeUnpaidLeaves: boolean;
   includeUnexcusedAbsents: boolean;
+  includeLatePenalties?: boolean;
+  freeLateMarksPerMonth?: number; // default: 3
+  latePenaltyDeductionDays?: number; // default: 0.5 (per 3 excess lates)
+  halfDayThresholdHours?: number; // default: 4.5
   customBasePercentage: number; // default: 100
 }
 
@@ -23,6 +27,8 @@ export interface LopDayDetail {
 export interface LopDetectionResult {
   unpaidLeaveDays: number;
   unexcusedAbsentDays: number;
+  latePenaltyDays?: number;
+  lateMarksCount?: number;
   totalLopDays: number;
   dayDetails: LopDayDetail[];
   monthDays: number;
@@ -38,6 +44,10 @@ const DEFAULT_SETTINGS: PayrollLopSettings = {
   divisorBasis: 'actual_days',
   includeUnpaidLeaves: true,
   includeUnexcusedAbsents: true,
+  includeLatePenalties: true,
+  freeLateMarksPerMonth: 3,
+  latePenaltyDeductionDays: 0.5,
+  halfDayThresholdHours: 4.5,
   customBasePercentage: 100
 };
 
@@ -169,6 +179,8 @@ export class PayrollLopService {
     let workingDays = 0;
     const unpaidLeaveDaysList: LopDayDetail[] = [];
     const unexcusedAbsentDaysList: LopDayDetail[] = [];
+    let lateMarksCount = 0;
+    const lateDatesList: string[] = [];
 
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -262,6 +274,30 @@ export class PayrollLopService {
         return rawDate && this.toYmdSafe(rawDate) === dateStr;
       });
 
+      // Detect Late Arrivals
+      if (hasPunch || hasLogPunch) {
+        const punchObj = attendanceRecords.find((r: any) => {
+          const empMatch = Number(r.employeeId || r.EmployeeId) === Number(employeeId);
+          if (!empMatch) return false;
+          const ad = r.attendanceDate || r.AttendanceDate;
+          const ci = r.clockIn || r.ClockIn;
+          return (ad && this.toYmdSafe(ad) === dateStr) || (ci && this.toYmdSafe(ci) === dateStr);
+        });
+
+        const rawIn = punchObj?.clockIn || punchObj?.ClockIn;
+        if (rawIn) {
+          const cIn = new Date(rawIn);
+          if (!isNaN(cIn.getTime())) {
+            const punchMinutes = cIn.getHours() * 60 + cIn.getMinutes();
+            const lateThreshold = 9 * 60 + 30 + 15; // 09:45 AM (09:30 + 15m grace)
+            if (punchMinutes > lateThreshold) {
+              lateMarksCount++;
+              lateDatesList.push(dateStr);
+            }
+          }
+        }
+      }
+
       if (!hasPunch && !hasLogPunch && !hasApprovedRegularization) {
         unexcusedAbsentDaysList.push({
           dateStr,
@@ -287,10 +323,30 @@ export class PayrollLopService {
       absentCount = unexcusedAbsentDaysList.length;
     }
 
+    let latePenaltyDays = 0;
+    if (s.includeLatePenalties) {
+      const freeAllowed = s.freeLateMarksPerMonth ?? 3;
+      const excessLates = Math.max(0, lateMarksCount - freeAllowed);
+      const deductionPerTier = s.latePenaltyDeductionDays ?? 0.5;
+      latePenaltyDays = Math.floor(excessLates / 3) * deductionPerTier;
+
+      if (latePenaltyDays > 0) {
+        filteredDetails.push({
+          dateStr: lateDatesList[lateDatesList.length - 1] || `${year}-${String(month + 1).padStart(2, '0')}-01`,
+          formattedDate: `${lateMarksCount} Late Marks`,
+          type: 'unexcused_absent',
+          typeLabel: 'Late Arrival Penalty',
+          reason: `${lateMarksCount} late marks detected (${excessLates} excess over ${freeAllowed} free allowed) -> ${latePenaltyDays} day LOP deduction`
+        });
+      }
+    }
+
     return {
       unpaidLeaveDays: unpaidCount,
       unexcusedAbsentDays: absentCount,
-      totalLopDays: unpaidCount + absentCount,
+      latePenaltyDays: latePenaltyDays,
+      lateMarksCount: lateMarksCount,
+      totalLopDays: unpaidCount + absentCount + latePenaltyDays,
       dayDetails: filteredDetails,
       monthDays,
       workingDays: Math.max(1, workingDays),

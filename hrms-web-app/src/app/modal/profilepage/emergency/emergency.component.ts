@@ -57,16 +57,16 @@ export class EmergencyComponent implements OnInit {
     designationId: [''],
     createdDate: [''],
     shiftId: [''],
-    primaryContactName: ['', [Validators.required]],
+    primaryContactName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s.'-]+$/), Validators.minLength(2), Validators.maxLength(100)]],
     primaryContactRelationship: ['Spouse', [Validators.required]],
-    primaryContactPhone: ['', [Validators.required]],
-    primaryEmailAddress: [''],
-    primaryContactAddress: [''],
-    secondaryContactName: [''],
+    primaryContactPhone: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
+    primaryEmailAddress: ['', [Validators.email, Validators.maxLength(100)]],
+    primaryContactAddress: ['', [Validators.maxLength(200)]],
+    secondaryContactName: ['', [Validators.pattern(/^[a-zA-Z\s.'-]*$/), Validators.maxLength(100)]],
     secondaryContactRelationship: ['Parent / Guardian'],
-    secondaryContactPhone: [''],
-    secondaryContactEmail: [''],
-    secondaryContactAddress: [''],
+    secondaryContactPhone: ['', [Validators.pattern(/^[0-9]{10}$/)]],
+    secondaryContactEmail: ['', [Validators.email, Validators.maxLength(100)]],
+    secondaryContactAddress: ['', [Validators.maxLength(200)]],
     degree: [''],
     university: [''],
     yearOfPassing: [''],
@@ -98,22 +98,92 @@ export class EmergencyComponent implements OnInit {
     this.dialogRef.close(false);
   }
 
+  allowOnlyLetters(event: KeyboardEvent) {
+    const key = event.key;
+    if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) return;
+    if (!/^[a-zA-Z\s.'-]$/.test(key)) {
+      event.preventDefault();
+    }
+  }
+
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) return;
+    if (!/^[0-9]$/.test(key)) {
+      event.preventDefault();
+    }
+  }
+
+  onPhoneInput(event: Event, controlName: string) {
+    const input = event.target as HTMLInputElement;
+    const cleaned = input.value.replace(/[^0-9]/g, '').slice(0, 10);
+    if (input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    this.contactForm.get(controlName)?.setValue(cleaned);
+  }
+
+  onPhonePaste(event: ClipboardEvent, controlName: string) {
+    event.preventDefault();
+    const pasted = event.clipboardData?.getData('text') || '';
+    const cleaned = pasted.replace(/[^0-9]/g, '').slice(0, 10);
+    this.contactForm.get(controlName)?.setValue(cleaned);
+  }
+
   submitcontact() {
     if (this.contactForm.invalid) {
       this.contactForm.markAllAsTouched();
-      this.toaster.error('Please fill in primary emergency contact details', 'Validation Error');
+      const controls = this.contactForm.controls;
+      if (controls['primaryContactName'].invalid) {
+        if (controls['primaryContactName'].hasError('required')) {
+          this.toaster.error('Primary contact name is required', 'Validation Error');
+        } else {
+          this.toaster.error('Primary contact name can only contain letters and spaces', 'Validation Error');
+        }
+      } else if (controls['primaryContactRelationship'].invalid) {
+        this.toaster.error('Primary contact relationship is required', 'Validation Error');
+      } else if (controls['primaryContactPhone'].invalid) {
+        if (controls['primaryContactPhone'].hasError('required')) {
+          this.toaster.error('Primary emergency phone is required', 'Validation Error');
+        } else {
+          this.toaster.error('Primary emergency phone must be a valid 10-digit number (numeric only)', 'Validation Error');
+        }
+      } else if (controls['primaryEmailAddress'].invalid) {
+        this.toaster.error('Please enter a valid email address for primary contact', 'Validation Error');
+      } else if (controls['primaryContactAddress'].invalid) {
+        this.toaster.error('Primary residential address cannot exceed 200 characters', 'Validation Error');
+      } else if (controls['secondaryContactName'].invalid) {
+        this.toaster.error('Secondary contact name can only contain letters and spaces', 'Validation Error');
+      } else if (controls['secondaryContactPhone'].invalid) {
+        this.toaster.error('Secondary emergency phone must be a valid 10-digit number (numeric only)', 'Validation Error');
+      } else if (controls['secondaryContactEmail'].invalid) {
+        this.toaster.error('Please enter a valid email address for secondary contact', 'Validation Error');
+      } else if (controls['secondaryContactAddress'].invalid) {
+        this.toaster.error('Secondary residential address cannot exceed 200 characters', 'Validation Error');
+      } else {
+        this.toaster.error('Please fill in valid emergency contact details', 'Validation Error');
+      }
       return;
     }
 
-    this.services.updateData(this.contactForm.value).subscribe({
+    const val = { ...this.contactForm.value };
+    if (val.primaryContactName) val.primaryContactName = val.primaryContactName.trim();
+    if (val.primaryContactPhone) val.primaryContactPhone = String(val.primaryContactPhone).replace(/[^0-9]/g, '').slice(0, 10);
+    if (val.primaryEmailAddress) val.primaryEmailAddress = val.primaryEmailAddress.trim();
+    if (val.primaryContactAddress) val.primaryContactAddress = val.primaryContactAddress.trim();
+    if (val.secondaryContactName) val.secondaryContactName = val.secondaryContactName.trim();
+    if (val.secondaryContactPhone) val.secondaryContactPhone = String(val.secondaryContactPhone).replace(/[^0-9]/g, '').slice(0, 10);
+    if (val.secondaryContactEmail) val.secondaryContactEmail = val.secondaryContactEmail.trim();
+    if (val.secondaryContactAddress) val.secondaryContactAddress = val.secondaryContactAddress.trim();
+
+    this.services.updateData(val).subscribe({
       next: () => {
         this.toaster.success('Emergency contact details updated successfully', 'Saved');
         this.dialogRef.close(true);
       },
       error: (err) => {
         console.error('Error updating contacts:', err);
-        this.toaster.success('Emergency contact details updated successfully', 'Saved');
-        this.dialogRef.close(true);
+        this.toaster.error(err?.error?.message || 'Failed to update emergency contact details', 'Save Error');
       }
     });
   }

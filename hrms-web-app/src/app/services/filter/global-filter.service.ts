@@ -14,6 +14,7 @@ export interface PageFilterConfig {
   availableMonths?: string[];
   showCategoryFilter?: boolean;
   categoryOptions?: string[];
+  showSortFilter?: boolean;
 }
 
 export interface ActiveFilterState {
@@ -25,6 +26,7 @@ export interface ActiveFilterState {
   category: string;
   dateStart: string | null;
   dateEnd: string | null;
+  sortOrder: 'desc' | 'asc';
 }
 
 export const ROUTE_FILTER_MAP: Record<string, PageFilterConfig> = {
@@ -150,7 +152,8 @@ const INITIAL_STATE: ActiveFilterState = {
   month: 'All',
   category: 'All',
   dateStart: null,
-  dateEnd: null
+  dateEnd: null,
+  sortOrder: 'desc'
 };
 
 @Injectable({
@@ -163,7 +166,7 @@ export class GlobalFilterService {
   private pageConfigSubject = new BehaviorSubject<PageFilterConfig | null>(null);
   public pageConfig$: Observable<PageFilterConfig | null> = this.pageConfigSubject.asObservable();
 
-  private isFilterBarOpenSubject = new BehaviorSubject<boolean>(true);
+  private isFilterBarOpenSubject = new BehaviorSubject<boolean>(false);
   public isFilterBarOpen$: Observable<boolean> = this.isFilterBarOpenSubject.asObservable();
 
   constructor() {}
@@ -210,6 +213,10 @@ export class GlobalFilterService {
 
   setDateRange(start: string | null, end: string | null): void {
     this.updateFilters({ dateStart: start, dateEnd: end });
+  }
+
+  setSortOrder(sortOrder: 'desc' | 'asc'): void {
+    this.updateFilters({ sortOrder: sortOrder || 'desc' });
   }
 
   resetAllFilters(): void {

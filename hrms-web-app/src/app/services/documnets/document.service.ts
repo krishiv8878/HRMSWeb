@@ -3,12 +3,14 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, catchError, Observable, of, tap, throwError } from 'rxjs';
 import { DocumentCategory, DocumentItem, AccessLevel, FileType, DocumentStatus } from '../../interface/document.interface';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DocumentService {
   http = inject(HttpClient);
+  private notificationService = inject(NotificationService);
   apiUrl = environment.host;
 
   private defaultCategories: DocumentCategory[] = [
@@ -129,10 +131,50 @@ export class DocumentService {
 
         const validList = rawList.filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== 'true');
         const loggedUser = this.getLoggedInUser();
+        const currentEmpId = typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
+        const currentUserId = typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? (localStorage.getItem('userId') || '') : '';
+        const currentEmail = typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? (localStorage.getItem('userEmail') || '').toLowerCase().trim() : '';
+        const currentFullName = loggedUser.name.toLowerCase().trim();
+
+        // Enforce: Users (including HR and Managers) only see their own documents on Document page (+ approved company policies)
+        // Any documents requiring approval/rejection are handled in the Requests & Approvals desk.
+        const personalList = validList.filter((item: any) => {
+          const cat = String(item.category || item.Category || '').toLowerCase();
+          const status = String(item.status || 'approved').toLowerCase();
+
+          // Approved company policies are public to everyone
+          if (cat === 'company policies' && status === 'approved') {
+            return true;
+          }
+
+          // Check if document belongs to current user
+          const itemEmpId = Number(item.employeeId ?? item.EmployeeId ?? 0);
+          if (currentEmpId > 0 && itemEmpId > 0 && itemEmpId === currentEmpId) {
+            return true;
+          }
+
+          const uploadedBy = String(item.uploadedBy ?? item.UploadedBy ?? '').trim();
+          if (currentUserId && uploadedBy && (uploadedBy === currentUserId || (currentEmpId > 0 && Number(uploadedBy) === currentEmpId))) {
+            return true;
+          }
+
+          const email = String(item.emailAddress ?? item.EmailAddress ?? item.email ?? '').toLowerCase().trim();
+          if (currentEmail && email && email === currentEmail) {
+            return true;
+          }
+
+          const empName = String(item.employeeName ?? item.uploadedByName ?? item.ownerName ?? item.fullName ?? '').toLowerCase().trim();
+          if (currentFullName && empName && empName === currentFullName) {
+            return true;
+          }
+
+          return false;
+        });
+
         let apiDocs: DocumentItem[] = [];
 
-        if (validList.length > 0) {
-          apiDocs = validList.map((item: any) => {
+        if (personalList.length > 0) {
+          apiDocs = personalList.map((item: any) => {
             const filePath = item.filePath || item.documentName || item.name || 'Document';
             const ext = filePath.split('.').pop()?.toLowerCase() || 'pdf';
             let fileType: FileType = 'pdf';
@@ -250,9 +292,15 @@ export class DocumentService {
 
   creatDocument(formData: FormData): Observable<any> {
     const documentName = formData.get('documentName') as string || '';
-    return this.http.post<any[]>(this.apiUrl + `/EmployeeDocument/UploadDocument?documentName=${encodeURIComponent(documentName)}`, formData).pipe(
+    const documentId = formData.get('documentId') as string || '';
+    let url = `${this.apiUrl}/EmployeeDocument/UploadDocument?documentName=${encodeURIComponent(documentName)}`;
+    if (documentId) {
+      url += `&documentId=${encodeURIComponent(documentId)}`;
+    }
+    return this.http.post<any[]>(url, formData).pipe(
       tap(() => {
         this.fetchDocumentsFromApi();
+        this.notificationService.refreshNotifications();
       }),
       catchError((error) => {
         console.error('Error from UploadDocument API service:', error);
@@ -285,6 +333,7 @@ export class DocumentService {
         const updated = this.documentsSubject.value.filter(d => d.id !== id);
         this.documentsSubject.next(updated);
         this.recalculateCategoryCounts(updated);
+        this.notificationService.refreshNotifications();
       })
     );
   }
@@ -304,6 +353,7 @@ export class DocumentService {
     return this.http.post<any>(`${this.apiUrl}/EmployeeDocument/ApproveOrRejectDocument`, payload).pipe(
       tap(() => {
         this.fetchDocumentsFromApi();
+        this.notificationService.refreshNotifications();
       })
     );
   }

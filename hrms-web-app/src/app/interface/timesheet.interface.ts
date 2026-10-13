@@ -28,6 +28,8 @@ export interface TimesheetDayView {
   leaveTypeName?: string | null;
   isWeekend?: boolean;
   isPriorToJoining?: boolean;
+  isAbsent?: boolean;
+  regularizationStatus?: string | null;
 }
 
 export interface TimesheetView {

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { SingleClickDirective } from '../../directive/single-click.directive';
 
 export interface CancelLeaveModalData {
   leaveId: number;
@@ -21,7 +22,8 @@ export interface CancelLeaveModalData {
     FormsModule,
     MatDialogModule,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    SingleClickDirective
   ],
   templateUrl: './cancel-leave-modal.component.html',
   styleUrl: './cancel-leave-modal.component.scss'

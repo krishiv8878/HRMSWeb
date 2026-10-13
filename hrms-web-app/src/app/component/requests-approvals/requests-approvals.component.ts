@@ -23,6 +23,7 @@ import { CandidateInterviewModalComponent } from '../../modal/candidate-intervie
 import { PaymentinfoService } from '../../services/employeePayment/paymentinfo.service';
 import { NotificationService } from '../../services/notification/notification.service';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
+import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 
 export interface ApprovalRequestItem {
   id: number;
@@ -70,7 +71,10 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   private paymentInfoService = inject(PaymentinfoService);
   private notificationService = inject(NotificationService);
   private globalFilterService = inject(GlobalFilterService);
+  private holidayService = inject(HolidayservicesService);
   private filterSub?: Subscription;
+
+  holidays: any[] = [];
 
   get isApprover(): boolean {
     return this.rbacService.hasAnyRole(['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management']);
@@ -85,10 +89,31 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   activeCategory: 'action_required' | 'time_attendance' | 'timesheet' | 'asset' | 'hr_banking' = 'action_required';
   activeSubTab: string = 'all';
   activeTab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet' | 'asset' | 'interview' | 'banking' = 'all';
+  activeStatusTab: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'All' = 'Pending';
+  sortOrder: 'desc' | 'asc' = 'desc';
+
+  // Dynamic Status Tab Counts
+  pendingStatusCount: number = 0;
+  approvedStatusCount: number = 0;
+  rejectedStatusCount: number = 0;
+  cancelledStatusCount: number = 0;
+  allStatusCount: number = 0;
+
   searchQuery: string = '';
   selectedStatus: string = 'Pending';
   selectedEmployee: string = 'All';
   employeeOptions: string[] = [];
+
+  // Loader & In-Flight State for Approvals / Rejections
+  isSubmittingDecision: boolean = false;
+  processingItemId: number | null = null;
+  decisionLoadingMessage: string = 'Processing decision...';
+
+  private setSubmittingState(isSubmitting: boolean, itemId: number | null = null, message: string = 'Processing decision...'): void {
+    this.isSubmittingDecision = isSubmitting;
+    this.processingItemId = isSubmitting ? itemId : null;
+    this.decisionLoadingMessage = message;
+  }
 
   allRequests: ApprovalRequestItem[] = [];
   filteredRequests: ApprovalRequestItem[] = [];
@@ -129,18 +154,47 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   totalPages: number = 1;
   pages: number[] = [];
 
+  loadHolidays(): void {
+    this.holidayService.getHoliday().subscribe({
+      next: (res: any) => {
+        this.holidays = Array.isArray(res) ? res : (res?.data || []);
+      },
+      error: () => {
+        this.holidays = [];
+      }
+    });
+  }
+
   ngOnInit(): void {
+    this.loadHolidays();
     this.loadAllRequests();
 
     this.filterSub = this.globalFilterService.filters$.subscribe(f => {
-      this.searchQuery = f.search || '';
-      if (f.status) this.selectedStatus = f.status;
+      let changed = false;
+      if (f.search !== undefined && f.search !== this.searchQuery) {
+        this.searchQuery = f.search || '';
+        changed = true;
+      }
+      if (f.sortOrder && f.sortOrder !== this.sortOrder) {
+        this.sortOrder = f.sortOrder;
+        changed = true;
+      }
+      if (f.status && f.status !== this.selectedStatus) {
+        this.selectedStatus = f.status;
+        if (['Pending', 'Approved', 'Rejected', 'Cancelled', 'All'].includes(f.status)) {
+          this.activeStatusTab = f.status as any;
+        }
+        changed = true;
+      }
       if (f.employeeName && f.employeeId !== 'All') {
         this.selectedEmployee = f.employeeName;
-      } else if (f.employeeId === 'All') {
+        changed = true;
+      } else if (f.employeeId === 'All' && this.selectedEmployee !== 'All') {
         this.selectedEmployee = 'All';
+        changed = true;
       }
-      if (this.allRequests.length > 0) {
+      if (this.allRequests.length > 0 && changed) {
+        this.updateStatusCounts();
         this.filterRequests();
       }
     });
@@ -184,10 +238,11 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
           let avatarUrl: string | undefined = undefined;
-          if (x.profileImage) {
-            avatarUrl = x.profileImage.startsWith('http') || x.profileImage.startsWith('data:')
-              ? x.profileImage
-              : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${x.profileImage}`;
+          const profileImg = x.profileImage || x.employee?.profileImage;
+          if (profileImg) {
+            avatarUrl = profileImg.startsWith('http') || profileImg.startsWith('data:')
+              ? profileImg
+              : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${profileImg}`;
           } else if (globalAvatar && (x.employeeId == loggedUserId || idx === 0)) {
             avatarUrl = globalAvatar;
           }
@@ -195,13 +250,20 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           return {
             id: Number(x.id || x.leaveRequestId || (idx + 1)),
             requesterName: empName,
-            requesterRole: x.designation || x.department || 'Team Member',
+            requesterRole: x.designation || x.employee?.designation || x.department || 'Team Member',
             avatarUrl: avatarUrl,
             initials: initials || 'EM',
             requestType: leaveTypeName,
             startDate: x.startDate,
             endDate: x.endDate,
-            durationText: this.formatDateRange(x.startDate, x.endDate),
+            durationText: (() => {
+              const workingDays = (x.totalDays !== undefined && x.totalDays !== null && Number(x.totalDays) > 0)
+                ? Number(x.totalDays)
+                : this.service.calculateWorkingLeaveDays(x.startDate, x.endDate, x.leaveMode, this.holidays);
+              const daysText = `${workingDays} ${workingDays === 1 ? 'Day' : 'Days'}`;
+              const rangeText = this.formatDateRange(x.startDate, x.endDate);
+              return rangeText !== 'N/A' ? `${rangeText} (${daysText})` : daysText;
+            })(),
             reasonPreview: x.leaveReason || x.reason || 'Personal time off request',
             status: statusStr,
             actionBy: actionByVal || undefined,
@@ -265,6 +327,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
                   docList = docResponse;
                 } else if (docResponse && Array.isArray(docResponse.data)) {
                   docList = docResponse.data;
+                } else if (docResponse && Array.isArray(docResponse.result)) {
+                  docList = docResponse.result;
                 }
                 docList = docList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
 
@@ -278,7 +342,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
                   const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
                   return {
-                    id: Number(x.id || (idx + 500)),
+                    id: Number(x.id ?? x.Id ?? (idx + 500)),
                     requesterName: empName,
                     requesterRole: x.category || 'Document Verification',
                     avatarUrl: undefined,
@@ -342,7 +406,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
                           requestType: `${ts.periodType} Timesheet`,
                           startDate: ts.startDate,
                           endDate: ts.endDate,
-                          category: 'Timesheet'
+                          category: 'Timesheet',
+                          totalHours: ts.totalTimesheetHours ?? ts.totalHours
                         }
                       };
                     });
@@ -379,9 +444,21 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             const empName = a.employeeName || 'Employee';
             const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
             const s = (a.status || '').toLowerCase().trim();
+            const isClosed = s.includes('closed');
+            const remarksCombined = ((a.adminRemarks || '') + ' ' + (a.remarks || '') + ' ' + (a.inspectionRemarks || '')).toLowerCase();
+            const hasRejectLog = a.logs && Array.isArray(a.logs) && a.logs.some((l: any) =>
+              (l.toStatus || '').toLowerCase().includes('reject') ||
+              (l.fromStatus || '').toLowerCase().includes('reject') ||
+              (l.remarks || '').toLowerCase().includes('reject')
+            );
+            const isRejected = s.includes('reject') || (isClosed && (remarksCombined.includes('reject') || hasRejectLog));
+            const isApproved = s.includes('approved') || s.includes('completed') || s.includes('received') ||
+              s.includes('repair') || s.includes('dispatch') || s.includes('transit') || s.includes('deliver') ||
+              (isClosed && !isRejected);
+
             const statusStr: 'Pending' | 'Approved' | 'Rejected' =
-              s.includes('reject') ? 'Rejected' :
-              (s.includes('approved') || s.includes('completed') || s.includes('received') ? 'Approved' : 'Pending');
+              isRejected ? 'Rejected' :
+              (isApproved ? 'Approved' : 'Pending');
 
             return {
               id: Number(a.id),
@@ -393,8 +470,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               startDate: a.createdDate,
               endDate: a.updatedDate,
               durationText: a.createdDate ? new Date(a.createdDate).toLocaleDateString('en-GB') : 'Recent',
-              reasonPreview: s.includes('reject')
-                ? `Rejected: ${a.adminRemarks || a.remarks || 'No remarks provided'}`
+              reasonPreview: isRejected
+                ? `Rejected${isClosed ? ' (Closed)' : ''}: ${a.adminRemarks || a.remarks || 'No remarks provided'}`
                 : (a.reason || a.description || `Ticket #${a.id} (${a.status})`),
               status: statusStr,
               actionBy: a.actionByEmployeeId,
@@ -680,6 +757,43 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       this.avgTurnaroundText = '0.0';
     }
 
+    this.updateStatusCounts();
+    this.filterRequests();
+  }
+
+  updateStatusCounts(): void {
+    let pool = [...this.allRequests];
+    if (this.activeCategory === 'time_attendance') {
+      pool = pool.filter(r => r.category === 'Leave' || r.category === 'Attendance');
+    } else if (this.activeCategory === 'timesheet') {
+      pool = pool.filter(r => r.category === 'Timesheet');
+    } else if (this.activeCategory === 'asset') {
+      pool = pool.filter(r => r.category === 'Asset');
+    } else if (this.activeCategory === 'hr_banking') {
+      pool = pool.filter(r => r.category === 'Document' || r.category === 'Banking' || r.category === 'Interview');
+    }
+
+    if (this.selectedEmployee !== 'All') {
+      pool = pool.filter(r => r.requesterName === this.selectedEmployee);
+    }
+
+    this.pendingStatusCount = pool.filter(r => r.status === 'Pending').length;
+    this.approvedStatusCount = pool.filter(r => r.status === 'Approved').length;
+    this.rejectedStatusCount = pool.filter(r => r.status === 'Rejected').length;
+    this.cancelledStatusCount = pool.filter(r => r.status === 'Cancelled').length;
+    this.allStatusCount = pool.length;
+  }
+
+  setStatusTab(tab: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'All'): void {
+    this.activeStatusTab = tab;
+    this.selectedStatus = tab;
+    this.currentPage = 1;
+    this.filterRequests();
+  }
+
+  toggleSortOrder(): void {
+    this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+    this.globalFilterService.setSortOrder(this.sortOrder);
     this.filterRequests();
   }
 
@@ -687,11 +801,9 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     this.activeCategory = cat;
     this.activeSubTab = 'all';
     this.currentPage = 1;
-    if (cat === 'action_required') {
-      this.selectedStatus = 'Pending';
-    } else {
-      this.selectedStatus = 'All';
-    }
+    this.activeStatusTab = 'Pending';
+    this.selectedStatus = 'Pending';
+    this.updateStatusCounts();
     this.filterRequests();
   }
 
@@ -712,7 +824,6 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
 
     // Filter by Active Category (Option A Hub)
     if (this.activeCategory === 'action_required') {
-      result = result.filter(r => r.status === 'Pending');
       if (this.activeSubTab !== 'all') {
         result = result.filter(r => r.category.toLowerCase() === this.activeSubTab.toLowerCase());
       }
@@ -738,8 +849,9 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (this.selectedStatus !== 'All') {
-      result = result.filter(r => r.status === this.selectedStatus);
+    // Filter by Active Status Tab
+    if (this.activeStatusTab !== 'All') {
+      result = result.filter(r => r.status === this.activeStatusTab);
     }
 
     if (this.selectedEmployee !== 'All') {
@@ -749,13 +861,36 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
       result = result.filter(r =>
-        r.requesterName.toLowerCase().includes(q) ||
+        (r.requesterName && r.requesterName.toLowerCase().includes(q)) ||
         (r.requesterRole && r.requesterRole.toLowerCase().includes(q)) ||
         (r.reasonPreview && r.reasonPreview.toLowerCase().includes(q)) ||
         (r.requestType && r.requestType.toLowerCase().includes(q)) ||
         (r.durationText && r.durationText.toLowerCase().includes(q))
       );
     }
+
+    // Default Sorting: Latest first (descending), with sortOrder toggle support
+    const getTime = (r: ApprovalRequestItem): number => {
+      const d = r.startDate || r.actionDate || r.endDate;
+      if (d) {
+        const t = new Date(d).getTime();
+        if (!isNaN(t)) return t;
+      }
+      return r.id || 0;
+    };
+
+    result.sort((a, b) => {
+      const tA = getTime(a);
+      const tB = getTime(b);
+      const idA = a.id || 0;
+      const idB = b.id || 0;
+
+      if (this.sortOrder === 'asc') {
+        return (tA - tB) || (idA - idB);
+      } else {
+        return (tB - tA) || (idB - idA);
+      }
+    });
 
     this.filteredRequests = result;
     this.updatePagination();
@@ -818,26 +953,32 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
 
       const tsId = Number(item.id || item.rawRecord?.timesheetId);
       if (res.action === 'approve') {
+        this.setSubmittingState(true, tsId, `Approving timesheet for ${item.requesterName}...`);
         this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Approved' }).subscribe({
           next: () => {
             this.toaster.success(`Timesheet for ${item.requesterName} Approved`, 'Approved');
+            this.setSubmittingState(false);
             this.loadAllRequests();
           },
           error: (err: any) => {
             const msg = err?.error?.message || 'Failed to approve timesheet';
             this.toaster.error(msg, 'Approval Error');
+            this.setSubmittingState(false);
           }
         });
       } else if (res.action === 'reject') {
         const reason = res.rejectionReason || '';
+        this.setSubmittingState(true, tsId, `Rejecting timesheet for ${item.requesterName}...`);
         this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Rejected', rejectionReason: reason }).subscribe({
           next: () => {
             this.toaster.warning(`Timesheet for ${item.requesterName} Rejected`, 'Rejected');
+            this.setSubmittingState(false);
             this.loadAllRequests();
           },
           error: (err: any) => {
             const msg = err?.error?.message || 'Failed to reject timesheet';
             this.toaster.error(msg, 'Rejection Error');
+            this.setSubmittingState(false);
           }
         });
       }
@@ -863,6 +1004,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe((res: any) => {
       const isConfirmed = res === true || res?.confirmed === true;
       if (isConfirmed) {
+        this.setSubmittingState(true, item.id, `Approving ${item.category} request for ${item.requesterName}...`);
         const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
 
         if (item.category === 'Leave') {
@@ -876,11 +1018,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.service.approveLeaveRequest(payload).subscribe({
             next: () => {
               this.toaster.success(`Leave request for ${item.requesterName} Approved`, 'Approved');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
-            error: () => {
-              this.toaster.success(`Leave request for ${item.requesterName} Approved`, 'Approved');
-              this.loadAllRequests();
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to approve leave request';
+              this.toaster.error(msg, 'Approval Error');
+              this.setSubmittingState(false);
             }
           });
         } else if (item.category === 'Document') {
@@ -888,11 +1032,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.documentService.approveOrRejectDocument(docId, 'Approved').subscribe({
             next: () => {
               this.toaster.success(`Document "${item.requestType}" for ${item.requesterName} Approved`, 'Approved');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to approve document';
               this.toaster.error(msg, 'Approval Error');
+              this.setSubmittingState(false);
             }
           });
         } else if (item.category === 'Timesheet') {
@@ -900,16 +1046,19 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Approved' }).subscribe({
             next: () => {
               this.toaster.success(`Timesheet for ${item.requesterName} Approved`, 'Approved');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to approve timesheet';
               this.toaster.error(msg, 'Approval Error');
+              this.setSubmittingState(false);
             }
           });
         } else if (item.category === 'Banking') {
           if (!this.isBankingApprover) {
             this.toaster.error('Only HR and Administrators are authorized to approve bank details requests.', 'Access Denied');
+            this.setSubmittingState(false);
             return;
           }
 
@@ -950,17 +1099,20 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               this.employeeService.updateData(updatedEmp).subscribe({
                 next: () => {
                   this.toaster.success(`Bank details update for ${item.requesterName} Approved and active in payroll!`, 'Approved');
+                  this.setSubmittingState(false);
                   this.loadAllRequests();
                 },
-                error: () => {
-                  this.toaster.success(`Bank details update for ${item.requesterName} Approved and active in payroll!`, 'Approved');
-                  this.loadAllRequests();
+                error: (err: any) => {
+                  const msg = err?.error?.message || 'Failed to update employee banking status';
+                  this.toaster.error(msg, 'Approval Error');
+                  this.setSubmittingState(false);
                 }
               });
             },
             error: (err: any) => {
               console.error('Error saving bank coordinates:', err);
               this.toaster.error('Failed to update bank details in payroll system.', 'Error');
+              this.setSubmittingState(false);
             }
           });
         } else {
@@ -984,11 +1136,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.service2.updateData(payload).subscribe({
             next: () => {
               this.toaster.success(`Attendance request for ${item.requesterName} Approved`, 'Approved');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
             error: (err: any) => {
               console.error('Error approving attendance request:', err);
               this.toaster.error(`Failed to approve attendance request`, 'Error');
+              this.setSubmittingState(false);
             }
           });
         }
@@ -1015,6 +1169,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe((res: any) => {
       const isConfirmed = res === true || res?.confirmed === true;
       if (isConfirmed) {
+        this.setSubmittingState(true, item.id, `Rejecting ${item.category} request for ${item.requesterName}...`);
         const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
         const loggedManagerName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || 'HR/Manager') : 'HR/Manager';
         const reason = res?.rejectionReason || '';
@@ -1031,11 +1186,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.service.approveLeaveRequest(payload).subscribe({
             next: () => {
               this.toaster.warning(`Leave request for ${item.requesterName} Rejected`, 'Rejected');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
-            error: () => {
-              this.toaster.warning(`Leave request for ${item.requesterName} Rejected`, 'Rejected');
-              this.loadAllRequests();
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to reject leave request';
+              this.toaster.error(msg, 'Rejection Error');
+              this.setSubmittingState(false);
             }
           });
         } else if (item.category === 'Document') {
@@ -1043,11 +1200,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.documentService.approveOrRejectDocument(docId, 'Rejected', reason).subscribe({
             next: () => {
               this.toaster.warning(`Document "${item.requestType}" for ${item.requesterName} Rejected`, 'Rejected');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to reject document';
               this.toaster.error(msg, 'Rejection Error');
+              this.setSubmittingState(false);
             }
           });
         } else if (item.category === 'Timesheet') {
@@ -1055,16 +1214,19 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.timesheetService.approveOrReject({ timesheetId: tsId, status: 'Rejected', rejectionReason: reason }).subscribe({
             next: () => {
               this.toaster.warning(`Timesheet for ${item.requesterName} Rejected`, 'Rejected');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to reject timesheet';
               this.toaster.error(msg, 'Rejection Error');
+              this.setSubmittingState(false);
             }
           });
         } else if (item.category === 'Banking') {
           if (!this.isBankingApprover) {
             this.toaster.error('Only HR and Administrators are authorized to reject bank details requests.', 'Access Denied');
+            this.setSubmittingState(false);
             return;
           }
 
@@ -1089,10 +1251,12 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.employeeService.updateData(updatedEmp).subscribe({
             next: () => {
               this.toaster.warning(`Bank details request for ${item.requesterName} Rejected.`, 'Rejected');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
             error: () => {
               this.toaster.warning(`Bank details request for ${item.requesterName} Rejected.`, 'Rejected');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             }
           });
@@ -1118,11 +1282,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           this.service2.updateData(payload).subscribe({
             next: () => {
               this.toaster.warning(`Attendance request for ${item.requesterName} Rejected`, 'Rejected');
+              this.setSubmittingState(false);
               this.loadAllRequests();
             },
             error: (err: any) => {
               console.error('Error rejecting attendance request:', err);
               this.toaster.error(`Failed to reject attendance request`, 'Error');
+              this.setSubmittingState(false);
             }
           });
         }
@@ -1184,8 +1350,10 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     const t = type.toUpperCase();
     if (t.includes('ANNUAL') || t.includes('PL') || t.includes('LEAVE')) return 'badge-type-annual';
     if (t.includes('SICK') || t.includes('CL')) return 'badge-type-sick';
+    if (t.includes('WORK FROM HOME') || t.includes('WFH')) return 'badge-type-wfh';
+    if (t.includes('ON-DUTY') || t.includes('DUTY') || t.includes('OD')) return 'badge-type-od';
     if (t.includes('EXPENSE')) return 'badge-type-expense';
-    if (t.includes('SHIFT') || t.includes('CLOCK')) return 'badge-type-shift';
+    if (t.includes('SHIFT') || t.includes('CLOCK') || t.includes('REGULAR')) return 'badge-type-shift';
     if (t.includes('ASSET') || t.includes('REPAIR') || t.includes('REPLACE') || t.includes('RETURN')) return 'badge-type-asset';
     if (t.includes('DOC') || t.includes('VERIF')) return 'badge-type-doc';
     if (t.includes('INTERVIEW') || t.includes('ROUND')) return 'badge-type-interview';
@@ -1268,15 +1436,18 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((res: any) => {
       if (res && res.confirmed) {
+        this.setSubmittingState(true, leaveId, 'Cancelling leave request and restoring balances...');
         this.service.cancelLeave(leaveId, res.reason || 'Cancelled by employee').subscribe({
           next: () => {
             this.toaster.success(`Leave request #${leaveId} has been cancelled and quota balance restored.`, 'Leave Cancelled');
+            this.setSubmittingState(false);
             this.loadAllRequests();
           },
           error: (err: any) => {
             console.error('Error cancelling leave:', err);
             const msg = err?.error?.message || 'Failed to cancel leave request.';
             this.toaster.error(msg, 'Error');
+            this.setSubmittingState(false);
           }
         });
       }

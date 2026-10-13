@@ -23,17 +23,7 @@
       <ng-container *ngIf="!isViewingOtherEmployee">
         <button
           type="button"
-          *ngIf="!isClockedIn"
-          class="btn-punch btn-clock-in"
-          (click)="openClockInDialog()"
-        >
-          <mat-icon>login</mat-icon>
-          <span>Clock-In</span>
-        </button>
-
-        <button
-          type="button"
-          *ngIf="isClockedIn"
+          *ngIf="isClockedIn; else clockInTpl"
           class="btn-punch btn-clock-out"
           (click)="openClockOutDialog()"
         >
@@ -41,6 +31,17 @@
           <span>Clock-Out</span>
           <span class="session-duration-tag">{{ activeSessionDuration }}</span>
         </button>
+
+        <ng-template #clockInTpl>
+          <button
+            type="button"
+            class="btn-punch btn-clock-in"
+            (click)="openClockInDialog()"
+          >
+            <mat-icon>login</mat-icon>
+            <span>Clock-In</span>
+          </button>
+        </ng-template>
       </ng-container>
 
       <!-- Supervisor Audit View Badge when inspecting another employee -->
@@ -74,7 +75,80 @@
           <mat-icon>table_rows</mat-icon>
           <span>Table Log</span>
         </button>
+        <button
+          *ngIf="isHrOrAdmin"
+          type="button"
+          class="btn-toggle"
+          [class.active]="viewMode === 'register'"
+          (click)="switchToRegisterView()"
+          title="Switch to Monthly Attendance Register Matrix"
+        >
+          <mat-icon>grid_on</mat-icon>
+          <span>Register Matrix</span>
+        </button>
       </div>
+
+      <!-- Work Mode Selector (Office vs WFH vs On-Duty) -->
+      <div *ngIf="!isViewingOtherEmployee" class="work-mode-widget">
+        <span class="work-mode-label">Work Mode:</span>
+        <div class="work-mode-toggle-group">
+          <button
+            type="button"
+            class="btn-mode mode-wfo"
+            [class.active]="todayWorkMode === 'WFO'"
+            (click)="selectWorkMode('WFO')"
+            title="Working from Office (In-Person)"
+          >
+            <mat-icon>business</mat-icon>
+            <span>Office</span>
+          </button>
+          <button
+            type="button"
+            class="btn-mode mode-wfh"
+            [class.active]="todayWorkMode === 'WFH'"
+            (click)="selectWorkMode('WFH')"
+            title="Work From Home (Remote)"
+          >
+            <mat-icon>home_work</mat-icon>
+            <span>WFH</span>
+          </button>
+          <button
+            type="button"
+            class="btn-mode mode-od"
+            [class.active]="todayWorkMode === 'OD'"
+            (click)="selectWorkMode('OD')"
+            title="On-Duty (Client Site / Field)"
+          >
+            <mat-icon>badge</mat-icon>
+            <span>On-Duty</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hybrid Compliance Indicator -->
+      <div
+        *ngIf="!isViewingOtherEmployee && weeklyHybridProgress"
+        class="hybrid-progress-pill"
+        [class.compliant]="weeklyHybridProgress.isCompliant"
+        [title]="'Hybrid Policy: ' + weeklyHybridProgress.requiredWfo + ' days WFO / ' + weeklyHybridProgress.allowedWfh + ' days WFH required per week'"
+      >
+        <mat-icon class="pill-icon">{{ weeklyHybridProgress.isCompliant ? 'task_alt' : 'info' }}</mat-icon>
+        <span class="pill-text">
+          <strong>{{ weeklyHybridProgress.wfoCount }}/{{ weeklyHybridProgress.requiredWfo }} WFO</strong> this week
+        </span>
+      </div>
+
+      <!-- Request Shift Swap Button -->
+      <button
+        *ngIf="!isViewingOtherEmployee"
+        type="button"
+        class="btn-shift-swap-action"
+        (click)="openShiftSwapModal()"
+        title="Request a shift swap with a colleague"
+      >
+        <mat-icon>swap_horiz</mat-icon>
+        <span>Swap Shift</span>
+      </button>
 
       <!-- Request Regularization Button -->
       <button
@@ -862,6 +936,160 @@
         >
           <mat-icon>chevron_right</mat-icon>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- ENTERPRISE ATTENDANCE REGISTER MATRIX VIEW -->
+  <!-- ========================================================================= -->
+  <div class="register-matrix-container" *ngIf="isHrOrAdmin && viewMode === 'register'">
+    <!-- Register Controls Toolbar -->
+    <div class="register-toolbar-card">
+      <div class="toolbar-left">
+        <!-- Month Navigator -->
+        <div class="month-navigator">
+          <button type="button" class="nav-btn" (click)="prevRegisterMonth()" title="Previous Month">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <div class="month-label-group">
+            <mat-icon>calendar_month</mat-icon>
+            <strong>{{ getRegisterMonthLabel() }}</strong>
+          </div>
+          <button type="button" class="nav-btn" (click)="nextRegisterMonth()" title="Next Month">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button type="button" class="btn-today-pill" (click)="todayRegisterMonth()">Current Month</button>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="filter-dropdown-wrapper">
+          <select
+            [(ngModel)]="registerDepartment"
+            (ngModelChange)="filterRegister()"
+            class="filter-select"
+          >
+            <option value="All">All Departments</option>
+            <option *ngFor="let dept of registerDepartmentsList" [value]="dept">{{ dept }}</option>
+          </select>
+        </div>
+
+        <!-- Employee Search -->
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="registerSearch"
+            (ngModelChange)="filterRegister()"
+            placeholder="Search employee or code..."
+            class="search-input"
+          />
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <!-- Export CSV Button -->
+        <button type="button" class="btn-export-matrix" (click)="exportRegisterCSV()">
+          <mat-icon>file_download</mat-icon>
+          <span>Export Register (CSV)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Attendance Status Color Legend -->
+    <div class="register-legend-strip">
+      <div class="legend-badge-item"><span class="badge-dot dot-p"></span> <strong>P</strong> Present</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-wfh"></span> <strong>WFH</strong> Work From Home</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-od"></span> <strong>OD</strong> On-Duty</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-hd"></span> <strong>HD</strong> Half-Day</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-l"></span> <strong>L</strong> Leave</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-h"></span> <strong>H</strong> Holiday</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-wo"></span> <strong>WO</strong> Weekly Off</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-a"></span> <strong>A</strong> Absent</div>
+      <div class="legend-badge-item"><span class="badge-dot dot-lop"></span> <strong>LOP</strong> Loss of Pay</div>
+    </div>
+
+    <!-- Register Matrix Table Card -->
+    <div class="register-table-card">
+      <div class="register-scroll-wrapper">
+        <table class="register-table">
+          <thead>
+            <tr>
+              <th class="th-emp-sticky">Workforce Member</th>
+              <th
+                *ngFor="let h of registerDaysHeaders"
+                class="th-day-cell"
+                [class.th-weekend]="h.isWeekend"
+              >
+                <div class="th-day-content">
+                  <span class="day-num">{{ h.dayNumber }}</span>
+                  <span class="day-char">{{ h.dayName }}</span>
+                </div>
+              </th>
+              <!-- Summary Metrics Header Group -->
+              <th class="th-summary-stat th-stat-p" title="Present Days">P</th>
+              <th class="th-summary-stat th-stat-wfh" title="Work From Home">WFH</th>
+              <th class="th-summary-stat th-stat-od" title="On-Duty">OD</th>
+              <th class="th-summary-stat th-stat-hd" title="Half-Day">HD</th>
+              <th class="th-summary-stat th-stat-l" title="Approved Paid Leave">L</th>
+              <th class="th-summary-stat th-stat-h" title="Public Holidays">H</th>
+              <th class="th-summary-stat th-stat-wo" title="Weekly Offs">WO</th>
+              <th class="th-summary-stat th-stat-a" title="Unexcused Absences">A</th>
+              <th class="th-summary-stat th-stat-pay" title="Total Payable Days">Payable</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredRegisterRows" class="register-row">
+              <!-- Sticky Left Employee Column -->
+              <td class="td-emp-sticky">
+                <div class="emp-profile-cell">
+                  <div class="emp-avatar-circle">
+                    {{ (row.employeeName ? row.employeeName.charAt(0) : 'E') }}
+                  </div>
+                  <div class="emp-meta-box">
+                    <strong class="emp-name-text">{{ row.employeeName }}</strong>
+                    <span class="emp-code-sub">{{ row.employeeCode }} • {{ row.department }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- 1 to 31 Day Cells -->
+              <td
+                *ngFor="let cell of row.days"
+                class="td-day-cell"
+                [class.cell-weekend-bg]="cell.code === 'WO'"
+              >
+                <div class="cell-status-chip" [ngClass]="cell.badgeClass" [title]="cell.label + ' (' + cell.dateStr + ')'">
+                  {{ cell.code }}
+                </div>
+              </td>
+
+              <!-- Summary Counter Values -->
+              <td class="td-summary-val td-val-p">{{ row.presentCount }}</td>
+              <td class="td-summary-val td-val-wfh">{{ row.wfhCount }}</td>
+              <td class="td-summary-val td-val-od">{{ row.onDutyCount }}</td>
+              <td class="td-summary-val td-val-hd">{{ row.halfDayCount }}</td>
+              <td class="td-summary-val td-val-l">{{ row.leaveCount }}</td>
+              <td class="td-summary-val td-val-h">{{ row.holidayCount }}</td>
+              <td class="td-summary-val td-val-wo">{{ row.weeklyOffCount }}</td>
+              <td class="td-summary-val td-val-a">{{ row.absentCount }}</td>
+              <td class="td-summary-val td-val-pay">
+                <strong>{{ row.payableDays }}</strong>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="filteredRegisterRows.length === 0">
+              <td [attr.colspan]="registerDaysHeaders.length + 10" class="text-center py-5">
+                <div class="empty-state">
+                  <mat-icon class="empty-icon">group_off</mat-icon>
+                  <h4>No Workforce Records Found</h4>
+                  <p>No employees match your selected department or search criteria.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

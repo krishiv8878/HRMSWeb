@@ -1,0 +1,892 @@
+<div class="dashboard-page-container">
+  <!-- TOP HEADER & VIEW SWITCHER -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <div class="greeting-box">
+        <h1 class="greeting-title">
+          {{ greetingTime }}, <span class="highlight-name">{{ userFirstName }}</span>!
+        </h1>
+        <p class="greeting-subtitle">
+          <span class="role-badge" [ngClass]="'role-' + primaryRole.toLowerCase()">
+            <mat-icon class="badge-icon">{{ primaryRole === 'Admin' ? 'shield' : primaryRole === 'HR' ? 'admin_panel_settings' : primaryRole === 'Manager' ? 'supervisor_account' : 'badge' }}</mat-icon>
+            {{ primaryRole === 'Admin' ? 'System Administrator' : primaryRole === 'HR' ? 'HR Operations' : primaryRole === 'Manager' ? 'Team Lead / Manager' : 'Employee' }}
+          </span>
+          <span class="date-text">
+            <mat-icon class="date-icon">calendar_today</mat-icon>
+            {{ todayFormatted }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- VIEW SWITCHER FOR ELEVATED ROLES -->
+      <div class="view-switcher-pill" *ngIf="canSwitchView">
+        <button
+          *ngFor="let opt of viewOptions"
+          type="button"
+          class="switch-btn"
+          [class.active]="activeView === opt.id"
+          (click)="switchView(opt.id)"
+        >
+          <mat-icon class="btn-icon">{{ opt.icon }}</mat-icon>
+          <span>{{ opt.label }}</span>
+        </button>
+      </div>
+
+      <!-- REFRESH DATA BUTTON -->
+      <button
+        type="button"
+        class="btn-refresh"
+        (click)="loadAllDashboardData()"
+        [matTooltip]="'Refresh Dashboard Data'"
+      >
+        <mat-icon [class.spinning]="isLoading">refresh</mat-icon>
+      </button>
+    </div>
+  </header>
+
+  <!-- LOADING SKELETON / SPINNER -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner-box">
+      <mat-icon class="spinning-large">autorenew</mat-icon>
+      <p>Synchronizing workforce metrics...</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD BODY -->
+  <div class="dashboard-content" *ngIf="!isLoading">
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: ORGANIZATION & EXECUTIVE OVERVIEW (ADMIN & HR)                    -->
+    <!-- ========================================================================= -->
+    <section class="view-section" *ngIf="activeView === 'organization'">
+      <!-- TOP METRIC CARDS -->
+      <div class="kpi-grid">
+        <!-- 1. Total Employees -->
+        <div class="kpi-card card-blue" routerLink="/index/home">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Workforce</span>
+            <div class="kpi-icon-wrap icon-blue">
+              <mat-icon>badge</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ totalEmployees }}</span>
+            <span class="kpi-badge badge-new" *ngIf="newJoineesThisMonth > 0">
+              +{{ newJoineesThisMonth }} this month
+            </span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat"><strong>{{ activeEmployees }}</strong> Active</span>
+            <span class="dot-separator">•</span>
+            <span class="sub-stat"><strong>{{ departmentsCount }}</strong> Departments</span>
+          </div>
+        </div>
+
+        <!-- 2. Today's Attendance -->
+        <div class="kpi-card card-emerald" routerLink="/index/attendance">
+          <div class="kpi-top">
+            <span class="kpi-label">Today's Attendance</span>
+            <div class="kpi-icon-wrap icon-emerald">
+              <mat-icon>fact_check</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ presentTodayCount }} <span class="kpi-denom">/ {{ activeEmployees }}</span></span>
+            <span class="kpi-badge badge-emerald">{{ attendanceRatePercent }}% Rate</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat text-success"><strong>{{ clockedInNowCount }}</strong> Working</span>
+            <span class="dot-separator">•</span>
+            <span class="sub-stat text-warning"><strong>{{ lateTodayCount }}</strong> Late</span>
+            <span class="dot-separator">•</span>
+            <span class="sub-stat text-danger"><strong>{{ absentTodayCount }}</strong> Absent</span>
+          </div>
+        </div>
+
+        <!-- 3. Pending Approvals -->
+        <div class="kpi-card card-rose" routerLink="/index/request">
+          <div class="kpi-top">
+            <span class="kpi-label">Pending Approvals</span>
+            <div class="kpi-icon-wrap icon-rose">
+              <mat-icon>pending_actions</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ totalPendingApprovals }}</span>
+            <span class="kpi-badge badge-rose" *ngIf="totalPendingApprovals > 0">Action Needed</span>
+            <span class="kpi-badge badge-emerald" *ngIf="totalPendingApprovals === 0">All Cleared</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat"><strong>{{ pendingLeavesCount }}</strong> Leaves</span>
+            <span class="dot-separator">•</span>
+            <span class="sub-stat"><strong>{{ pendingAttendanceCount }}</strong> Attn</span>
+            <span class="dot-separator">•</span>
+            <span class="sub-stat"><strong>{{ pendingTimesheetsCount }}</strong> Timesheet</span>
+            <span class="dot-separator" *ngIf="pendingDocumentsCount > 0">•</span>
+            <span class="sub-stat" *ngIf="pendingDocumentsCount > 0"><strong>{{ pendingDocumentsCount }}</strong> Docs</span>
+          </div>
+        </div>
+
+        <!-- 4. Talent Pipeline -->
+        <div class="kpi-card card-indigo" routerLink="/index/candidate">
+          <div class="kpi-top">
+            <span class="kpi-label">Talent Pipeline</span>
+            <div class="kpi-icon-wrap icon-indigo">
+              <mat-icon>person_search</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ totalCandidatesCount }}</span>
+            <span class="kpi-badge badge-indigo">Candidates</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat"><strong>{{ candidatesInterviewCount }}</strong> Interview</span>
+            <span class="dot-separator">•</span>
+            <span class="sub-stat"><strong>{{ candidatesOfferCount }}</strong> Offered</span>
+          </div>
+        </div>
+
+        <!-- 5. Hardware Assets -->
+        <div class="kpi-card card-amber" routerLink="/index/assets">
+          <div class="kpi-top">
+            <span class="kpi-label">Company Assets</span>
+            <div class="kpi-icon-wrap icon-amber">
+              <mat-icon>laptop_mac</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ totalAssetsCount }}</span>
+            <span class="kpi-badge badge-amber" *ngIf="assetsInRepairCount > 0">{{ assetsInRepairCount }} in repair</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat"><strong>{{ assetsInUseCount }}</strong> Assigned</span>
+            <span class="dot-separator">•</span>
+            <span class="sub-stat"><strong>{{ assetsAvailableCount }}</strong> Available</span>
+          </div>
+        </div>
+
+        <!-- 6. Active Projects -->
+        <div class="kpi-card card-purple" routerLink="/index/project">
+          <div class="kpi-top">
+            <span class="kpi-label">Active Projects</span>
+            <div class="kpi-icon-wrap icon-purple">
+              <mat-icon>account_tree</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ activeProjectsCount }}</span>
+            <span class="kpi-badge badge-purple">Ongoing</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat">Client & Internal Initiatives</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TODAY'S ATTENDANCE DISTRIBUTION BAR -->
+      <div class="content-panel attendance-bar-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <mat-icon class="panel-icon text-blue">donut_large</mat-icon>
+            <h2 class="panel-title">Today's Workforce Attendance Status</h2>
+          </div>
+          <a routerLink="/index/attendance" class="panel-action-link">View Attendance Sheet &rarr;</a>
+        </div>
+        <div class="distribution-bar-wrap">
+          <div class="distribution-segmented-bar">
+            <div class="segment segment-present" [style.width.%]="activeEmployees > 0 ? (presentTodayCount / activeEmployees) * 100 : 0" [matTooltip]="'Present: ' + presentTodayCount"></div>
+            <div class="segment segment-leave" [style.width.%]="activeEmployees > 0 ? (onLeaveTodayCount / activeEmployees) * 100 : 0" [matTooltip]="'On Leave: ' + onLeaveTodayCount"></div>
+            <div class="segment segment-absent" [style.width.%]="activeEmployees > 0 ? (absentTodayCount / activeEmployees) * 100 : 0" [matTooltip]="'Absent: ' + absentTodayCount"></div>
+          </div>
+          <div class="bar-legend">
+            <div class="legend-item"><span class="legend-dot dot-present"></span> Present: <strong>{{ presentTodayCount }}</strong> ({{ attendanceRatePercent }}%)</div>
+            <div class="legend-item"><span class="legend-dot dot-leave"></span> On Approved Leave: <strong>{{ onLeaveTodayCount }}</strong></div>
+            <div class="legend-item"><span class="legend-dot dot-absent"></span> Unaccounted / Absent: <strong>{{ absentTodayCount }}</strong></div>
+            <div class="legend-item"><span class="legend-dot dot-late"></span> Late Arrivals: <strong>{{ lateTodayCount }}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TWO-COLUMN DEEP-DIVE SECTION -->
+      <div class="two-col-layout">
+        <!-- LEFT COLUMN: Urgent Pending Approvals & Today's Out of Office -->
+        <div class="col-main">
+          <!-- Pending Approvals Feed -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-rose">notifications_active</mat-icon>
+                <h2 class="panel-title">Urgent Pending Approvals</h2>
+                <span class="count-pill">{{ totalPendingApprovals }}</span>
+              </div>
+              <a routerLink="/index/request" class="panel-action-link">Go to Approvals Desk &rarr;</a>
+            </div>
+
+            <div class="pending-list" *ngIf="recentPendingApprovals.length > 0; else noPendingApprovalsTpl">
+              <div class="pending-item" *ngFor="let item of recentPendingApprovals" routerLink="/index/request">
+                <div class="item-avatar-box">
+                  <span class="item-initials">{{ item.initials }}</span>
+                </div>
+                <div class="item-body">
+                  <div class="item-title-row">
+                    <span class="item-name">{{ item.requesterName }}</span>
+                    <span class="item-category-badge" [ngClass]="'cat-' + item.category.toLowerCase()">{{ item.category }}</span>
+                  </div>
+                  <div class="item-sub-row">
+                    <span class="item-desc">{{ item.title }}</span>
+                    <span class="item-date">{{ item.dateStr }}</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-item-action" routerLink="/index/request">
+                  Review
+                </button>
+              </div>
+            </div>
+
+            <ng-template #noPendingApprovalsTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-success">check_circle</mat-icon>
+                <p class="empty-title">All Caught Up!</p>
+                <p class="empty-subtitle">There are no pending requests waiting for your approval right now.</p>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Out of Office Today -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-amber">beach_access</mat-icon>
+                <h2 class="panel-title">Out of Office Today</h2>
+                <span class="count-pill">{{ onLeaveTodayCount }}</span>
+              </div>
+              <a routerLink="/index/leaveRequest" class="panel-action-link">View Leave Board &rarr;</a>
+            </div>
+
+            <div class="leave-today-list" *ngIf="employeesOnLeaveToday.length > 0; else noLeavesTodayTpl">
+              <div class="leave-today-card" *ngFor="let l of employeesOnLeaveToday">
+                <div class="leave-today-info">
+                  <span class="leave-emp-name">{{ l.employeeName }}</span>
+                  <span class="leave-type-tag">{{ l.leaveType }}</span>
+                </div>
+                <div class="leave-today-meta">
+                  <span class="leave-mode">{{ l.durationText }}</span>
+                  <span class="leave-until">Through {{ l.endDate | date:'mediumDate' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noLeavesTodayTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-muted">sentiment_satisfied_alt</mat-icon>
+                <p class="empty-title">Full Team Present</p>
+                <p class="empty-subtitle">No employees have approved leaves scheduled for today.</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Quick Management Actions & Talent Funnel -->
+        <div class="col-side">
+          <!-- Quick Management Shortcuts -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-blue">bolt</mat-icon>
+                <h2 class="panel-title">Quick Actions</h2>
+              </div>
+            </div>
+            <div class="quick-actions-grid">
+              <button type="button" class="qa-btn" routerLink="/index/home" [queryParams]="{ action: 'add' }">
+                <mat-icon class="qa-icon text-blue">person_add</mat-icon>
+                <span>Add Employee</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/candidate" [queryParams]="{ action: 'add' }">
+                <mat-icon class="qa-icon text-indigo">person_search</mat-icon>
+                <span>New Candidate</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/request">
+                <mat-icon class="qa-icon text-rose">fact_check</mat-icon>
+                <span>Approvals Desk</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/holiday" [queryParams]="{ action: 'add' }">
+                <mat-icon class="qa-icon text-emerald">event</mat-icon>
+                <span>Holiday Master</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/assets" [queryParams]="{ action: 'add' }">
+                <mat-icon class="qa-icon text-amber">inventory_2</mat-icon>
+                <span>Asset Inventory</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/shift" [queryParams]="{ action: 'add' }">
+                <mat-icon class="qa-icon text-purple">schedule</mat-icon>
+                <span>Shift Rosters</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Upcoming Company Holidays -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-emerald">celebration</mat-icon>
+                <h2 class="panel-title">Upcoming Holidays</h2>
+              </div>
+              <a routerLink="/index/holiday" class="panel-action-link">View All &rarr;</a>
+            </div>
+
+            <div class="holidays-list" *ngIf="upcomingHolidays.length > 0; else noHolidaysTpl">
+              <div class="holiday-card" *ngFor="let h of upcomingHolidays">
+                <div class="holiday-date-box">
+                  <span class="h-day">{{ h.date | date:'dd' }}</span>
+                  <span class="h-month">{{ h.date | date:'MMM' }}</span>
+                </div>
+                <div class="holiday-details">
+                  <span class="holiday-name">{{ h.name }}</span>
+                  <span class="holiday-dayname">{{ h.date | date:'EEEE' }}</span>
+                </div>
+                <span class="holiday-countdown-pill">{{ h.countdown }}</span>
+              </div>
+            </div>
+
+            <ng-template #noHolidaysTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-muted">event_busy</mat-icon>
+                <p class="empty-title">No Holidays Soon</p>
+                <p class="empty-subtitle">No public holidays in the immediate schedule.</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: MANAGER TEAM LEADERSHIP (TEAM OVERVIEW & APPROVALS)               -->
+    <!-- ========================================================================= -->
+    <section class="view-section" *ngIf="activeView === 'team'">
+      <!-- TEAM TOP METRICS -->
+      <div class="kpi-grid manager-kpi-grid">
+        <!-- 1. Direct Reports -->
+        <div class="kpi-card card-blue">
+          <div class="kpi-top">
+            <span class="kpi-label">My Direct Reports</span>
+            <div class="kpi-icon-wrap icon-blue">
+              <mat-icon>groups</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ myTeamCount }}</span>
+            <span class="kpi-badge badge-blue">Team Members</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat">Reporting directly to you</span>
+          </div>
+        </div>
+
+        <!-- 2. Present Today -->
+        <div class="kpi-card card-emerald">
+          <div class="kpi-top">
+            <span class="kpi-label">Team Present Today</span>
+            <div class="kpi-icon-wrap icon-emerald">
+              <mat-icon>how_to_reg</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ teamPresentToday }} <span class="kpi-denom">/ {{ myTeamCount }}</span></span>
+            <span class="kpi-badge badge-emerald">
+              {{ myTeamCount > 0 ? Math.round((teamPresentToday / myTeamCount) * 100) : 0 }}%
+            </span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat text-success"><strong>{{ teamClockedInCount }}</strong> In Session</span>
+          </div>
+        </div>
+
+        <!-- 3. On Leave / Away -->
+        <div class="kpi-card card-amber">
+          <div class="kpi-top">
+            <span class="kpi-label">On Leave Today</span>
+            <div class="kpi-icon-wrap icon-amber">
+              <mat-icon>beach_access</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ teamOnLeaveToday }}</span>
+            <span class="kpi-badge badge-amber" *ngIf="teamOnLeaveToday > 0">Away</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat text-danger"><strong>{{ teamAbsentToday }}</strong> Absent / Not Clocked</span>
+          </div>
+        </div>
+
+        <!-- 4. Team Pending Approvals -->
+        <div class="kpi-card card-rose" routerLink="/index/request">
+          <div class="kpi-top">
+            <span class="kpi-label">Team Approvals Awaiting</span>
+            <div class="kpi-icon-wrap icon-rose">
+              <mat-icon>checklist</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value">{{ teamPendingApprovalsCount }}</span>
+            <span class="kpi-badge badge-rose" *ngIf="teamPendingApprovalsCount > 0">Action Required</span>
+            <span class="kpi-badge badge-emerald" *ngIf="teamPendingApprovalsCount === 0">Clean Queue</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat">Timesheets, Leaves & Regularizations</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TWO-COLUMN MANAGER LAYOUT -->
+      <div class="two-col-layout">
+        <!-- LEFT: Team Real-Time Attendance Roster -->
+        <div class="col-main">
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-blue">supervised_user_circle</mat-icon>
+                <h2 class="panel-title">Team Attendance Status (Today)</h2>
+                <span class="count-pill">{{ directReportsStatus.length }}</span>
+              </div>
+            </div>
+
+            <div class="table-container" *ngIf="directReportsStatus.length > 0; else noTeamMembersTpl">
+              <table class="styled-table">
+                <thead>
+                  <tr>
+                    <th>Team Member</th>
+                    <th>Designation</th>
+                    <th>Status</th>
+                    <th>Clock-In</th>
+                    <th>Hours Logged</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of directReportsStatus">
+                    <td>
+                      <div class="user-cell">
+                        <div class="user-cell-avatar">{{ m.initials }}</div>
+                        <span class="user-cell-name">{{ m.name }}</span>
+                      </div>
+                    </td>
+                    <td>{{ m.designation }}</td>
+                    <td>
+                      <span class="status-pill" [ngClass]="'status-' + m.status.toLowerCase().replace(' ', '-')">
+                        {{ m.status }}
+                      </span>
+                    </td>
+                    <td>{{ m.clockInTime || '--' }}</td>
+                    <td>{{ m.hoursWorked || '--' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <ng-template #noTeamMembersTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-muted">group_off</mat-icon>
+                <p class="empty-title">No Direct Reportees Assigned</p>
+                <p class="empty-subtitle">You currently do not have any employees mapped as your direct reportees in the system.</p>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Pending Team Approvals -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-rose">fact_check</mat-icon>
+                <h2 class="panel-title">Team Requests Pending Approval</h2>
+                <span class="count-pill">{{ teamPendingApprovals.length }}</span>
+              </div>
+              <a routerLink="/index/request" class="panel-action-link">Open Approvals Desk &rarr;</a>
+            </div>
+
+            <div class="pending-list" *ngIf="teamPendingApprovals.length > 0; else noTeamApprovalsTpl">
+              <div class="pending-item" *ngFor="let item of teamPendingApprovals" routerLink="/index/request">
+                <div class="item-avatar-box">
+                  <span class="item-initials">{{ item.initials }}</span>
+                </div>
+                <div class="item-body">
+                  <div class="item-title-row">
+                    <span class="item-name">{{ item.requesterName }}</span>
+                    <span class="item-category-badge" [ngClass]="'cat-' + item.category.toLowerCase()">{{ item.category }}</span>
+                  </div>
+                  <div class="item-sub-row">
+                    <span class="item-desc">{{ item.title }}</span>
+                    <span class="item-date">{{ item.dateStr }}</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-item-action" routerLink="/index/request">
+                  Review
+                </button>
+              </div>
+            </div>
+
+            <ng-template #noTeamApprovalsTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-success">done_all</mat-icon>
+                <p class="empty-title">All Team Requests Handled</p>
+                <p class="empty-subtitle">No pending timesheets, leaves, or regularizations from your direct reportees.</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- RIGHT: Team Projects & Quick Actions -->
+        <div class="col-side">
+          <!-- Manager Quick Actions -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-purple">bolt</mat-icon>
+                <h2 class="panel-title">Team Management</h2>
+              </div>
+            </div>
+            <div class="quick-actions-grid">
+              <button type="button" class="qa-btn" routerLink="/index/request">
+                <mat-icon class="qa-icon text-rose">check_circle</mat-icon>
+                <span>Approve Leaves</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/timesheet">
+                <mat-icon class="qa-icon text-blue">schedule</mat-icon>
+                <span>Team Timesheets</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/project">
+                <mat-icon class="qa-icon text-indigo">account_tree</mat-icon>
+                <span>Projects</span>
+              </button>
+              <button type="button" class="qa-btn" routerLink="/index/attendance">
+                <mat-icon class="qa-icon text-emerald">history</mat-icon>
+                <span>Attendance Log</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Team Projects -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-indigo">folder_special</mat-icon>
+                <h2 class="panel-title">My Projects</h2>
+              </div>
+              <a routerLink="/index/project" class="panel-action-link">View All &rarr;</a>
+            </div>
+
+            <div class="project-mini-list" *ngIf="teamProjects.length > 0; else noProjectsTpl">
+              <div class="project-mini-card" *ngFor="let p of teamProjects">
+                <div class="proj-title-row">
+                  <span class="proj-name">{{ p.projectName }}</span>
+                  <span class="proj-client">{{ p.clientName || 'Internal' }}</span>
+                </div>
+                <div class="proj-meta">
+                  <span>Team Size: <strong>{{ p.teamSize || 1 }}</strong></span>
+                  <span class="proj-status">{{ p.status || 'Active' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noProjectsTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-muted">folder_open</mat-icon>
+                <p class="empty-title">No Projects Assigned</p>
+                <p class="empty-subtitle">You are not currently designated as Project Manager on active projects.</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 3: EMPLOYEE SELF-SERVICE (ESS) PERSONAL WORKSPACE                    -->
+    <!-- ========================================================================= -->
+    <section class="view-section" *ngIf="activeView === 'employee'">
+      <!-- PERSONAL HERO CARD WITH INTEGRATED PUNCH WIDGET -->
+      <div class="employee-hero-card">
+        <div class="hero-left">
+          <div class="user-avatar-circle" *ngIf="userAvatar; else initialAvatarTpl">
+            <img [src]="userAvatar" alt="Profile" />
+          </div>
+          <ng-template #initialAvatarTpl>
+            <div class="user-avatar-initials">
+              {{ userFirstName.charAt(0) }}
+            </div>
+          </ng-template>
+
+          <div class="hero-user-details">
+            <h2 class="hero-user-name">{{ userName }}</h2>
+            <p class="hero-user-sub">
+              <span>{{ userDesignation }}</span>
+              <span class="dot-sep" *ngIf="userEmployeeCode">•</span>
+              <span *ngIf="userEmployeeCode">Emp ID: #{{ userEmployeeCode }}</span>
+            </p>
+            <div class="hero-quick-shortcuts">
+              <button type="button" class="hero-btn-pill" (click)="openApplyLeaveModal()">
+                <mat-icon>beach_access</mat-icon> Apply Leave
+              </button>
+              <button type="button" class="hero-btn-pill" (click)="openRegularizeModal()">
+                <mat-icon>edit_calendar</mat-icon> Regularize Punch
+              </button>
+              <button type="button" class="hero-btn-pill" routerLink="/index/timesheet">
+                <mat-icon>more_time</mat-icon> Log Tasks
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTEGRATED PUNCH WIDGET -->
+        <div class="hero-right">
+          <div
+            class="punch-widget-box"
+            [class.is-clocked]="isClockedIn"
+            [class.is-completed]="!isClockedIn && hasClockedOutToday"
+          >
+            <div class="punch-status-indicator">
+              <span
+                class="status-pulse-dot"
+                [class.active]="isClockedIn"
+                [class.completed]="!isClockedIn && hasClockedOutToday"
+              ></span>
+              <span class="status-text">
+                {{ isClockedIn ? 'Working Session Active' : (hasClockedOutToday ? 'Clocked Out for Today' : 'Not Clocked In Today') }}
+              </span>
+            </div>
+
+            <div class="punch-timer-display">
+              <!-- When currently clocked in: show live ticking elapsed timer -->
+              <span *ngIf="isClockedIn" class="timer-digits">{{ sessionElapsedDisplay }}</span>
+              <!-- When clocked out today: show total worked time -->
+              <span *ngIf="!isClockedIn && hasClockedOutToday" class="timer-digits digits-completed">{{ todayTotalHoursDisplay }}</span>
+              <!-- When not clocked in today: show zeros -->
+              <span *ngIf="!isClockedIn && !hasClockedOutToday" class="timer-digits digits-idle">00h 00m 00s</span>
+
+              <!-- Subtitle: Punch Details -->
+              <span class="timer-sub" *ngIf="isClockedIn">
+                First Punch: <strong>{{ clockInTimeDisplay }}</strong>
+              </span>
+              <span class="timer-sub timer-sub-completed" *ngIf="!isClockedIn && hasClockedOutToday">
+                In: <strong>{{ clockInTimeDisplay }}</strong> • Out: <strong>{{ clockOutTimeDisplay }}</strong>
+              </span>
+              <span class="timer-sub" *ngIf="!isClockedIn && !hasClockedOutToday">
+                First Punch: <strong>--</strong>
+              </span>
+            </div>
+
+            <button
+              type="button"
+              class="btn-punch-action"
+              [class.btn-clock-in]="!isClockedIn && !hasClockedOutToday"
+              [class.btn-clock-out]="isClockedIn"
+              [class.btn-clock-again]="!isClockedIn && hasClockedOutToday"
+              (click)="onPunchClick()"
+            >
+              <mat-icon class="punch-btn-icon">{{ isClockedIn ? 'logout' : (hasClockedOutToday ? 'refresh' : 'login') }}</mat-icon>
+              <span>{{ isClockedIn ? 'Clock-Out Departure' : (hasClockedOutToday ? 'Clock-In Again' : 'Clock-In Arrival') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEAVE BALANCES HUB (QUOTA METERS) -->
+      <div class="section-title-wrap">
+        <h3 class="section-subtitle">
+          <mat-icon class="sec-icon text-emerald">event_available</mat-icon>
+          My Leave Balances
+        </h3>
+        <span class="section-badge">{{ totalRemainingLeaves }} Days Available</span>
+      </div>
+
+      <div class="leave-balance-grid">
+        <div class="leave-balance-card" *ngFor="let lb of leaveBalances">
+          <div class="leave-card-top">
+            <span class="leave-type-name">{{ lb.type }}</span>
+            <span class="leave-card-badge" [ngClass]="lb.colorClass">{{ lb.remaining }} Available</span>
+          </div>
+          <div class="leave-numbers-row">
+            <span class="big-number">{{ lb.remaining }}</span>
+            <span class="denom-text">/ {{ lb.allowed }} Total Quota</span>
+          </div>
+          <div class="leave-progress-bar">
+            <div class="progress-fill" [style.width.%]="lb.percentage"></div>
+          </div>
+          <div class="leave-card-bottom">
+            <span>{{ lb.used }} days availed</span>
+            <span>{{ lb.percentage }}% remaining</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERSONAL MONTH STATS & TIMESHEET PROGRESS -->
+      <div class="work-stats-grid">
+        <!-- Attendance this month -->
+        <div class="stat-card" routerLink="/index/attendance">
+          <div class="stat-card-header">
+            <span class="stat-card-title">This Month's Attendance</span>
+            <mat-icon class="stat-card-icon text-blue">calendar_month</mat-icon>
+          </div>
+          <div class="stat-main-number">{{ monthPresentDays }} <span class="stat-unit">Days Present</span></div>
+          <div class="stat-meta-row">
+            <span><strong>{{ monthTotalWorkingHours }}h</strong> Effective Hours</span>
+            <span class="dot-sep">•</span>
+            <span [class.text-danger]="monthLatePunchesCount > 0"><strong>{{ monthLatePunchesCount }}</strong> Late</span>
+          </div>
+          <div class="stat-footer-btn" routerLink="/index/attendance">
+            <mat-icon>calendar_month</mat-icon> View & Regularize Missing Punches &rarr;
+          </div>
+        </div>
+
+        <!-- Timesheet this week -->
+        <div class="stat-card" routerLink="/index/timesheet">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Current Week Timesheet</span>
+            <mat-icon class="stat-card-icon text-purple">schedule</mat-icon>
+          </div>
+          <div class="stat-main-number">{{ currentWeekTimesheetHours }} <span class="stat-unit">/ {{ currentWeekTimesheetTarget }}h Logged</span></div>
+          <div class="stat-meta-row">
+            <span>Period: {{ currentWeekDateRange }}</span>
+            <span class="dot-sep">•</span>
+            <span class="status-pill status-{{ currentWeekTimesheetStatus.toLowerCase() }}">{{ currentWeekTimesheetStatus }}</span>
+          </div>
+          <div class="stat-footer-btn">
+            <mat-icon>more_time</mat-icon> Open Timesheet
+          </div>
+        </div>
+
+        <!-- Assigned Hardware Assets -->
+        <div class="stat-card" routerLink="/index/assets">
+          <div class="stat-card-header">
+            <span class="stat-card-title">My Assigned Assets</span>
+            <mat-icon class="stat-card-icon text-amber">laptop_mac</mat-icon>
+          </div>
+          <div class="stat-main-number">{{ myAssignedAssets.length }} <span class="stat-unit">Devices</span></div>
+          <div class="stat-meta-row" *ngIf="myAssignedAssets.length > 0; else noAssignedAssetsTpl">
+            <span>{{ myAssignedAssets[0].assetsMasterName || myAssignedAssets[0].name || 'Primary Laptop' }}</span>
+          </div>
+          <ng-template #noAssignedAssetsTpl>
+            <div class="stat-meta-row"><span>No company gear mapped</span></div>
+          </ng-template>
+          <div class="stat-footer-btn">
+            <mat-icon>support_agent</mat-icon> Request Hardware Support
+          </div>
+        </div>
+      </div>
+
+      <!-- TWO-COLUMN SECTION: Recent Requests & Upcoming Holidays -->
+      <div class="two-col-layout">
+        <!-- LEFT: My Recent Requests -->
+        <div class="col-main">
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-indigo">history</mat-icon>
+                <h2 class="panel-title">My Recent Requests & Approvals</h2>
+              </div>
+              <a routerLink="/index/request" class="panel-action-link">View All &rarr;</a>
+            </div>
+
+            <div class="requests-feed" *ngIf="myRecentRequests.length > 0; else noRecentRequestsTpl">
+              <div class="request-feed-item" *ngFor="let req of myRecentRequests" [routerLink]="req.type === 'Document' ? '/index/document' : (req.type === 'Asset Ticket' ? '/index/assets' : '/index/request')" style="cursor: pointer;">
+                <div class="req-icon-box" [ngClass]="'icon-' + req.type.toLowerCase().replace(' ', '-')">
+                  <mat-icon>{{ req.type === 'Leave' ? 'beach_access' : req.type === 'Attendance' ? 'edit_calendar' : req.type === 'Document' ? 'description' : 'laptop_mac' }}</mat-icon>
+                </div>
+                <div class="req-body">
+                  <div class="req-top-row">
+                    <span class="req-title">{{ req.title }}</span>
+                    <span class="status-pill" [ngClass]="req.statusClass">{{ req.status }}</span>
+                  </div>
+                  <div class="req-sub-row">
+                    <span class="req-type-tag">{{ req.type }}</span>
+                    <span class="req-date">{{ req.date }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noRecentRequestsTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-muted">assignment_late</mat-icon>
+                <p class="empty-title">No Recent Requests</p>
+                <p class="empty-subtitle">You have not submitted any leave, attendance adjustment, or asset tickets recently.</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- RIGHT: Upcoming Holidays & Employee Shortcuts -->
+        <div class="col-side">
+          <!-- Upcoming Holidays -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-emerald">celebration</mat-icon>
+                <h2 class="panel-title">Upcoming Holidays</h2>
+              </div>
+              <a routerLink="/index/holiday" class="panel-action-link">Calendar &rarr;</a>
+            </div>
+
+            <div class="holidays-list" *ngIf="upcomingHolidays.length > 0; else noHolidaysEmpTpl">
+              <div class="holiday-card" *ngFor="let h of upcomingHolidays">
+                <div class="holiday-date-box">
+                  <span class="h-day">{{ h.date | date:'dd' }}</span>
+                  <span class="h-month">{{ h.date | date:'MMM' }}</span>
+                </div>
+                <div class="holiday-details">
+                  <span class="holiday-name">{{ h.name }}</span>
+                  <span class="holiday-dayname">{{ h.date | date:'EEEE' }}</span>
+                </div>
+                <span class="holiday-countdown-pill">{{ h.countdown }}</span>
+              </div>
+            </div>
+
+            <ng-template #noHolidaysEmpTpl>
+              <div class="empty-state-box">
+                <mat-icon class="empty-icon text-muted">event_busy</mat-icon>
+                <p class="empty-title">No Holidays Soon</p>
+                <p class="empty-subtitle">Check back later for upcoming festive days.</p>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Quick Navigation Shortcuts -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <mat-icon class="panel-icon text-blue">link</mat-icon>
+                <h2 class="panel-title">Employee Portal Shortcuts</h2>
+              </div>
+            </div>
+            <div class="portal-shortcuts-list">
+              <a routerLink="/index/attendance" class="portal-link-item">
+                <mat-icon class="link-icon text-blue">calendar_today</mat-icon>
+                <span>Monthly Attendance Calendar</span>
+                <mat-icon class="chevron-icon">chevron_right</mat-icon>
+              </a>
+              <a routerLink="/index/timesheet" class="portal-link-item">
+                <mat-icon class="link-icon text-purple">schedule</mat-icon>
+                <span>Weekly Timesheet Tracking</span>
+                <mat-icon class="chevron-icon">chevron_right</mat-icon>
+              </a>
+              <a routerLink="/index/paymentinfo" class="portal-link-item">
+                <mat-icon class="link-icon text-emerald">payments</mat-icon>
+                <span>View & Download Payslips</span>
+                <mat-icon class="chevron-icon">chevron_right</mat-icon>
+              </a>
+              <a routerLink="/index/document" class="portal-link-item">
+                <mat-icon class="link-icon text-amber">description</mat-icon>
+                <span>HR Documents & Policies</span>
+                <mat-icon class="chevron-icon">chevron_right</mat-icon>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>

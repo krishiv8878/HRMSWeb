@@ -1,0 +1,218 @@
+<div class="expense-modal-container">
+  <!-- Header -->
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon">
+        <mat-icon>{{ isEditMode ? 'edit_note' : 'receipt_long' }}</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEditMode ? 'Edit Expense Report' : 'Create Expense Claim' }}</h2>
+        <p class="subtitle">Log multiple expense line items, mileage trips, and adjust cash advances</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Body -->
+  <form [formGroup]="reportForm" class="modal-body">
+    <!-- Basic Information -->
+    <div class="form-section">
+      <h3 class="section-title"><mat-icon>info</mat-icon> Report Overview</h3>
+      <div class="form-grid-2">
+        <div class="form-group full-width">
+          <label>Claim / Report Title <span class="required">*</span></label>
+          <input type="text" formControlName="title" placeholder="e.g. Bangalore Client Meeting - Travel & Stay" />
+          <span class="error-msg" *ngIf="reportForm.get('title')?.touched && reportForm.get('title')?.hasError('required')">
+            Report title is required
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label>Adjust Approved Cash Advance (Optional)</label>
+          <select formControlName="expenseAdvanceId">
+            <option [ngValue]="null">-- No Cash Advance To Adjust --</option>
+            <option *ngFor="let adv of availableAdvances" [value]="adv.id">
+              ADV-{{ adv.id }} - ₹{{ adv.disbursedAmount || adv.requestedAmount | number:'1.2-2' }} ({{ adv.reason }})
+            </option>
+          </select>
+          <small class="hint-text" *ngIf="selectedAdvanceAmount > 0">
+            ₹{{ selectedAdvanceAmount | number:'1.2-2' }} will be deducted from your final reimbursement.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Purpose / Description</label>
+          <input type="text" formControlName="description" placeholder="Short business justification or visit summary" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Items Section -->
+    <div class="form-section">
+      <div class="section-header-row">
+        <h3 class="section-title"><mat-icon>receipt</mat-icon> Expense Line Items ({{ itemsArray.length }})</h3>
+        <button type="button" class="btn-secondary-sm" (click)="addItem()">
+          <mat-icon>add</mat-icon> Add Expense Item
+        </button>
+      </div>
+
+      <div formArrayName="items" class="items-list">
+        <div *ngFor="let item of itemsArray.controls; let i = index" [formGroupName]="i" class="item-card">
+          <div class="item-card-header">
+            <span class="item-badge">Item #{{ i + 1 }}</span>
+            <button type="button" class="btn-remove-item" (click)="removeItem(i)" *ngIf="itemsArray.length > 1 || mileageArray.length > 0" title="Remove Item">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Category <span class="required">*</span></label>
+              <select formControlName="expenseCategoryId">
+                <option *ngFor="let cat of categories" [value]="cat.id">
+                  {{ cat.name }} (Cap: ₹{{ cat.policyLimitPerClaim | number }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Expense Date <span class="required">*</span></label>
+              <input type="date" formControlName="expenseDate" />
+            </div>
+
+            <div class="form-group">
+              <label>Merchant / Vendor</label>
+              <input type="text" formControlName="merchantName" placeholder="e.g. Uber, Marriott, Indigo" />
+            </div>
+
+            <div class="form-group">
+              <label>Claim Amount (₹) <span class="required">*</span></label>
+              <input type="number" formControlName="amount" min="1" placeholder="0.00" />
+            </div>
+
+            <div class="form-group">
+              <label>Tax / GST (₹)</label>
+              <input type="number" formControlName="taxAmount" min="0" placeholder="0.00" />
+            </div>
+
+            <div class="form-group">
+              <label>Receipt Reference / URL</label>
+              <input type="text" formControlName="receiptUrl" placeholder="File link or invoice number" />
+            </div>
+
+            <div class="form-group full-width">
+              <label>Notes / Description</label>
+              <input type="text" formControlName="description" placeholder="Business purpose or item details" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mileage Section -->
+    <div class="form-section">
+      <div class="section-header-row">
+        <h3 class="section-title"><mat-icon>commute</mat-icon> Mileage & Travel Trips ({{ mileageArray.length }})</h3>
+        <button type="button" class="btn-secondary-sm" (click)="addMileageItem()">
+          <mat-icon>add</mat-icon> Log Mileage Trip
+        </button>
+      </div>
+
+      <div formArrayName="mileageItems" class="items-list">
+        <div *ngIf="mileageArray.length === 0" class="empty-sub-section">
+          <p>No mileage trips logged. Click "+ Log Mileage Trip" if you used personal transport for business.</p>
+        </div>
+
+        <div *ngFor="let m of mileageArray.controls; let j = index" [formGroupName]="j" class="item-card mileage-card">
+          <div class="item-card-header">
+            <span class="item-badge mileage-badge">Trip #{{ j + 1 }}</span>
+            <button type="button" class="btn-remove-item" (click)="removeMileageItem(j)" title="Remove Mileage">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Vehicle Type <span class="required">*</span></label>
+              <select formControlName="vehicleType">
+                <option value="Four-Wheeler">Four-Wheeler (₹12/km)</option>
+                <option value="Two-Wheeler">Two-Wheeler (₹5/km)</option>
+                <option value="Cab/Public">Cab / Shared Transit (₹10/km)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Trip Date <span class="required">*</span></label>
+              <input type="date" formControlName="tripDate" />
+            </div>
+
+            <div class="form-group">
+              <label>Distance (KM) <span class="required">*</span></label>
+              <input type="number" formControlName="distanceKm" min="0.1" step="0.1" placeholder="e.g. 24.5" />
+            </div>
+
+            <div class="form-group">
+              <label>Start Location <span class="required">*</span></label>
+              <input type="text" formControlName="startLocation" placeholder="e.g. Office / Home" />
+            </div>
+
+            <div class="form-group">
+              <label>End Location <span class="required">*</span></label>
+              <input type="text" formControlName="endLocation" placeholder="e.g. Client Site / Airport" />
+            </div>
+
+            <div class="form-group">
+              <label>Calculated Trip Fare</label>
+              <div class="calculated-value-pill">
+                ₹{{ (m.get('distanceKm')?.value || 0) * getRatePerKm(m.get('vehicleType')?.value) | number:'1.2-2' }}
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Trip Purpose</label>
+              <input type="text" formControlName="purpose" placeholder="e.g. Client site emergency visit" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settlement Calculation Summary Bar -->
+    <div class="calculation-summary-card">
+      <div class="summary-metric">
+        <span class="metric-label">Items Subtotal</span>
+        <span class="metric-val">₹{{ totalItemsAmount | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-operator">+</div>
+      <div class="summary-metric">
+        <span class="metric-label">Mileage Subtotal</span>
+        <span class="metric-val">₹{{ totalMileageAmount | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-operator">-</div>
+      <div class="summary-metric advance-deduction">
+        <span class="metric-label">Advance Adjusted</span>
+        <span class="metric-val">₹{{ selectedAdvanceAmount | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-operator">=</div>
+      <div class="summary-metric net-payable">
+        <span class="metric-label">Net Payable Amount</span>
+        <span class="metric-val highlight">₹{{ netPayable | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </form>
+
+  <!-- Footer Actions -->
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+    <div class="footer-action-group">
+      <button type="button" class="btn-draft" (click)="submit(false)" [disabled]="isSubmitting">
+        <mat-icon>save</mat-icon> Save as Draft
+      </button>
+      <button type="button" class="btn-submit" (click)="submit(true)" [disabled]="isSubmitting">
+        <mat-icon>send</mat-icon> Submit for Approval
+      </button>
+    </div>
+  </div>
+</div>

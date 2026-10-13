@@ -1,303 +1,1047 @@
-<div class="shift-master-container">
+<div class="shift-master-container" (click)="closeCellPopover()">
   <!-- Top Header Section -->
   <div class="header-section">
     <div class="title-group">
       <h1 class="page-title">Workforce Shift & Schedule Master</h1>
       <p class="page-subtitle">
-        Configure enterprise working rosters, operating shift hours, day/night schedules, and coverage slots.
+        Manage enterprise shifts, schedule visual weekly rosters, configure weekly-offs, and process shift swaps.
       </p>
     </div>
 
     <div class="header-actions">
-      <!-- Primary Add Button -->
-      <button type="button" class="btn-primary-add" (click)="openAddForm()">
+      <!-- Quick Shift Swap Action -->
+      <button type="button" class="btn-outline-action" (click)="openShiftSwapModal()">
+        <mat-icon class="btn-icon">swap_horiz</mat-icon>
+        <span>Request Shift Swap</span>
+      </button>
+
+      <!-- Primary Add Shift Button -->
+      <button *ngIf="isHrOrAdmin" type="button" class="btn-primary-add" (click)="openAddForm()">
         <mat-icon class="btn-icon">more_time</mat-icon>
         <span>Add Shift</span>
       </button>
     </div>
   </div>
 
-  <!-- Analytics Metrics Grid -->
-  <div class="metrics-grid">
-    <!-- Metric 1: Total Shift Profiles -->
-    <div class="metric-card">
-      <div class="metric-content">
-        <span class="metric-label">TOTAL SHIFTS</span>
-        <div class="metric-number-group">
-          <span class="metric-number">{{ totalShiftsCount }}</span>
-          <span class="trend-badge trend-up">Standardized</span>
-        </div>
-        <span class="metric-subtext">{{ activeShiftsCount }} Active Enterprise Slots</span>
-      </div>
-      <div class="metric-icon-box icon-purple">
-        <mat-icon>calendar_month</mat-icon>
+  <!-- Enterprise Navigation Tabs -->
+  <div class="module-tabs-nav">
+    <button
+      *ngIf="isHrOrAdmin"
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'master'"
+      (click)="setTab('master')"
+    >
+      <mat-icon>schedule</mat-icon>
+      <span>Shift Master Library</span>
+      <span class="tab-badge">{{ allShifts.length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'roster'"
+      (click)="setTab('roster')"
+    >
+      <mat-icon>calendar_view_week</mat-icon>
+      <span>{{ isHrOrAdmin ? "Shift Roster Planner" : "My Shift Schedule" }}</span>
+      <span class="tab-badge tab-badge-live">Live Matrix</span>
+    </button>
+
+    <button
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'swaps'"
+      (click)="setTab('swaps')"
+    >
+      <mat-icon>swap_calls</mat-icon>
+      <span>{{ isHrOrAdmin ? "Shift Swap Requests" : "My Shift Swaps" }}</span>
+      <span class="tab-badge" *ngIf="getFilteredSwaps().length > 0">{{ getFilteredSwaps().length }}</span>
+    </button>
+
+    <button
+      *ngIf="isHrOrAdmin"
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'policy'"
+      (click)="setTab('policy')"
+    >
+      <mat-icon>home_work</mat-icon>
+      <span>Work Model & Hybrid Policy</span>
+      <span class="tab-badge tab-badge-live">Configurable</span>
+    </button>
+  </div>
+
+  
+  <!-- Employee Work Mode Selector Banner -->
+  <div *ngIf="!isHrOrAdmin" class="employee-work-mode-banner">
+    <div class="banner-left">
+      <span class="banner-label">Your Work Mode for Today:</span>
+      <div class="work-mode-pills">
+        <button
+          type="button"
+          class="btn-mode-pill mode-wfo"
+          [class.active]="todayWorkModel === 'WFO'"
+          (click)="selectTodayWorkMode('WFO')"
+          title="Working from Office"
+        >
+          <mat-icon>business</mat-icon>
+          <span>Office (WFO)</span>
+        </button>
+        <button
+          type="button"
+          class="btn-mode-pill mode-wfh"
+          [class.active]="todayWorkModel === 'WFH'"
+          (click)="selectTodayWorkMode('WFH')"
+          title="Work From Home"
+        >
+          <mat-icon>home_work</mat-icon>
+          <span>Work From Home (WFH)</span>
+        </button>
+        <button
+          type="button"
+          class="btn-mode-pill mode-od"
+          [class.active]="todayWorkModel === 'OD'"
+          (click)="selectTodayWorkMode('OD')"
+          title="On-Duty Client Visit"
+        >
+          <mat-icon>badge</mat-icon>
+          <span>On-Duty</span>
+        </button>
       </div>
     </div>
 
-    <!-- Metric 2: Day Shifts Windows -->
-    <div class="metric-card">
-      <div class="metric-content">
-        <span class="metric-label">DAYTIME OPERATIONS</span>
-        <div class="metric-number-group">
-          <span class="metric-number">{{ dayShiftsCount }}</span>
-          <span class="metric-unit">Windows</span>
+    <div class="banner-right" *ngIf="weeklyHybridProgress">
+      <span class="hybrid-badge" [class.compliant]="weeklyHybridProgress.isCompliant">
+        <mat-icon>{{ weeklyHybridProgress.isCompliant ? 'task_alt' : 'info' }}</mat-icon>
+        <span>Hybrid Policy: {{ weeklyHybridProgress.wfoCount }}/{{ weeklyHybridProgress.requiredWfo }} WFO Days this week</span>
+      </span>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: SHIFT MASTER LIBRARY -->
+  <!-- ========================================================================= -->
+  <div *ngIf="isHrOrAdmin && activeTab === 'master'">
+    <!-- Analytics Metrics Grid -->
+    <div class="metrics-grid">
+      <!-- Metric 1: Total Shift Profiles -->
+      <div class="metric-card">
+        <div class="metric-content">
+          <span class="metric-label">TOTAL SHIFTS</span>
+          <div class="metric-number-group">
+            <span class="metric-number">{{ totalShiftsCount }}</span>
+            <span class="trend-badge trend-up">Standardized</span>
+          </div>
+          <span class="metric-subtext">{{ activeShiftsCount }} Active Enterprise Slots</span>
         </div>
-        <span class="metric-subtext">Morning & General Shifts</span>
+        <div class="metric-icon-box icon-purple">
+          <mat-icon>calendar_month</mat-icon>
+        </div>
       </div>
-      <div class="metric-icon-box icon-amber">
-        <mat-icon>wb_sunny</mat-icon>
+
+      <!-- Metric 2: Day Shifts Windows -->
+      <div class="metric-card">
+        <div class="metric-content">
+          <span class="metric-label">DAYTIME OPERATIONS</span>
+          <div class="metric-number-group">
+            <span class="metric-number">{{ dayShiftsCount }}</span>
+            <span class="metric-unit">Windows</span>
+          </div>
+          <span class="metric-subtext">Morning & General Shifts</span>
+        </div>
+        <div class="metric-icon-box icon-amber">
+          <mat-icon>wb_sunny</mat-icon>
+        </div>
+      </div>
+
+      <!-- Metric 3: Night & Overlap Shifts -->
+      <div class="metric-card">
+        <div class="metric-content">
+          <span class="metric-label">OVERNIGHT & OVERLAP</span>
+          <div class="metric-number-group">
+            <span class="metric-number">{{ nightShiftsCount }}</span>
+            <span class="metric-unit">Slots</span>
+          </div>
+          <span class="metric-subtext">Evening & Night Rotations</span>
+        </div>
+        <div class="metric-icon-box icon-indigo">
+          <mat-icon>dark_mode</mat-icon>
+        </div>
+      </div>
+
+      <!-- Metric 4: Active Roster Status -->
+      <div class="metric-card">
+        <div class="metric-content">
+          <span class="metric-label">ACTIVE ROSTER STATUS</span>
+          <div class="metric-number-group">
+            <span class="metric-number">{{ activeRosterRate }}%</span>
+            <span class="trend-badge trend-success">Live Ready</span>
+          </div>
+          <span class="metric-subtext">{{ assignedEmployeesCount }} / {{ totalEmployeesCount }} Workforce Positioned</span>
+        </div>
+        <div class="metric-icon-box icon-emerald">
+          <mat-icon>check_circle</mat-icon>
+        </div>
       </div>
     </div>
 
-    <!-- Metric 3: Night & Overlap Shifts -->
-    <div class="metric-card">
-      <div class="metric-content">
-        <span class="metric-label">OVERNIGHT & OVERLAP</span>
-        <div class="metric-number-group">
-          <span class="metric-number">{{ nightShiftsCount }}</span>
-          <span class="metric-unit">Slots</span>
-        </div>
-        <span class="metric-subtext">Evening & Night Rotations</span>
-      </div>
-      <div class="metric-icon-box icon-indigo">
-        <mat-icon>dark_mode</mat-icon>
-      </div>
-    </div>
+    <!-- Main Table Section Card -->
+    <div class="main-table-card">
+      <!-- Toolbar with Search and Filters -->
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <mat-icon class="search-icon">search</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="applyFilter()"
+              placeholder="Search by shift name, start/end time..."
+              class="search-input"
+            />
+          </div>
 
-    <!-- Metric 4: Active Roster Status -->
-    <div class="metric-card">
-      <div class="metric-content">
-        <span class="metric-label">ACTIVE ROSTER STATUS</span>
-        <div class="metric-number-group">
-          <span class="metric-number">{{ activeRosterRate }}%</span>
-          <span class="trend-badge trend-success">Live Ready</span>
+          <!-- Shift Timing Category Filter -->
+          <div class="filter-dropdown-wrapper">
+            <select
+              [(ngModel)]="selectedCategory"
+              (ngModelChange)="applyFilter()"
+              class="filter-select"
+            >
+              <option value="All">All Categories</option>
+              <option value="Day / Morning">Day / Morning</option>
+              <option value="Afternoon">Afternoon</option>
+              <option value="Evening Shift">Evening Shift</option>
+              <option value="Night Shift">Night Shift</option>
+            </select>
+          </div>
+
+          <!-- Active Status Filter -->
+          <div class="filter-dropdown-wrapper">
+            <select
+              [(ngModel)]="selectedStatus"
+              (ngModelChange)="applyFilter()"
+              class="filter-select"
+            >
+              <option value="All">All Status</option>
+              <option value="Active">Active Shifts</option>
+              <option value="Inactive">Inactive Shifts</option>
+            </select>
+          </div>
         </div>
-        <span class="metric-subtext">{{ assignedEmployeesCount }} / {{ totalEmployeesCount }} Workforce Positioned</span>
+
+        <div class="toolbar-right">
+          <!-- CSV Export Button -->
+          <button type="button" class="btn-export" (click)="exportShiftsCSV()">
+            <mat-icon class="btn-icon">file_download</mat-icon>
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
-      <div class="metric-icon-box icon-emerald">
-        <mat-icon>check_circle</mat-icon>
+
+      <!-- Shift Master Table -->
+      <div class="table-container">
+        <table class="custom-data-table">
+          <thead>
+            <tr>
+              <th class="th-shift">Shift Schedule</th>
+              <th class="th-category">Category</th>
+              <th class="th-timings">Shift Hours</th>
+              <th class="th-grace">Grace & Break</th>
+              <th class="th-duration">Span</th>
+              <th class="th-assigned">Assigned Staff</th>
+              <th class="th-status">Availability</th>
+              <th class="th-actions text-end" *ngIf="isHrOrAdmin">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let shift of paginatedShifts" class="table-row">
+              <!-- Shift Name & Icon -->
+              <td class="td-shift">
+                <div class="shift-info-cell">
+                  <div class="shift-icon-avatar" [ngClass]="getShiftCategory(shift.startTime, shift.endTime) === 'Night Shift' ? 'icon-night' : 'icon-day'">
+                    <mat-icon>{{ getShiftIcon(shift.startTime) }}</mat-icon>
+                  </div>
+                  <div class="shift-details">
+                    <span class="shift-name-text">{{ shift.shiftName }}</span>
+                    <span class="shift-id-sub">Slot #{{ shift.id }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Category Badge -->
+              <td class="td-category">
+                <span class="category-badge" [ngClass]="getShiftCategory(shift.startTime, shift.endTime) === 'Night Shift' ? 'badge-night' : 'badge-day'">
+                  {{ getShiftCategory(shift.startTime, shift.endTime) }}
+                </span>
+              </td>
+
+              <!-- Shift Timing Hours -->
+              <td class="td-timings">
+                <div class="timing-badge-group">
+                  <span class="time-in"><mat-icon>login</mat-icon> {{ formatTime(shift.startTime) }}</span>
+                  <span class="time-separator">→</span>
+                  <span class="time-out"><mat-icon>logout</mat-icon> {{ formatTime(shift.endTime) }}</span>
+                </div>
+              </td>
+
+              <!-- Grace & Break Duration -->
+              <td class="td-grace">
+                <div class="grace-break-group">
+                  <span class="grace-badge">
+                    <mat-icon>timelapse</mat-icon> {{ shift.gracePeriodMinutes || 15 }}m Grace
+                  </span>
+                  <span class="break-badge">
+                    <mat-icon>free_breakfast</mat-icon> {{ shift.breakDurationMinutes || 60 }}m Break
+                  </span>
+                </div>
+              </td>
+
+              <!-- Duration -->
+              <td class="td-duration">
+                <span class="duration-text">{{ getShiftDuration(shift.startTime, shift.endTime) }}</span>
+              </td>
+
+              <!-- Assigned Employees -->
+              <td class="td-assigned">
+                <span class="assigned-pill" [class.assigned-zero]="shift.assignedCount === 0">
+                  <mat-icon>group</mat-icon>
+                  <span>{{ shift.assignedCount }} Assigned</span>
+                </span>
+              </td>
+
+              <!-- Active Status Switch -->
+              <td class="td-status">
+                <ng-container *ngIf="isHrOrAdmin; else readonlyStatus">
+                  <label class="switch-toggle" title="Toggle active status">
+                    <input
+                      type="checkbox"
+                      [checked]="shift.isActive"
+                      (change)="toggleShiftStatus(shift)"
+                    />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="status-label" [class.status-active]="shift.isActive">
+                    {{ shift.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </ng-container>
+                <ng-template #readonlyStatus>
+                  <span class="status-badge" [class.badge-active]="shift.isActive" [class.badge-inactive]="!shift.isActive">
+                    {{ shift.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </ng-template>
+              </td>
+
+              <!-- Action Buttons (HR & Admin Only) -->
+              <td class="td-actions text-end" *ngIf="isHrOrAdmin">
+                <div class="action-buttons-group">
+                  <button type="button" class="btn-action edit" (click)="openEditForm(shift)" title="Edit Shift">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button type="button" class="btn-action delete" (click)="openDeleteModal(shift)" title="Delete Shift">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="paginatedShifts.length === 0">
+              <td colspan="8" class="text-center py-5">
+                <div class="empty-state">
+                  <mat-icon class="empty-icon">search_off</mat-icon>
+                  <h4 class="empty-title">No Shift Records Found</h4>
+                  <p class="empty-desc">No work shifts match your search criteria. Try modifying your filters or add a new shift.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="table-pagination-footer" *ngIf="totalPages > 1">
+        <span class="pagination-info">
+          Showing {{ ((currentPage - 1) * pageSize) + 1 }} to {{ Math.min(currentPage * pageSize, filteredShifts.length) }} of {{ filteredShifts.length }} shifts
+        </span>
+        <div class="pagination-controls">
+          <button type="button" class="pagination-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <button
+            *ngFor="let p of pages"
+            type="button"
+            class="pagination-page-btn"
+            [class.active]="p === currentPage"
+            (click)="goToPage(p)"
+          >
+            {{ p }}
+          </button>
+          <button type="button" class="pagination-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Main Table Section Card -->
-  <div class="main-table-card">
-    <!-- Toolbar with Search and Filters -->
-    <div class="table-toolbar">
+  <!-- ========================================================================= -->
+  <!-- TAB 2: SHIFT ROSTER PLANNER -->
+  <!-- ========================================================================= -->
+  <div *ngIf="activeTab === 'roster'" class="roster-planner-tab">
+    <!-- Roster Toolbar -->
+    <div class="roster-toolbar-card">
       <div class="toolbar-left">
-        <div class="search-box">
+        <!-- View Mode Switcher -->
+        <div class="view-mode-toggle">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="rosterViewMode === 'week'"
+            (click)="toggleRosterViewMode('week')"
+          >
+            <mat-icon>view_week</mat-icon> Week
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="rosterViewMode === 'month'"
+            (click)="toggleRosterViewMode('month')"
+          >
+            <mat-icon>calendar_view_month</mat-icon> Month
+          </button>
+        </div>
+
+        <!-- Date Navigator -->
+        <div class="date-navigator">
+          <button type="button" class="nav-arrow-btn" (click)="prevRosterPeriod()" title="Previous period">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span class="period-display-label">{{ getRosterPeriodDisplay() }}</span>
+          <button type="button" class="nav-arrow-btn" (click)="nextRosterPeriod()" title="Next period">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button type="button" class="today-btn" (click)="todayRosterPeriod()">Today</button>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="filter-dropdown-wrapper" *ngIf="isHrOrAdmin">
+          <select
+            [(ngModel)]="selectedDepartment"
+            (ngModelChange)="refreshRosterFilter()"
+            class="filter-select"
+          >
+            <option value="All">All Departments</option>
+            <option *ngFor="let dept of departmentsList" [value]="dept">{{ dept }}</option>
+          </select>
+        </div>
+
+        <!-- Search Input -->
+        <div class="search-box" *ngIf="isHrOrAdmin">
           <mat-icon class="search-icon">search</mat-icon>
           <input
             type="text"
-            [(ngModel)]="searchQuery"
-            (ngModelChange)="applyFilter()"
-            placeholder="Search by shift name, start/end time..."
+            [(ngModel)]="rosterSearchQuery"
+            (ngModelChange)="refreshRosterFilter()"
+            placeholder="Search employee..."
             class="search-input"
           />
-        </div>
-
-        <!-- Shift Timing Category Filter -->
-        <div class="filter-dropdown-wrapper">
-          <mat-icon class="filter-icon">schedule</mat-icon>
-          <select
-            [(ngModel)]="selectedCategory"
-            (ngModelChange)="applyFilter()"
-            class="filter-select"
-          >
-            <option value="All">All Timing Windows</option>
-            <option value="Day / Morning">Day / Morning</option>
-            <option value="Afternoon">Afternoon</option>
-            <option value="Evening Shift">Evening Shift</option>
-            <option value="Night Shift">Night Shift</option>
-          </select>
-        </div>
-
-        <!-- Shift Active Status Filter -->
-        <div class="filter-dropdown-wrapper">
-          <mat-icon class="filter-icon">tune</mat-icon>
-          <select
-            [(ngModel)]="selectedStatus"
-            (ngModelChange)="applyFilter()"
-            class="filter-select"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Active">Active Only</option>
-            <option value="Inactive">Inactive Only</option>
-          </select>
         </div>
       </div>
 
       <div class="toolbar-right">
-        <span class="results-count">
-          Showing <strong>{{ paginatedShifts.length }}</strong> of <strong>{{ filteredShifts.length }}</strong> shifts
-        </span>
-      </div>
-    </div>
-
-    <!-- Shifts Data Table -->
-    <div class="table-container">
-      <table class="custom-table">
-        <thead>
-          <tr>
-            <th class="th-shift-name">SHIFT INITIATIVE / TITLE</th>
-            <th class="th-time">START TIME</th>
-            <th class="th-time">END TIME</th>
-            <th class="th-duration">OPERATING SPAN</th>
-            <th class="th-category">TIMING WINDOW</th>
-            <th>ASSIGNED WORKFORCE</th>
-            <th class="th-status">ACTIVE STATUS</th>
-            <th class="th-actions text-right">ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Dynamic Row Loop -->
-          <tr *ngFor="let shift of paginatedShifts" [class.is-inactive-row]="shift.isActive === false">
-            <!-- Shift Title with Icon Badge -->
-            <td>
-              <div class="shift-name-cell">
-                <div class="shift-icon-avatar" [ngClass]="'icon-' + (getShiftCategory(shift.startTime, shift.endTime) === 'Night Shift' ? 'night' : 'day')">
-                  <mat-icon>{{ getShiftIcon(shift.startTime) }}</mat-icon>
-                </div>
-                <div class="shift-text-group">
-                  <span class="shift-title">{{ shift.shiftName }}</span>
-                  <span class="shift-code">SFT-00{{ shift.id }}</span>
-                </div>
-              </div>
-            </td>
-
-            <!-- Start Time -->
-            <td>
-              <div class="time-chip chip-start">
-                <mat-icon class="time-icon">login</mat-icon>
-                <span>{{ formatTime(shift.startTime) }}</span>
-              </div>
-            </td>
-
-            <!-- End Time -->
-            <td>
-              <div class="time-chip chip-end">
-                <mat-icon class="time-icon">logout</mat-icon>
-                <span>{{ formatTime(shift.endTime) }}</span>
-              </div>
-            </td>
-
-            <!-- Operating Span -->
-            <td>
-              <span class="duration-badge">
-                <mat-icon class="dur-icon">timelapse</mat-icon>
-                <span>{{ getShiftDuration(shift.startTime, shift.endTime) }}</span>
-              </span>
-            </td>
-
-            <!-- Category Window Tag -->
-            <td>
-              <span class="category-tag" [ngClass]="'cat-' + (getShiftCategory(shift.startTime, shift.endTime) === 'Night Shift' ? 'night' : 'day')">
-                <span class="cat-dot"></span>
-                <span>{{ getShiftCategory(shift.startTime, shift.endTime) }}</span>
-              </span>
-            </td>
-
-            <!-- Assigned Workforce Headcount -->
-            <td>
-              <span class="duration-badge" style="background-color: #f1f5f9; color: #334155;">
-                <mat-icon class="dur-icon" style="color: #6366f1;">people</mat-icon>
-                <span>{{ shift.assignedCount || 0 }} Personnel</span>
-              </span>
-            </td>
-
-            <!-- Active Status (Display Only Badge) -->
-            <td>
-              <span class="status-badge" [ngClass]="shift.isActive ? 'badge-active' : 'badge-inactive'">
-                {{ shift.isActive ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-
-            <!-- Actions (Edit, Delete & Inactivate Toggle) -->
-            <td class="text-right">
-              <div class="action-buttons-group">
-                <button
-                  type="button"
-                  class="action-icon-btn edit-btn"
-                  (click)="openEditForm(shift)"
-                  title="Edit Shift Details"
-                >
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="action-icon-btn delete-btn"
-                  (click)="openDeleteModal(shift)"
-                  title="Delete Shift"
-                >
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="action-icon-btn"
-                  [class.btn-toggle-off]="shift.isActive !== false"
-                  [class.btn-toggle-on]="shift.isActive === false"
-                  (click)="toggleShiftStatus(shift)"
-                  [title]="shift.isActive !== false ? 'Active (Click to Inactivate)' : 'Inactive (Click to Activate)'"
-                >
-                  <mat-icon>{{ shift.isActive !== false ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Empty State -->
-          <tr *ngIf="paginatedShifts.length === 0">
-            <td colspan="8" class="empty-state-cell">
-              <div class="empty-state-box">
-                <mat-icon class="empty-icon">schedule</mat-icon>
-                <h3>No Shift Schedules Found</h3>
-                <p>No shift records match your search or filter criteria.</p>
-                <button type="button" class="btn-primary-add" (click)="openAddForm()">
-                  <mat-icon>more_time</mat-icon>
-                  <span>Add New Shift</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Pagination Footer -->
-    <div class="pagination-footer" *ngIf="filteredShifts.length > 0">
-      <div class="pagination-info">
-        Showing {{ ((currentPage - 1) * pageSize) + 1 }} to {{ ((currentPage * pageSize) < filteredShifts.length) ? (currentPage * pageSize) : filteredShifts.length }} of {{ filteredShifts.length }} entries
-      </div>
-
-      <div class="pagination-controls">
+        <!-- Apply Corporate Hybrid Policy Button -->
         <button
+          *ngIf="isHrOrAdmin"
           type="button"
-          class="page-btn page-nav"
-          (click)="prevPage()"
-          [disabled]="currentPage === 1"
+          class="btn-outline-action"
+          (click)="applyHybridPolicyToCurrentRoster()"
+          title="Auto-apply 2 WFO / 3 WFH hybrid pattern across roster"
         >
-          <mat-icon>chevron_left</mat-icon>
+          <mat-icon>home_work</mat-icon>
+          <span>Apply Hybrid Policy</span>
         </button>
 
-        <ng-container *ngFor="let page of pages">
+        <!-- Batch Weekly Off Button -->
+        <button *ngIf="isHrOrAdmin" type="button" class="btn-outline-action" (click)="openWeeklyOffModal()">
+          <mat-icon>event_repeat</mat-icon>
+          <span>Weekly-Off Pattern</span>
+        </button>
+
+        <!-- Bulk Assign Button -->
+        <button *ngIf="isHrOrAdmin" type="button" class="btn-primary-add" (click)="openBulkAssignModal()">
+          <mat-icon>assignment_ind</mat-icon>
+          <span>Bulk Assign Shift</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Roster Grid Matrix Card -->
+    <div class="roster-grid-card">
+      <div class="roster-scroll-container">
+        <table class="roster-matrix-table">
+          <thead>
+            <tr>
+              <th class="th-employee-sticky">Employee</th>
+              <th
+                *ngFor="let day of rosterDays"
+                class="th-day-col"
+                [class.col-today]="day.isToday"
+                [class.col-weekend]="day.isWeekend"
+              >
+                <div class="day-col-header">
+                  <span class="day-name">{{ day.dayName }}</span>
+                  <span class="day-number">{{ day.dayNumber }}</span>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of getDisplayRosterEmployees()" class="roster-row">
+              <!-- Sticky Employee Column -->
+              <td class="td-employee-sticky">
+                <div class="employee-cell-meta">
+                  <div class="emp-avatar">
+                    {{ (emp.firstName?.[0] || 'E') }}{{ (emp.lastName?.[0] || 'M') }}
+                  </div>
+                  <div class="emp-info">
+                    <strong class="emp-name">{{ emp.firstName }} {{ emp.lastName }}</strong>
+                    <span class="emp-sub">EMP-{{ emp.id }} • {{ emp.department || emp.designation || 'General' }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Date Columns -->
+              <td
+                *ngFor="let day of rosterDays"
+                class="td-roster-cell"
+                [class.cell-weekend]="day.isWeekend"
+                [class.cell-today]="day.isToday"
+                [class.cell-readonly]="!isHrOrAdmin"
+                (click)="isHrOrAdmin ? openCellAssignPopover(emp, day.dateStr, $event) : null"
+              >
+                <ng-container *ngIf="getEmployeeRosterEntry(emp, day.dateStr) as entry">
+                  <div class="shift-badge-chip" [ngClass]="getShiftBadgeClass(entry)">
+                    <span class="badge-title">{{ entry.shiftId === 'WO' ? 'Weekly Off' : entry.shiftName }}</span>
+                    <span class="badge-timing" *ngIf="entry.startTime && entry.endTime">
+                      {{ formatTime(entry.startTime) }} - {{ formatTime(entry.endTime) }}
+                    </span>
+                    <mat-icon *ngIf="entry.isOverridden" class="override-indicator" title="Custom override">bookmark</mat-icon>
+                  </div>
+                </ng-container>
+              </td>
+            </tr>
+
+            <tr *ngIf="getDisplayRosterEmployees().length === 0">
+              <td [attr.colspan]="rosterDays.length + 1" class="text-center py-5">
+                <div class="empty-state">
+                  <mat-icon class="empty-icon">group_off</mat-icon>
+                  <h4 class="empty-title">No Employees Found</h4>
+                  <p class="empty-desc">No employees match your selected filter. Please adjust the department or search query.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cell Quick Popover Menu -->
+      <div
+        *ngIf="isHrOrAdmin && activeAssignmentCell"
+        class="quick-assign-popover"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="popover-header">
+          <div class="popover-title-text">
+            <strong>Assign Shift</strong>
+            <span>{{ activeAssignmentCell.empName }} • {{ activeAssignmentCell.dateStr }}</span>
+          </div>
+          <button type="button" class="btn-close-popover" (click)="closeCellPopover()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="popover-options">
+          <button
+            *ngFor="let s of allShifts"
+            type="button"
+            class="popover-option-btn"
+            (click)="assignShiftToCell(s)"
+          >
+            <mat-icon>{{ getShiftIcon(s.startTime) }}</mat-icon>
+            <div class="option-text">
+              <span class="option-name">{{ s.shiftName }}</span>
+              <span class="option-time">{{ formatTime(s.startTime) }} - {{ formatTime(s.endTime) }}</span>
+            </div>
+          </button>
+
           <button
             type="button"
-            class="page-btn"
-            [class.active]="page === currentPage"
-            (click)="goToPage(page)"
+            class="popover-option-btn option-wo"
+            (click)="assignShiftToCell('WO')"
           >
-            {{ page }}
+            <mat-icon>weekend</mat-icon>
+            <div class="option-text">
+              <span class="option-name">Weekly Off (WO)</span>
+              <span class="option-time">Rest day off duty</span>
+            </div>
           </button>
-        </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- ========================================================================= -->
+  <!-- TAB 3: SHIFT SWAP REQUESTS -->
+  <!-- ========================================================================= -->
+  <div *ngIf="activeTab === 'swaps'" class="swaps-tab">
+    <div class="main-table-card">
+      <!-- Toolbar -->
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <mat-icon class="search-icon">search</mat-icon>
+            <input
+              type="text"
+              [(ngModel)]="swapSearchQuery"
+              placeholder="Search swaps by employee or reason..."
+              class="search-input"
+            />
+          </div>
+
+          <!-- Status Filter -->
+          <div class="filter-dropdown-wrapper">
+            <select [(ngModel)]="swapStatusFilter" class="filter-select">
+              <option value="All">All Statuses</option>
+              <option value="Pending">Pending Approval</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <button type="button" class="btn-primary-add" (click)="openShiftSwapModal()">
+            <mat-icon class="btn-icon">add</mat-icon>
+            <span>New Swap Request</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Swaps Table -->
+      <div class="table-container">
+        <table class="custom-data-table">
+          <thead>
+            <tr>
+              <th>Requester Employee</th>
+              <th>Current Shift & Date</th>
+              <th>Target Colleague</th>
+              <th>Target Shift & Date</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let swap of getFilteredSwaps()" class="table-row">
+              <td>
+                <strong class="text-dark">{{ swap.requesterName }}</strong>
+                <div class="text-muted small">EMP-{{ swap.requesterEmployeeId }}</div>
+              </td>
+              <td>
+                <span class="badge-general p-1 rounded d-inline-block small">{{ swap.requesterShiftName }}</span>
+                <div class="small text-muted mt-1">{{ swap.requesterDate | date:'mediumDate' }}</div>
+              </td>
+              <td>
+                <strong class="text-dark">{{ swap.targetName }}</strong>
+                <div class="text-muted small">EMP-{{ swap.targetEmployeeId }}</div>
+              </td>
+              <td>
+                <span class="badge-morning p-1 rounded d-inline-block small">{{ swap.targetShiftName }}</span>
+                <div class="small text-muted mt-1">{{ swap.targetDate | date:'mediumDate' }}</div>
+              </td>
+              <td>
+                <span class="swap-reason-text" [title]="swap.reason">{{ swap.reason }}</span>
+              </td>
+              <td>
+                <span
+                  class="badge-status"
+                  [ngClass]="'status-' + swap.status.toLowerCase()"
+                >
+                  {{ swap.status }}
+                </span>
+                <div *ngIf="swap.actionBy" class="small text-muted mt-1">By {{ swap.actionBy }}</div>
+              </td>
+              <td class="text-end">
+                <div class="action-buttons-group" *ngIf="swap.status === 'Pending' && (isHrOrAdmin || isTargetOfSwap(swap))">
+                  <!-- HR/Admin Approve/Reject -->
+                  <ng-container *ngIf="isHrOrAdmin">
+                    <button type="button" class="btn-action-approve" (click)="approveSwap(swap)" title="Manager Approve">
+                      <mat-icon>check</mat-icon> Approve
+                    </button>
+                    <button type="button" class="btn-action-reject" (click)="rejectSwap(swap)" title="Manager Reject">
+                      <mat-icon>close</mat-icon> Reject
+                    </button>
+                  </ng-container>
+
+                  <!-- Target Colleague Accept/Decline -->
+                  <ng-container *ngIf="!isHrOrAdmin && isTargetOfSwap(swap)">
+                    <button type="button" class="btn-action-approve" (click)="approveSwap(swap)" title="Accept Exchange">
+                      <mat-icon>check</mat-icon> Accept
+                    </button>
+                    <button type="button" class="btn-action-reject" (click)="rejectSwap(swap)" title="Decline Exchange">
+                      <mat-icon>close</mat-icon> Decline
+                    </button>
+                  </ng-container>
+                </div>
+                <span *ngIf="swap.status === 'Pending' && !isHrOrAdmin && !isTargetOfSwap(swap)" class="text-muted small">
+                  Awaiting Review
+                </span>
+                <span *ngIf="swap.status !== 'Pending'" class="text-muted small">Completed</span>
+              </td>
+            </tr>
+
+            <tr *ngIf="getFilteredSwaps().length === 0">
+              <td colspan="7" class="text-center py-5">
+                <div class="empty-state">
+                  <mat-icon class="empty-icon">swap_horiz</mat-icon>
+                  <h4 class="empty-title">No Shift Swap Requests Found</h4>
+                  <p class="empty-desc">No shift exchange requests found matching the current filters.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- TAB 4: WORK MODEL & HYBRID POLICIES -->
+  <!-- ========================================================================= -->
+  <div *ngIf="isHrOrAdmin && activeTab === 'policy'" class="work-model-policy-tab">
+    <div class="policy-overview-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <mat-icon>tune</mat-icon>
+          <span>Enterprise Work Model & Hybrid Policy Rules</span>
+        </h2>
+        <p class="section-desc">
+          Configure whether employees require manager approval or have direct self-service selection for Work From Home (WFH) and On-Duty (OD). Set corporate hybrid attendance quotas (e.g., 2 Days Office / 3 Days WFH).
+        </p>
+      </div>
+
+      <!-- Mode Selection Grid -->
+      <label class="form-label mb-2"><strong>1. Employee Work Model Selection Permission</strong></label>
+      <div class="policy-modes-grid">
+        <!-- Mode 1: Direct Selection -->
+        <div
+          class="mode-card"
+          [class.selected]="workModelPolicy.policyMode === 'DIRECT_SELECT'"
+          (click)="selectPolicyMode('DIRECT_SELECT')"
+        >
+          <div class="mode-header">
+            <mat-icon class="mode-icon">touch_app</mat-icon>
+            <input type="radio" [checked]="workModelPolicy.policyMode === 'DIRECT_SELECT'" />
+          </div>
+          <h3 class="mode-name">Direct Employee Selection</h3>
+          <p class="mode-desc">
+            Employees can freely toggle and select Office (WFO), Work From Home (WFH), or On-Duty (OD) on their attendance dashboard without requiring approval.
+          </p>
+        </div>
+
+        <!-- Mode 2: Require Approval -->
+        <div
+          class="mode-card"
+          [class.selected]="workModelPolicy.policyMode === 'REQUIRE_APPROVAL'"
+          (click)="selectPolicyMode('REQUIRE_APPROVAL')"
+        >
+          <div class="mode-header">
+            <mat-icon class="mode-icon">fact_check</mat-icon>
+            <input type="radio" [checked]="workModelPolicy.policyMode === 'REQUIRE_APPROVAL'" />
+          </div>
+          <h3 class="mode-name">Strict Manager Approval</h3>
+          <p class="mode-desc">
+            Remote days (WFH) and Client visits (OD) require employee to submit a formal request. Attendance hours are credited only after supervisor approval.
+          </p>
+        </div>
+
+        <!-- Mode 3: Hybrid Quota -->
+        <div
+          class="mode-card"
+          [class.selected]="workModelPolicy.policyMode === 'HYBRID_QUOTA'"
+          (click)="selectPolicyMode('HYBRID_QUOTA')"
+        >
+          <div class="mode-header">
+            <mat-icon class="mode-icon">splitscreen</mat-icon>
+            <input type="radio" [checked]="workModelPolicy.policyMode === 'HYBRID_QUOTA'" />
+          </div>
+          <h3 class="mode-name">Corporate Hybrid Quota (Recommended)</h3>
+          <p class="mode-desc">
+            Employees follow a structured weekly quota (e.g. 2 Days Office / 3 Days WFH). Direct selection is permitted up to the allotted weekly remote quota.
+          </p>
+        </div>
+      </div>
+
+      <!-- Section 2: Hybrid Schedule Preset -->
+      <div class="schedule-presets-box">
+        <span class="presets-label">2. Hybrid Schedule Presets & Day-by-Day Roster Pattern</span>
+        <div class="presets-btn-group">
+          <button
+            type="button"
+            class="btn-preset"
+            [class.active]="selectedPreset === '2_WFO_3_WFH'"
+            (click)="applyHybridPreset('2_WFO_3_WFH')"
+          >
+            🏢 2 Days WFO / 🏠 3 Days WFH (Corporate Standard)
+          </button>
+          <button
+            type="button"
+            class="btn-preset"
+            [class.active]="selectedPreset === '3_WFO_2_WFH'"
+            (click)="applyHybridPreset('3_WFO_2_WFH')"
+          >
+            🏢 3 Days WFO / 🏠 2 Days WFH (Balanced)
+          </button>
+          <button
+            type="button"
+            class="btn-preset"
+            [class.active]="selectedPreset === 'ALL_WFO'"
+            (click)="applyHybridPreset('ALL_WFO')"
+          >
+            🏢 100% In-Office (5 Days WFO)
+          </button>
+          <button
+            type="button"
+            class="btn-preset"
+            [class.active]="selectedPreset === 'ALL_WFH'"
+            (click)="applyHybridPreset('ALL_WFH')"
+          >
+            🏠 100% Remote (5 Days WFH)
+          </button>
+        </div>
+
+        <div class="days-matrix">
+          <div class="day-config-card">
+            <span class="day-title">Monday</span>
+            <select
+              [(ngModel)]="workModelPolicy.schedulePreset.monday"
+              class="day-mode-select"
+              [ngClass]="workModelPolicy.schedulePreset.monday === 'WFO' ? 'select-wfo' : 'select-wfh'"
+            >
+              <option value="WFO">🏢 Office (WFO)</option>
+              <option value="WFH">🏠 Home (WFH)</option>
+            </select>
+          </div>
+
+          <div class="day-config-card">
+            <span class="day-title">Tuesday</span>
+            <select
+              [(ngModel)]="workModelPolicy.schedulePreset.tuesday"
+              class="day-mode-select"
+              [ngClass]="workModelPolicy.schedulePreset.tuesday === 'WFO' ? 'select-wfo' : 'select-wfh'"
+            >
+              <option value="WFO">🏢 Office (WFO)</option>
+              <option value="WFH">🏠 Home (WFH)</option>
+            </select>
+          </div>
+
+          <div class="day-config-card">
+            <span class="day-title">Wednesday</span>
+            <select
+              [(ngModel)]="workModelPolicy.schedulePreset.wednesday"
+              class="day-mode-select"
+              [ngClass]="workModelPolicy.schedulePreset.wednesday === 'WFO' ? 'select-wfo' : 'select-wfh'"
+            >
+              <option value="WFO">🏢 Office (WFO)</option>
+              <option value="WFH">🏠 Home (WFH)</option>
+            </select>
+          </div>
+
+          <div class="day-config-card">
+            <span class="day-title">Thursday</span>
+            <select
+              [(ngModel)]="workModelPolicy.schedulePreset.thursday"
+              class="day-mode-select"
+              [ngClass]="workModelPolicy.schedulePreset.thursday === 'WFO' ? 'select-wfo' : 'select-wfh'"
+            >
+              <option value="WFO">🏢 Office (WFO)</option>
+              <option value="WFH">🏠 Home (WFH)</option>
+            </select>
+          </div>
+
+          <div class="day-config-card">
+            <span class="day-title">Friday</span>
+            <select
+              [(ngModel)]="workModelPolicy.schedulePreset.friday"
+              class="day-mode-select"
+              [ngClass]="workModelPolicy.schedulePreset.friday === 'WFO' ? 'select-wfo' : 'select-wfh'"
+            >
+              <option value="WFO">🏢 Office (WFO)</option>
+              <option value="WFH">🏠 Home (WFH)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Quotas & Compliance -->
+      <div class="quotas-row">
+        <div class="quota-field">
+          <label>Required Office Days (WFO / Week)</label>
+          <input type="number" min="0" max="5" [(ngModel)]="workModelPolicy.hybridWeeklyWfoDays" />
+        </div>
+        <div class="quota-field">
+          <label>Allowed Remote Days (WFH / Week)</label>
+          <input type="number" min="0" max="5" [(ngModel)]="workModelPolicy.hybridWeeklyWfhDays" />
+        </div>
+        <div class="quota-field">
+          <label>Max Monthly Remote Days Cap</label>
+          <input type="number" min="0" max="31" [(ngModel)]="workModelPolicy.maxMonthlyWfhDays" />
+        </div>
+      </div>
+
+      <div class="policy-actions-footer">
         <button
           type="button"
-          class="page-btn page-nav"
-          (click)="nextPage()"
-          [disabled]="currentPage === totalPages"
+          class="btn-outline-action"
+          (click)="applyHybridPolicyToCurrentRoster()"
         >
-          <mat-icon>chevron_right</mat-icon>
+          <mat-icon>sync</mat-icon>
+          <span>Apply Pattern to Shift Roster</span>
         </button>
+        <button
+          type="button"
+          class="btn-primary-add"
+          (click)="saveWorkModelPolicy()"
+        >
+          <mat-icon>check</mat-icon>
+          <span>Save Policy Configuration</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: BULK ASSIGN SHIFT -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop-custom" *ngIf="showBulkModal" (click)="closeBulkAssignModal()">
+    <div class="modal-content-card" (click)="$event.stopPropagation()">
+      <div class="modal-card-header">
+        <div class="title-with-icon">
+          <mat-icon class="icon-bulk">assignment_ind</mat-icon>
+          <h3>Bulk Assign Shift Schedule</h3>
+        </div>
+        <button type="button" class="close-x" (click)="closeBulkAssignModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-card-body">
+        <p class="modal-desc">
+          Quickly position workforce employees to a specific shift schedule or Weekly Off across a date range.
+        </p>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Target Shift Schedule</label>
+          <select [(ngModel)]="bulkSelectedShiftId" class="form-select-custom">
+            <option *ngFor="let s of allShifts" [value]="s.id">
+              {{ s.shiftName }} ({{ formatTime(s.startTime) }} - {{ formatTime(s.endTime) }})
+            </option>
+            <option value="WO">Weekly Off (WO)</option>
+          </select>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Target Department</label>
+          <select [(ngModel)]="bulkDepartment" class="form-select-custom">
+            <option value="All">All Departments (Entire Workforce)</option>
+            <option *ngFor="let dept of departmentsList" [value]="dept">{{ dept }}</option>
+          </select>
+        </div>
+
+        <div class="row-2-group">
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" [(ngModel)]="bulkStartDate" class="form-input-custom" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Date</label>
+            <input type="date" [(ngModel)]="bulkEndDate" class="form-input-custom" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-card-footer">
+        <button type="button" class="btn-secondary" (click)="closeBulkAssignModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="executeBulkAssign()">Apply Bulk Assignment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: WEEKLY-OFF PATTERN -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop-custom" *ngIf="showWeeklyOffModal" (click)="closeWeeklyOffModal()">
+    <div class="modal-content-card" (click)="$event.stopPropagation()">
+      <div class="modal-card-header">
+        <div class="title-with-icon">
+          <mat-icon class="icon-wo">event_repeat</mat-icon>
+          <h3>Apply Weekly-Off Pattern</h3>
+        </div>
+        <button type="button" class="close-x" (click)="closeWeeklyOffModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-card-body">
+        <p class="modal-desc">
+          Automate weekly off distribution across the current calendar month.
+        </p>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Weekly-Off Policy Rule</label>
+          <div class="pattern-options">
+            <label class="pattern-radio-card" [class.selected]="weeklyOffPattern === 'corporate_2nd_4th_sat_sun'">
+              <input type="radio" [(ngModel)]="weeklyOffPattern" value="corporate_2nd_4th_sat_sun" />
+              <div class="radio-info">
+                <strong>Corporate Standard (Recommended)</strong>
+                <span>All Sundays Off + 2nd & 4th Saturday Off</span>
+              </div>
+            </label>
+
+            <label class="pattern-radio-card" [class.selected]="weeklyOffPattern === 'sat_sun'">
+              <input type="radio" [(ngModel)]="weeklyOffPattern" value="sat_sun" />
+              <div class="radio-info">
+                <strong>5-Day Work Week</strong>
+                <span>All Saturdays & All Sundays Off</span>
+              </div>
+            </label>
+
+            <label class="pattern-radio-card" [class.selected]="weeklyOffPattern === 'sundays'">
+              <input type="radio" [(ngModel)]="weeklyOffPattern" value="sundays" />
+              <div class="radio-info">
+                <strong>6-Day Operations</strong>
+                <span>All Sundays Off</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Apply To Department</label>
+          <select [(ngModel)]="weeklyOffDepartment" class="form-select-custom">
+            <option value="All">All Departments</option>
+            <option *ngFor="let dept of departmentsList" [value]="dept">{{ dept }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-card-footer">
+        <button type="button" class="btn-secondary" (click)="closeWeeklyOffModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="executeApplyWeeklyOff()">Apply Pattern</button>
       </div>
     </div>
   </div>

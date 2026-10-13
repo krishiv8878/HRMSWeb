@@ -8,23 +8,29 @@
         <p class="page-subtitle">Log project tasks, verify attendance reference hours, and submit weekly/monthly timesheets.</p>
       </div>
 
-      <!-- Top-Level Project Selector -->
-      <div class="top-project-selector">
-        <label for="topProjectSelect" class="project-label">
-          <mat-icon>business_center</mat-icon>
-          <span>Project:</span>
-        </label>
-        <select
-          id="topProjectSelect"
-          class="top-project-dropdown"
-          [(ngModel)]="selectedProjectId"
-          (ngModelChange)="onProjectChange()"
-        >
-          <option [ngValue]="null" disabled>Select Project</option>
-          <option *ngFor="let p of projects" [ngValue]="p.id || p.projectMasterId">
-            {{ p.projectName || p.name }}
-          </option>
-        </select>
+      <!-- Top-Level Project Selector & User Avatar -->
+      <div class="header-user-project-box">
+        <div class="top-project-selector">
+          <label for="topProjectSelect" class="project-label">
+            <mat-icon>business_center</mat-icon>
+            <span>Project:</span>
+          </label>
+          <select
+            id="topProjectSelect"
+            class="top-project-dropdown"
+            [(ngModel)]="selectedProjectId"
+            (ngModelChange)="onProjectChange()"
+          >
+            <option [ngValue]="null" disabled>Select Project</option>
+            <option *ngFor="let p of projects" [ngValue]="p.id || p.projectMasterId">
+              {{ p.projectName || p.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="user-avatar-circle" [title]="userDisplayName">
+          <span class="avatar-initials">{{ userInitials }}</span>
+        </div>
       </div>
     </div>
 
@@ -34,6 +40,25 @@
     <!-- Controls Row: Period & Date Nav on Left, Submit Button on Right -->
     <div class="header-controls-row">
       <div class="controls-left">
+        <!-- Date Navigator -->
+        <div class="date-navigator">
+          <button type="button" class="nav-arrow-btn" (click)="navigatePeriod(-1)" title="Previous Period">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span class="period-label">
+            {{ currentStartDate | date:'MMM d' }} – {{ currentEndDate | date:'MMM d, yyyy' }}
+          </span>
+          <button
+            type="button"
+            class="nav-arrow-btn"
+            [disabled]="isCurrentOrFuturePeriod"
+            (click)="navigatePeriod(1)"
+            title="Next Period"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+
         <!-- Period Selector Toggle (Weekly / Monthly) -->
         <div class="period-toggle-group">
           <button
@@ -54,36 +79,10 @@
           </button>
         </div>
 
-        <!-- Date Navigator -->
-        <div class="date-navigator">
-          <button type="button" class="nav-arrow-btn" (click)="navigatePeriod(-1)" title="Previous Period">
-            <mat-icon>chevron_left</mat-icon>
-          </button>
-          <span class="period-label">
-            {{ currentStartDate | date:'MMM d' }} – {{ currentEndDate | date:'MMM d, yyyy' }}
-          </span>
-          <button
-            type="button"
-            class="nav-arrow-btn"
-            [disabled]="isCurrentOrFuturePeriod"
-            (click)="navigatePeriod(1)"
-            title="Next Period"
-          >
-            <mat-icon>chevron_right</mat-icon>
-          </button>
-          <button
-            type="button"
-            class="btn-current"
-            [disabled]="isCurrentOrFuturePeriod"
-            (click)="goToCurrent()"
-          >
-            Current
-          </button>
-          <span class="backfill-indicator" title="Timesheet entry is open for previous weeks within current month / past 30 days">
-            <mat-icon>history</mat-icon>
-            <span>Backfill Open</span>
-          </span>
-        </div>
+        <span class="backfill-indicator" title="Timesheet entry is open for previous weeks within current month / past 30 days">
+          <mat-icon>check_circle_outline</mat-icon>
+          <span>Backfill Open</span>
+        </span>
       </div>
 
       <div class="controls-right">
@@ -95,7 +94,6 @@
           [disabled]="isSubmitting || !timesheetData || timesheetData.totalTimesheetHours === 0"
           (click)="submitTimesheet()"
         >
-          <mat-icon>send</mat-icon>
           <span>{{ isSubmitting ? 'Submitting...' : 'Submit Timesheet' }}</span>
         </button>
       </div>
@@ -156,9 +154,104 @@
     <span>Loading timesheet details...</span>
   </div>
 
-  <!-- Timesheet Days Grid / Table -->
-  <div class="days-list-wrapper" *ngIf="!isLoading && timesheetData">
-    <div *ngFor="let day of timesheetData.days" class="day-card" [class.is-today]="day.isShiftInProgress">
+  <!-- Main Split Layout: Sidebar + Days List Feed -->
+  <div class="timesheet-main-layout" *ngIf="!isLoading && timesheetData">
+    <!-- Left Sidebar: Mini Calendar + Summary Widget -->
+    <aside class="timesheet-sidebar">
+      <!-- Mini Calendar Card -->
+      <div class="sidebar-card mini-calendar-card">
+        <div class="calendar-widget-header">
+          <h3 class="widget-title">{{ miniCalendarMonthTitle }}</h3>
+          <div class="widget-nav-arrows">
+            <button type="button" class="btn-widget-arrow" (click)="navigatePeriod(-1)" title="Previous">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <button type="button" class="btn-widget-arrow" [disabled]="isCurrentOrFuturePeriod" (click)="navigatePeriod(1)" title="Next">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Weekdays Header Row -->
+        <div class="widget-weekdays-row">
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+          <span>Sun</span>
+        </div>
+
+        <!-- Dates Grid -->
+        <div class="widget-dates-grid">
+          <button
+            type="button"
+            *ngFor="let item of miniCalendarDays"
+            class="widget-date-cell"
+            [class.is-selected]="item.isSelected"
+            [class.is-today]="item.isToday"
+            [class.is-weekend]="item.isWeekend"
+            [class.is-absent]="item.isAbsent"
+            [class.is-other-month]="!item.isCurrentMonth"
+            [class.has-tasks]="item.hasTasks"
+            (click)="selectCalendarDay(item.dateStr)"
+            [title]="item.dateStr"
+          >
+            <span class="date-num">{{ item.dayNumber }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Week Summary Card -->
+      <div class="sidebar-card week-summary-card">
+        <h3 class="widget-title">{{ periodType === 'Weekly' ? 'Week Summary' : 'Period Summary' }}</h3>
+
+        <div class="summary-list">
+          <!-- Total Hours -->
+          <div class="summary-row">
+            <span class="summary-label">Total Hours</span>
+            <div class="summary-value-group">
+              <span class="summary-value">{{ standardTargetHours | number:'1.2-2' }}h</span>
+              <mat-icon class="row-chevron">chevron_right</mat-icon>
+            </div>
+          </div>
+
+          <!-- Logged Hours -->
+          <div class="summary-row">
+            <span class="summary-label">Logged Hours</span>
+            <div class="summary-value-group">
+              <span class="summary-value">{{ filteredTotalHours | number:'1.2-2' }}h</span>
+              <span class="logged-pct-badge" [class.is-full]="loggedHoursPercentage >= 100">
+                {{ loggedHoursPercentage }}%
+              </span>
+            </div>
+          </div>
+
+          <!-- Pending Tasks -->
+          <div class="summary-row">
+            <span class="summary-label">Pending Tasks</span>
+            <div class="summary-value-group">
+              <span class="summary-value">{{ pendingDaysCount }}</span>
+              <mat-icon class="row-chevron">chevron_right</mat-icon>
+            </div>
+          </div>
+
+          <!-- Attendance Ref -->
+          <div class="summary-row">
+            <span class="summary-label">Attendance Ref.</span>
+            <div class="summary-value-group">
+              <span class="summary-value">{{ timesheetData.totalAttendanceHours | number:'1.1-2' }}h</span>
+              <mat-icon class="row-icon-clock">schedule</mat-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Column: Days List Feed -->
+    <main class="days-list-wrapper">
+      <div *ngFor="let day of timesheetData.days" class="day-card" [id]="'day-card-' + day.date" [class.is-today]="day.isShiftInProgress" [class.is-selected-day]="day.date === selectedDayDate">
       <!-- Day Header Row -->
       <div class="day-header">
         <div class="day-meta">
@@ -200,7 +293,13 @@
             <span *ngIf="day.isRegularized" class="reg-pill">Regularized</span>
           </div>
 
-          <div *ngIf="!day.isShiftInProgress && !day.clockInTime" class="badge-punch no-punch">
+          <div *ngIf="!day.isShiftInProgress && !day.clockInTime && isDayAbsent(day)" class="badge-punch is-absent">
+            <mat-icon>person_off</mat-icon>
+            <span>Absent (No Punch)</span>
+            <span *ngIf="day.regularizationStatus === 'Pending'" class="reg-pill reg-pending-pill">Reg. Pending</span>
+          </div>
+
+          <div *ngIf="!day.isShiftInProgress && !day.clockInTime && !isDayAbsent(day)" class="badge-punch no-punch">
             <mat-icon>schedule_send</mat-icon>
             <span>No punch logged</span>
           </div>
@@ -221,6 +320,25 @@
           <mat-icon>add</mat-icon>
           <span>{{ (day.isHoliday || day.isWeekend) ? 'Log Work' : 'Add Task' }}</span>
         </button>
+
+        <!-- Absent Working Day Action: Regularize or Pending Status -->
+        <ng-container *ngIf="isDayAbsent(day) && !day.isLeave && !day.isPriorToJoining && !isFutureDay(day.date)">
+          <button
+            type="button"
+            class="btn-regularize-day"
+            *ngIf="day.regularizationStatus !== 'Pending'"
+            (click)="openRegularizeModalForDay(day)"
+            title="Submit attendance regularization request for this absent day"
+          >
+            <mat-icon>edit_calendar</mat-icon>
+            <span>Regularize</span>
+          </button>
+          <span class="badge-reg-awaiting" *ngIf="day.regularizationStatus === 'Pending'" title="Awaiting manager approval">
+            <mat-icon>hourglass_top</mat-icon>
+            <span>Approval Pending</span>
+          </span>
+        </ng-container>
+
         <span class="badge-leave-disabled" *ngIf="!day.isPriorToJoining && day.isLeave">On Leave</span>
         <span class="badge-prejoin-disabled" *ngIf="day.isPriorToJoining">Not Joined Yet</span>
         <span class="badge-future" *ngIf="isFutureDay(day.date) && !day.isPriorToJoining">Upcoming</span>
@@ -232,6 +350,7 @@
         <div
           *ngIf="getDayTasks(day).length === 0"
           class="empty-tasks-card"
+          [class.empty-card-absent]="isDayAbsent(day)"
           [class.empty-card-leave]="day.isLeave"
           [class.empty-card-prejoin]="day.isPriorToJoining"
           [class.empty-card-holiday]="day.isHoliday || day.isWeekend"
@@ -241,19 +360,23 @@
           <div class="empty-icon-circle">
             <mat-icon *ngIf="day.isPriorToJoining">person_off</mat-icon>
             <mat-icon *ngIf="!day.isPriorToJoining && day.isLeave">event_busy</mat-icon>
-            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && day.isHoliday">celebration</mat-icon>
-            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && day.isWeekend">weekend</mat-icon>
-            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend">{{ isFutureDay(day.date) ? 'schedule' : 'playlist_add' }}</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && isDayAbsent(day)">warning_amber</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && day.isHoliday">celebration</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && !day.isHoliday && day.isWeekend">weekend</mat-icon>
+            <mat-icon *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && !day.isHoliday && !day.isWeekend">{{ isFutureDay(day.date) ? 'schedule' : 'playlist_add' }}</mat-icon>
           </div>
           <div class="empty-text-wrap">
             <span class="empty-title">
               <ng-container *ngIf="day.isPriorToJoining">Prior to Official Joining Date</ng-container>
               <ng-container *ngIf="!day.isPriorToJoining && day.isLeave">On Approved Leave ({{ day.leaveTypeName || 'Leave' }})</ng-container>
-              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && (day.isHoliday || day.isWeekend)">
+              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && isDayAbsent(day)">
+                {{ day.regularizationStatus === 'Pending' ? 'Regularization Awaiting Approval' : 'Marked Absent — Task Logging Locked' }}
+              </ng-container>
+              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && (day.isHoliday || day.isWeekend)">
                 {{ day.isHoliday ? ('Holiday: ' + (day.holidayName || 'Company Holiday')) : 'Weekend' }} - No Tasks Logged
               </ng-container>
-              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend && isFutureDay(day.date)">Upcoming Date</ng-container>
-              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend && !isFutureDay(day.date)">No project tasks recorded for this date.</ng-container>
+              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && !day.isHoliday && !day.isWeekend && isFutureDay(day.date)">Upcoming Date</ng-container>
+              <ng-container *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && !day.isHoliday && !day.isWeekend && !isFutureDay(day.date)">No project tasks recorded for this date.</ng-container>
             </span>
 
             <span class="empty-sub" *ngIf="day.isPriorToJoining">
@@ -262,18 +385,47 @@
             <span class="empty-sub" *ngIf="!day.isPriorToJoining && day.isLeave">
               Tasks cannot be logged while on approved leave.
             </span>
-            <span class="empty-sub" *ngIf="!day.isPriorToJoining && !day.isLeave && (day.isHoliday || day.isWeekend) && canAddTaskForDay(day)">
+            <span class="empty-sub" *ngIf="!day.isPriorToJoining && !day.isLeave && isDayAbsent(day)">
+              <ng-container *ngIf="day.regularizationStatus === 'Pending'">
+                Your attendance regularization request for this date is pending manager review. Once approved, task logging will be unlocked automatically.
+              </ng-container>
+              <ng-container *ngIf="day.regularizationStatus !== 'Pending'">
+                No attendance punch was recorded on this date. If you were present at work, please submit an attendance regularization request. Task logging will be unlocked once approved by your manager.
+              </ng-container>
+            </span>
+            <span class="empty-sub" *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && (day.isHoliday || day.isWeekend) && canAddTaskForDay(day)">
               {{ selectedProject ? ('Click to log work hours for ' + (selectedProject.projectName || selectedProject.name) + ' if you worked on this day.') : 'Select a project from the top dropdown to log holiday / weekend work.' }}
             </span>
-            <span class="empty-sub" *ngIf="!day.isPriorToJoining && !day.isLeave && !day.isHoliday && !day.isWeekend && canAddTaskForDay(day)">
+            <span class="empty-sub" *ngIf="!day.isPriorToJoining && !day.isLeave && !isDayAbsent(day) && !day.isHoliday && !day.isWeekend && canAddTaskForDay(day)">
               {{ selectedProject ? ('Click to add task for ' + (selectedProject.projectName || selectedProject.name)) : 'Select a project from the top dropdown to log tasks.' }}
             </span>
-            <span class="empty-sub" *ngIf="!canAddTaskForDay(day) && !day.isPriorToJoining && !day.isLeave && !isFutureDay(day.date)">
+            <span class="empty-sub" *ngIf="!canAddTaskForDay(day) && !isDayAbsent(day) && !day.isPriorToJoining && !day.isLeave && !isFutureDay(day.date)">
               Timesheet is {{ timesheetData.status || 'Locked' }}. Locked for modifications.
             </span>
             <span class="empty-sub" *ngIf="isFutureDay(day.date) && !day.isPriorToJoining && !day.isLeave">
               Tasks cannot be logged for future dates.
             </span>
+          </div>
+
+          <!-- Quick regularize action button inside empty card -->
+          <div class="empty-action-box" *ngIf="isDayAbsent(day) && day.regularizationStatus !== 'Pending' && !day.isLeave && !day.isPriorToJoining">
+            <button
+              type="button"
+              class="btn-card-regularize"
+              (click)="$event.stopPropagation(); openRegularizeModalForDay(day)"
+            >
+              <mat-icon>edit_calendar</mat-icon>
+              <span>Regularize Attendance</span>
+            </button>
+          </div>
+
+          <!-- Right-side indicator: Upcoming pill or Chevron -->
+          <div class="empty-card-right-indicator">
+            <span class="upcoming-badge-pill" *ngIf="isFutureDay(day.date) && !day.isPriorToJoining && !day.isLeave">
+              <span>Upcoming</span>
+              <mat-icon>chevron_right</mat-icon>
+            </span>
+            <mat-icon class="card-chevron-action" *ngIf="canAddTaskForDay(day)">chevron_right</mat-icon>
           </div>
         </div>
 
@@ -302,5 +454,6 @@
         </div>
       </div>
     </div>
+    </main>
   </div>
 </div>

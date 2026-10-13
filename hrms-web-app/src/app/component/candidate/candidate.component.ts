@@ -1,7 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,6 +16,18 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { CandidateItem, TalentMetrics } from '../../interface/candidate.interface';
 import { RbacService } from '../../core/rbac.service';
 import { EmployeeService } from '../../services/employee/employee.service';
+import {
+  RecruitmentService,
+  JobRequisitionDto,
+  CandidatePipelineItemDto,
+  JobInterviewDto,
+  JobOfferDto,
+  RecruitmentDashboardMetricsDto
+} from '../../services/recruitment/recruitment.service';
+import { JobRequisitionModalComponent } from '../../modal/recruitment/job-requisition-modal/job-requisition-modal.component';
+import { InterviewScheduleModalComponent } from '../../modal/recruitment/interview-schedule-modal/interview-schedule-modal.component';
+import { InterviewScorecardModalComponent } from '../../modal/recruitment/interview-scorecard-modal/interview-scorecard-modal.component';
+import { JobOfferModalComponent } from '../../modal/recruitment/job-offer-modal/job-offer-modal.component';
 
 @Component({
   selector: 'app-candidate',
@@ -30,13 +43,28 @@ import { EmployeeService } from '../../services/employee/employee.service';
   templateUrl: './candidate.component.html',
   styleUrl: './candidate.component.scss'
 })
-export class CandidateComponent implements OnInit {
+export class CandidateComponent implements OnInit, OnDestroy {
   services = inject(CandidateService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
   dialog = inject(MatDialog);
   toaster = inject(ToastrService);
   rbacService = inject(RbacService);
   employeeService = inject(EmployeeService);
+  recruitmentService = inject(RecruitmentService);
+
+  // ATS Main Suite Navigation & State
+  mainTab: 'pipeline' | 'openings' | 'candidates' | 'interviews' | 'offers' = 'pipeline';
+  selectedRequisitionFilter: number | null = null;
+
+  requisitions: JobRequisitionDto[] = [];
+  pipelineCandidates: CandidatePipelineItemDto[] = [];
+  pipelineStages = ['Sourced', 'Screening', 'Interview', 'Offered', 'Hired', 'Rejected'];
+  interviewsList: JobInterviewDto[] = [];
+  offersList: JobOfferDto[] = [];
+  recruitmentMetrics?: RecruitmentDashboardMetricsDto;
+
+  private routeSub?: Subscription;
 
   Math = Math;
 
@@ -52,7 +80,20 @@ export class CandidateComponent implements OnInit {
   loggedEmpId: number = 0;
   loggedUserName: string = '';
   loggedUserEmail: string = '';
+  loggedEmployeeFullName: string = '';
   employeeEmails: Set<string> = new Set<string>();
+
+  // Status Tab Navigation State
+  activeTab: 'active' | 'onboarded' | 'rejected' | 'all' = 'active';
+  activeCandidatesCount: number = 0;
+  onboardedCandidatesCount: number = 0;
+  rejectedCandidatesCount: number = 0;
+  allCandidatesCount: number = 0;
+
+  // Role and Sorting Filters
+  availableRoles: string[] = [];
+  selectedRole: string = 'All';
+  sortBy: 'newest' | 'score' | 'name' | 'exp' | 'notice' = 'newest';
 
   get isAdminOrHr(): boolean {
     return this.rbacService.isAdmin() || this.rbacService.isHR();
@@ -91,8 +132,18 @@ export class CandidateComponent implements OnInit {
   ];
 
   ngOnInit() {
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'add') {
+        setTimeout(() => this.openAddForm(), 150);
+      }
+    });
+
+    if (!this.isAdminOrHr) {
+      this.mainTab = 'interviews';
+    }
+
     this.loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
-    this.loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || '').toLowerCase().trim() : '';
+    this.loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || localStorage.getItem('UserName') || '').toLowerCase().trim() : '';
     this.loggedUserEmail = typeof window !== 'undefined' ? (localStorage.getItem('userEmail') || '').toLowerCase().trim() : '';
 
     this.employeeService.getData().subscribe({
@@ -106,10 +157,28 @@ export class CandidateComponent implements OnInit {
             this.employeeEmails.add(String(e.emailAddress).toLowerCase().trim());
           }
         });
+
+        // Resolve current logged in employee record for robust interviewer matching
+        const myEmp = list.find((e: any) =>
+          (this.loggedEmpId > 0 && Number(e.id) === this.loggedEmpId) ||
+          (this.loggedUserEmail && e.emailAddress && String(e.emailAddress).toLowerCase().trim() === this.loggedUserEmail)
+        );
+        if (myEmp) {
+          if (!this.loggedEmpId && myEmp.id) {
+            this.loggedEmpId = Number(myEmp.id);
+          }
+          const fullName = `${myEmp.firstName || ''} ${myEmp.lastName || ''}`.trim();
+          if (fullName) {
+            this.loggedEmployeeFullName = fullName.toLowerCase();
+          }
+        }
+
         this.getData();
+        this.loadRecruitmentData();
       },
       error: () => {
         this.getData();
+        this.loadRecruitmentData();
       }
     });
   }
@@ -141,11 +210,22 @@ export class CandidateComponent implements OnInit {
           this.allCandidates = [];
         }
 
+        // Derive unique roles for the role filter dropdown
+        const roleSet = new Set<string>();
+        this.allCandidates.forEach(c => {
+          if (c.appliedRole && c.appliedRole.trim()) {
+            roleSet.add(c.appliedRole.trim());
+          }
+        });
+        this.availableRoles = Array.from(roleSet).sort();
+
+        this.calculateTabCounts();
         this.calculatePipelineMetrics();
         this.filterCandidates();
       },
       error: () => {
         this.allCandidates = [];
+        this.calculateTabCounts();
         this.calculatePipelineMetrics();
         this.filterCandidates();
       }
@@ -234,6 +314,7 @@ export class CandidateComponent implements OnInit {
       stage: effectiveStage,
       matchScore: scoreVal,
       lastUpdated: updatedVal,
+      rawCreatedDate: rawDate ? new Date(rawDate) : null,
       isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
       initials: initials.toUpperCase(),
       selected: false,
@@ -245,7 +326,10 @@ export class CandidateComponent implements OnInit {
       currentRound: curRound,
       interviewStatus: intStatus,
       interviewHistory: intHistory,
-      isOnboarded: isOnboarded
+      isOnboarded: isOnboarded,
+      jobRequisitionId: item.jobRequisitionId ? Number(item.jobRequisitionId) : undefined,
+      jobRequisitionTitle: item.jobRequisitionTitle || undefined,
+      jobCode: item.jobCode || undefined
     };
   }
 
@@ -278,7 +362,36 @@ export class CandidateComponent implements OnInit {
     return [];
   }
 
+  getInterviewForCandidate(candidate: CandidateItem): JobInterviewDto | undefined {
+    return this.interviewsList.find(i => i.candidateId === candidate.id && (i.status === 'Scheduled' || i.status === 'Rescheduled'))
+      || this.interviewsList.find(i => i.candidateId === candidate.id);
+  }
+
+  hasInterviewForCandidate(candidate: CandidateItem): boolean {
+    return !!this.getInterviewForCandidate(candidate);
+  }
+
+  openScorecardForCandidate(candidate: CandidateItem): void {
+    const interview = this.getInterviewForCandidate(candidate);
+    if (interview) {
+      this.openScorecardModal(interview);
+    } else {
+      if (this.isAdminOrHr) {
+        this.toaster.info('No active interview session found. Opening interview schedule dialog...', 'Schedule Interview');
+        this.openScheduleInterviewModal(candidate);
+      } else {
+        this.toaster.warning('No active interview session found for this candidate.', 'Interview Not Scheduled');
+      }
+    }
+  }
+
   openInterviewModal(candidate: CandidateItem) {
+    const interview = this.getInterviewForCandidate(candidate);
+    if (interview) {
+      this.openScorecardModal(interview);
+      return;
+    }
+
     const dialogRef = this.dialog.open(CandidateInterviewModalComponent, {
       width: '680px',
       maxHeight: '90vh',
@@ -288,6 +401,8 @@ export class CandidateComponent implements OnInit {
     dialogRef.afterClosed().subscribe((res: any) => {
       if (res) {
         this.getData();
+        this.loadPipeline();
+        this.loadInterviews();
       }
     });
   }
@@ -323,7 +438,6 @@ export class CandidateComponent implements OnInit {
     });
     const avgDays = candidatesWithNotice > 0 ? Math.round(totalNoticeDays / candidatesWithNotice) : 30;
     this.metrics.timeToFillAvgDays = avgDays;
-    // Standard 60-day enterprise benchmark scale
     this.metrics.timeToFillProgressPercent = Math.min(100, Math.round((avgDays / 60) * 100));
 
     // 4. Offer Acceptance rate dynamically computed
@@ -347,18 +461,53 @@ export class CandidateComponent implements OnInit {
     this.metrics.quarterlyGrowthPositive = growthPercent >= 0;
   }
 
+  calculateTabCounts(): void {
+    this.allCandidatesCount = this.allCandidates.length;
+    this.onboardedCandidatesCount = this.allCandidates.filter(c => c.isOnboarded || c.stage === 'Onboarded').length;
+    this.rejectedCandidatesCount = this.allCandidates.filter(c => c.stage === 'Rejected').length;
+    this.activeCandidatesCount = this.allCandidates.filter(c => !c.isOnboarded && c.stage !== 'Onboarded' && c.stage !== 'Rejected').length;
+  }
+
   isAssignedToCurrentUser(c: CandidateItem): boolean {
-    // Only show if currently assigned to this user and pending their feedback
+    if (this.isCurrentlyAssignedPending(c)) return true;
+
+    // Check active assignment
+    if (this.loggedEmpId > 0 && c.interviewerId && Number(c.interviewerId) === this.loggedEmpId) return true;
+    if (this.loggedUserName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedUserName)) return true;
+    if (this.loggedEmployeeFullName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedEmployeeFullName)) return true;
+
+    // Check if current user conducted an evaluation in candidate interview history
+    if (c.interviewHistory && Array.isArray(c.interviewHistory)) {
+      const match = c.interviewHistory.some((h: any) =>
+        (this.loggedEmpId > 0 && Number(h.interviewerId) === this.loggedEmpId) ||
+        (this.loggedUserName && h.interviewerName && h.interviewerName.toLowerCase().includes(this.loggedUserName)) ||
+        (this.loggedEmployeeFullName && h.interviewerName && h.interviewerName.toLowerCase().includes(this.loggedEmployeeFullName))
+      );
+      if (match) return true;
+    }
+
+    return false;
+  }
+
+  isCurrentlyAssignedPending(c: CandidateItem): boolean {
     if (!c.interviewerId && !c.interviewerName) return false;
+    if (c.stage === 'Rejected' || c.stage === 'Onboarded' || c.isOnboarded) return false;
 
     const statusLower = (c.interviewStatus || '').toLowerCase();
     if (statusLower.includes('feedback submitted') || statusLower.includes('awaiting hr review') || statusLower === 'pending hr decision') {
-      return false; // Feedback already submitted and reassigned to HR!
+      return false; // Feedback already submitted
     }
 
     if (this.loggedEmpId > 0 && c.interviewerId && Number(c.interviewerId) === this.loggedEmpId) return true;
     if (this.loggedUserName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedUserName)) return true;
+    if (this.loggedEmployeeFullName && c.interviewerName && c.interviewerName.toLowerCase().includes(this.loggedEmployeeFullName)) return true;
     return false;
+  }
+
+  switchTab(tab: 'active' | 'onboarded' | 'rejected' | 'all'): void {
+    this.activeTab = tab;
+    this.selectedStage = 'All';
+    this.filterCandidates();
   }
 
   toggleAssignedToMe(): void {
@@ -367,20 +516,49 @@ export class CandidateComponent implements OnInit {
   }
 
   filterCandidates() {
-    if (this.isAdminOrHr) {
-      this.myAssignedCount = this.allCandidates.filter(c => this.isAssignedToCurrentUser(c) && c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
-    } else {
-      this.myAssignedCount = this.allCandidates.filter(c => c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
+    if (!this.isAdminOrHr) {
+      // Non-HR interviewers only see candidates assigned to them
+      this.myAssignedCount = this.allCandidates.filter(c => this.isCurrentlyAssignedPending(c)).length;
+      let result = [...this.allCandidates];
+
+      // Search query filtering
+      if (this.searchQuery && this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        result = result.filter(c =>
+          (c.fullName && c.fullName.toLowerCase().includes(q)) ||
+          (c.firstName && c.firstName.toLowerCase().includes(q)) ||
+          (c.lastName && c.lastName.toLowerCase().includes(q)) ||
+          (c.emailAddress && c.emailAddress.toLowerCase().includes(q)) ||
+          (c.appliedRole && c.appliedRole.toLowerCase().includes(q)) ||
+          (c.stage && c.stage.toLowerCase().includes(q))
+        );
+      }
+
+      this.filteredCandidates = this.sortCandidatesList(result);
+      this.currentPage = 1;
+      this.updatePagination();
+      return;
     }
+
+    this.myAssignedCount = this.allCandidates.filter(c => this.isAssignedToCurrentUser(c) && c.stage !== 'Rejected' && c.stage !== 'Onboarded').length;
 
     let result = [...this.allCandidates];
 
-    // Filter to only assigned to current user if enabled
+    // 1. Primary Status Tab Filter
+    if (this.activeTab === 'active') {
+      result = result.filter(c => !c.isOnboarded && c.stage !== 'Onboarded' && c.stage !== 'Rejected');
+    } else if (this.activeTab === 'onboarded') {
+      result = result.filter(c => c.isOnboarded || c.stage === 'Onboarded');
+    } else if (this.activeTab === 'rejected') {
+      result = result.filter(c => c.stage === 'Rejected');
+    }
+
+    // 2. Filter to only assigned to current user if enabled
     if (this.onlyAssignedToMe && this.isAdminOrHr) {
       result = result.filter(c => this.isAssignedToCurrentUser(c));
     }
 
-    // Search query
+    // 3. Search query
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
       result = result.filter(c =>
@@ -394,14 +572,157 @@ export class CandidateComponent implements OnInit {
       );
     }
 
-    // Stage filter
+    // 4. Role filter
+    if (this.selectedRole !== 'All') {
+      result = result.filter(c => c.appliedRole === this.selectedRole);
+    }
+
+    // 5. Stage filter
     if (this.selectedStage !== 'All') {
       result = result.filter(c => c.stage === this.selectedStage);
     }
 
+    // 6. Sorting (Default: Newest / Most Recently Updated First)
+    result = this.sortCandidatesList(result);
+
     this.filteredCandidates = result;
     this.currentPage = 1;
     this.updatePagination();
+  }
+
+  private sortCandidatesList(list: CandidateItem[]): CandidateItem[] {
+    switch (this.sortBy) {
+      case 'newest':
+        return list.sort((a, b) => {
+          const timeA = a.rawCreatedDate && !isNaN(a.rawCreatedDate.getTime()) ? a.rawCreatedDate.getTime() : 0;
+          const timeB = b.rawCreatedDate && !isNaN(b.rawCreatedDate.getTime()) ? b.rawCreatedDate.getTime() : 0;
+          if (timeB !== timeA) return timeB - timeA;
+          return Number(b.id || 0) - Number(a.id || 0);
+        });
+      case 'score':
+        return list.sort((a, b) => Number(b.matchScore || 0) - Number(a.matchScore || 0));
+      case 'name':
+        return list.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+      case 'exp':
+        return list.sort((a, b) => Number(b.totalExperience || 0) - Number(a.totalExperience || 0));
+      case 'notice':
+        return list.sort((a, b) => Number(a.noticePeriod || 30) - Number(b.noticePeriod || 30));
+      default:
+        return list;
+    }
+  }
+
+  get currentStageOptions(): string[] {
+    if (this.activeTab === 'active') {
+      return [
+        'Screening',
+        'HR Screen',
+        'Technical Interview',
+        'Offer Extended',
+        'Offer Accepted',
+        'Selected / Hired',
+        'Sourced'
+      ];
+    }
+    return this.stagesFilterOptions.filter(s => s !== 'All');
+  }
+
+  getTabHeading(): string {
+    if (!this.isAdminOrHr) {
+      return 'My Assigned Interviews';
+    }
+    switch (this.activeTab) {
+      case 'active': return 'Active Candidate Pipeline';
+      case 'onboarded': return 'Onboarded Employees';
+      case 'rejected': return 'Rejected / Talent Pool';
+      case 'all': return 'All Candidates Directory';
+    }
+  }
+
+  getTabSubheading(): string {
+    if (!this.isAdminOrHr) {
+      return 'Candidates assigned to you for technical and behavioral interview evaluations.';
+    }
+    switch (this.activeTab) {
+      case 'active': return 'Candidates currently undergoing screening, interview evaluation, and offer stages.';
+      case 'onboarded': return 'Candidates who accepted job offers and were officially converted into employees.';
+      case 'rejected': return 'Archived candidate records available for review, talent pooling, or reactivation.';
+      case 'all': return 'Complete historical candidate database across all recruitment lifecycle stages.';
+    }
+  }
+
+  rejectCandidate(candidate: CandidateItem): void {
+    const reason = window.prompt(
+      `Enter rejection reason for ${candidate.fullName} (optional):`,
+      'Profile not aligned with current requirements'
+    );
+    if (reason === null) return; // User clicked Cancel
+
+    const updatedPayload = {
+      ...candidate,
+      stage: 'Rejected',
+      relevantExperience: JSON.stringify({
+        years: candidate.relevantExperience,
+        interviewerId: candidate.interviewerId,
+        interviewerName: candidate.interviewerName,
+        remarks: reason,
+        status: 'Rejected'
+      })
+    };
+
+    this.services.UpdateData(updatedPayload, candidate.id).subscribe({
+      next: () => {
+        candidate.stage = 'Rejected';
+        candidate.interviewerRemarks = reason;
+        this.toaster.info(`Candidate '${candidate.fullName}' moved to Rejected tab.`, 'Candidate Disqualified');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      },
+      error: () => {
+        candidate.stage = 'Rejected';
+        candidate.interviewerRemarks = reason;
+        this.toaster.info(`Candidate '${candidate.fullName}' moved to Rejected tab.`, 'Candidate Disqualified');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      }
+    });
+  }
+
+  reactivateCandidate(candidate: CandidateItem): void {
+    const updatedPayload = {
+      ...candidate,
+      stage: 'Screening',
+      isOnboarded: false,
+      relevantExperience: JSON.stringify({
+        years: candidate.relevantExperience,
+        status: 'Reactivated'
+      })
+    };
+
+    this.services.UpdateData(updatedPayload, candidate.id).subscribe({
+      next: () => {
+        candidate.stage = 'Screening';
+        candidate.isOnboarded = false;
+        this.toaster.success(`Candidate '${candidate.fullName}' reactivated and moved to Active Pipeline!`, 'Candidate Reactivated');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      },
+      error: () => {
+        candidate.stage = 'Screening';
+        candidate.isOnboarded = false;
+        this.toaster.success(`Candidate '${candidate.fullName}' reactivated and moved to Active Pipeline!`, 'Candidate Reactivated');
+        this.calculateTabCounts();
+        this.calculatePipelineMetrics();
+        this.filterCandidates();
+      }
+    });
+  }
+
+  navigateToEmployees(): void {
+    this.router.navigate(['/index/home']);
   }
 
   updatePagination() {
@@ -467,6 +788,8 @@ export class CandidateComponent implements OnInit {
     dialogRef.afterClosed().subscribe((res) => {
       if (res) {
         this.getData();
+        this.loadOffers();
+        this.loadPipeline();
       }
     });
   }
@@ -478,28 +801,45 @@ export class CandidateComponent implements OnInit {
     return 'score-low';
   }
 
-  openAddForm() {
+  openAddForm(reqId?: any) {
+    let targetReqId = reqId !== undefined && reqId !== null ? Number(reqId) : (this.selectedRequisitionFilter || null);
+    if (targetReqId) {
+      const targetReq = this.requisitions.find(r => Number(r.id) === Number(targetReqId));
+      if (targetReq && (targetReq.status || '').toLowerCase() === 'closed') {
+        this.toaster.info(`Job opening '${targetReq.title}' is closed. Candidates can only be added to open requisitions.`, 'Opening Closed');
+        targetReqId = null;
+      }
+    }
     const dialogRef = this.dialog.open(CandidateeComponent, {
-      width: '620px',
-      data: null
+      width: '660px',
+      data: {
+        jobRequisitionId: targetReqId
+      }
     });
 
     dialogRef.afterClosed().subscribe((res) => {
       if (res) {
         this.getData();
+        this.loadPipeline();
+        this.loadRecruitmentData();
       }
     });
   }
 
   Edit(candidate: CandidateItem) {
     const dialogRef = this.dialog.open(CandidateeComponent, {
-      width: '620px',
-      data: candidate
+      width: '660px',
+      data: {
+        ...candidate,
+        jobRequisitionId: candidate.jobRequisitionId || null
+      }
     });
 
     dialogRef.afterClosed().subscribe((res) => {
       if (res) {
         this.getData();
+        this.loadPipeline();
+        this.loadRecruitmentData();
       }
     });
   }
@@ -603,5 +943,367 @@ export class CandidateComponent implements OnInit {
     link.click();
     URL.revokeObjectURL(url);
     this.toaster.success('Talent Management candidate report exported successfully!', 'Export Complete');
+  }
+
+  // ==========================================
+  // ATS RECRUITMENT SUITE METHODS
+  // ==========================================
+  loadRecruitmentData(): void {
+    this.loadRequisitions();
+    this.loadPipeline();
+    this.loadInterviews();
+    this.loadOffers();
+    this.loadRecruitmentMetrics();
+  }
+
+  loadRequisitions(): void {
+    this.recruitmentService.getAllRequisitions().subscribe({
+      next: (res) => {
+        this.requisitions = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.requisitions = [];
+      }
+    });
+  }
+
+  getActiveOpeningsCount(): number {
+    return (this.requisitions || []).filter(r => (r.status || '').toLowerCase() === 'open').length;
+  }
+
+  loadPipeline(): void {
+    this.recruitmentService.getPipeline(this.selectedRequisitionFilter || undefined).subscribe({
+      next: (res) => {
+        this.pipelineCandidates = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.pipelineCandidates = [];
+      }
+    });
+  }
+
+  loadInterviews(): void {
+    const interviewerId = (!this.isAdminOrHr && this.loggedEmpId > 0) ? this.loggedEmpId : undefined;
+    this.recruitmentService.getInterviews(undefined, interviewerId).subscribe({
+      next: (res) => {
+        this.interviewsList = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.interviewsList = [];
+      }
+    });
+  }
+
+  loadOffers(): void {
+    this.recruitmentService.getOffers().subscribe({
+      next: (res) => {
+        this.offersList = Array.isArray(res) ? res : [];
+      },
+      error: () => {
+        this.offersList = [];
+      }
+    });
+  }
+
+  loadRecruitmentMetrics(): void {
+    this.recruitmentService.getMetrics().subscribe({
+      next: (res) => {
+        this.recruitmentMetrics = res;
+      },
+      error: () => {}
+    });
+  }
+
+  getCandidatesForStage(stage: string): CandidatePipelineItemDto[] {
+    return (this.pipelineCandidates || []).filter((c) => {
+      const s = (c.stage || 'Sourced').toLowerCase();
+      if (stage.toLowerCase() === 'interview') {
+        return s === 'interview' || s.startsWith('round') || s.includes('interview');
+      }
+      return s === stage.toLowerCase();
+    });
+  }
+
+  openPostJobModal(req?: JobRequisitionDto): void {
+    const ref = this.dialog.open(JobRequisitionModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '720px',
+      data: { requisition: req }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadRequisitions();
+        this.loadRecruitmentMetrics();
+      }
+    });
+  }
+
+  toggleRequisitionStatus(req: JobRequisitionDto, newStatus: string): void {
+    this.recruitmentService.updateRequisitionStatus(req.id, newStatus).subscribe({
+      next: () => {
+        this.toaster.success(`Job opening marked as ${newStatus}`, 'Status Updated');
+        this.loadRequisitions();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to update requisition status', 'Error')
+    });
+  }
+
+  deleteRequisition(req: JobRequisitionDto): void {
+    if (!confirm(`Delete job opening "${req.title}"?`)) return;
+    this.recruitmentService.deleteRequisition(req.id).subscribe({
+      next: () => {
+        this.toaster.success('Job requisition deleted', 'Deleted');
+        this.loadRequisitions();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to delete requisition', 'Error')
+    });
+  }
+
+  openScheduleInterviewModal(cand: any): void {
+    const pipelineItem: CandidatePipelineItemDto = {
+      id: cand.id,
+      firstName: cand.firstName || '',
+      lastName: cand.lastName || '',
+      fullName: cand.fullName || `${cand.firstName} ${cand.lastName}`.trim(),
+      emailAddress: cand.emailAddress || '',
+      mobileNumber: cand.mobileNumber || '',
+      totalExperience: cand.totalExperience || '0',
+      relevantExperience: cand.relevantExperience || '0',
+      appliedRole: cand.appliedRole || '',
+      stage: cand.stage || 'Sourced',
+      jobRequisitionId: cand.jobRequisitionId,
+      createdAt: cand.createdAt || new Date().toISOString(),
+      interviews: []
+    };
+
+    const ref = this.dialog.open(InterviewScheduleModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '600px',
+      data: { candidate: pipelineItem }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadPipeline();
+        this.loadInterviews();
+        this.getData();
+      }
+    });
+  }
+
+  openScorecardModal(interview: JobInterviewDto): void {
+    const ref = this.dialog.open(InterviewScorecardModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '650px',
+      data: { interview }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadInterviews();
+        this.loadPipeline();
+        this.getData();
+      }
+    });
+  }
+
+  cancelInterview(interview: JobInterviewDto): void {
+    const reason = prompt('Reason for cancelling interview:', 'Interviewer unavailable / rescheduled');
+    if (!reason) return;
+    this.recruitmentService.cancelInterview(interview.id, reason).subscribe({
+      next: () => {
+        this.toaster.success('Interview cancelled', 'Success');
+        this.loadInterviews();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to cancel interview', 'Error')
+    });
+  }
+
+  openCreateOfferModal(cand: any): void {
+    const pipelineItem: CandidatePipelineItemDto = {
+      id: cand.id,
+      firstName: cand.firstName || '',
+      lastName: cand.lastName || '',
+      fullName: cand.fullName || `${cand.firstName} ${cand.lastName}`.trim(),
+      emailAddress: cand.emailAddress || '',
+      mobileNumber: cand.mobileNumber || '',
+      totalExperience: cand.totalExperience || '0',
+      relevantExperience: cand.relevantExperience || '0',
+      currentSalary: cand.currentSalary,
+      expectedSalary: cand.expectedSalary,
+      appliedRole: cand.appliedRole || '',
+      stage: cand.stage || 'Interview',
+      jobRequisitionId: cand.jobRequisitionId,
+      createdAt: cand.createdAt || new Date().toISOString(),
+      interviews: []
+    };
+
+    const ref = this.dialog.open(JobOfferModalComponent, {
+      panelClass: 'custom-clean-dialog',
+      maxWidth: '95vw',
+      width: '600px',
+      data: { candidate: pipelineItem }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) {
+        this.loadOffers();
+        this.loadPipeline();
+        this.getData();
+      }
+    });
+  }
+
+  advanceCandidateStage(candId: number, nextStage: string): void {
+    this.recruitmentService.updateCandidateStage(candId, nextStage).subscribe({
+      next: () => {
+        this.toaster.success(`Candidate moved to ${nextStage} stage`, 'Pipeline Updated');
+        this.loadPipeline();
+        this.getData();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to update candidate stage', 'Error')
+    });
+  }
+
+  updateOfferStatus(offer: JobOfferDto, newStatus: string): void {
+    this.recruitmentService.updateOfferStatus(offer.id, newStatus).subscribe({
+      next: () => {
+        this.toaster.success(`Offer status marked as ${newStatus}`, 'Success');
+        this.loadOffers();
+        this.loadPipeline();
+        this.getData();
+      },
+      error: (err) => this.toaster.error(err.error?.message || 'Failed to update offer status', 'Error')
+    });
+  }
+
+  onboardCandidateFromATS(cand: any): void {
+    const candidateItem: CandidateItem = {
+      id: cand.id,
+      firstName: cand.firstName,
+      lastName: cand.lastName,
+      fullName: cand.fullName,
+      emailAddress: cand.emailAddress,
+      mobileNumber: cand.mobileNumber,
+      totalExperience: cand.totalExperience,
+      relevantExperience: cand.relevantExperience,
+      appliedRole: cand.appliedRole,
+      stage: cand.stage,
+      matchScore: cand.matchScore,
+      currentSalary: cand.currentSalary,
+      expectedSalary: cand.expectedSalary,
+      noticePeriod: cand.noticePeriod,
+      isActive: true,
+      lastUpdated: 'Just now'
+    };
+
+    this.openOnboardModal(candidateItem);
+  }
+
+  onboardOfferCandidate(offer: JobOfferDto): void {
+    const existing = this.allCandidates.find(c => c.id === offer.candidateId);
+    if (existing) {
+      this.openOnboardModal(existing);
+    } else {
+      this.onboardCandidateFromATS({
+        id: offer.candidateId,
+        fullName: offer.candidateName,
+        emailAddress: offer.candidateEmail,
+        appliedRole: offer.designation || offer.jobTitle || 'New Hire',
+        stage: 'Offer Accepted'
+      });
+    }
+  }
+
+  isOfferCandidateOnboarded(offer: JobOfferDto): boolean {
+    if (offer.status === 'Onboarded') return true;
+    if (offer.isCandidateOnboarded) return true;
+    const cand = this.allCandidates.find(c => c.id === offer.candidateId);
+    if (cand && (cand.isOnboarded || cand.stage === 'Onboarded' || cand.stage === 'Hired')) {
+      return true;
+    }
+    return false;
+  }
+
+  // Interview Hub Sub-Navigation & Filter State
+  interviewSubTab: 'all' | 'scheduled' | 'round1' | 'round2' | 'completed' | 'cancelled' = 'all';
+  interviewSearchQuery: string = '';
+
+  get filteredInterviewsList(): JobInterviewDto[] {
+    let list = this.interviewsList || [];
+
+    if (this.interviewSubTab === 'scheduled') {
+      list = list.filter(i => i.status === 'Scheduled' || i.status === 'Rescheduled');
+    } else if (this.interviewSubTab === 'round1') {
+      list = list.filter(i => {
+        const r = (i.roundName || '').toLowerCase();
+        return r.includes('round 1') || r.includes('screening') || r.includes('initial');
+      });
+    } else if (this.interviewSubTab === 'round2') {
+      list = list.filter(i => {
+        const r = (i.roundName || '').toLowerCase();
+        return r.includes('round 2') || r.includes('technical round 2') || r.includes('managerial') || r.includes('final') || r.includes('round 3');
+      });
+    } else if (this.interviewSubTab === 'completed') {
+      list = list.filter(i => i.status === 'Completed');
+    } else if (this.interviewSubTab === 'cancelled') {
+      list = list.filter(i => i.status === 'Cancelled');
+    }
+
+    if (this.interviewSearchQuery && this.interviewSearchQuery.trim()) {
+      const q = this.interviewSearchQuery.toLowerCase().trim();
+      list = list.filter(i =>
+        (i.candidateName && i.candidateName.toLowerCase().includes(q)) ||
+        (i.candidateEmail && i.candidateEmail.toLowerCase().includes(q)) ||
+        (i.candidateRole && i.candidateRole.toLowerCase().includes(q)) ||
+        (i.interviewerName && i.interviewerName.toLowerCase().includes(q)) ||
+        (i.roundName && i.roundName.toLowerCase().includes(q)) ||
+        (i.jobTitle && i.jobTitle.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }
+
+  get scheduledInterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => i.status === 'Scheduled' || i.status === 'Rescheduled').length;
+  }
+
+  get round1InterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => {
+      const r = (i.roundName || '').toLowerCase();
+      return r.includes('round 1') || r.includes('screening') || r.includes('initial');
+    }).length;
+  }
+
+  get round2InterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => {
+      const r = (i.roundName || '').toLowerCase();
+      return r.includes('round 2') || r.includes('technical round 2') || r.includes('managerial') || r.includes('final') || r.includes('round 3');
+    }).length;
+  }
+
+  get completedInterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => i.status === 'Completed').length;
+  }
+
+  get cancelledInterviewsCount(): number {
+    return (this.interviewsList || []).filter(i => i.status === 'Cancelled').length;
+  }
+
+  viewRequisitionPipeline(reqId: number): void {
+    this.selectedRequisitionFilter = reqId;
+    this.mainTab = 'pipeline';
+    this.loadPipeline();
+  }
+
+  ngOnDestroy(): void {
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
   }
 }

@@ -78,7 +78,7 @@
 
   <!-- Modal Footer Actions -->
   <div class="modal-footer">
-    <button type="button" class="btn-cancel" (click)="cancel()">
+    <button type="button" class="btn-cancel" (click)="cancel()" [disabled]="isSubmitting">
       Cancel
     </button>
 
@@ -86,10 +86,12 @@
       type="button"
       class="btn-decision"
       [ngClass]="data?.isApproved ? 'btn-approve' : 'btn-reject'"
+      [disabled]="isSubmitting"
       (click)="confirmSend()"
     >
-      <mat-icon>{{ data?.isApproved ? 'check' : 'close' }}</mat-icon>
-      <span>{{ data?.isApproved ? 'Confirm Approval' : 'Reject Request' }}</span>
+      <mat-icon *ngIf="!isSubmitting">{{ data?.isApproved ? 'check' : 'close' }}</mat-icon>
+      <span class="btn-spinner" *ngIf="isSubmitting"></span>
+      <span>{{ isSubmitting ? 'Processing...' : (data?.isApproved ? 'Confirm Approval' : 'Reject Request') }}</span>
     </button>
   </div>
 </div>

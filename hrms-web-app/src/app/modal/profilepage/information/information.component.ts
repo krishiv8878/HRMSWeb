@@ -46,10 +46,10 @@ export class InformationComponent implements OnInit {
 
   profileForm = this.formBuilder.group({
     id: [typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? localStorage.getItem('employeeId') || '' : ''],
-    firstName: ['', [Validators.required]],
-    lastName: ['', [Validators.required]],
-    emailAddress: ['', [Validators.required, Validators.email]],
-    mobileNumber: ['', [Validators.required]],
+    firstName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s.'-]+$/), Validators.minLength(2), Validators.maxLength(50)]],
+    lastName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s.'-]+$/), Validators.minLength(1), Validators.maxLength(50)]],
+    emailAddress: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
+    mobileNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
     permanentAddress: [''],
     gender: ['Male'],
     currentAddress: [''],
@@ -154,11 +154,9 @@ export class InformationComponent implements OnInit {
         }
         this.toaster.success('Profile image uploaded successfully', 'Uploaded');
       },
-      error: () => {
-        if (typeof this.selectedImage === 'string') {
-          this.services.setProfileAvatar(this.selectedImage);
-        }
-        this.toaster.success('Profile image updated successfully', 'Success');
+      error: (err: any) => {
+        console.error('Error uploading profile image:', err);
+        this.toaster.error(err?.error?.message || 'Failed to upload profile image to server', 'Upload Failed');
       }
     });
   }
@@ -167,14 +165,72 @@ export class InformationComponent implements OnInit {
     this.dialogRef.close(false);
   }
 
+  allowOnlyLetters(event: KeyboardEvent) {
+    const key = event.key;
+    if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) return;
+    if (!/^[a-zA-Z\s.'-]$/.test(key)) {
+      event.preventDefault();
+    }
+  }
+
+  allowOnlyNumbers(event: KeyboardEvent) {
+    const key = event.key;
+    if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) return;
+    if (!/^[0-9]$/.test(key)) {
+      event.preventDefault();
+    }
+  }
+
+  onNumberInput(event: Event, controlName: string) {
+    const input = event.target as HTMLInputElement;
+    const cleaned = input.value.replace(/[^0-9]/g, '').slice(0, 10);
+    if (input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    this.profileForm.get(controlName)?.setValue(cleaned);
+  }
+
+  onNumberPaste(event: ClipboardEvent, controlName: string) {
+    event.preventDefault();
+    const pasted = event.clipboardData?.getData('text') || '';
+    const cleaned = pasted.replace(/[^0-9]/g, '').slice(0, 10);
+    this.profileForm.get(controlName)?.setValue(cleaned);
+  }
+
   submitProfile() {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
-      this.toaster.error('Please complete all required fields correctly', 'Validation Error');
+      const controls = this.profileForm.controls;
+      if (controls['firstName'].invalid) {
+        if (controls['firstName'].hasError('required')) {
+          this.toaster.error('First name is required', 'Validation Error');
+        } else {
+          this.toaster.error('First name can only contain letters and spaces', 'Validation Error');
+        }
+      } else if (controls['lastName'].invalid) {
+        if (controls['lastName'].hasError('required')) {
+          this.toaster.error('Last name is required', 'Validation Error');
+        } else {
+          this.toaster.error('Last name can only contain letters and spaces', 'Validation Error');
+        }
+      } else if (controls['emailAddress'].invalid) {
+        this.toaster.error('Please enter a valid corporate email address', 'Validation Error');
+      } else if (controls['mobileNumber'].invalid) {
+        if (controls['mobileNumber'].hasError('required')) {
+          this.toaster.error('Mobile number is required', 'Validation Error');
+        } else {
+          this.toaster.error('Mobile number must be a valid 10-digit number (numeric only)', 'Validation Error');
+        }
+      } else {
+        this.toaster.error('Please complete all required fields correctly', 'Validation Error');
+      }
       return;
     }
 
-    const val = this.profileForm.value;
+    const val = { ...this.profileForm.value };
+    if (val.mobileNumber) {
+      val.mobileNumber = String(val.mobileNumber).replace(/[^0-9]/g, '').slice(0, 10);
+    }
     const fn = (val.firstName || '').trim();
     const ln = (val.lastName || '').trim();
     const fullName = `${fn} ${ln}`.trim();
@@ -198,8 +254,7 @@ export class InformationComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error updating profile:', err);
-        this.toaster.success('Personal information updated successfully', 'Saved');
-        this.dialogRef.close(true);
+        this.toaster.error(err?.error?.message || 'Failed to update personal information', 'Save Error');
       }
     });
   }

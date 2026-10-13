@@ -18,6 +18,10 @@ import { SalarySlipModalComponent } from '../../modal/salary-slip-modal/salary-s
 import { PayrollLopService } from '../../services/payroll/payroll-lop.service';
 import { PayrollLopSettingsModalComponent } from '../../modal/payroll-lop-settings-modal/payroll-lop-settings-modal.component';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
+import { PayrollService, PayRun, PayslipDto, ReimbursementClaim, FullAndFinalSettlement, SalaryCalculationResult } from '../../services/payroll/payroll.service';
+import { PayRunModalComponent } from '../../modal/payroll/pay-run-modal/pay-run-modal.component';
+import { ReimbursementModalComponent } from '../../modal/payroll/reimbursement-modal/reimbursement-modal.component';
+import { FnfModalComponent } from '../../modal/payroll/fnf-modal/fnf-modal.component';
 
 export interface PaymentItem {
   id: number;
@@ -42,6 +46,8 @@ export interface PayrollEmployeeItem {
   emailAddress?: string;
   avatarUrl?: string;
   initials: string;
+  dateOfJoining?: Date | string | null;
+  isJoinedAfterSelectedMonth?: boolean;
   ctcBreakdown: any | null;
   annualCtc: number;
   monthlyGross: number;
@@ -51,6 +57,7 @@ export interface PayrollEmployeeItem {
   disbursements: any[];
   currentMonthDisbursement: any | null;
   isCreditedThisMonth: boolean;
+  linkedPayRun?: PayRun | null;
   rawRecord: any;
 }
 
@@ -69,6 +76,7 @@ export interface PayrollEmployeeItem {
 })
 export class PaymentinfoComponent implements OnInit, OnDestroy {
   services = inject(PaymentinfoService);
+  payrollService = inject(PayrollService);
   employeeService = inject(EmployeeService);
   rbacService = inject(RbacService);
   router = inject(Router);
@@ -82,12 +90,49 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
   Math = Math;
 
   // Active View Tab
-  activeTab: 'disbursements' | 'accounts' | 'my-payslips' = 'disbursements';
+  activeTab: 'disbursements' | 'payruns' | 'ctc-calculator' | 'reimbursements' | 'fnf' | 'accounts' | 'my-payslips' = 'disbursements';
+
+  // Dedicated Employee View Active Tab (!isAdminOrHr)
+  empActiveTab: 'my-payslips' | 'my-structure' | 'my-reimbursements' | 'bank-details' = 'my-payslips';
+
+  // 1. Pay Runs Data
+  allPayRuns: PayRun[] = [];
+  selectedPayRunMonth: number = new Date().getMonth() + 1;
+  selectedPayRunYear: number = new Date().getFullYear();
+  isCreatingPayRun: boolean = false;
+
+  // 2. CTC Live Calculator & Directory Assignment
+  calcAnnualCtc: number = 600000;
+  calcBasicPercent: number = 40;
+  calcHraPercent: number = 50;
+  calcIncludePf: boolean = true;
+  calcIncludeEsic: boolean = true;
+  calcRegime: string = 'New';
+  calcResult: SalaryCalculationResult | null = null;
+  selectedEmpForCtc: number | null = null;
+  selectedCtcEmployee: PayrollEmployeeItem | null = null;
+  isSavingAssignment: boolean = false;
+  searchCtcQuery: string = '';
+  filteredCtcEmployees: PayrollEmployeeItem[] = [];
+  allSalaryAssignments: Map<number, any> = new Map();
+  configuredCtcCount: number = 0;
+
+  // 3. Reimbursements & FBP
+  allReimbursements: ReimbursementClaim[] = [];
+  myReimbursements: ReimbursementClaim[] = [];
+  reimbursementFilterStatus: string = 'All';
+
+  // 4. Server Payslips
+  serverPayslips: PayslipDto[] = [];
+
+  // 5. FnF Settlement
+  allFnFSettlements: FullAndFinalSettlement[] = [];
 
   // LOP Rule state
   currentLopRuleLabel: string = '';
 
   // Month Selection
+  monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   availableMonths: string[] = [];
   selectedMonth: string = '';
 
@@ -159,6 +204,8 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
 
     this.initAvailableMonths();
     this.loadAllData();
+    this.loadPayRuns();
+    this.loadServerPayslips();
 
     this.lopService.settings$.subscribe(() => {
       this.currentLopRuleLabel = this.lopService.getRuleLabel();
@@ -167,11 +214,35 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     // Check query params for employee pre-selection
     this.route.queryParams.subscribe(params => {
       const qEmpId = params['employeeId'];
-      if (qEmpId && Number(qEmpId) > 0 && !this.autoOpenedForEmp && this.isAdminOrHr) {
-        this.autoOpenedForEmp = true;
-        setTimeout(() => {
-          this.openAddForm(Number(qEmpId));
-        }, 400);
+      const qEmpName = params['employeeName'];
+      if (qEmpId && Number(qEmpId) > 0) {
+        if (qEmpName) {
+          this.payrollSearchQuery = qEmpName;
+          this.searchQuery = qEmpName;
+          this.globalFilterService.setEmployee(Number(qEmpId), qEmpName);
+          this.filterPayroll();
+          this.filterPayments();
+        } else {
+          this.employeeService.getData().subscribe((emps: any) => {
+            const list = Array.isArray(emps) ? emps : (emps?.data || emps?.result || []);
+            const found = list.find((e: any) => Number(e.id || e.employeeId) === Number(qEmpId));
+            if (found) {
+              const fullName = `${found.firstName || ''} ${found.lastName || ''}`.trim();
+              this.payrollSearchQuery = fullName;
+              this.searchQuery = fullName;
+              this.globalFilterService.setEmployee(Number(qEmpId), fullName);
+              this.filterPayroll();
+              this.filterPayments();
+            }
+          });
+        }
+
+        if (!this.autoOpenedForEmp && this.isAdminOrHr && params['action'] === 'edit') {
+          this.autoOpenedForEmp = true;
+          setTimeout(() => {
+            this.openAddForm(Number(qEmpId));
+          }, 400);
+        }
       }
     });
 
@@ -224,10 +295,34 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     this.selectedMonth = result[0];
   }
 
-  switchTab(tab: 'disbursements' | 'accounts' | 'my-payslips') {
+  switchTab(tab: 'disbursements' | 'payruns' | 'ctc-calculator' | 'reimbursements' | 'fnf' | 'accounts' | 'my-payslips') {
     this.activeTab = tab;
-    if (tab === 'my-payslips') {
+    if (tab === 'payruns') {
+      this.loadPayRuns();
+    } else if (tab === 'ctc-calculator') {
+      this.loadAllSalaryAssignments();
+      this.calculateLiveCtc();
+    } else if (tab === 'reimbursements') {
+      this.loadReimbursements();
+    } else if (tab === 'my-payslips') {
       this.setupEmployeeView();
+      this.loadServerPayslips();
+    } else if (tab === 'fnf') {
+      this.loadFnFSettlements();
+    }
+  }
+
+  switchEmpTab(tab: 'my-payslips' | 'my-structure' | 'my-reimbursements' | 'bank-details') {
+    this.empActiveTab = tab;
+    if (tab === 'my-payslips') {
+      this.loadServerPayslips();
+    } else if (tab === 'my-reimbursements') {
+      this.loadReimbursements();
+    } else if (tab === 'my-structure') {
+      if (this.myEmployeeRecord && (this.myEmployeeRecord.annualCtc || 0) > 0) {
+        this.calcAnnualCtc = this.myEmployeeRecord.annualCtc;
+      }
+      this.calculateLiveCtc();
     }
   }
 
@@ -383,6 +478,8 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
       emailAddress: emp.emailAddress || '',
       avatarUrl,
       initials,
+      dateOfJoining: emp.dateOfJoining || emp.DateOfJoining || null,
+      isJoinedAfterSelectedMonth: false,
       ctcBreakdown,
       annualCtc,
       monthlyGross,
@@ -402,16 +499,49 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     let creditedCnt = 0;
     let bankConfiguredCnt = 0;
 
+    const parts = (this.selectedMonth || '').trim().split(' ');
+    const selMonthName = parts[0] || '';
+    const selYear = Number(parts[1]) || new Date().getFullYear();
+    const selMonthNum = this.monthNames.indexOf(selMonthName); // 1-12
+    // Last millisecond of the selected month
+    const endOfSelectedMonth = new Date(selYear, selMonthNum, 0, 23, 59, 59, 999);
+
+    const matchingRun = this.allPayRuns.find(r => r.month === selMonthNum && r.year === selYear);
+
     this.allPayrollEmployees.forEach(emp => {
-      const disb = emp.disbursements.find((d: any) => d.month === this.selectedMonth || d.monthYear === this.selectedMonth) || null;
+      // Determine if employee joined after the selected month
+      let joinedAfter = false;
+      if (emp.dateOfJoining) {
+        const doj = new Date(emp.dateOfJoining);
+        if (!isNaN(doj.getTime()) && doj.getTime() > endOfSelectedMonth.getTime()) {
+          joinedAfter = true;
+        }
+      }
+      emp.isJoinedAfterSelectedMonth = joinedAfter;
+
+      if (joinedAfter) {
+        // Employee was not employed during this month; cannot have payslip or pending payroll
+        emp.currentMonthDisbursement = null;
+        emp.isCreditedThisMonth = false;
+        emp.linkedPayRun = null;
+        return;
+      }
+
+      // Check if employee has an actual recorded disbursement for this month
+      let disb = emp.disbursements.find((d: any) =>
+        (d.month && d.month.toLowerCase() === this.selectedMonth.toLowerCase()) ||
+        (d.monthYear && d.monthYear.toLowerCase() === this.selectedMonth.toLowerCase())
+      ) || null;
+
       emp.currentMonthDisbursement = disb;
       emp.isCreditedThisMonth = !!disb;
+      emp.linkedPayRun = matchingRun || null;
 
       budgetSum += emp.monthlyNet || 0;
 
       if (disb) {
         creditedCnt++;
-        creditedSum += Number(disb.netSalary) || emp.monthlyNet || 0;
+        creditedSum += Number(disb.netSalaryCredited || disb.netSalary) || emp.monthlyNet || 0;
       }
 
       if (emp.hasBankConfigured) {
@@ -419,12 +549,13 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
       }
     });
 
+    const eligibleEmployees = this.allPayrollEmployees.filter(e => !e.isJoinedAfterSelectedMonth);
     this.totalPayrollBudget = budgetSum;
     this.totalCreditedAmount = creditedSum;
     this.creditedCount = creditedCnt;
-    this.pendingCount = Math.max(0, this.allPayrollEmployees.length - creditedCnt);
-    this.bankCoverageRate = this.allPayrollEmployees.length > 0
-      ? Math.round((bankConfiguredCnt / this.allPayrollEmployees.length) * 100)
+    this.pendingCount = Math.max(0, eligibleEmployees.length - creditedCnt);
+    this.bankCoverageRate = eligibleEmployees.length > 0
+      ? Math.round((bankConfiguredCnt / eligibleEmployees.length) * 100)
       : 100;
   }
 
@@ -442,9 +573,9 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     }
 
     if (this.payrollStatusFilter === 'Credited') {
-      result = result.filter(emp => emp.isCreditedThisMonth);
+      result = result.filter(emp => !emp.isJoinedAfterSelectedMonth && emp.isCreditedThisMonth);
     } else if (this.payrollStatusFilter === 'Pending') {
-      result = result.filter(emp => !emp.isCreditedThisMonth);
+      result = result.filter(emp => !emp.isJoinedAfterSelectedMonth && !emp.isCreditedThisMonth);
     } else if (this.payrollStatusFilter === 'NoBank') {
       result = result.filter(emp => !emp.hasBankConfigured);
     }
@@ -491,7 +622,8 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
   // Salary Credit & Slip Modals
   openSalaryCredit(emp: PayrollEmployeeItem) {
     const dialogRef = this.dialog.open(SalaryCreditModalComponent, {
-      width: '640px',
+      width: '740px',
+      maxWidth: '96vw',
       data: {
         employee: emp.rawRecord,
         paymentInfo: emp.bankAccount?.rawRecord || emp.bankAccount,
@@ -583,9 +715,28 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     }
 
     // Collect all disbursements across all months
-    const list: any[] = Array.isArray(this.myEmployeeRecord.disbursements)
+    let list: any[] = Array.isArray(this.myEmployeeRecord.disbursements)
       ? [...this.myEmployeeRecord.disbursements]
       : [];
+
+    // Filter out disbursements prior to employee's Date of Joining
+    if (this.myEmployeeRecord.dateOfJoining) {
+      const doj = new Date(this.myEmployeeRecord.dateOfJoining);
+      if (!isNaN(doj.getTime())) {
+        list = list.filter(d => {
+          const mStr = d.monthYear || d.month || '';
+          const mParts = mStr.trim().split(' ');
+          const mName = mParts[0] || '';
+          const mYear = Number(mParts[1]) || 0;
+          const mNum = this.monthNames.indexOf(mName);
+          if (mNum > 0 && mYear > 0) {
+            const endOfMonth = new Date(mYear, mNum, 0, 23, 59, 59, 999);
+            return doj.getTime() <= endOfMonth.getTime();
+          }
+          return true;
+        });
+      }
+    }
 
     // Sort chronologically descending (newest disbursement first)
     this.myDisbursements = list.sort((a, b) => {
@@ -603,6 +754,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     this.employeePayslipMonths = Array.from(monthSet);
 
     this.filterEmployeePayslips();
+    this.loadServerPayslips();
   }
 
   filterEmployeePayslips(): void {
@@ -948,5 +1100,481 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
   formatLpa(val: number): string {
     if (!val) return '0 LPA';
     return (val / 100000).toFixed(2) + ' LPA';
+  }
+
+  // ================= 1. PAY RUNS (ENGINE) =================
+  loadPayRuns() {
+    this.payrollService.getPayRuns().subscribe({
+      next: (res: any) => {
+        this.allPayRuns = res?.data || [];
+        this.recalculatePayrollState();
+        this.filterPayroll();
+      },
+      error: () => {
+        this.allPayRuns = [];
+        this.recalculatePayrollState();
+        this.filterPayroll();
+      }
+    });
+  }
+
+  getSelectedMonthPeriod(): { month: number; year: number; monthName: string } {
+    const parts = (this.selectedMonth || '').trim().split(' ');
+    const monthName = parts[0] || '';
+    const year = Number(parts[1]) || new Date().getFullYear();
+    const month = Math.max(1, this.monthNames.indexOf(monthName));
+    return { month, year, monthName };
+  }
+
+  getPayRunForCurrentSelectedMonth(): PayRun | undefined {
+    const period = this.getSelectedMonthPeriod();
+    return this.allPayRuns.find(r => r.month === period.month && r.year === period.year);
+  }
+
+  isFutureSelectedMonth(): boolean {
+    const period = this.getSelectedMonthPeriod();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    if (period.year > currentYear) return true;
+    if (period.year === currentYear && period.month > currentMonth) return true;
+    return false;
+  }
+
+  runPayrollForSelectedMonth() {
+    const period = this.getSelectedMonthPeriod();
+    if (this.isFutureSelectedMonth()) {
+      this.toaster.warning('Pay runs cannot be created for future months.', 'Invalid Period');
+      return;
+    }
+
+    const existing = this.getPayRunForCurrentSelectedMonth();
+    if (existing) {
+      this.openPayRunDetails(existing);
+      return;
+    }
+
+    this.isCreatingPayRun = true;
+    this.payrollService.createPayRun({
+      month: period.month,
+      year: period.year
+    }).subscribe({
+      next: (res: any) => {
+        this.isCreatingPayRun = false;
+        this.toaster.success(`Payroll generated for ${this.selectedMonth}! Review calculations below.`, 'Pay Run Created');
+        this.loadPayRuns();
+        this.loadAllData();
+        if (res?.data?.id) {
+          this.openPayRunDetails(res.data);
+        }
+      },
+      error: (err: any) => {
+        this.isCreatingPayRun = false;
+        const msg = err?.error?.message || 'Failed to generate monthly payroll';
+        this.toaster.error(msg, 'Error');
+      }
+    });
+  }
+
+  isFuturePayRunSelected(): boolean {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    if (Number(this.selectedPayRunYear) > currentYear) return true;
+    if (Number(this.selectedPayRunYear) === currentYear && Number(this.selectedPayRunMonth) > currentMonth) return true;
+    return false;
+  }
+
+  getExistingPayRunForSelected(): PayRun | undefined {
+    return this.allPayRuns.find(r => r.month === Number(this.selectedPayRunMonth) && r.year === Number(this.selectedPayRunYear));
+  }
+
+  createPayRun() {
+    if (this.isFuturePayRunSelected()) {
+      this.toaster.warning('Pay runs cannot be created for future months.', 'Invalid Period');
+      return;
+    }
+
+    const existing = this.getExistingPayRunForSelected();
+    if (existing) {
+      this.toaster.warning(`A pay run batch (#PR-${existing.id}: ${existing.status}) already exists for this period.`, 'Batch Already Exists');
+      return;
+    }
+
+    this.isCreatingPayRun = true;
+    this.payrollService.createPayRun({
+      month: Number(this.selectedPayRunMonth),
+      year: Number(this.selectedPayRunYear)
+    }).subscribe({
+      next: (res: any) => {
+        this.isCreatingPayRun = false;
+        this.toaster.success(`Pay Run batch created for ${this.selectedPayRunMonth}/${this.selectedPayRunYear}!`, 'Pay Run Created');
+        this.loadPayRuns();
+        if (res?.data?.id) {
+          this.openPayRunDetails(res.data);
+        }
+      },
+      error: (err: any) => {
+        this.isCreatingPayRun = false;
+        const msg = err?.error?.message || 'Failed to create monthly pay run batch';
+        this.toaster.error(msg, 'Error');
+      }
+    });
+  }
+
+  disbursePayRunDirect(run: PayRun) {
+    const monthName = this.monthNames[run.month] || ('Month ' + run.month);
+    if (!confirm(`Are you sure you want to disburse Pay Run batch #PR-${run.id} for ${monthName} ${run.year}? This will publish official payslips to all employees and mark linked reimbursement claims as paid.`)) {
+      return;
+    }
+    this.payrollService.updatePayRunStatus({
+      payRunId: run.id,
+      status: 'Disbursed'
+    }).subscribe({
+      next: () => {
+        this.toaster.success(`Pay Run batch #PR-${run.id} disbursed successfully! Payslips published.`, 'Disbursed');
+        this.loadPayRuns();
+        this.loadAllData();
+        this.loadServerPayslips();
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || 'Failed to disburse pay run batch';
+        this.toaster.error(msg, 'Error');
+      }
+    });
+  }
+
+  deleteDraftPayRun(run: PayRun) {
+    if (run.status !== 'Draft') {
+      this.toaster.warning('Only Draft pay runs can be discarded.', 'Action Prohibited');
+      return;
+    }
+    if (!confirm(`Are you sure you want to discard Pay Run batch #PR-${run.id} for ${run.month}/${run.year}? Any linked reimbursement claims will be released back to pending status.`)) {
+      return;
+    }
+    this.payrollService.deletePayRun(run.id).subscribe({
+      next: () => {
+        this.toaster.success(`Pay Run batch #PR-${run.id} discarded successfully`, 'Discarded');
+        this.loadPayRuns();
+      },
+      error: () => {
+        this.toaster.error('Failed to discard pay run batch', 'Error');
+      }
+    });
+  }
+
+  downloadBankPayoutCsv(payRunId: number) {
+    this.payrollService.exportBankPayout(payRunId).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `BankPayout_PayRun_${payRunId}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.toaster.success('Bank payout CSV file generated and downloaded', 'Export Complete');
+      },
+      error: () => {
+        this.toaster.error('Failed to export bank payout CSV', 'Export Error');
+      }
+    });
+  }
+
+  openPayRunDetails(payRun: PayRun) {
+    const ref = this.dialog.open(PayRunModalComponent, {
+      width: '1200px',
+      maxWidth: '96vw',
+      data: { payRunId: payRun.id }
+    });
+
+    ref.afterClosed().subscribe(() => {
+      this.loadPayRuns();
+      this.loadAllData();
+      this.loadServerPayslips();
+    });
+  }
+
+  // ================= 2. CTC CALCULATOR & DIRECTORY ASSIGNMENT =================
+  loadAllSalaryAssignments() {
+    this.payrollService.getAllSalaryAssignments().subscribe({
+      next: (res: any) => {
+        const list = res?.data || [];
+        this.allSalaryAssignments.clear();
+        list.forEach((item: any) => {
+          this.allSalaryAssignments.set(Number(item.employeeId), item);
+        });
+        this.syncEmployeeCtcWithAssignments();
+      },
+      error: () => {
+        this.syncEmployeeCtcWithAssignments();
+      }
+    });
+  }
+
+  syncEmployeeCtcWithAssignments() {
+    this.allPayrollEmployees.forEach(emp => {
+      const saved = this.allSalaryAssignments.get(Number(emp.id));
+      if (saved && saved.annualCtc > 0) {
+        emp.annualCtc = Number(saved.annualCtc);
+      }
+    });
+    this.configuredCtcCount = this.allPayrollEmployees.filter(e => (e.annualCtc || 0) > 0).length;
+    this.filterCtcEmployees();
+  }
+
+  filterCtcEmployees() {
+    let result = [...this.allPayrollEmployees];
+    if (this.searchCtcQuery && this.searchCtcQuery.trim()) {
+      const q = this.searchCtcQuery.toLowerCase().trim();
+      result = result.filter(e =>
+        e.fullName.toLowerCase().includes(q) ||
+        (e.department && e.department.toLowerCase().includes(q)) ||
+        String(e.id).includes(q)
+      );
+    }
+    this.filteredCtcEmployees = result;
+
+    if (!this.selectedEmpForCtc && this.filteredCtcEmployees.length > 0) {
+      this.selectEmployeeForCtc(this.filteredCtcEmployees[0]);
+    }
+  }
+
+  selectEmployeeForCtc(emp: PayrollEmployeeItem) {
+    this.selectedEmpForCtc = emp.id;
+    this.selectedCtcEmployee = emp;
+
+    const saved = this.allSalaryAssignments.get(Number(emp.id));
+    if (saved && saved.annualCtc > 0) {
+      this.calcAnnualCtc = Number(saved.annualCtc);
+      this.calcRegime = saved.taxRegime || 'New';
+    } else if (emp.annualCtc > 0) {
+      this.calcAnnualCtc = emp.annualCtc;
+    } else {
+      this.calcAnnualCtc = 600000;
+    }
+
+    this.calculateLiveCtc();
+  }
+
+  calculateLiveCtc() {
+    this.payrollService.calculateCtc({
+      annualCtc: this.calcAnnualCtc,
+      basicPercentage: this.calcBasicPercent,
+      hraPercentage: this.calcHraPercent,
+      includePf: this.calcIncludePf,
+      includeEsic: this.calcIncludeEsic,
+      taxRegime: this.calcRegime
+    }).subscribe({
+      next: (res: any) => {
+        this.calcResult = res?.data || null;
+      }
+    });
+  }
+
+  assignCtcToEmployee() {
+    if (!this.selectedEmpForCtc) {
+      this.toaster.error('Please select an employee to assign this structure', 'Selection Required');
+      return;
+    }
+
+    this.isSavingAssignment = true;
+    this.payrollService.assignSalary({
+      employeeId: this.selectedEmpForCtc,
+      annualCtc: this.calcAnnualCtc,
+      taxRegime: this.calcRegime
+    }).subscribe({
+      next: () => {
+        this.isSavingAssignment = false;
+        this.toaster.success(`CTC structure saved for ${this.selectedCtcEmployee?.fullName || 'employee'}!`, 'Assigned Successfully');
+        if (this.selectedCtcEmployee) {
+          this.selectedCtcEmployee.annualCtc = this.calcAnnualCtc;
+        }
+        this.allSalaryAssignments.set(Number(this.selectedEmpForCtc), {
+          employeeId: this.selectedEmpForCtc,
+          annualCtc: this.calcAnnualCtc,
+          taxRegime: this.calcRegime
+        });
+        this.syncEmployeeCtcWithAssignments();
+      },
+      error: () => {
+        this.isSavingAssignment = false;
+        this.toaster.error('Failed to save salary assignment', 'Error');
+      }
+    });
+  }
+
+  // ================= 3. REIMBURSEMENTS & FBP =================
+  loadReimbursements() {
+    if (this.isAdminOrHr) {
+      this.payrollService.getAllPendingReimbursements().subscribe({
+        next: (res: any) => {
+          this.allReimbursements = res?.data || [];
+        }
+      });
+    }
+
+    const currentEmpId = this.employeeId ? Number(this.employeeId) : 0;
+    this.payrollService.getReimbursements(currentEmpId).subscribe({
+      next: (res: any) => {
+        this.myReimbursements = res?.data || [];
+      }
+    });
+  }
+
+  openSubmitReimbursement() {
+    const ref = this.dialog.open(ReimbursementModalComponent, {
+      width: '600px',
+      maxWidth: '95vw'
+    });
+
+    ref.afterClosed().subscribe((submitted) => {
+      if (submitted) {
+        this.loadReimbursements();
+      }
+    });
+  }
+
+  reviewReimbursement(claimId: number, status: 'Approved' | 'Rejected') {
+    this.payrollService.reviewReimbursement({
+      claimId,
+      status
+    }).subscribe({
+      next: () => {
+        this.toaster.success(`Claim marked as ${status}`, 'Review Saved');
+        this.loadReimbursements();
+      },
+      error: () => {
+        this.toaster.error('Failed to review claim', 'Error');
+      }
+    });
+  }
+
+  // ================= 4. SERVER PAYSLIPS =================
+  loadServerPayslips() {
+    const targetId = this.employeeId ? Number(this.employeeId) : (this.myEmployeeRecord?.id ? Number(this.myEmployeeRecord.id) : 0);
+    if (!targetId) return;
+
+    this.payrollService.getPayslips(targetId).subscribe({
+      next: (res: any) => {
+        this.serverPayslips = res?.data || [];
+        this.mergeServerPayslipsIntoDisbursements();
+      },
+      error: () => {
+        this.serverPayslips = [];
+      }
+    });
+  }
+
+  mergeServerPayslipsIntoDisbursements() {
+    if (!this.serverPayslips || this.serverPayslips.length === 0) return;
+
+    const mappedServerDisbursements = this.serverPayslips.map(p => {
+      const monthStr = `${this.monthNames[p.month]} ${p.year}`;
+      const dt = p.generatedDate ? new Date(p.generatedDate) : new Date();
+      return {
+        id: `PAYSLIP-${p.id}`,
+        payslipId: p.id,
+        monthYear: monthStr,
+        month: monthStr,
+        creditDate: p.generatedDate || dt.toISOString(),
+        paymentDate: dt.toISOString().slice(0, 10),
+        paymentMode: 'Direct Deposit / Pay Run',
+        transactionRef: p.payslipNumber || `PR-SLIP-${p.id}`,
+        grossSalary: p.grossSalary,
+        basicSalary: p.basicSalary,
+        hra: p.hra,
+        specialAllowance: p.specialAllowance,
+        pfDeduction: p.epfDeduction,
+        additionalDeductions: Math.max(0, p.totalDeductions - p.epfDeduction),
+        netSalaryCredited: p.netSalary,
+        netSalary: p.netSalary,
+        status: 'Credited',
+        markedBy: 'Automated Pay Run Engine',
+        markedAt: p.generatedDate
+      };
+    });
+
+    const existingMap = new Map<string, any>();
+    this.myDisbursements.forEach(d => {
+      const key = (d.monthYear || d.month || '').toLowerCase();
+      if (key) existingMap.set(key, d);
+    });
+
+    mappedServerDisbursements.forEach(d => {
+      const key = (d.monthYear || d.month || '').toLowerCase();
+      if (key) {
+        existingMap.set(key, { ...existingMap.get(key), ...d });
+      } else {
+        existingMap.set(d.monthYear.toLowerCase(), d);
+      }
+    });
+
+    let allMerged = Array.from(existingMap.values());
+    if (this.myEmployeeRecord?.dateOfJoining) {
+      const doj = new Date(this.myEmployeeRecord.dateOfJoining);
+      if (!isNaN(doj.getTime())) {
+        allMerged = allMerged.filter(d => {
+          const mStr = d.monthYear || d.month || '';
+          const mParts = mStr.trim().split(' ');
+          const mName = mParts[0] || '';
+          const mYear = Number(mParts[1]) || 0;
+          const mNum = this.monthNames.indexOf(mName);
+          if (mNum > 0 && mYear > 0) {
+            const endOfMonth = new Date(mYear, mNum, 0, 23, 59, 59, 999);
+            return doj.getTime() <= endOfMonth.getTime();
+          }
+          return true;
+        });
+      }
+    }
+
+    this.myDisbursements = allMerged.sort((a, b) => {
+      const timeA = new Date(a.paymentDate || a.creditDate || 0).getTime();
+      const timeB = new Date(b.paymentDate || b.creditDate || 0).getTime();
+      return timeB - timeA;
+    });
+
+    const monthSet = new Set<string>();
+    this.myDisbursements.forEach(d => {
+      const m = d.monthYear || d.month;
+      if (m) monthSet.add(m);
+    });
+    this.employeePayslipMonths = Array.from(monthSet);
+
+    this.filterEmployeePayslips();
+  }
+
+  viewServerPayslipHtml(payslipId: number) {
+    this.payrollService.viewPayslipHtml(payslipId).subscribe({
+      next: (html: string) => {
+        const win = window.open('', '_blank');
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+        } else {
+          this.toaster.warning('Pop-up blocked. Please allow pop-ups to view printable payslip.', 'Pop-up Notice');
+        }
+      },
+      error: () => {
+        this.toaster.error('Failed to render official payslip HTML', 'Error');
+      }
+    });
+  }
+
+  // ================= 5. FULL & FINAL (FNF) SETTLEMENT =================
+  loadFnFSettlements() {
+    // Load from DB or default
+  }
+
+  openFnfModal(employeeId?: number) {
+    const ref = this.dialog.open(FnfModalComponent, {
+      width: '900px',
+      maxWidth: '96vw',
+      data: { employeeId }
+    });
+
+    ref.afterClosed().subscribe(() => {
+      this.loadFnFSettlements();
+    });
   }
 }

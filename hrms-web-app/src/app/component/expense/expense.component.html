@@ -1,0 +1,536 @@
+<div class="expense-page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="header-badge">
+        <mat-icon>payments</mat-icon>
+        <span>Expense & Travel Suite</span>
+      </div>
+      <h1>Expense Claims & Travel Management</h1>
+      <p class="subtitle">Multi-item expense claims, GPS/mileage tracking, cash advances, and multi-tier finance audit</p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn-action secondary" (click)="openAdvanceModal()">
+        <mat-icon>request_quote</mat-icon> Request Advance
+      </button>
+      <button type="button" class="btn-action primary" (click)="openCreateReportModal()">
+        <mat-icon>add_circle</mat-icon> + New Expense Claim
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Banner -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon blue"><mat-icon>receipt</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Total Claimed</span>
+        <span class="metric-val">₹{{ totalClaimedAmount | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon emerald"><mat-icon>verified</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Approved Amount</span>
+        <span class="metric-val">₹{{ totalApprovedAmount | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon amber"><mat-icon>hourglass_empty</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Pending Approval</span>
+        <span class="metric-val">{{ pendingApprovalsCount }} Claims</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon purple"><mat-icon>paid</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Total Reimbursed</span>
+        <span class="metric-val">₹{{ totalReimbursedAmount | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tabs-header">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'my-claims'"
+      (click)="activeTab = 'my-claims'"
+    >
+      <mat-icon>assignment</mat-icon>
+      <span>My Expense Claims ({{ myReports.length }})</span>
+    </button>
+
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'mileage'"
+      (click)="activeTab = 'mileage'"
+    >
+      <mat-icon>commute</mat-icon>
+      <span>Mileage & Commute ({{ mileageTrips.length }})</span>
+    </button>
+
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'advances'"
+      (click)="activeTab = 'advances'"
+    >
+      <mat-icon>account_balance_wallet</mat-icon>
+      <span>Cash Advances ({{ isAdminOrHr || isManager ? allAdvances.length : myAdvances.length }})</span>
+    </button>
+
+    <button
+      *ngIf="isManager"
+      class="tab-btn"
+      [class.active]="activeTab === 'approvals'"
+      (click)="activeTab = 'approvals'"
+    >
+      <mat-icon>fact_check</mat-icon>
+      <span>Audit & Approvals</span>
+      <span class="count-badge" *ngIf="queueManagerPendingCount + queueFinancePendingCount > 0">
+        {{ queueManagerPendingCount + queueFinancePendingCount }}
+      </span>
+    </button>
+
+    <button
+      *ngIf="isAdminOrHr"
+      class="tab-btn"
+      [class.active]="activeTab === 'categories'"
+      (click)="activeTab = 'categories'"
+    >
+      <mat-icon>tune</mat-icon>
+      <span>Policies & Categories</span>
+    </button>
+  </div>
+
+  <!-- TAB 1: MY EXPENSE CLAIMS -->
+  <div *ngIf="activeTab === 'my-claims'" class="tab-content">
+    <div class="filter-bar">
+      <div class="status-pills">
+        <button
+          *ngFor="let st of ['All', 'Draft', 'Submitted', 'ManagerApproved', 'FinanceApproved', 'Paid', 'Rejected']"
+          type="button"
+          class="pill-btn"
+          [class.active]="reportStatusFilter === st"
+          (click)="reportStatusFilter = st; applyMyReportsFilter()"
+        >
+          {{ st === 'ManagerApproved' ? 'Mgr Approved' : st === 'FinanceApproved' ? 'Finance Approved' : st }}
+        </button>
+      </div>
+
+      <div class="search-input-box">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          placeholder="Search by title or report #..."
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="applyMyReportsFilter()"
+        />
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredMyReports.length === 0" class="empty-state">
+      <div class="empty-icon-wrap">
+        <mat-icon>receipt_long</mat-icon>
+      </div>
+      <h3>No Expense Claims Found</h3>
+      <p>You haven't submitted any expense reports matching this criteria.</p>
+      <button type="button" class="btn-action primary" (click)="openCreateReportModal()">
+        <mat-icon>add</mat-icon> Create First Claim
+      </button>
+    </div>
+
+    <!-- Claims Table -->
+    <div *ngIf="filteredMyReports.length > 0" class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Report #</th>
+            <th>Claim Title</th>
+            <th>Items / Trips</th>
+            <th>Gross Claim</th>
+            <th>Advance Adjusted</th>
+            <th>Net Payable</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let rep of filteredMyReports">
+            <td>
+              <span class="report-num">{{ rep.reportNumber }}</span>
+            </td>
+            <td>
+              <div class="title-cell">
+                <strong>{{ rep.title }}</strong>
+                <span class="desc-text" *ngIf="rep.description">{{ rep.description }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="items-count-badge">
+                {{ rep.items.length }} items, {{ rep.mileageItems.length }} trips
+              </span>
+            </td>
+            <td class="amount-col">₹{{ rep.totalClaimAmount | number:'1.2-2' }}</td>
+            <td class="deduction-col">
+              <span *ngIf="rep.advanceAdjustedAmount > 0">-₹{{ rep.advanceAdjustedAmount | number:'1.2-2' }}</span>
+              <span *ngIf="!rep.advanceAdjustedAmount" class="text-muted">-</span>
+            </td>
+            <td class="amount-col highlight">₹{{ rep.netPayableAmount | number:'1.2-2' }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="rep.status.toLowerCase()">
+                {{ rep.status }}
+              </span>
+            </td>
+            <td>{{ rep.createdAt | date:'mediumDate' }}</td>
+            <td class="actions-col">
+              <button
+                *ngIf="rep.status === 'Draft'"
+                type="button"
+                class="icon-action-btn edit"
+                (click)="openCreateReportModal(rep)"
+                title="Edit Report"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                *ngIf="rep.status === 'Draft'"
+                type="button"
+                class="icon-action-btn submit"
+                (click)="submitReport(rep.id)"
+                title="Submit for Approval"
+              >
+                <mat-icon>send</mat-icon>
+              </button>
+              <button
+                *ngIf="rep.status === 'Draft'"
+                type="button"
+                class="icon-action-btn delete"
+                (click)="deleteReport(rep.id)"
+                title="Delete Draft"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+              <button
+                *ngIf="rep.status !== 'Draft'"
+                type="button"
+                class="icon-action-btn view"
+                (click)="openCreateReportModal(rep)"
+                title="View Claim Details"
+              >
+                <mat-icon>visibility</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: MILEAGE & COMMUTE -->
+  <div *ngIf="activeTab === 'mileage'" class="tab-content">
+    <div class="mileage-overview-cards">
+      <div class="overview-box">
+        <mat-icon>speed</mat-icon>
+        <div>
+          <span class="lbl">Total Logged Distance</span>
+          <span class="val">{{ totalDistanceKm | number:'1.1-1' }} KM</span>
+        </div>
+      </div>
+      <div class="overview-box">
+        <mat-icon>currency_rupee</mat-icon>
+        <div>
+          <span class="lbl">Total Commute Reimbursement</span>
+          <span class="val">₹{{ totalMileageCost | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="mileageTrips.length === 0" class="empty-state">
+      <div class="empty-icon-wrap"><mat-icon>directions_car</mat-icon></div>
+      <h3>No Mileage Trips Logged</h3>
+      <p>Log mileage and vehicle travel when submitting an expense claim.</p>
+    </div>
+
+    <div *ngIf="mileageTrips.length > 0" class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Trip Date</th>
+            <th>Vehicle Type</th>
+            <th>From / To Route</th>
+            <th>Distance (KM)</th>
+            <th>Rate / KM</th>
+            <th>Trip Fare (₹)</th>
+            <th>Associated Report</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let trip of mileageTrips">
+            <td>{{ trip.tripDate | date:'mediumDate' }}</td>
+            <td>
+              <span class="vehicle-pill">{{ trip.vehicleType }}</span>
+            </td>
+            <td><strong>{{ trip.startLocation }}</strong> ➔ <strong>{{ trip.endLocation }}</strong></td>
+            <td>{{ trip.distanceKm }} km</td>
+            <td>₹{{ trip.ratePerKm }}/km</td>
+            <td class="amount-col">₹{{ trip.calculatedAmount | number:'1.2-2' }}</td>
+            <td>
+              <span class="report-num">{{ trip.reportNumber }}</span>
+            </td>
+            <td>{{ trip.purpose || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: CASH ADVANCES -->
+  <div *ngIf="activeTab === 'advances'" class="tab-content">
+    <div class="tab-top-row">
+      <p class="section-desc">Manage travel advance requests. Once approved and disbursed, advances auto-deduct against final claims.</p>
+      <button type="button" class="btn-action primary" (click)="openAdvanceModal()">
+        <mat-icon>add</mat-icon> Request New Advance
+      </button>
+    </div>
+
+    <div *ngIf="(isAdminOrHr || isManager ? allAdvances : myAdvances).length === 0" class="empty-state">
+      <div class="empty-icon-wrap"><mat-icon>payments</mat-icon></div>
+      <h3>No Cash Advances Found</h3>
+      <p>Request travel advance funds for upcoming business trips or client site visits.</p>
+    </div>
+
+    <div *ngIf="(isAdminOrHr || isManager ? allAdvances : myAdvances).length > 0" class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Adv ID</th>
+            <th *ngIf="isAdminOrHr || isManager">Employee</th>
+            <th>Requested Amount</th>
+            <th>Disbursed Amount</th>
+            <th>Travel Window</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th *ngIf="isAdminOrHr || isManager" class="actions-col">Review / Settle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let adv of (isAdminOrHr || isManager ? allAdvances : myAdvances)">
+            <td><span class="report-num">ADV-{{ adv.id }}</span></td>
+            <td *ngIf="isAdminOrHr || isManager">
+              <strong>{{ adv.employeeName }}</strong> ({{ adv.employeeCode }})
+            </td>
+            <td class="amount-col">₹{{ adv.requestedAmount | number:'1.2-2' }}</td>
+            <td class="amount-col highlight">
+              <span *ngIf="adv.disbursedAmount">₹{{ adv.disbursedAmount | number:'1.2-2' }}</span>
+              <span *ngIf="!adv.disbursedAmount" class="text-muted">-</span>
+            </td>
+            <td>
+              {{ adv.expectedTravelStartDate | date:'mediumDate' }}
+              <span *ngIf="adv.expectedTravelEndDate"> to {{ adv.expectedTravelEndDate | date:'mediumDate' }}</span>
+            </td>
+            <td>{{ adv.reason }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="adv.status.toLowerCase()">
+                {{ adv.status }}
+              </span>
+            </td>
+            <td *ngIf="isAdminOrHr || isManager" class="actions-col">
+              <button
+                *ngIf="adv.status === 'Requested'"
+                type="button"
+                class="btn-table-action approve"
+                (click)="approveAdvance(adv.id, true)"
+              >
+                Approve
+              </button>
+              <button
+                *ngIf="adv.status === 'Requested'"
+                type="button"
+                class="btn-table-action reject"
+                (click)="approveAdvance(adv.id, false)"
+              >
+                Reject
+              </button>
+              <button
+                *ngIf="adv.status === 'Approved'"
+                type="button"
+                class="btn-table-action disburse"
+                (click)="disburseAdvance(adv)"
+              >
+                Disburse
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 4: AUDIT & APPROVALS QUEUE -->
+  <div *ngIf="activeTab === 'approvals' && isManager" class="tab-content">
+    <div class="filter-bar">
+      <div class="status-pills">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="approvalStageFilter === 'All'"
+          (click)="approvalStageFilter = 'All'; applyApprovalsFilter()"
+        >
+          All ({{ allPendingReports.length }})
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="approvalStageFilter === 'Manager'"
+          (click)="approvalStageFilter = 'Manager'; applyApprovalsFilter()"
+        >
+          Pending Manager Review ({{ queueManagerPendingCount }})
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="approvalStageFilter === 'Finance'"
+          (click)="approvalStageFilter = 'Finance'; applyApprovalsFilter()"
+        >
+          Pending Finance Review ({{ queueFinancePendingCount }})
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="approvalStageFilter === 'Paid'"
+          (click)="approvalStageFilter = 'Paid'; applyApprovalsFilter()"
+        >
+          Disbursed / Settled
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="filteredApprovalReports.length === 0" class="empty-state">
+      <div class="empty-icon-wrap"><mat-icon>task_alt</mat-icon></div>
+      <h3>Approval Queue is Clear</h3>
+      <p>There are no pending expense claims awaiting your audit.</p>
+    </div>
+
+    <div *ngIf="filteredApprovalReports.length > 0" class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Report #</th>
+            <th>Employee</th>
+            <th>Claim Title</th>
+            <th>Gross Claim</th>
+            <th>Advance Adjusted</th>
+            <th>Net Payable</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th class="actions-col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let rep of filteredApprovalReports">
+            <td><span class="report-num">{{ rep.reportNumber }}</span></td>
+            <td>
+              <strong>{{ rep.employeeName }}</strong>
+              <div class="desc-text">{{ rep.employeeCode }} • {{ rep.departmentName || 'General' }}</div>
+            </td>
+            <td>{{ rep.title }}</td>
+            <td class="amount-col">₹{{ rep.totalClaimAmount | number:'1.2-2' }}</td>
+            <td class="deduction-col">
+              <span *ngIf="rep.advanceAdjustedAmount > 0">-₹{{ rep.advanceAdjustedAmount | number:'1.2-2' }}</span>
+              <span *ngIf="!rep.advanceAdjustedAmount" class="text-muted">-</span>
+            </td>
+            <td class="amount-col highlight">₹{{ rep.netPayableAmount | number:'1.2-2' }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="rep.status.toLowerCase()">
+                {{ rep.status }}
+              </span>
+            </td>
+            <td>{{ rep.submittedDate | date:'mediumDate' }}</td>
+            <td class="actions-col">
+              <button
+                *ngIf="rep.status === 'Submitted' || rep.status === 'ManagerApproved'"
+                type="button"
+                class="btn-table-action review"
+                (click)="openReviewModal(rep)"
+              >
+                <mat-icon>checklist</mat-icon> Audit & Review
+              </button>
+              <button
+                *ngIf="rep.status === 'FinanceApproved' && isAdminOrHr"
+                type="button"
+                class="btn-table-action disburse"
+                (click)="openDisburseModal(rep)"
+              >
+                <mat-icon>paid</mat-icon> Disburse
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 5: POLICIES & CATEGORIES -->
+  <div *ngIf="activeTab === 'categories' && isAdminOrHr" class="tab-content">
+    <div class="tab-top-row">
+      <p class="section-desc">Manage corporate reimbursement policy limits, monthly caps, receipt requirements, and vehicle rates.</p>
+      <button type="button" class="btn-action primary" (click)="openCategoryModal()">
+        <mat-icon>add</mat-icon> + Add Category
+      </button>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Category Name</th>
+            <th>Claim Limit (₹)</th>
+            <th>Monthly Cap (₹)</th>
+            <th>Receipt Threshold (₹)</th>
+            <th>Mileage / Commute</th>
+            <th>Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cat of categories">
+            <td><span class="report-num">{{ cat.code }}</span></td>
+            <td>
+              <strong>{{ cat.name }}</strong>
+              <div class="desc-text" *ngIf="cat.description">{{ cat.description }}</div>
+            </td>
+            <td class="amount-col">₹{{ cat.policyLimitPerClaim | number }}</td>
+            <td class="amount-col">₹{{ cat.policyMonthlyCap | number }}</td>
+            <td>
+              {{ cat.isReceiptRequired ? 'Above ₹' + (cat.receiptRequiredThreshold | number) : 'Optional' }}
+            </td>
+            <td>
+              <span *ngIf="cat.isMileageCategory" class="vehicle-pill">₹{{ cat.mileageRatePerKm }}/km</span>
+              <span *ngIf="!cat.isMileageCategory" class="text-muted">No</span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="cat.isActive ? 'paid' : 'rejected'">
+                {{ cat.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <button type="button" class="icon-action-btn edit" (click)="openCategoryModal(cat)" title="Edit Policy">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

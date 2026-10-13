@@ -28,10 +28,13 @@ import { ForgotpasswordComponent } from './modal/forgotpassword/forgotpassword.c
 import { RequestsApprovalsComponent } from './component/requests-approvals/requests-approvals.component';
 import { TimesheetComponent } from './component/timesheet/timesheet.component';
 import { EmailTemplatesComponent } from './component/email-templates/email-templates.component';
+import { DashboardComponent } from './component/dashboard/dashboard.component';
+import { PmsComponent } from './component/pms/pms.component';
+import { ExpenseComponent } from './component/expense/expense.component';
 
 export const routes: Routes = [
     {
-        path: '', redirectTo: 'index/document', pathMatch: 'full'
+        path: '', redirectTo: 'index/dashboard', pathMatch: 'full'
     },
     {
         path: 'login', component: LoginComponent
@@ -48,7 +51,10 @@ export const routes: Routes = [
     {
         path: 'index', component: IndexComponent, canActivate: [authGuard], children: [
             {
-                path: '', redirectTo: 'document', pathMatch: 'full'
+                path: '', redirectTo: 'dashboard', pathMatch: 'full'
+            },
+            {
+                path: 'dashboard', component: DashboardComponent
             },
             {
                 path: 'home', component: HomeComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] }
@@ -93,7 +99,7 @@ export const routes: Routes = [
                 path: 'paymentinfo', component: PaymentinfoComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
             },
             {
-                path: 'shift', component: ShiftemployeeComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations'] }
+                path: 'shift', component: ShiftemployeeComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
             },
             {
                 path: 'document', component: DocumentComponent
@@ -114,7 +120,13 @@ export const routes: Routes = [
                 path: 'timesheet', component: TimesheetComponent
             },
             {
-                path: 'email-templates', component: EmailTemplatesComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
+                path: 'email-templates', component: EmailTemplatesComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin'] }
+            },
+            {
+                path: 'pms', component: PmsComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
+            },
+            {
+                path: 'expense', component: ExpenseComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
             }
         ]
     }

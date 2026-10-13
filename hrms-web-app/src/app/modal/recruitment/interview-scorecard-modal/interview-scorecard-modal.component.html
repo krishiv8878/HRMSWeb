@@ -1,0 +1,95 @@
+<div class="recruitment-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon scorecard-icon">
+        <mat-icon>rate_review</mat-icon>
+      </div>
+      <div>
+        <h2>Interview Evaluation & Scorecard</h2>
+        <p class="subtitle">Record structured competency ratings, candidate strengths, and hiring decision</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-body" *ngIf="interview">
+    <!-- Header Summary -->
+    <div class="interview-summary-card">
+      <div class="info-row">
+        <div>
+          <span class="round-name">{{ interview.roundName }}</span>
+          <h3>{{ interview.candidateName }}</h3>
+          <p class="role-text">{{ interview.candidateRole }} • {{ interview.candidateEmail }}</p>
+        </div>
+        <div class="panelist-tag">
+          <mat-icon>person</mat-icon>
+          <span>Interviewer: {{ interview.interviewerName }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rating Section -->
+    <div class="scorecard-section">
+      <label class="section-lbl">Overall Technical & Competency Rating</label>
+      <div class="star-rating-row">
+        <button
+          type="button"
+          *ngFor="let s of stars"
+          class="star-btn"
+          [class.filled]="s <= rating"
+          (click)="setRating(s)"
+        >
+          <mat-icon>{{ s <= rating ? 'star' : 'star_border' }}</mat-icon>
+        </button>
+        <span class="rating-text">{{ rating }} / 5 Stars</span>
+      </div>
+    </div>
+
+    <!-- Recommendation Section -->
+    <div class="scorecard-section">
+      <label class="section-lbl">Hiring Recommendation <span class="required">*</span></label>
+      <div class="recommendation-grid">
+        <label
+          *ngFor="let rec of recommendations"
+          class="rec-card"
+          [class.selected]="recommendation === rec.value"
+          [ngClass]="rec.color"
+        >
+          <input type="radio" [(ngModel)]="recommendation" [value]="rec.value" />
+          <span class="rec-title">{{ rec.label }}</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Detailed Remarks -->
+    <div class="scorecard-section">
+      <label class="section-lbl">Detailed Feedback, Strengths & Growth Areas <span class="required">*</span></label>
+      <textarea
+        [(ngModel)]="feedbackNotes"
+        rows="4"
+        placeholder="Document candidate's coding ability, system design approach, communication skills, and justification for recommendation..."
+        class="feedback-textarea"
+      ></textarea>
+    </div>
+
+    <!-- Pipeline Automation Toggle -->
+    <div class="pipeline-toggle-box" *ngIf="recommendation === 'Strong Hire' || recommendation === 'Hire'">
+      <label class="checkbox-label">
+        <input type="checkbox" [(ngModel)]="advanceToNextStage" />
+        <span>
+          <strong>Move to Offered Stage (Final Round Completed)</strong>
+          <small class="hint-block">Check this only if all interview rounds are finished and candidate is ready for an offer. Leave unchecked to continue remaining rounds in Interview stage.</small>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+    <button type="button" class="btn-submit" (click)="submit()" [disabled]="isSubmitting">
+      <mat-icon>check_circle</mat-icon> Submit Scorecard
+    </button>
+  </div>
+</div>

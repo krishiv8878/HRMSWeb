@@ -1,0 +1,75 @@
+<div class="expense-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon pay-icon">
+        <mat-icon>paid</mat-icon>
+      </div>
+      <div>
+        <h2>Disburse & Settle Expense Claim</h2>
+        <p class="subtitle">Record payment transfer and synchronize with employee payroll matrix</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="disburseForm" (ngSubmit)="submit()" class="modal-body" *ngIf="report">
+    <!-- Settlement Summary Box -->
+    <div class="settlement-summary-box">
+      <div class="claim-meta">
+        <span class="report-badge">{{ report.reportNumber }}</span>
+        <h3>{{ report.title }}</h3>
+        <p>Payee: <strong>{{ report.employeeName }}</strong> ({{ report.employeeCode }})</p>
+      </div>
+      <div class="amount-card">
+        <span class="amt-lbl">Disbursement Amount</span>
+        <span class="amt-val">₹{{ report.netPayableAmount | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <!-- Payment Inputs -->
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label>Disbursement Payment Mode <span class="required">*</span></label>
+        <select formControlName="paymentMode">
+          <option value="Bank Transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
+          <option value="Payroll Reimbursement">Payroll Reimbursement (In Next Pay Run)</option>
+          <option value="UPI">Company UPI</option>
+          <option value="Corporate Card">Corporate Card Settlement</option>
+          <option value="Cash">Cash Voucher</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Payment UTR / Reference Number <span class="required">*</span></label>
+        <input type="text" formControlName="paymentReference" placeholder="e.g. UTR-20261005-99218" />
+        <span class="error-msg" *ngIf="disburseForm.get('paymentReference')?.touched && disburseForm.get('paymentReference')?.hasError('required')">
+          Reference number is required
+        </span>
+      </div>
+
+      <div class="form-group full-width">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="syncWithPayroll" />
+          <span>
+            <strong>Sync with Payroll Reimbursements</strong>
+            <small class="hint-block">Automatically records an approved reimbursement claim under this employee's payroll profile for upcoming pay runs.</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Disbursement Notes / Audit Remarks</label>
+        <textarea formControlName="notes" rows="2" placeholder="e.g. Cleared via HDFC Corporate Banking Account"></textarea>
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+    <button type="button" class="btn-submit" (click)="submit()" [disabled]="isSubmitting">
+      <mat-icon>check_circle</mat-icon> Confirm Disbursement
+    </button>
+  </div>
+</div>

@@ -1,0 +1,95 @@
+<div class="expense-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="header-icon cat-icon">
+        <mat-icon>{{ isEditMode ? 'tune' : 'category' }}</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEditMode ? 'Edit Expense Category & Policy' : 'New Expense Category' }}</h2>
+        <p class="subtitle">Define spending limits, receipt audit thresholds, and mileage configurations</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="categoryForm" (ngSubmit)="submit()" class="modal-body">
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label>Category Name <span class="required">*</span></label>
+        <input type="text" formControlName="name" placeholder="e.g. Travel & Flight" />
+        <span class="error-msg" *ngIf="categoryForm.get('name')?.touched && categoryForm.get('name')?.hasError('required')">
+          Category name is required
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Code <span class="required">*</span></label>
+        <input type="text" formControlName="code" placeholder="e.g. TRAV" />
+        <span class="error-msg" *ngIf="categoryForm.get('code')?.touched && categoryForm.get('code')?.hasError('required')">
+          Category code is required
+        </span>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Description</label>
+        <input type="text" formControlName="description" placeholder="Short scope or policy details" />
+      </div>
+
+      <div class="form-group">
+        <label>Policy Limit Per Claim (₹) <span class="required">*</span></label>
+        <input type="number" formControlName="policyLimitPerClaim" min="0" />
+      </div>
+
+      <div class="form-group">
+        <label>Policy Monthly Cap (₹) <span class="required">*</span></label>
+        <input type="number" formControlName="policyMonthlyCap" min="0" />
+      </div>
+
+      <div class="form-group">
+        <label>Receipt Threshold (₹) <span class="required">*</span></label>
+        <input type="number" formControlName="receiptRequiredThreshold" min="0" />
+        <small class="hint-text">Claims above this value must attach receipt.</small>
+      </div>
+
+      <div class="form-group">
+        <label>GL Account Code</label>
+        <input type="text" formControlName="glAccountCode" placeholder="e.g. 6100-EXP" />
+      </div>
+
+      <div class="form-group full-width">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="isReceiptRequired" />
+          <span>Require proof of receipt for audit</span>
+        </label>
+      </div>
+
+      <div class="form-group full-width">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="isMileageCategory" />
+          <span>This is a mileage / commute category</span>
+        </label>
+      </div>
+
+      <div class="form-group" *ngIf="categoryForm.get('isMileageCategory')?.value">
+        <label>Default Rate Per KM (₹)</label>
+        <input type="number" formControlName="mileageRatePerKm" min="0" step="0.5" />
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="isActive" />
+          <span>Category is Active</span>
+        </label>
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+    <button type="button" class="btn-submit" (click)="submit()" [disabled]="isSubmitting">
+      <mat-icon>check</mat-icon> {{ isEditMode ? 'Update Category' : 'Create Category' }}
+    </button>
+  </div>
+</div>

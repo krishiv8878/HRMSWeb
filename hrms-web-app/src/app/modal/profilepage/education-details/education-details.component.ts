@@ -66,12 +66,23 @@ export class EducationDetailsComponent implements OnInit {
   }
 
   ngOnInit() {
-    const savedEducationsStr = this.getStorage('profile_educations_' + (this.data?.id || 'default'));
-    if (savedEducationsStr) {
+    if (this.data?.responsibilities && typeof this.data.responsibilities === 'string') {
       try {
-        this.educationList = JSON.parse(savedEducationsStr);
-      } catch (e) {
-        this.educationList = [];
+        const parsed = JSON.parse(this.data.responsibilities);
+        if (Array.isArray(parsed.educations) && parsed.educations.length > 0) {
+          this.educationList = parsed.educations;
+        }
+      } catch (e) {}
+    }
+
+    if (!this.educationList || this.educationList.length === 0) {
+      const savedEducationsStr = this.getStorage('profile_educations_' + (this.data?.id || 'default'));
+      if (savedEducationsStr) {
+        try {
+          this.educationList = JSON.parse(savedEducationsStr);
+        } catch (e) {
+          this.educationList = [];
+        }
       }
     }
 
@@ -138,12 +149,26 @@ export class EducationDetailsComponent implements OnInit {
       numPct = match ? parseFloat(match[0]) : null;
     }
 
+    let currentPayload: any = {};
+    if (this.data?.responsibilities && typeof this.data.responsibilities === 'string') {
+      try {
+        currentPayload = JSON.parse(this.data.responsibilities);
+      } catch {
+        currentPayload = { workResponsibilities: this.data.responsibilities };
+      }
+    }
+    currentPayload.educations = validEntries;
+
     const payload = {
       ...this.data,
+      profileCompleted: typeof this.data?.profileCompleted === 'boolean'
+        ? this.data.profileCompleted
+        : (this.data?.profileCompleted ? Boolean(this.data.profileCompleted) : false),
       degree: primary.degree,
       university: primary.university,
       yearOfPassing: primary.yearOfPassing ? parseInt(String(primary.yearOfPassing), 10) || null : null,
-      percentage: numPct
+      percentage: numPct,
+      responsibilities: JSON.stringify(currentPayload)
     };
 
     this.services.updateData(payload).subscribe({
@@ -151,9 +176,9 @@ export class EducationDetailsComponent implements OnInit {
         this.toaster.success('All academic qualifications updated successfully', 'Saved');
         this.dialogRef.close(true);
       },
-      error: () => {
-        this.toaster.success('All academic qualifications updated successfully', 'Saved');
-        this.dialogRef.close(true);
+      error: (err: any) => {
+        console.error('Error updating education details:', err);
+        this.toaster.error(err?.error?.message || 'Failed to update academic qualifications', 'Error');
       }
     });
   }

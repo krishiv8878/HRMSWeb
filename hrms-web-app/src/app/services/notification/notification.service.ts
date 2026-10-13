@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
@@ -26,6 +26,7 @@ export interface AppNotification {
 export class NotificationService {
   private http = inject(HttpClient);
   private apiUrl = environment.host;
+  private refreshSub?: Subscription;
 
   private notificationsSubject = new BehaviorSubject<AppNotification[]>([]);
   public notifications$ = this.notificationsSubject.asObservable();
@@ -44,15 +45,30 @@ export class NotificationService {
 
   private getLoggedEmployeeId(): number {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const token = localStorage.getItem('LoginTokan');
+      if (!token) return 0;
       return Number(localStorage.getItem('employeeId') || 0);
     }
     return 0;
   }
 
+  clear(): void {
+    this.notificationsSubject.next([]);
+    this.unreadCountSubject.next(0);
+  }
+
   refreshNotifications(): void {
     const empId = this.getLoggedEmployeeId();
+    if (empId <= 0) {
+      this.clear();
+      return;
+    }
 
-    this.http.get<any>(`${this.apiUrl}/Notification/GetNotifications?employeeId=${empId}`).pipe(
+    if (this.refreshSub) {
+      this.refreshSub.unsubscribe();
+    }
+
+    this.refreshSub = this.http.get<any>(`${this.apiUrl}/Notification/GetNotifications?employeeId=${empId}`).pipe(
       map((res: any) => {
         let rawList: any[] = [];
         if (Array.isArray(res)) rawList = res;
@@ -175,6 +191,10 @@ export class NotificationService {
 
   clearAllNotifications(): void {
     const empId = this.getLoggedEmployeeId();
+
+    if (this.refreshSub) {
+      this.refreshSub.unsubscribe();
+    }
 
     // Optimistic UI update
     this.notificationsSubject.next([]);

@@ -1,23 +1,28 @@
 .candidate-modal-container {
+  display: flex;
+  flex-direction: column;
   padding: 0;
   background-color: #ffffff;
-  border-radius: 8px;
-  max-width: 600px;
+  border-radius: 12px;
+  max-width: 660px;
   width: 100%;
+  max-height: 88vh;
   box-sizing: border-box;
+  overflow: hidden;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Modal Header */
 .modal-header {
-  padding: 20px 24px;
+  flex-shrink: 0;
+  padding: 18px 24px;
   background: linear-gradient(135deg, #1e293b, #0f172a);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 
   .header-left {
     display: flex;
@@ -83,14 +88,25 @@
   }
 }
 
-/* Form Body */
-.candidate-form-body {
-  padding: 24px;
+/* Form Container with Fixed Bottom Footer */
+.candidate-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Scrollable Fields Area */
+.candidate-form-scrollable {
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 78vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 
   .form-row-2 {
     display: grid;
@@ -219,17 +235,19 @@
   }
 }
 
-/* Modal Footer */
+/* Modal Footer (Fixed at bottom, never scrolled away) */
 .modal-footer {
-  padding: 16px 24px;
+  flex-shrink: 0;
+  padding: 14px 24px;
   background-color: #f8fafc;
   border-top: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  z-index: 10;
 
   .btn-cancel {
     height: 38px;

@@ -1,0 +1,556 @@
+<div class="pms-page-container">
+  <!-- Top Navigation & Header -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="header-badge">
+        <mat-icon>military_tech</mat-icon>
+        <span>Talent & Performance</span>
+      </div>
+      <h1>Performance Management System (PMS)</h1>
+      <p class="subtitle">Objectives & Key Results (OKRs), Continuous Feedback, Appraisals, and Growth Plans</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-action secondary" (click)="openFeedbackModal()">
+        <mat-icon>celebration</mat-icon>
+        <span>Give Kudos</span>
+      </button>
+      <button class="btn-action primary" (click)="openGoalModal()">
+        <mat-icon>add</mat-icon>
+        <span>New Goal / OKR</span>
+      </button>
+      <button *ngIf="isAdminOrHr" class="btn-action accent" (click)="openCycleModal()">
+        <mat-icon>rocket_launch</mat-icon>
+        <span>Launch Review Cycle</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Module Tabs Navigation -->
+  <nav class="pms-nav-tabs">
+    <button class="nav-tab" [class.active]="activeTab === 'goals'" (click)="setTab('goals')">
+      <mat-icon>track_changes</mat-icon>
+      <span>Goals & OKRs</span>
+      <span class="count-pill">{{ totalGoalsCount }}</span>
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'reviews'" (click)="setTab('reviews')">
+      <mat-icon>rate_review</mat-icon>
+      <span>Reviews & Appraisals</span>
+      <span class="count-pill">{{ appraisals.length }}</span>
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'feedback'" (click)="setTab('feedback')">
+      <mat-icon>volunteer_activism</mat-icon>
+      <span>Praise & Feedback</span>
+      <span class="count-pill">{{ feedbacks.length }}</span>
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'oneonone'" (click)="setTab('oneonone')">
+      <mat-icon>handshake</mat-icon>
+      <span>1-on-1 Check-ins</span>
+      <span class="count-pill">{{ oneOnOnes.length }}</span>
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'pip'" (click)="setTab('pip')">
+      <mat-icon>trending_up</mat-icon>
+      <span>Improvement Plans (PIP)</span>
+      <span class="count-pill">{{ pips.length }}</span>
+    </button>
+  </nav>
+
+  <!-- TAB 1: GOALS & OKRS -->
+  <section *ngIf="activeTab === 'goals'" class="tab-content">
+    <!-- Stat Cards Overview -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon-wrap blue">
+          <mat-icon>flag</mat-icon>
+        </div>
+        <div class="stat-data">
+          <span class="stat-num">{{ totalGoalsCount }}</span>
+          <span class="stat-label">Active OKRs</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap green">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="stat-data">
+          <span class="stat-num">{{ onTrackGoalsCount }}</span>
+          <span class="stat-label">On Track</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap amber">
+          <mat-icon>warning_amber</mat-icon>
+        </div>
+        <div class="stat-data">
+          <span class="stat-num">{{ atRiskGoalsCount }}</span>
+          <span class="stat-label">At Risk / Behind</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap indigo">
+          <mat-icon>task_alt</mat-icon>
+        </div>
+        <div class="stat-data">
+          <span class="stat-num">{{ completedGoalsCount }}</span>
+          <span class="stat-label">Completed</span>
+        </div>
+      </div>
+
+      <div class="stat-card highlight">
+        <div class="stat-data full">
+          <div class="flex-between">
+            <span class="stat-label">Average Completion</span>
+            <span class="stat-pct">{{ avgGoalProgress }}%</span>
+          </div>
+          <div class="progress-track-mini">
+            <div class="progress-fill-mini" [style.width.%]="avgGoalProgress"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-toolbar">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search by goal title, owner, or department..." />
+      </div>
+
+      <div class="select-group">
+        <div class="filter-dropdown">
+          <label>Period:</label>
+          <select [(ngModel)]="selectedPeriod" (change)="loadGoals()">
+            <option *ngFor="let p of periods" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+
+        <div class="filter-dropdown">
+          <label>Category:</label>
+          <select [(ngModel)]="selectedCategory" (change)="loadGoals()">
+            <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goals List Cards -->
+    <div class="goals-container" *ngIf="filteredGoals.length > 0; else noGoals">
+      <div class="goal-card" *ngFor="let g of filteredGoals">
+        <div class="goal-header">
+          <div class="category-meta">
+            <span class="cat-pill" [ngClass]="g.goal.category.toLowerCase()">{{ g.goal.category }}</span>
+            <span class="period-pill">{{ g.goal.period }}</span>
+            <span class="weight-pill">{{ g.goal.weightage }}% Weight</span>
+          </div>
+          <div class="status-and-actions">
+            <span class="status-pill" [ngClass]="g.goal.status.toLowerCase().replace(' ', '-')">
+              {{ g.goal.status }}
+            </span>
+            <div class="card-btn-group">
+              <button class="btn-icon" (click)="openGoalModal(g)" title="Edit Goal">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button class="btn-icon danger" (click)="deleteGoal(g.goal.id)" title="Delete Goal">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="goal-body">
+          <h3 class="goal-title">{{ g.goal.title }}</h3>
+          <p class="goal-desc" *ngIf="g.goal.description">{{ g.goal.description }}</p>
+
+          <div class="owner-row">
+            <div class="owner-info">
+              <mat-icon>person</mat-icon>
+              <span>{{ g.employeeName }} <span class="dim" *ngIf="g.employeeCode">({{ g.employeeCode }})</span></span>
+            </div>
+            <div class="due-info" *ngIf="g.goal.dueDate">
+              <mat-icon>event</mat-icon>
+              <span>Due: {{ g.goal.dueDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar & Checkin -->
+          <div class="goal-progress-section">
+            <div class="progress-labels">
+              <span class="progress-title">Progress: <strong>{{ g.goal.progressPercentage }}%</strong></span>
+              <div class="confidence-tag">
+                <span>Confidence:</span>
+                <span class="stars">
+                  <mat-icon *ngFor="let star of [1,2,3,4,5]" [class.filled]="g.goal.confidenceScore >= star">star</mat-icon>
+                </span>
+              </div>
+            </div>
+            <div class="progress-bar-bg">
+              <div
+                class="progress-bar-fill"
+                [ngClass]="g.goal.status.toLowerCase().replace(' ', '-')"
+                [style.width.%]="g.goal.progressPercentage"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Key Results List -->
+          <div class="key-results-block" *ngIf="g.keyResults && g.keyResults.length > 0">
+            <div class="kr-heading">
+              <mat-icon>subdirectory_arrow_right</mat-icon>
+              <span>Key Results ({{ g.keyResults.length }})</span>
+            </div>
+            <div class="kr-items">
+              <div class="kr-item" *ngFor="let kr of g.keyResults">
+                <div class="kr-info">
+                  <span class="kr-title">{{ kr.title }}</span>
+                  <span class="kr-numbers">{{ kr.currentValue }} / {{ kr.targetValue }} {{ kr.metricUnit }}</span>
+                </div>
+                <div class="kr-sub-progress">
+                  <div class="kr-track">
+                    <div
+                      class="kr-fill"
+                      [style.width.%]="(kr.currentValue / kr.targetValue) * 100 > 100 ? 100 : (kr.currentValue / kr.targetValue) * 100"
+                    ></div>
+                  </div>
+                  <button class="btn-checkin-sm" (click)="openCheckinModal(g, kr.id)">
+                    <mat-icon>speed</mat-icon> Check-in
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="goal-footer">
+          <button class="btn-checkin" (click)="openCheckinModal(g)">
+            <mat-icon>check_circle</mat-icon> Record Quick Check-in
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noGoals>
+      <div class="empty-state">
+        <mat-icon>track_changes</mat-icon>
+        <h3>No Goals or OKRs Found</h3>
+        <p>Start by creating measurable strategic objectives and assigning them to yourself or team members.</p>
+        <button class="btn-action primary" (click)="openGoalModal()">
+          <mat-icon>add</mat-icon> Create First OKR
+        </button>
+      </div>
+    </ng-template>
+  </section>
+
+  <!-- TAB 2: REVIEWS & APPRAISALS -->
+  <section *ngIf="activeTab === 'reviews'" class="tab-content">
+    <!-- Review Cycle Control Header -->
+    <div class="cycle-banner">
+      <div class="cycle-left">
+        <div class="icon-wrap">
+          <mat-icon>rate_review</mat-icon>
+        </div>
+        <div>
+          <h3>Performance Appraisal Cycle</h3>
+          <p>Multi-stage 360° talent review: Self Assessment &rarr; Manager Evaluation &rarr; HR Final Calibration</p>
+        </div>
+      </div>
+
+      <div class="cycle-right">
+        <div class="cycle-select-wrap" *ngIf="cycles.length > 0">
+          <label>Selected Cycle:</label>
+          <select [(ngModel)]="selectedCycleId" (change)="onCycleChange()">
+            <option *ngFor="let c of cycles" [value]="c.id">{{ c.cycleName }} ({{ c.period }})</option>
+          </select>
+        </div>
+
+        <button *ngIf="isAdminOrHr" class="btn-action primary" (click)="openCycleModal()">
+          <mat-icon>add</mat-icon> Launch New Cycle
+        </button>
+      </div>
+    </div>
+
+    <!-- Appraisals Table -->
+    <div class="table-card" *ngIf="appraisals.length > 0; else noAppraisals">
+      <table class="pms-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Manager</th>
+            <th>Self Rating</th>
+            <th>Manager Rating</th>
+            <th>Final Calibrated</th>
+            <th>Review Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of appraisals">
+            <td>
+              <div class="emp-cell">
+                <span class="emp-name">{{ a.employeeName }}</span>
+                <span class="emp-code">{{ a.employeeCode }} • {{ a.designation }}</span>
+              </div>
+            </td>
+            <td>{{ a.department || '—' }}</td>
+            <td>{{ a.managerName || 'Reporting Manager' }}</td>
+            <td>
+              <div class="rating-cell" *ngIf="a.appraisal.selfRating; else notSubmitted">
+                <mat-icon class="star-icon">star</mat-icon>
+                <span>{{ a.appraisal.selfRating | number:'1.1-1' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="rating-cell" *ngIf="a.appraisal.managerRating; else notSubmitted">
+                <mat-icon class="star-icon">star</mat-icon>
+                <span>{{ a.appraisal.managerRating | number:'1.1-1' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="rating-cell final" *ngIf="a.appraisal.finalRating; else notSubmitted">
+                <mat-icon class="star-icon">workspace_premium</mat-icon>
+                <span>{{ a.appraisal.finalRating | number:'1.1-1' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="appraisal-status-badge" [ngClass]="a.appraisal.status.toLowerCase().replace(' ', '-')">
+                {{ a.appraisal.status }}
+              </span>
+            </td>
+            <td>
+              <button class="btn-review" (click)="openAppraisalModal(a)">
+                <mat-icon>edit_note</mat-icon> Review Form
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #notSubmitted>
+      <span class="cell-pending">Pending</span>
+    </ng-template>
+
+    <ng-template #noAppraisals>
+      <div class="empty-state">
+        <mat-icon>published_with_changes</mat-icon>
+        <h3>No Appraisals Active</h3>
+        <p>No appraisal reviews are currently available for this cycle. HR can launch a new cycle to initialize reviews.</p>
+        <button *ngIf="isAdminOrHr" class="btn-action primary" (click)="openCycleModal()">
+          <mat-icon>rocket_launch</mat-icon> Launch Appraisal Cycle
+        </button>
+      </div>
+    </ng-template>
+  </section>
+
+  <!-- TAB 3: PRAISE & CONTINUOUS FEEDBACK -->
+  <section *ngIf="activeTab === 'feedback'" class="tab-content">
+    <div class="feedback-toolbar">
+      <div class="kudos-intro">
+        <h2>Continuous Feedback & Praise Wall</h2>
+        <p>Cultivate a culture of recognition, continuous celebration of wins, and constructive growth feedback</p>
+      </div>
+      <button class="btn-action primary" (click)="openFeedbackModal()">
+        <mat-icon>celebration</mat-icon> Send Kudos / Feedback
+      </button>
+    </div>
+
+    <div class="feedbacks-grid" *ngIf="feedbacks.length > 0; else noFeedback">
+      <div class="kudos-card" *ngFor="let fb of feedbacks">
+        <div class="kudos-badge-banner">
+          <mat-icon>military_tech</mat-icon>
+          <span>{{ fb.feedback.badge }}</span>
+          <span class="private-tag" *ngIf="fb.feedback.isPrivate">Private</span>
+        </div>
+
+        <div class="kudos-message">
+          <p>"{{ fb.feedback.message }}"</p>
+        </div>
+
+        <div class="kudos-footer">
+          <div class="kudos-participants">
+            <div class="sender-info">
+              <span class="label">Given by:</span>
+              <span class="name">{{ fb.fromEmployeeName }}</span>
+            </div>
+            <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+            <div class="receiver-info">
+              <span class="label">Received by:</span>
+              <span class="name">{{ fb.toEmployeeName }}</span>
+            </div>
+          </div>
+          <span class="time-ago">{{ fb.feedback.createdDate | date:'mediumDate' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noFeedback>
+      <div class="empty-state">
+        <mat-icon>volunteer_activism</mat-icon>
+        <h3>No Kudos Shared Yet</h3>
+        <p>Be the first to celebrate a colleague's hard work, teamwork, or innovative contributions!</p>
+        <button class="btn-action primary" (click)="openFeedbackModal()">
+          <mat-icon>celebration</mat-icon> Give First Praise
+        </button>
+      </div>
+    </ng-template>
+  </section>
+
+  <!-- TAB 4: 1-ON-1 CHECK-INS -->
+  <section *ngIf="activeTab === 'oneonone'" class="tab-content">
+    <div class="feedback-toolbar">
+      <div class="kudos-intro">
+        <h2>1-on-1 Check-in Meetings</h2>
+        <p>High-trust check-ins between Managers and Team Members with structured agendas, talking points, and action items</p>
+      </div>
+      <button class="btn-action primary" (click)="openOneOnOneModal()">
+        <mat-icon>add</mat-icon> Schedule 1-on-1
+      </button>
+    </div>
+
+    <div class="one-on-one-list" *ngIf="oneOnOnes.length > 0; else noOneOnOne">
+      <div class="meeting-card" *ngFor="let o of oneOnOnes">
+        <div class="meeting-head">
+          <div class="meeting-meta">
+            <div class="cal-badge">
+              <mat-icon>event</mat-icon>
+            </div>
+            <div>
+              <h3>{{ o.oneOnOne.agenda }}</h3>
+              <p class="meeting-date">
+                Scheduled: {{ o.oneOnOne.scheduledDate | date:'medium' }}
+              </p>
+            </div>
+          </div>
+          <div class="head-right">
+            <span class="meeting-status" [ngClass]="o.oneOnOne.status.toLowerCase()">{{ o.oneOnOne.status }}</span>
+            <button class="btn-icon" (click)="openOneOnOneModal(o)" title="Edit Agenda">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="meeting-participants">
+          <span><strong>Manager:</strong> {{ o.managerName }}</span>
+          <span>•</span>
+          <span><strong>Team Member:</strong> {{ o.employeeName }} ({{ o.employeeDesignation }})</span>
+        </div>
+
+        <!-- Talking Points & Actions Preview -->
+        <div class="meeting-details-grid">
+          <div class="detail-box">
+            <span class="box-head"><mat-icon>question_answer</mat-icon> Talking Points</span>
+            <ul class="point-list" *ngIf="parseJsonArray(o.oneOnOne.talkingPointsJson).length > 0; else noPoints">
+              <li *ngFor="let pt of parseJsonArray(o.oneOnOne.talkingPointsJson)">{{ pt }}</li>
+            </ul>
+            <ng-template #noPoints><span class="empty-note">No points added</span></ng-template>
+          </div>
+
+          <div class="detail-box">
+            <span class="box-head"><mat-icon>task_alt</mat-icon> Action Items</span>
+            <ul class="action-list" *ngIf="parseJsonArray(o.oneOnOne.actionItemsJson).length > 0; else noActions">
+              <li *ngFor="let ai of parseJsonArray(o.oneOnOne.actionItemsJson)" [class.done]="ai.done">
+                <mat-icon>{{ ai.done ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                <span>{{ ai.task }}</span>
+              </li>
+            </ul>
+            <ng-template #noActions><span class="empty-note">No action items</span></ng-template>
+          </div>
+        </div>
+
+        <div class="meeting-notes-preview" *ngIf="o.oneOnOne.notes">
+          <span class="notes-label">Meeting Notes:</span>
+          <p>{{ o.oneOnOne.notes }}</p>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noOneOnOne>
+      <div class="empty-state">
+        <mat-icon>handshake</mat-icon>
+        <h3>No 1-on-1 Meetings Scheduled</h3>
+        <p>Schedule a regular sync with your manager or direct reports to align on goals and career progression.</p>
+        <button class="btn-action primary" (click)="openOneOnOneModal()">
+          <mat-icon>add</mat-icon> Schedule First 1-on-1
+        </button>
+      </div>
+    </ng-template>
+  </section>
+
+  <!-- TAB 5: PIP (PERFORMANCE IMPROVEMENT) -->
+  <section *ngIf="activeTab === 'pip'" class="tab-content">
+    <div class="feedback-toolbar">
+      <div class="kudos-intro">
+        <h2>Performance Improvement Plans (PIP)</h2>
+        <p>Structured 30/60/90-day coaching framework designed to support employees facing performance challenges</p>
+      </div>
+      <button *ngIf="isAdminOrHr || isManager" class="btn-action primary" (click)="openPipModal()">
+        <mat-icon>add</mat-icon> Initiate PIP
+      </button>
+    </div>
+
+    <div class="pip-grid" *ngIf="pips.length > 0; else noPips">
+      <div class="pip-card" *ngFor="let p of pips">
+        <div class="pip-header">
+          <div>
+            <h3>{{ p.employeeName }} <span class="pip-code">({{ p.employeeCode }})</span></h3>
+            <span class="pip-dept">{{ p.department }} • Reporting Manager: {{ p.managerName }}</span>
+          </div>
+          <div class="pip-status-group">
+            <span class="pip-duration-badge">{{ p.pip.durationDays }} Days Plan</span>
+            <span class="pip-outcome-badge" [ngClass]="p.pip.outcome.toLowerCase()">
+              {{ p.pip.outcome }}
+            </span>
+          </div>
+        </div>
+
+        <div class="pip-body">
+          <div class="pip-reason-box">
+            <span class="label">Performance Gap / Reason:</span>
+            <p>{{ p.pip.reason }}</p>
+          </div>
+
+          <div class="pip-timeline-row">
+            <span><strong>Start Date:</strong> {{ p.pip.startDate | date:'mediumDate' }}</span>
+            <span><strong>End Date:</strong> {{ p.pip.endDate | date:'mediumDate' }}</span>
+            <span><strong>Cadence:</strong> {{ p.pip.checkInFrequency }}</span>
+          </div>
+
+          <div class="pip-objectives-block" *ngIf="parseJsonArray(p.pip.objectivesJson).length > 0">
+            <span class="obj-head">Required Objectives:</span>
+            <div class="obj-checklist">
+              <div *ngFor="let obj of parseJsonArray(p.pip.objectivesJson)" class="obj-item" [class.completed]="obj.completed">
+                <mat-icon>{{ obj.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                <span>{{ obj.text }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pip-notes" *ngIf="p.pip.finalComments">
+            <span class="label">Final Comments:</span>
+            <p>{{ p.pip.finalComments }}</p>
+          </div>
+        </div>
+
+        <div class="pip-footer" *ngIf="isAdminOrHr || isManager">
+          <button class="btn-pip-edit" (click)="openPipModal(p)">
+            <mat-icon>edit</mat-icon> Update PIP Progress
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noPips>
+      <div class="empty-state">
+        <mat-icon>trending_up</mat-icon>
+        <h3>No Active PIPs</h3>
+        <p>No Performance Improvement Plans are currently recorded.</p>
+        <button *ngIf="isAdminOrHr || isManager" class="btn-action primary" (click)="openPipModal()">
+          <mat-icon>add</mat-icon> Initiate PIP
+        </button>
+      </div>
+    </ng-template>
+  </section>
+</div>

@@ -1,0 +1,111 @@
+<div class="pms-modal-container">
+  <div class="modal-header">
+    <div class="header-info">
+      <div class="icon-bubble">
+        <mat-icon>trending_up</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEditMode ? 'Update Performance Improvement Plan' : 'Initiate PIP (Improvement Plan)' }}</h2>
+        <p class="subtitle">Structured 30/60/90-day coaching framework with measurable milestones</p>
+      </div>
+    </div>
+    <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="pipForm" (ngSubmit)="onSubmit()" class="modal-body custom-scroll">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Employee <span class="req">*</span></label>
+        <select formControlName="employeeId">
+          <option [ngValue]="null" disabled>Select Employee</option>
+          <option *ngFor="let emp of allEmployees" [value]="emp.id">
+            {{ emp.firstName }} {{ emp.lastName }} ({{ emp.employeeCode }})
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Plan Duration <span class="req">*</span></label>
+        <select formControlName="durationDays">
+          <option [value]="30">30 Days (Accelerated Sprint)</option>
+          <option [value]="60">60 Days (Standard Plan)</option>
+          <option [value]="90">90 Days (Comprehensive)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Start Date <span class="req">*</span></label>
+        <input type="date" formControlName="startDate" />
+      </div>
+
+      <div class="form-group">
+        <label>Check-in Cadence <span class="req">*</span></label>
+        <select formControlName="checkInFrequency">
+          <option value="Weekly">Weekly (Recommended)</option>
+          <option value="Bi-Weekly">Bi-Weekly</option>
+          <option value="Monthly">Monthly</option>
+        </select>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Reason & Performance Gap Analysis <span class="req">*</span></label>
+        <textarea rows="3" formControlName="reason" placeholder="Detail specific areas where performance fell below benchmark..."></textarea>
+      </div>
+
+      <div class="form-group" *ngIf="isEditMode">
+        <label>Current Status</label>
+        <select formControlName="status">
+          <option value="Active">Active</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+
+      <div class="form-group" *ngIf="isEditMode">
+        <label>Final Outcome</label>
+        <select formControlName="outcome">
+          <option value="Active">Active / In Progress</option>
+          <option value="Passed">Successfully Passed</option>
+          <option value="Extended">Extended (Additional Period)</option>
+          <option value="Failed">Unsuccessful / Exited</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Objectives Checklist -->
+    <div class="section-row">
+      <div class="section-title">
+        <mat-icon>checklist</mat-icon>
+        <span>Measurable Improvement Objectives</span>
+      </div>
+      <button type="button" class="btn-add-obj" (click)="addObjective()">
+        <mat-icon>add</mat-icon> Add Objective
+      </button>
+    </div>
+
+    <div formArrayName="objectives" class="objs-list">
+      <div *ngFor="let o of objectivesArray.controls; let i = index" [formGroupName]="i" class="obj-row">
+        <input type="checkbox" formControlName="completed" class="chk-done" title="Mark Met" />
+        <input type="text" formControlName="text" placeholder="Objective target and expected evidence..." />
+        <button type="button" class="btn-del-obj" (click)="removeObjective(i)">
+          <mat-icon>delete_outline</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group full-width" *ngIf="isEditMode">
+      <label>Final HR / Manager Comments</label>
+      <textarea rows="2" formControlName="finalComments" placeholder="Observations, coaching notes, final evaluation..."></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="close()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">verified</mat-icon>
+        <span *ngIf="isSubmitting" class="spinner"></span>
+        {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update PIP' : 'Start PIP') }}
+      </button>
+    </div>
+  </form>
+</div>
