@@ -1,0 +1,168 @@
+<!-- Floating Chat Launcher Button -->
+<button
+  type="button"
+  class="chat-widget-launcher"
+  [class.active]="isOpen"
+  (click)="toggleChat()"
+  title="Ask AI HR Assistant"
+  aria-label="AI HR Chatbot">
+  <div class="launcher-icon">
+    <svg *ngIf="!isOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+    <svg *ngIf="isOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </div>
+  <span class="launcher-badge" *ngIf="!isOpen">AI</span>
+</button>
+
+<!-- Floating Chat Panel Window -->
+<div class="chat-widget-window" [class.open]="isOpen">
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="avatar-container">
+        <div class="ai-avatar">🤖</div>
+        <span class="online-indicator"></span>
+      </div>
+      <div class="header-text">
+        <h6 class="mb-0 font-weight-bold">Chat Assistant</h6>
+        <small class="text-white-50">AI Employee Assistant</small>
+      </div>
+    </div>
+    <div class="chat-header-actions">
+      <button type="button" class="btn-icon" (click)="clearChat()" title="Reset conversation">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+      </button>
+      <button type="button" class="btn-icon" (click)="closeChat()" title="Close chat">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages List -->
+  <div class="chat-messages" #scrollContainer>
+    <div
+      *ngFor="let msg of messages; let i = index"
+      class="message-row"
+      [ngClass]="msg.role === 'user' ? 'user-row' : 'assistant-row'">
+
+      <div class="message-bubble" [ngClass]="msg.role === 'user' ? 'user-bubble' : 'assistant-bubble'">
+        <!-- Text Content -->
+        <div class="message-text" style="white-space: pre-wrap;">{{ msg.content }}</div>
+
+        <!-- Confirm Card for Drafts -->
+        <div *ngIf="msg.draft" class="confirm-card mt-2">
+          <div class="draft-header d-flex align-items-center justify-content-between mb-2">
+            <span class="badge rounded-pill" [ngClass]="msg.draft.actionType === 'leave' ? 'bg-primary' : 'bg-warning text-dark'">
+              {{ msg.draft.actionType | uppercase }} DRAFT
+            </span>
+            <small class="text-muted fw-bold">Review Details</small>
+          </div>
+
+          <div class="draft-summary fw-semibold mb-2 text-dark">
+            {{ msg.draft.summary }}
+          </div>
+
+          <!-- Pending State: Confirm / Cancel buttons -->
+          <div *ngIf="msg.status === 'pending'" class="draft-actions d-flex gap-2 mt-3">
+            <button
+              type="button"
+              class="btn btn-sm btn-success flex-grow-1 d-flex align-items-center justify-content-center gap-1"
+              (click)="confirmDraft(msg, i)"
+              [disabled]="confirmingIndex === i">
+              <span *ngIf="confirmingIndex === i" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <svg *ngIf="confirmingIndex !== i" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>{{ confirmingIndex === i ? 'Submitting...' : 'Confirm & Apply' }}</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              (click)="cancelDraft(msg)"
+              [disabled]="confirmingIndex === i">
+              Cancel
+            </button>
+          </div>
+
+          <!-- Confirmed State -->
+          <div *ngIf="msg.status === 'confirmed'" class="confirmed-banner mt-2">
+            <span class="text-success fw-bold d-flex align-items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              Confirmed & Submitted
+            </span>
+          </div>
+
+          <!-- Cancelled State -->
+          <div *ngIf="msg.status === 'cancelled'" class="cancelled-banner mt-2">
+            <span class="text-muted fst-italic">Draft Cancelled</span>
+          </div>
+        </div>
+
+        <!-- Timestamp -->
+        <div class="message-time">
+          {{ msg.timestamp | date:'shortTime' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing Loader -->
+    <div *ngIf="isLoading" class="message-row assistant-row">
+      <div class="message-bubble assistant-bubble typing-bubble">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    </div>
+
+    <!-- Suggested Quick Prompts (visible on initial message) -->
+    <div *ngIf="messages.length === 1 && !isLoading" class="quick-chips-wrapper">
+      <small class="text-muted mb-1 d-block fw-semibold">Quick Prompts:</small>
+      <div class="chips-list">
+        <button
+          *ngFor="let q of suggestedQuestions"
+          type="button"
+          class="prompt-chip"
+          (click)="useSuggestion(q)">
+          {{ q }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Input -->
+  <div class="chat-footer">
+    <form (ngSubmit)="sendMessage()" class="chat-input-form">
+      <input
+        type="text"
+        class="form-control chat-input"
+        placeholder="Ask HRMate a question..."
+        [(ngModel)]="userInput"
+        name="chatInput"
+        [disabled]="isLoading"
+        autocomplete="off" />
+      <button
+        type="submit"
+        class="btn btn-primary send-btn"
+        [disabled]="!userInput.trim() || isLoading"
+        title="Send">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </form>
+  </div>
+</div>
