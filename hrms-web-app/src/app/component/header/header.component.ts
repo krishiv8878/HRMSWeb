@@ -68,6 +68,8 @@ export class HeaderComponent implements OnInit {
   // Top Header Punch State
   loggedInEmployeeId: string = '';
   isClockedIn: boolean = false;
+  isTodayRegularized: boolean = false;
+  regularizedStatusLabel: string = '';
   hasClockedOutToday: boolean = false;
   sessionElapsedDisplay: string = '00h 00m 00s';
   clockInTimeDisplay: string = '--';
@@ -185,9 +187,21 @@ export class HeaderComponent implements OnInit {
     this.attendanceStateService.clockOutTime$.subscribe(d => {
       this.clockOutTimeDisplay = this.attendanceStateService.formatTime12(d);
     });
+
+    this.attendanceStateService.isTodayRegularized$.subscribe(isReg => {
+      this.isTodayRegularized = isReg;
+    });
+
+    this.attendanceStateService.regularizedStatusLabel$.subscribe(label => {
+      this.regularizedStatusLabel = label;
+    });
   }
 
   openHeaderClockInDialog(): void {
+    if (this.isTodayRegularized) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(EmployeeAttendComponent, {
       width: '430px',
       data: {
@@ -209,6 +223,10 @@ export class HeaderComponent implements OnInit {
   }
 
   openHeaderClockOutDialog(): void {
+    if (this.isTodayRegularized) {
+      return;
+    }
+
     const dialogRef = this.dialog.open(EmployeeAttendComponent, {
       width: '430px',
       data: {

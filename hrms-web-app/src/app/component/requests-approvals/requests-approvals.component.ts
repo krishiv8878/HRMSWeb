@@ -166,6 +166,9 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.activeStatusTab = 'Pending';
+    this.selectedStatus = 'Pending';
+    this.globalFilterService.setStatus('Pending');
     this.loadHolidays();
     this.loadAllRequests();
 
@@ -788,6 +791,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     this.activeStatusTab = tab;
     this.selectedStatus = tab;
     this.currentPage = 1;
+    this.globalFilterService.setStatus(tab);
     this.filterRequests();
   }
 

@@ -21,26 +21,37 @@
 
       <!-- Clock In / Out Action (Strictly for personal self-attendance) -->
       <ng-container *ngIf="!isViewingOtherEmployee">
-        <button
-          type="button"
-          *ngIf="isClockedIn; else clockInTpl"
-          class="btn-punch btn-clock-out"
-          (click)="openClockOutDialog()"
+        <div
+          *ngIf="isTodayRegularized; else normalPunchTpl"
+          class="btn-punch btn-regularized-chip"
+          title="Today's attendance has been regularized. Punching is disabled for today."
         >
-          <mat-icon>logout</mat-icon>
-          <span>Clock-Out</span>
-          <span class="session-duration-tag">{{ activeSessionDuration }}</span>
-        </button>
+          <mat-icon class="punch-icon">verified</mat-icon>
+          <span>{{ regularizedStatusLabel || 'Regularized' }}</span>
+        </div>
 
-        <ng-template #clockInTpl>
+        <ng-template #normalPunchTpl>
           <button
             type="button"
-            class="btn-punch btn-clock-in"
-            (click)="openClockInDialog()"
+            *ngIf="isClockedIn; else clockInTpl"
+            class="btn-punch btn-clock-out"
+            (click)="openClockOutDialog()"
           >
-            <mat-icon>login</mat-icon>
-            <span>Clock-In</span>
+            <mat-icon>logout</mat-icon>
+            <span>Clock-Out</span>
+            <span class="session-duration-tag">{{ activeSessionDuration }}</span>
           </button>
+
+          <ng-template #clockInTpl>
+            <button
+              type="button"
+              class="btn-punch btn-clock-in"
+              (click)="openClockInDialog()"
+            >
+              <mat-icon>login</mat-icon>
+              <span>Clock-In</span>
+            </button>
+          </ng-template>
         </ng-template>
       </ng-container>
 

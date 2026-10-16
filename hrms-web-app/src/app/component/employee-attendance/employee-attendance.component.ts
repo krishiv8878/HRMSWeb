@@ -145,6 +145,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   private clockedInSub?: Subscription;
   private sessionElapsedSub?: Subscription;
   private clockInTimeSub?: Subscription;
+  private isTodayRegularizedSub?: Subscription;
+  private regularizedStatusLabelSub?: Subscription;
 
   Math = Math;
 
@@ -213,6 +215,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   // Component state
   employeeId: string = '1';
   isClockedIn: boolean = false;
+  isTodayRegularized: boolean = false;
+  regularizedStatusLabel: string = '';
   clockInTime: Date | null = null;
   activeSessionDuration: string = '00h 00m 00s';
 
@@ -390,6 +394,14 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       this.clockInTime = time;
     });
 
+    this.isTodayRegularizedSub = this.attendanceStateService.isTodayRegularized$.subscribe(isReg => {
+      this.isTodayRegularized = isReg;
+    });
+
+    this.regularizedStatusLabelSub = this.attendanceStateService.regularizedStatusLabel$.subscribe(label => {
+      this.regularizedStatusLabel = label;
+    });
+
     // Sync with punches triggered from the top header
     this.punchSub = this.attendanceStateService.punchChanged$.subscribe(() => {
       this.getAllData();
@@ -404,6 +416,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     if (this.clockedInSub) this.clockedInSub.unsubscribe();
     if (this.sessionElapsedSub) this.sessionElapsedSub.unsubscribe();
     if (this.clockInTimeSub) this.clockInTimeSub.unsubscribe();
+    if (this.isTodayRegularizedSub) this.isTodayRegularizedSub.unsubscribe();
+    if (this.regularizedStatusLabelSub) this.regularizedStatusLabelSub.unsubscribe();
     if (this.routeSub) this.routeSub.unsubscribe();
   }
 
@@ -905,11 +919,13 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     const hasActiveSession = (isToday && this.isClockedIn) || dayLogs.some((l: any) => this.isRealTime(l.inTime || l.InTime) && !this.isRealTime(l.outTime || l.OutTime));
     const hasPunchToday = isToday && (this.isClockedIn || hasLogsForDate);
 
-    const isPastDate = d < today;
+    const todayDateStr = this.toYMD(new Date());
+    const isPastDate = dateStr < todayDateStr;
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     thirtyDaysAgo.setHours(0, 0, 0, 0);
-    const isWithinBackfillWindow = d >= thirtyDaysAgo && d <= today;
+    const thirtyDaysAgoStr = this.toYMD(thirtyDaysAgo);
+    const isWithinBackfillWindow = dateStr >= thirtyDaysAgoStr && isPastDate;
 
     const isPriorToJoining = !!(this.joiningDateStr && dateStr < this.joiningDateStr);
 
@@ -1060,7 +1076,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       canRegularize = isWithinBackfillWindow && missedPunchOut && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved';
     } else {
       status = 'Absent';
-      canRegularize = isWithinBackfillWindow && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved';
+      canRegularize = isPastDate && isWithinBackfillWindow && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved';
     }
 
     let punchType: 'Self Punch' | 'Regularized' | 'None' = 'None';
@@ -1394,6 +1410,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
       return;
     }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
+      return;
+    }
 
     const dialogRef = this.dialog.open(EmployeeAttendComponent, {
       width: '430px',
@@ -1418,6 +1438,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   openClockOutDialog() {
     if (this.isViewingOtherEmployee) {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
+      return;
+    }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
       return;
     }
 
@@ -1448,6 +1472,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
       return;
     }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
+      return;
+    }
 
     this.attendanceStateService.clockIn((success) => {
       if (success) {
@@ -1459,6 +1487,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   onClockOut() {
     if (this.isViewingOtherEmployee) {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
+      return;
+    }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
       return;
     }
 
@@ -1511,6 +1543,12 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const todayDateStr = this.toYMD(new Date());
+    if (initialType === 'Regularization' && row?.dateStr && row.dateStr >= todayDateStr) {
+      this.toaster.warning('Attendance regularization can only be requested for past completed workdays. Current day attendance must be recorded using Clock-In / Clock-Out.', 'Action Restricted');
+      return;
+    }
+
     if (row && !row.canRegularize) {
       const msg = row.regularizationStatus === 'Approved'
         ? 'Attendance for this date has already been regularized and approved.'
@@ -1519,8 +1557,12 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const defaultRow = row || this.missingPunchDay || this.allRows.find(r => r.canRegularize && !r.isPriorToJoining);
-    const targetDateObj = defaultRow?.dateObj || new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const defaultRow = row || this.missingPunchDay || this.allRows.find(r => r.canRegularize && !r.isPriorToJoining && r.dateStr < todayDateStr);
+    const targetDateObj = defaultRow?.dateObj || yesterday;
 
     const hasExistingIn = !!(defaultRow && defaultRow.clockInDisplay && defaultRow.clockInDisplay !== '--');
     const existingInTime24 = hasExistingIn ? this.extractTime24(defaultRow?.clockIn || defaultRow?.clockInDisplay) : '09:30';

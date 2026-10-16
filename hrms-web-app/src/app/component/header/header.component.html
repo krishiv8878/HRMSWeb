@@ -206,32 +206,44 @@
   <div class="right-actions">
     <!-- Top Header Smart Punch Widget (Clock-In / Clock-Out with Live Session Timer) -->
     <div class="header-punch-widget" *ngIf="loggedInEmployeeId">
-      <!-- When Clocked In -> Clock-Out Button with Running Session Timer -->
-      <button
-        *ngIf="isClockedIn; else headerClockInBtn"
-        type="button"
-        class="header-punch-btn btn-clock-out"
-        (click)="openHeaderClockOutDialog()"
-        [title]="'In session since ' + clockInTimeDisplay + ' • Click to Clock-Out'"
+      <!-- When Today is Regularized -> Disabled Regularized Chip -->
+      <div
+        *ngIf="isTodayRegularized; else normalPunchTpl"
+        class="header-punch-btn btn-regularized-chip"
+        title="Today's attendance has been regularized. Punching is disabled for today."
       >
-        <span class="live-pulse-dot"></span>
-        <mat-icon class="punch-icon">logout</mat-icon>
-        <span class="punch-label">Clock-Out</span>
-        <span class="header-timer-tag">{{ sessionElapsedDisplay }}</span>
-      </button>
+        <mat-icon class="punch-icon">verified</mat-icon>
+        <span class="punch-label">{{ regularizedStatusLabel || 'Regularized' }}</span>
+      </div>
 
-      <!-- When NOT Clocked In -> Clock-In Button -->
-      <ng-template #headerClockInBtn>
+      <ng-template #normalPunchTpl>
+        <!-- When Clocked In -> Clock-Out Button with Running Session Timer -->
         <button
+          *ngIf="isClockedIn; else headerClockInBtn"
           type="button"
-          class="header-punch-btn btn-clock-in"
-          [class.btn-clock-again]="hasClockedOutToday"
-          (click)="openHeaderClockInDialog()"
-          [title]="hasClockedOutToday ? 'Clocked out today (' + clockInTimeDisplay + ' - ' + clockOutTimeDisplay + ') • Click to start another session' : 'Start your working session (Clock-In)'"
+          class="header-punch-btn btn-clock-out"
+          (click)="openHeaderClockOutDialog()"
+          [title]="'In session since ' + clockInTimeDisplay + ' • Click to Clock-Out'"
         >
-          <mat-icon class="punch-icon">{{ hasClockedOutToday ? 'refresh' : 'login' }}</mat-icon>
-          <span class="punch-label">{{ hasClockedOutToday ? 'Clock-In Again' : 'Clock-In' }}</span>
+          <span class="live-pulse-dot"></span>
+          <mat-icon class="punch-icon">logout</mat-icon>
+          <span class="punch-label">Clock-Out</span>
+          <span class="header-timer-tag">{{ sessionElapsedDisplay }}</span>
         </button>
+
+        <!-- When NOT Clocked In -> Clock-In Button -->
+        <ng-template #headerClockInBtn>
+          <button
+            type="button"
+            class="header-punch-btn btn-clock-in"
+            [class.btn-clock-again]="hasClockedOutToday"
+            (click)="openHeaderClockInDialog()"
+            [title]="hasClockedOutToday ? 'Clocked out today (' + clockInTimeDisplay + ' - ' + clockOutTimeDisplay + ') • Click to start another session' : 'Start your working session (Clock-In)'"
+          >
+            <mat-icon class="punch-icon">{{ hasClockedOutToday ? 'refresh' : 'login' }}</mat-icon>
+            <span class="punch-label">{{ hasClockedOutToday ? 'Clock-In Again' : 'Clock-In' }}</span>
+          </button>
+        </ng-template>
       </ng-template>
     </div>
 

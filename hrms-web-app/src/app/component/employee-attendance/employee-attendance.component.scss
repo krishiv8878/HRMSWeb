@@ -121,6 +121,24 @@
           box-shadow: 0 4px 6px rgba(220, 38, 38, 0.25);
         }
       }
+
+      &.btn-regularized-chip {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        cursor: not-allowed;
+        box-shadow: none;
+        user-select: none;
+
+        mat-icon {
+          color: #059669;
+        }
+
+        span {
+          color: #1e293b;
+          font-weight: 600;
+        }
+      }
     }
 
     .supervisor-mode-badge {

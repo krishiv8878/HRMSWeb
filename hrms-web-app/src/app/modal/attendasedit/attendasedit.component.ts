@@ -56,10 +56,17 @@ export class AttendaseditComponent implements OnInit {
   autoSelectedAbsentNotice: string = '';
   selectedDateStatusBadge: DateStatusBadge | null = null;
 
+  getYesterday(): Date {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
   hasExistingClockIn: boolean = false;
   existingClockInDisplay: string = '';
   minDate: Date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  maxDate: Date = new Date();
+  maxDate: Date = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   // Calendar State Sets
   presentDateMap = new Map<string, { clockIn: string; clockOut: string; status: string }>();
@@ -73,7 +80,7 @@ export class AttendaseditComponent implements OnInit {
 
   attendaseform = this.formbuilder.group({
     RequestType: ['Regularization', Validators.required],
-    selectedDate: [new Date(), Validators.required],
+    selectedDate: [new Date(Date.now() - 24 * 60 * 60 * 1000), Validators.required],
     Reason: ['', Validators.required],
     clockIn: ['09:30', Validators.required],
     clockOut: ['18:30', Validators.required],
@@ -85,7 +92,15 @@ export class AttendaseditComponent implements OnInit {
   onRequestTypeChange(type: string): void {
     this.attendaseform.patchValue({ RequestType: type });
     if (type === 'Regularization') {
-      this.maxDate = new Date();
+      this.maxDate = this.getYesterday();
+      const currentSelected = this.attendaseform.get('selectedDate')?.value;
+      if (currentSelected instanceof Date) {
+        const curYmd = this.toLocalYMD(currentSelected);
+        const todayYmd = this.toLocalYMD(new Date());
+        if (curYmd >= todayYmd) {
+          this.attendaseform.patchValue({ selectedDate: this.getYesterday() });
+        }
+      }
     } else {
       // WFH and On-Duty can be requested in advance
       this.maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -94,6 +109,10 @@ export class AttendaseditComponent implements OnInit {
         clockIn: '09:30',
         clockOut: type === 'Work From Home' && this.attendaseform.get('wfhDuration')?.value === 'Half Day' ? '14:00' : '18:30'
       });
+    }
+    const curVal = this.attendaseform.get('selectedDate')?.value;
+    if (curVal instanceof Date) {
+      this.evaluateDateRegularization(curVal);
     }
   }
 
@@ -128,7 +147,15 @@ export class AttendaseditComponent implements OnInit {
       this.minDate = thirtyDaysAgo;
     }
 
-    const parsedDate = this.parseInputDate(this.data);
+    let parsedDate = this.parseInputDate(this.data);
+    const initialReqType = this.data?.requestType || 'Regularization';
+    if (initialReqType === 'Regularization') {
+      const todayStr = this.toLocalYMD(new Date());
+      const parsedStr = this.toLocalYMD(parsedDate);
+      if (parsedStr >= todayStr) {
+        parsedDate = this.getYesterday();
+      }
+    }
 
     this.attendaseform.patchValue({
       selectedDate: parsedDate,
@@ -385,14 +412,30 @@ export class AttendaseditComponent implements OnInit {
       return;
     }
 
-    // 5. Check Today (ongoing workday)
+    // 5. Check Today or Future Date for Regularization (ongoing or future day)
     const todayStr = this.toLocalYMD(new Date());
+    const reqType = this.attendaseform.get('RequestType')?.value || 'Regularization';
+
+    if (reqType === 'Regularization' && dateStr >= todayStr) {
+      this.canSubmit = false;
+      this.currentStatus = 'TodayNotAllowed';
+      this.rejectionReason = '';
+      this.statusMessage = 'Attendance regularization can only be requested for past completed workdays. Current day attendance must be recorded using Clock-In / Clock-Out.';
+      this.selectedDateStatusBadge = {
+        label: dateStr === todayStr ? "Today's Workday (In Progress)" : 'Future Date',
+        type: 'absent',
+        icon: 'block',
+        details: 'Attendance regularization cannot be requested for today or future dates. Please use Clock-In / Clock-Out for today.'
+      };
+      return;
+    }
+
     if (dateStr === todayStr) {
       this.canSubmit = true;
       this.currentStatus = '';
       this.rejectionReason = '';
-      this.statusMessage = "Note: Today's workday is currently in progress. Attendance regularization is intended for completed past workdays.";
-      this.selectedDateStatusBadge = { label: "Today's Workday (In Progress)", type: 'neutral', icon: 'timelapse', details: 'Regularization is typically applied to completed past shifts.' };
+      this.statusMessage = "Note: Today's workday is currently in progress.";
+      this.selectedDateStatusBadge = { label: "Today's Workday (In Progress)", type: 'neutral', icon: 'timelapse', details: 'Applying request for current date.' };
       this.applyPunchesForDate(dateStr);
       return;
     }
@@ -696,6 +739,13 @@ export class AttendaseditComponent implements OnInit {
       const m = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
       const d = selectedDate.getDate().toString().padStart(2, '0');
       const dateStr = `${y}-${m}-${d}`;
+      const todayStr = this.toLocalYMD(new Date());
+
+      if (RequestType === 'Regularization' && dateStr >= todayStr) {
+        this.toaster.warning('Attendance regularization can only be requested for past completed workdays. Current day attendance must be recorded using Clock-In / Clock-Out.');
+        return;
+      }
+
       if (this.data?.joiningDateStr && dateStr < this.data.joiningDateStr) {
         this.toaster.error(`Cannot submit attendance request prior to your official joining date (${this.data.joiningDateStr}).`);
         return;

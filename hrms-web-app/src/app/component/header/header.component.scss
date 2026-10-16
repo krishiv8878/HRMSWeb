@@ -643,6 +643,25 @@
           transform: translateY(0);
         }
       }
+
+      /* State 3: Today is Regularized -> Disabled badge chip */
+      &.btn-regularized-chip {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        cursor: not-allowed;
+        box-shadow: none;
+        user-select: none;
+
+        .punch-icon {
+          color: #059669;
+        }
+
+        .punch-label {
+          color: #1e293b;
+          font-weight: 600;
+        }
+      }
     }
   }
 
