@@ -44,7 +44,7 @@ export class PipModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.employeeService.getData().subscribe({
+    this.employeeService.getLookup().subscribe({
       next: (res: any) => {
         this.allEmployees = (res?.data || res || []).filter((e: any) => !e.isDelete);
       },

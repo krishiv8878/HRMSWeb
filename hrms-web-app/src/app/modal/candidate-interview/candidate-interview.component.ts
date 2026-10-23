@@ -191,7 +191,7 @@ export class CandidateInterviewModalComponent implements OnInit {
 
   private loadEmployees(): void {
     this.isLoadingEmployees = true;
-    this.employeeService.getData().subscribe({
+    this.employeeService.getLookup().subscribe({
       next: (res: any) => {
         let list: any[] = [];
         if (Array.isArray(res)) list = res;

@@ -48,7 +48,7 @@ export class FeedbackModalComponent implements OnInit {
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('employeeId') : null;
     this.currentEmpId = stored ? Number(stored) : 0;
 
-    this.employeeService.getData().subscribe({
+    this.employeeService.getLookup().subscribe({
       next: (res: any) => {
         this.allEmployees = (res?.data || res || []).filter((e: any) => !e.isDelete && e.id !== this.currentEmpId);
       },

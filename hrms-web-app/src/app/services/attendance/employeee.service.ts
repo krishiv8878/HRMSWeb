@@ -15,8 +15,16 @@ export class EmployeeeService {
     return this.http.get<any[]>(this.apiUrl + `/EmployeeAttendance/GetAll`)
   }
 
+  getByEmployeeId(employeeId: number | string): Observable<any> {
+    return this.http.get<any>(this.apiUrl + `/EmployeeAttendance/GetByEmployeeId?employeeId=${employeeId}`);
+  }
+
   getAttendanceLogs(): Observable<any> {
     return this.http.get<any>(this.apiUrl + `/AttendanceLog/GetAll`)
+  }
+
+  getAttendanceLogsByEmployeeId(employeeId: number | string): Observable<any> {
+    return this.http.get<any>(this.apiUrl + `/AttendanceLog/GetAttendanceLogById?employeeId=${employeeId}`);
   }
 
   createData(employeeId: number, clockIn: string | null, clockOut: string | null, totalHours: string | number | null, effectiveHours: string | number | null, attendance: string, createdDate: string | null, attendanceDate: string | null): Observable<any> {

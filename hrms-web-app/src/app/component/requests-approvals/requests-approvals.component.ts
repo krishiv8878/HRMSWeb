@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of, catchError } from 'rxjs';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { AttendanceRequestService } from '../../services/attenRequest/attendance-request.service';
 import { RequestsApprovalsModalComponent } from '../../modal/requests-approvals-modal/requests-approvals-modal.component';
@@ -213,31 +213,34 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     this.notificationService.refreshNotifications();
     const globalAvatar = typeof window !== 'undefined' ? localStorage.getItem('profileImage') : null;
     const loggedUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
+    const loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || '').toLowerCase().trim() : '';
+    const isAdminOrHr = this.rbacService.isAdmin() || this.rbacService.isHR();
 
-    // Fetch Leave Requests from Database
-    this.service.GetAllEmployeesLeaveRequest().subscribe({
-      next: (leaveResponse: any) => {
-        let rawList: any[] = [];
-        if (Array.isArray(leaveResponse)) {
-          rawList = leaveResponse;
-        } else if (leaveResponse && Array.isArray(leaveResponse.data)) {
-          rawList = leaveResponse.data;
-        }
+    forkJoin({
+      leaveResponse: this.service.GetAllEmployeesLeaveRequest().pipe(catchError(() => of([]))),
+      attResponse: this.service2.getAllData().pipe(catchError(() => of([]))),
+      docResponse: this.documentService.getAll().pipe(catchError(() => of([]))),
+      tsResponse: this.timesheetService.getPendingApprovals().pipe(catchError(() => of([]))),
+      assetRes: this.assetRequestService.fetchRequests(this.isApprover ? undefined : loggedUserId).pipe(catchError(() => of([]))),
+      candRes: (this.isApprover || isAdminOrHr) ? this.candidateService.getData().pipe(catchError(() => of([]))) : of([]),
+      empRes: this.isBankingApprover ? this.employeeService.getData().pipe(catchError(() => of([]))) : of([])
+    }).subscribe({
+      next: ({ leaveResponse, attResponse, docResponse, tsResponse, assetRes, candRes, empRes }: any) => {
+        // 1. Process Leave Requests
+        let rawLeaveList: any[] = [];
+        if (Array.isArray(leaveResponse)) rawLeaveList = leaveResponse;
+        else if (leaveResponse && Array.isArray(leaveResponse.data)) rawLeaveList = leaveResponse.data;
+        rawLeaveList = rawLeaveList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
 
-        // Filter out soft-deleted leave requests
-        rawList = rawList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
-
-        const leaveItems: ApprovalRequestItem[] = rawList.map((x: any, idx: number) => {
+        const leaveItems: ApprovalRequestItem[] = rawLeaveList.map((x: any, idx: number) => {
           const empName = x.fullName || x.employeeName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
           const leaveTypeName = typeof x.leaveType === 'string' ? x.leaveType : (x.leaveType?.type || x.leaveType?.leaveTypeName || x.leaveTypeName || x.type || 'Annual Leave');
-
           const actionByVal = Number(x.actionBy || 0);
           const rawStatus = x.status ? String(x.status).trim() : '';
           const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' = 
             rawStatus.toLowerCase() === 'approved' ? 'Approved' :
             (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' :
             (rawStatus.toLowerCase() === 'cancelled' ? 'Cancelled' : 'Pending'));
-
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
           let avatarUrl: string | undefined = undefined;
@@ -276,369 +279,270 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           };
         });
 
-        // Fetch Attendance Requests from Database
-        this.service2.getAllData().subscribe({
-          next: (attResponse: any) => {
-            let attList: any[] = [];
-            if (Array.isArray(attResponse)) {
-              attList = attResponse;
-            } else if (attResponse && Array.isArray(attResponse.data)) {
-              attList = attResponse.data;
+        // 2. Process Attendance Requests
+        let attList: any[] = [];
+        if (Array.isArray(attResponse)) attList = attResponse;
+        else if (attResponse && Array.isArray(attResponse.data)) attList = attResponse.data;
+        attList = attList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
+
+        const attItems: ApprovalRequestItem[] = attList.map((x: any, idx: number) => {
+          const empName = x.employeeName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
+          const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' = (x.status?.toLowerCase() === 'approved' ? 'Approved' : (x.status?.toLowerCase() === 'rejected' ? 'Rejected' : 'Pending'));
+
+          let avatarUrl: string | undefined = undefined;
+          if (x.profileImage) {
+            avatarUrl = x.profileImage.startsWith('http') || x.profileImage.startsWith('data:')
+              ? x.profileImage
+              : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${x.profileImage}`;
+          } else if (globalAvatar && (x.employeeId == loggedUserId || idx === 0)) {
+            avatarUrl = globalAvatar;
+          }
+
+          return {
+            id: Number(x.id || (idx + 100)),
+            requesterName: empName,
+            requesterRole: x.requestType || 'Time Attendance',
+            avatarUrl: avatarUrl,
+            initials: initials || 'AT',
+            requestType: x.requestType || 'CLOCK ADJUST',
+            startDate: x.requestedDate,
+            endDate: x.requestedDate,
+            durationText: x.requestedDate ? new Date(x.requestedDate).toLocaleDateString('en-GB') : 'Today',
+            reasonPreview: x.reason || 'Attendance adjustment request',
+            status: statusStr,
+            actionBy: x.actionBy || x.lastActionBy || undefined,
+            actionDate: x.actionDate,
+            category: 'Attendance',
+            rawRecord: x
+          };
+        });
+
+        // 3. Process Document Requests
+        let docList: any[] = [];
+        if (Array.isArray(docResponse)) docList = docResponse;
+        else if (docResponse && Array.isArray(docResponse.data)) docList = docResponse.data;
+        else if (docResponse && Array.isArray(docResponse.result)) docList = docResponse.result;
+        docList = docList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
+
+        const docItems: ApprovalRequestItem[] = docList.map((x: any, idx: number) => {
+          const empName = x.employeeName || x.uploadedByName || x.ownerName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || (x.employeeId ? `Employee #${x.employeeId}` : 'Employee');
+          const rawStatus = x.status ? String(x.status).trim() : 'Approved';
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' = 
+            rawStatus.toLowerCase() === 'pending' ? 'Pending' :
+            (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' : 'Approved');
+          const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+          return {
+            id: Number(x.id ?? x.Id ?? (idx + 500)),
+            requesterName: empName,
+            requesterRole: x.category || 'Document Verification',
+            avatarUrl: undefined,
+            initials: initials || 'DC',
+            requestType: x.documentName || 'Document Upload',
+            startDate: x.uploadedDate,
+            endDate: x.uploadedDate,
+            durationText: x.uploadedDate ? new Date(x.uploadedDate).toLocaleDateString('en-GB') : 'Today',
+            reasonPreview: x.rejectionReason || x.category || 'Uploaded document approval',
+            status: statusStr,
+            actionBy: x.actionBy || undefined,
+            actionDate: x.actionDate,
+            category: 'Document',
+            rawRecord: {
+              ...x,
+              documentName: x.documentName,
+              fullName: empName,
+              requestType: 'Document Verification',
+              reason: x.category
             }
+          };
+        });
 
-            // Filter out soft-deleted attendance requests
-            attList = attList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
+        // 4. Process Timesheets
+        let tsList: any[] = [];
+        if (Array.isArray(tsResponse)) tsList = tsResponse;
+        else if (tsResponse && Array.isArray(tsResponse.data)) tsList = tsResponse.data;
 
-            const attItems: ApprovalRequestItem[] = attList.map((x: any, idx: number) => {
-              const empName = x.employeeName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
-              const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-              const statusStr: 'Pending' | 'Approved' | 'Rejected' = (x.status?.toLowerCase() === 'approved' ? 'Approved' : (x.status?.toLowerCase() === 'rejected' ? 'Rejected' : 'Pending'));
+        const tsItems: ApprovalRequestItem[] = tsList.map((ts: any) => {
+          const empName = ts.employeeName || 'Employee';
+          const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' =
+            ts.status === 'Approved' ? 'Approved' :
+            (ts.status === 'Rejected' ? 'Rejected' : 'Pending');
 
-              let avatarUrl: string | undefined = undefined;
-              if (x.profileImage) {
-                avatarUrl = x.profileImage.startsWith('http') || x.profileImage.startsWith('data:')
-                  ? x.profileImage
-                  : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${x.profileImage}`;
-              } else if (globalAvatar && (x.employeeId == loggedUserId || idx === 0)) {
-                avatarUrl = globalAvatar;
-              }
+          return {
+            id: Number(ts.timesheetId),
+            requesterName: empName,
+            requesterRole: `Timesheet (${ts.periodType})`,
+            avatarUrl: undefined,
+            initials: initials || 'TS',
+            requestType: `${ts.periodType} Timesheet`,
+            startDate: ts.startDate,
+            endDate: ts.endDate,
+            durationText: `${ts.totalTimesheetHours} hrs (Ref Punch: ${ts.totalAttendanceHours} hrs)`,
+            reasonPreview: `Period: ${ts.startDate?.substring(0,10)} to ${ts.endDate?.substring(0,10)} | ${ts.days?.length || 0} days recorded`,
+            status: statusStr,
+            actionBy: ts.actionBy,
+            actionDate: ts.actionDate,
+            category: 'Timesheet',
+            rawRecord: {
+              ...ts,
+              fullName: empName,
+              requestType: `${ts.periodType} Timesheet`,
+              startDate: ts.startDate,
+              endDate: ts.endDate,
+              category: 'Timesheet',
+              totalHours: ts.totalTimesheetHours ?? ts.totalHours
+            }
+          };
+        });
 
-              return {
-                id: Number(x.id || (idx + 100)),
-                requesterName: empName,
-                requesterRole: x.requestType || 'Time Attendance',
-                avatarUrl: avatarUrl,
-                initials: initials || 'AT',
-                requestType: x.requestType || 'CLOCK ADJUST',
-                startDate: x.requestedDate,
-                endDate: x.requestedDate,
-                durationText: x.requestedDate ? new Date(x.requestedDate).toLocaleDateString('en-GB') : 'Today',
-                reasonPreview: x.reason || 'Attendance adjustment request',
-                status: statusStr,
-                actionBy: x.actionBy || x.lastActionBy || undefined,
-                actionDate: x.actionDate,
-                category: 'Attendance',
-                rawRecord: x
-              };
-            });
+        // 5. Process Asset Requests
+        const rawAssetList = Array.isArray(assetRes) ? assetRes : (assetRes?.data || []);
+        const assetItems: ApprovalRequestItem[] = rawAssetList.map((a: any) => {
+          const empName = a.employeeName || 'Employee';
+          const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+          const s = (a.status || '').toLowerCase().trim();
+          const isClosed = s.includes('closed');
+          const remarksCombined = ((a.adminRemarks || '') + ' ' + (a.remarks || '') + ' ' + (a.inspectionRemarks || '')).toLowerCase();
+          const hasRejectLog = a.logs && Array.isArray(a.logs) && a.logs.some((l: any) =>
+            (l.toStatus || '').toLowerCase().includes('reject') ||
+            (l.fromStatus || '').toLowerCase().includes('reject') ||
+            (l.remarks || '').toLowerCase().includes('reject')
+          );
+          const isRejected = s.includes('reject') || (isClosed && (remarksCombined.includes('reject') || hasRejectLog));
+          const isApproved = s.includes('approved') || s.includes('completed') || s.includes('received') ||
+            s.includes('repair') || s.includes('dispatch') || s.includes('transit') || s.includes('deliver') ||
+            (isClosed && !isRejected);
 
-            // Fetch Document Requests from Database
-            this.documentService.getAll().subscribe({
-              next: (docResponse: any) => {
-                let docList: any[] = [];
-                if (Array.isArray(docResponse)) {
-                  docList = docResponse;
-                } else if (docResponse && Array.isArray(docResponse.data)) {
-                  docList = docResponse.data;
-                } else if (docResponse && Array.isArray(docResponse.result)) {
-                  docList = docResponse.result;
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' =
+            isRejected ? 'Rejected' :
+            (isApproved ? 'Approved' : 'Pending');
+
+          return {
+            id: Number(a.id),
+            requesterName: empName,
+            requesterRole: `Asset (${a.requestType || 'Service'})`,
+            avatarUrl: undefined,
+            initials: initials || 'AS',
+            requestType: `${a.requestType || 'Asset'} - ${a.assetModel || ('Asset #' + a.assetId)}`,
+            startDate: a.createdDate,
+            endDate: a.updatedDate,
+            durationText: a.createdDate ? new Date(a.createdDate).toLocaleDateString('en-GB') : 'Recent',
+            reasonPreview: isRejected
+              ? `Rejected${isClosed ? ' (Closed)' : ''}: ${a.adminRemarks || a.remarks || 'No remarks provided'}`
+              : (a.reason || a.description || `Ticket #${a.id} (${a.status})`),
+            status: statusStr,
+            actionBy: a.actionByEmployeeId,
+            actionDate: a.updatedDate,
+            category: 'Asset',
+            rawRecord: {
+              ...a,
+              fullName: empName,
+              category: 'Asset'
+            }
+          };
+        });
+
+        // 6. Process Candidate Interviews
+        let candList: any[] = [];
+        if (Array.isArray(candRes)) candList = candRes;
+        else if (candRes?.data && Array.isArray(candRes.data)) candList = candRes.data;
+
+        const interviewItems: ApprovalRequestItem[] = [];
+        const loggedEmpId = loggedUserId;
+
+        candList.forEach((c: any, idx: number) => {
+          if (c.isDeleted || c.stage === 'Rejected' || c.stage === 'Onboarded') return;
+
+          let intId: number | undefined = undefined;
+          let intName: string | undefined = undefined;
+          let lastEvaluatedBy: string | undefined = undefined;
+          let curRound: string = 'Interview Round';
+          let intStatus: string = 'Scheduled';
+          let intRemarks: string | undefined = undefined;
+          let intRating: number | undefined = undefined;
+          let intRec: string | undefined = undefined;
+          let scheduledAt: string | undefined = undefined;
+
+          if (c.relevantExperience && typeof c.relevantExperience === 'string' && c.relevantExperience.trim().startsWith('{')) {
+            try {
+              const parsed = JSON.parse(c.relevantExperience);
+              intId = parsed.interviewerId ? Number(parsed.interviewerId) : undefined;
+              intName = parsed.interviewerName || undefined;
+              lastEvaluatedBy = parsed.lastEvaluatedBy || undefined;
+              curRound = parsed.currentRound || parsed.round || 'Technical Interview';
+              intStatus = parsed.status || 'Scheduled';
+              intRemarks = parsed.remarks || parsed.interviewerRemarks;
+              intRating = parsed.rating || parsed.interviewRating;
+              intRec = parsed.recommendation || parsed.interviewRecommendation;
+              scheduledAt = parsed.scheduledAt || parsed.evaluatedAt;
+            } catch {}
+          }
+
+          const isAssignedToUser = (intId && loggedEmpId > 0 && intId === loggedEmpId) ||
+            (intName && loggedUserName && intName.toLowerCase().includes(loggedUserName));
+
+          const isFeedbackSubmitted = intStatus?.includes('Feedback Submitted') ||
+            intStatus?.includes('Awaiting HR Review') ||
+            intStatus === 'Pending HR Decision' ||
+            Boolean(intRemarks);
+
+          const interviewerShouldSee = isAssignedToUser && !isFeedbackSubmitted;
+
+          if (isAdminOrHr || interviewerShouldSee) {
+            if (intId || intName || isFeedbackSubmitted || (c.stage && c.stage.toLowerCase().includes('interview'))) {
+              const candName = `${c.firstName || 'Candidate'} ${c.lastName || ''}`.trim();
+              const initials = ((c.firstName?.[0] || 'C') + (c.lastName?.[0] || 'D')).toUpperCase();
+              const isCompleted = isFeedbackSubmitted;
+              const evaluatorDisplay = lastEvaluatedBy || intName || 'Interviewer';
+
+              interviewItems.push({
+                id: Number(c.id || (idx + 9000)),
+                requesterName: candName,
+                requesterRole: `Candidate (${c.appliedRole || 'Applicant'})`,
+                avatarUrl: undefined,
+                initials: initials,
+                requestType: curRound,
+                startDate: scheduledAt || c.lastUpdated || new Date().toISOString(),
+                endDate: scheduledAt || c.lastUpdated || new Date().toISOString(),
+                durationText: curRound,
+                reasonPreview: isCompleted
+                  ? `Feedback logged by ${evaluatorDisplay}. Awaiting HR Review (${intRating ? intRating + '/5' : 'Rating logged'}: "${intRemarks || intRec || 'Feedback submitted'}").`
+                  : `Assigned Interviewer: ${intName || 'You'}. Pending interview feedback submission.`,
+                status: isCompleted ? 'Approved' : 'Pending',
+                actionBy: intId,
+                actionDate: scheduledAt,
+                category: 'Interview',
+                rawRecord: {
+                  ...c,
+                  id: Number(c.id),
+                  candidateId: Number(c.id),
+                  currentRound: curRound,
+                  interviewStatus: intStatus,
+                  interviewerId: intId,
+                  interviewerName: intName || lastEvaluatedBy,
+                  interviewerRemarks: intRemarks,
+                  interviewRating: intRating,
+                  interviewRecommendation: intRec,
+                  interviewHistory: (c.relevantExperience && typeof c.relevantExperience === 'string' && c.relevantExperience.trim().startsWith('{'))
+                    ? (() => { try { return Array.isArray(JSON.parse(c.relevantExperience).history) ? JSON.parse(c.relevantExperience).history : []; } catch { return []; } })()
+                    : [],
+                  rawRelevantExperience: c.relevantExperience,
+                  isCandidateInterview: true
                 }
-                docList = docList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
-
-                const docItems: ApprovalRequestItem[] = docList.map((x: any, idx: number) => {
-                  const empName = x.employeeName || x.uploadedByName || x.ownerName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || (x.employeeId ? `Employee #${x.employeeId}` : 'Employee');
-                  const rawStatus = x.status ? String(x.status).trim() : 'Approved';
-                  const statusStr: 'Pending' | 'Approved' | 'Rejected' = 
-                    rawStatus.toLowerCase() === 'pending' ? 'Pending' :
-                    (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' : 'Approved');
-
-                  const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-
-                  return {
-                    id: Number(x.id ?? x.Id ?? (idx + 500)),
-                    requesterName: empName,
-                    requesterRole: x.category || 'Document Verification',
-                    avatarUrl: undefined,
-                    initials: initials || 'DC',
-                    requestType: x.documentName || 'Document Upload',
-                    startDate: x.uploadedDate,
-                    endDate: x.uploadedDate,
-                    durationText: x.uploadedDate ? new Date(x.uploadedDate).toLocaleDateString('en-GB') : 'Today',
-                    reasonPreview: x.rejectionReason || x.category || 'Uploaded document approval',
-                    status: statusStr,
-                    actionBy: x.actionBy || undefined,
-                    actionDate: x.actionDate,
-                    category: 'Document',
-                    rawRecord: {
-                      ...x,
-                      documentName: x.documentName,
-                      fullName: empName,
-                      requestType: 'Document Verification',
-                      reason: x.category
-                    }
-                  };
-                });
-
-                const combinedSoFar = [...leaveItems, ...attItems, ...docItems];
-
-                // Fetch Timesheets for Manager
-                this.timesheetService.getPendingApprovals().subscribe({
-                  next: (tsResponse: any) => {
-                    let tsList: any[] = [];
-                    if (Array.isArray(tsResponse)) {
-                      tsList = tsResponse;
-                    } else if (tsResponse && Array.isArray(tsResponse.data)) {
-                      tsList = tsResponse.data;
-                    }
-
-                    const tsItems: ApprovalRequestItem[] = tsList.map((ts: any) => {
-                      const empName = ts.employeeName || 'Employee';
-                      const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-                      const statusStr: 'Pending' | 'Approved' | 'Rejected' =
-                        ts.status === 'Approved' ? 'Approved' :
-                        (ts.status === 'Rejected' ? 'Rejected' : 'Pending');
-
-                      return {
-                        id: Number(ts.timesheetId),
-                        requesterName: empName,
-                        requesterRole: `Timesheet (${ts.periodType})`,
-                        avatarUrl: undefined,
-                        initials: initials || 'TS',
-                        requestType: `${ts.periodType} Timesheet`,
-                        startDate: ts.startDate,
-                        endDate: ts.endDate,
-                        durationText: `${ts.totalTimesheetHours} hrs (Ref Punch: ${ts.totalAttendanceHours} hrs)`,
-                        reasonPreview: `Period: ${ts.startDate?.substring(0,10)} to ${ts.endDate?.substring(0,10)} | ${ts.days?.length || 0} days recorded`,
-                        status: statusStr,
-                        actionBy: ts.actionBy,
-                        actionDate: ts.actionDate,
-                        category: 'Timesheet',
-                        rawRecord: {
-                          ...ts,
-                          fullName: empName,
-                          requestType: `${ts.periodType} Timesheet`,
-                          startDate: ts.startDate,
-                          endDate: ts.endDate,
-                          category: 'Timesheet',
-                          totalHours: ts.totalTimesheetHours ?? ts.totalHours
-                        }
-                      };
-                    });
-
-                    finalizeWithAssetTickets([...combinedSoFar, ...tsItems]);
-                  },
-                  error: () => {
-                    finalizeWithAssetTickets(combinedSoFar);
-                  }
-                });
-              },
-              error: () => {
-                finalizeWithAssetTickets([...leaveItems, ...attItems]);
-              }
-            });
-          },
-          error: (err: any) => {
-            console.error('Error fetching attendance requests from DB:', err);
-            finalizeWithAssetTickets([...leaveItems]);
+              });
+            }
           }
         });
-      },
-      error: (err: any) => {
-        console.error('Error fetching leave requests from DB:', err);
-        finalizeWithAssetTickets([]);
-      }
-    });
 
-    const finalizeWithAssetTickets = (currentItems: ApprovalRequestItem[]) => {
-      this.assetRequestService.fetchRequests(this.isApprover ? undefined : loggedUserId).subscribe({
-        next: (assetRes: any) => {
-          const rawAssetList = Array.isArray(assetRes) ? assetRes : (assetRes?.data || []);
-          const assetItems: ApprovalRequestItem[] = rawAssetList.map((a: any) => {
-            const empName = a.employeeName || 'Employee';
-            const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-            const s = (a.status || '').toLowerCase().trim();
-            const isClosed = s.includes('closed');
-            const remarksCombined = ((a.adminRemarks || '') + ' ' + (a.remarks || '') + ' ' + (a.inspectionRemarks || '')).toLowerCase();
-            const hasRejectLog = a.logs && Array.isArray(a.logs) && a.logs.some((l: any) =>
-              (l.toStatus || '').toLowerCase().includes('reject') ||
-              (l.fromStatus || '').toLowerCase().includes('reject') ||
-              (l.remarks || '').toLowerCase().includes('reject')
-            );
-            const isRejected = s.includes('reject') || (isClosed && (remarksCombined.includes('reject') || hasRejectLog));
-            const isApproved = s.includes('approved') || s.includes('completed') || s.includes('received') ||
-              s.includes('repair') || s.includes('dispatch') || s.includes('transit') || s.includes('deliver') ||
-              (isClosed && !isRejected);
-
-            const statusStr: 'Pending' | 'Approved' | 'Rejected' =
-              isRejected ? 'Rejected' :
-              (isApproved ? 'Approved' : 'Pending');
-
-            return {
-              id: Number(a.id),
-              requesterName: empName,
-              requesterRole: `Asset (${a.requestType || 'Service'})`,
-              avatarUrl: undefined,
-              initials: initials || 'AS',
-              requestType: `${a.requestType || 'Asset'} - ${a.assetModel || ('Asset #' + a.assetId)}`,
-              startDate: a.createdDate,
-              endDate: a.updatedDate,
-              durationText: a.createdDate ? new Date(a.createdDate).toLocaleDateString('en-GB') : 'Recent',
-              reasonPreview: isRejected
-                ? `Rejected${isClosed ? ' (Closed)' : ''}: ${a.adminRemarks || a.remarks || 'No remarks provided'}`
-                : (a.reason || a.description || `Ticket #${a.id} (${a.status})`),
-              status: statusStr,
-              actionBy: a.actionByEmployeeId,
-              actionDate: a.updatedDate,
-              category: 'Asset',
-              rawRecord: {
-                ...a,
-                fullName: empName,
-                category: 'Asset'
-              }
-            };
-          });
-
-          let combined = [...currentItems, ...assetItems];
-
-          if (!this.isApprover && loggedUserId > 0) {
-            combined = combined.filter(r => {
-              const rec = r.rawRecord;
-              if (rec?.employeeId) return Number(rec.employeeId) === loggedUserId;
-              if (rec?.empId) return Number(rec.empId) === loggedUserId;
-              return true;
-            });
-          }
-
-          fetchCandidateInterviews(combined);
-        },
-        error: () => {
-          let combined = [...currentItems];
-          if (!this.isApprover && loggedUserId > 0) {
-            combined = combined.filter(r => {
-              const rec = r.rawRecord;
-              if (rec?.employeeId) return Number(rec.employeeId) === loggedUserId;
-              if (rec?.empId) return Number(rec.empId) === loggedUserId;
-              return true;
-            });
-          }
-          fetchCandidateInterviews(combined);
-        }
-      });
-    };
-
-    const fetchCandidateInterviews = (baseItems: ApprovalRequestItem[]) => {
-      this.candidateService.getData().subscribe({
-        next: (candRes: any) => {
-          let candList: any[] = [];
-          if (Array.isArray(candRes)) candList = candRes;
-          else if (candRes?.data && Array.isArray(candRes.data)) candList = candRes.data;
-
-          const interviewItems: ApprovalRequestItem[] = [];
-          const loggedEmpId = loggedUserId;
-          const loggedUserName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || '').toLowerCase().trim() : '';
-
-          candList.forEach((c: any, idx: number) => {
-            if (c.isDeleted || c.stage === 'Rejected' || c.stage === 'Onboarded') return;
-
-            let intId: number | undefined = undefined;
-            let intName: string | undefined = undefined;
-            let lastEvaluatedBy: string | undefined = undefined;
-            let curRound: string = 'Interview Round';
-            let intStatus: string = 'Scheduled';
-            let intRemarks: string | undefined = undefined;
-            let intRating: number | undefined = undefined;
-            let intRec: string | undefined = undefined;
-            let scheduledAt: string | undefined = undefined;
-
-            if (c.relevantExperience && typeof c.relevantExperience === 'string' && c.relevantExperience.trim().startsWith('{')) {
-              try {
-                const parsed = JSON.parse(c.relevantExperience);
-                intId = parsed.interviewerId ? Number(parsed.interviewerId) : undefined;
-                intName = parsed.interviewerName || undefined;
-                lastEvaluatedBy = parsed.lastEvaluatedBy || undefined;
-                curRound = parsed.currentRound || parsed.round || 'Technical Interview';
-                intStatus = parsed.status || 'Scheduled';
-                intRemarks = parsed.remarks || parsed.interviewerRemarks;
-                intRating = parsed.rating || parsed.interviewRating;
-                intRec = parsed.recommendation || parsed.interviewRecommendation;
-                scheduledAt = parsed.scheduledAt || parsed.evaluatedAt;
-              } catch {}
-            }
-
-            const isAssignedToUser = (intId && loggedEmpId > 0 && intId === loggedEmpId) ||
-              (intName && loggedUserName && intName.toLowerCase().includes(loggedUserName));
-
-            const isFeedbackSubmitted = intStatus?.includes('Feedback Submitted') ||
-              intStatus?.includes('Awaiting HR Review') ||
-              intStatus === 'Pending HR Decision' ||
-              Boolean(intRemarks);
-
-            const isAdminOrHr = this.rbacService.isAdmin() || this.rbacService.isHR();
-            // Interviewer only sees it when assigned and feedback has NOT been submitted yet. Once feedback is submitted, it is reassigned back to HR.
-            const interviewerShouldSee = isAssignedToUser && !isFeedbackSubmitted;
-
-            if (isAdminOrHr || interviewerShouldSee) {
-              if (intId || intName || isFeedbackSubmitted || (c.stage && c.stage.toLowerCase().includes('interview'))) {
-                const candName = `${c.firstName || 'Candidate'} ${c.lastName || ''}`.trim();
-                const initials = ((c.firstName?.[0] || 'C') + (c.lastName?.[0] || 'D')).toUpperCase();
-                const isCompleted = isFeedbackSubmitted;
-                const evaluatorDisplay = lastEvaluatedBy || intName || 'Interviewer';
-
-                interviewItems.push({
-                  id: Number(c.id || (idx + 9000)),
-                  requesterName: candName,
-                  requesterRole: `Candidate (${c.appliedRole || 'Applicant'})`,
-                  avatarUrl: undefined,
-                  initials: initials,
-                  requestType: curRound,
-                  startDate: scheduledAt || c.lastUpdated || new Date().toISOString(),
-                  endDate: scheduledAt || c.lastUpdated || new Date().toISOString(),
-                  durationText: curRound,
-                  reasonPreview: isCompleted
-                    ? `Feedback logged by ${evaluatorDisplay}. Awaiting HR Review (${intRating ? intRating + '/5' : 'Rating logged'}: "${intRemarks || intRec || 'Feedback submitted'}").`
-                    : `Assigned Interviewer: ${intName || 'You'}. Pending interview feedback submission.`,
-                  status: isCompleted ? 'Approved' : 'Pending',
-                  actionBy: intId,
-                  actionDate: scheduledAt,
-                  category: 'Interview',
-                  rawRecord: {
-                    ...c,
-                    id: Number(c.id),
-                    candidateId: Number(c.id),
-                    currentRound: curRound,
-                    interviewStatus: intStatus,
-                    interviewerId: intId,
-                    interviewerName: intName || lastEvaluatedBy,
-                    interviewerRemarks: intRemarks,
-                    interviewRating: intRating,
-                    interviewRecommendation: intRec,
-                    interviewHistory: (c.relevantExperience && typeof c.relevantExperience === 'string' && c.relevantExperience.trim().startsWith('{'))
-                      ? (() => { try { return Array.isArray(JSON.parse(c.relevantExperience).history) ? JSON.parse(c.relevantExperience).history : []; } catch { return []; } })()
-                      : [],
-                    rawRelevantExperience: c.relevantExperience,
-                    isCandidateInterview: true
-                  }
-                });
-              }
-            }
-          });
-
-          const allCombined = [...baseItems, ...interviewItems];
-          fetchBankingRequests(allCombined);
-        },
-        error: () => {
-          fetchBankingRequests(baseItems);
-        }
-      });
-    };
-
-    const fetchBankingRequests = (currentItems: ApprovalRequestItem[]) => {
-      // Strictly restrict Banking requests to HR and Admin
-      if (!this.isBankingApprover) {
-        this.allRequests = currentItems;
-        const names = Array.from(new Set(currentItems.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
-        this.employeeOptions = names;
-        this.updateMetricsAndFilter();
-        return;
-      }
-
-      this.employeeService.getData().subscribe({
-        next: (empRes: any) => {
+        // 7. Process Banking Requests
+        const bankingItems: ApprovalRequestItem[] = [];
+        if (this.isBankingApprover && empRes) {
           let empList: any[] = [];
           if (Array.isArray(empRes)) empList = empRes;
           else if (empRes?.data && Array.isArray(empRes.data)) empList = empRes.data;
 
-          const bankingItems: ApprovalRequestItem[] = [];
           empList.forEach((emp: any) => {
             if (emp.responsibilities) {
               try {
@@ -677,21 +581,31 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               } catch {}
             }
           });
-
-          const finalCombined = [...currentItems, ...bankingItems];
-          this.allRequests = finalCombined;
-          const names = Array.from(new Set(finalCombined.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
-          this.employeeOptions = names;
-          this.updateMetricsAndFilter();
-        },
-        error: () => {
-          this.allRequests = currentItems;
-          const names = Array.from(new Set(currentItems.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
-          this.employeeOptions = names;
-          this.updateMetricsAndFilter();
         }
-      });
-    };
+
+        // Combine and scope
+        let combined = [...leaveItems, ...attItems, ...docItems, ...tsItems, ...assetItems];
+        if (!this.isApprover && loggedUserId > 0) {
+          combined = combined.filter(r => {
+            const rec = r.rawRecord;
+            if (rec?.employeeId) return Number(rec.employeeId) === loggedUserId;
+            if (rec?.empId) return Number(rec.empId) === loggedUserId;
+            return true;
+          });
+        }
+
+        const finalCombined = [...combined, ...interviewItems, ...bankingItems];
+        this.allRequests = finalCombined;
+        const names = Array.from(new Set(finalCombined.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
+        this.employeeOptions = names;
+        this.updateMetricsAndFilter();
+      },
+      error: (err) => {
+        console.error('Error in parallel loadAllRequests:', err);
+        this.allRequests = [];
+        this.updateMetricsAndFilter();
+      }
+    });
   }
 
   formatDateRange(start?: string, end?: string): string {
@@ -1413,6 +1327,20 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     const s = (item.status || '').toLowerCase();
     if (s !== 'pending' && s !== 'approved') return false;
 
+    // Approved leaves for past dates or days that have already passed cannot be cancelled
+    if (s === 'approved') {
+      const rawDate = item.startDate || item.rawRecord?.startDate;
+      if (rawDate) {
+        const leaveStart = new Date(rawDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        leaveStart.setHours(0, 0, 0, 0);
+        if (leaveStart.getTime() < today.getTime()) {
+          return false;
+        }
+      }
+    }
+
     const loggedUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
     const leaveEmpId = Number(item.rawRecord?.employeeId || item.rawRecord?.empId || 0);
 
@@ -1423,6 +1351,11 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     const leaveId = Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId);
     if (!leaveId) {
       this.toaster.error('Invalid leave request ID', 'Error');
+      return;
+    }
+
+    if (!this.canCancelLeave(item)) {
+      this.toaster.warning('Approved leaves for previous days or dates that have already passed cannot be cancelled.', 'Action Prohibited');
       return;
     }
 

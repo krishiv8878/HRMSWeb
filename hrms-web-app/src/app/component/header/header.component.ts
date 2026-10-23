@@ -141,10 +141,12 @@ export class HeaderComponent implements OnInit {
 
   currentUserName: string = '';
   currentUserInitials: string = '';
+  private searchPoolsLoaded: boolean = false;
 
   ngOnInit(): void {
     this.employeeService.refreshCurrentLoggedInUserAvatar();
-    this.loadSearchPools();
+    // this.loadSearchPools(); (made lazy)
+
     this.refreshUserInfo();
 
     this.employeeService.userProfile$.subscribe(() => {
@@ -257,15 +259,19 @@ export class HeaderComponent implements OnInit {
 
     this.isAdminOrHrOrManager = this.rbacService.isAdmin() || this.rbacService.isHR() || this.rbacService.isManager();
 
-    this.employeeService.getData().subscribe({
-      next: (res: any) => {
-        const list = Array.isArray(res) ? res : (res?.data || res?.result || []);
-        this.allEmployeesForFilter = list.filter((e: any) => e.isActive !== false && e.isActive !== 0);
-      },
-      error: () => {
-        this.allEmployeesForFilter = [];
-      }
-    });
+    if (this.isAdminOrHrOrManager) {
+      this.employeeService.getLookup().subscribe({
+        next: (res: any) => {
+          const list = Array.isArray(res) ? res : (res?.data || res?.result || []);
+          this.allEmployeesForFilter = list.filter((e: any) => e.isActive !== false && e.isActive !== 0);
+        },
+        error: () => {
+          this.allEmployeesForFilter = [];
+        }
+      });
+    } else {
+      this.allEmployeesForFilter = [];
+    }
 
     this.globalFilterService.updateRouteContext(this.router.url);
     this.router.events.subscribe((event) => {
@@ -339,50 +345,63 @@ export class HeaderComponent implements OnInit {
     this.currentUserInitials = user.initials;
   }
 
+  private populateEmployeesSearchPool(rawList: any[]): void {
+    const globalAvatar = this.employeeService.getProfileAvatar();
+    this.cachedEmployees = rawList.map((emp: any, idx: number) => {
+      const fName = emp.firstName || 'Employee';
+      const lName = emp.lastName || '';
+      const fullName = `${fName} ${lName}`.trim();
+      const initials = ((fName[0] || 'E') + (lName[0] || '')).toUpperCase();
+      const role = emp.rolenames || emp.designation || 'Team Member';
+      
+      let avatarUrl: string | undefined = undefined;
+      if (emp.profileImage) {
+        avatarUrl = emp.profileImage.startsWith('http') || emp.profileImage.startsWith('data:')
+          ? emp.profileImage
+          : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${emp.profileImage}`;
+      } else if (globalAvatar && idx === 0) {
+        avatarUrl = globalAvatar;
+      }
+
+      return {
+        id: `emp-${emp.id || emp.employeeId || idx}`,
+        title: fullName,
+        subtitle: `${role} • ${emp.emailAddress || 'employee@khrms.com'}`,
+        category: 'Employee',
+        icon: 'person',
+        avatarUrl: avatarUrl,
+        initials: initials,
+        route: '/index/home',
+        metaBadge: emp.department || 'Workforce'
+      };
+    });
+  }
+
+  ensureSearchPoolsLoaded(): void {
+    if (this.searchPoolsLoaded) return;
+    this.searchPoolsLoaded = true;
+    this.loadSearchPools();
+  }
+
   loadSearchPools(): void {
     // 1. Fetch Employees (only if Admin, HR, or Manager)
     if (this.rbacService.isAdmin() || this.rbacService.isHR() || this.rbacService.isManager()) {
-      this.employeeService.getData().subscribe({
-        next: (res: any) => {
-          let rawList: any[] = [];
-          if (Array.isArray(res)) rawList = res;
-          else if (res && Array.isArray(res.data)) rawList = res.data;
-          else if (res && Array.isArray(res.result)) rawList = res.result;
-
-          const globalAvatar = this.employeeService.getProfileAvatar();
-          this.cachedEmployees = rawList.map((emp: any, idx: number) => {
-            const fName = emp.firstName || 'Employee';
-            const lName = emp.lastName || '';
-            const fullName = `${fName} ${lName}`.trim();
-            const initials = ((fName[0] || 'E') + (lName[0] || '')).toUpperCase();
-            const role = emp.rolenames || emp.designation || 'Team Member';
-            
-            let avatarUrl: string | undefined = undefined;
-            if (emp.profileImage) {
-              avatarUrl = emp.profileImage.startsWith('http') || emp.profileImage.startsWith('data:')
-                ? emp.profileImage
-                : `${this.employeeService.apiUrl.replace('/api', '')}/ProfileImages/${emp.profileImage}`;
-            } else if (globalAvatar && idx === 0) {
-              avatarUrl = globalAvatar;
-            }
-
-            return {
-              id: `emp-${emp.id || emp.employeeId || idx}`,
-              title: fullName,
-              subtitle: `${role} • ${emp.emailAddress || 'employee@khrms.com'}`,
-              category: 'Employee',
-              icon: 'person',
-              avatarUrl: avatarUrl,
-              initials: initials,
-              route: '/index/home',
-              metaBadge: emp.department || 'Workforce'
-            };
-          });
-        },
-        error: () => {
-          this.cachedEmployees = [];
-        }
-      });
+      if (this.allEmployeesForFilter && this.allEmployeesForFilter.length > 0) {
+        this.populateEmployeesSearchPool(this.allEmployeesForFilter);
+      } else {
+        this.employeeService.getLookup().subscribe({
+          next: (res: any) => {
+            let rawList: any[] = [];
+            if (Array.isArray(res)) rawList = res;
+            else if (res && Array.isArray(res.data)) rawList = res.data;
+            else if (res && Array.isArray(res.result)) rawList = res.result;
+            this.populateEmployeesSearchPool(rawList);
+          },
+          error: () => {
+            this.cachedEmployees = [];
+          }
+        });
+      }
     } else {
       this.cachedEmployees = [];
     }
@@ -448,12 +467,14 @@ export class HeaderComponent implements OnInit {
   }
 
   onSearchFocus(): void {
+    this.ensureSearchPoolsLoaded();
     if (this.headerSearchQuery.trim().length > 0) {
       this.isSearchOpen = true;
     }
   }
 
   onSearchChange(query: string): void {
+    this.ensureSearchPoolsLoaded();
     this.headerSearchQuery = query;
     this.documentService.setSearchQuery(query);
 
@@ -519,12 +540,15 @@ export class HeaderComponent implements OnInit {
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();
+      this.ensureSearchPoolsLoaded();
       this.selectedIndex = (this.selectedIndex + 1) % this.allFilteredResults.length;
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
+      this.ensureSearchPoolsLoaded();
       this.selectedIndex = (this.selectedIndex - 1 + this.allFilteredResults.length) % this.allFilteredResults.length;
     } else if (event.key === 'Enter') {
       event.preventDefault();
+      this.ensureSearchPoolsLoaded();
       if (this.selectedIndex >= 0 && this.selectedIndex < this.allFilteredResults.length) {
         this.selectResult(this.allFilteredResults[this.selectedIndex]);
       } else if (this.allFilteredResults.length > 0) {
@@ -576,6 +600,7 @@ export class HeaderComponent implements OnInit {
   handleGlobalKeyboard(event: KeyboardEvent): void {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
+      this.ensureSearchPoolsLoaded();
       if (this.searchInputRef) {
         this.searchInputRef.nativeElement.focus();
         this.searchInputRef.nativeElement.select();

@@ -168,13 +168,17 @@ export class AttendanceStateService implements OnDestroy {
     if (!empId) return;
 
     forkJoin({
-      attendance: this.attendanceService.getAllData().pipe(catchError(() => of([]))),
-      logs: this.attendanceService.getAttendanceLogs().pipe(catchError(() => of([]))),
+      attendance: this.attendanceService.getByEmployeeId(empId).pipe(catchError(() => of([]))),
+      logs: this.attendanceService.getAttendanceLogsByEmployeeId(empId).pipe(catchError(() => of([]))),
       requests: this.attendanceRequestService.getAllData().pipe(catchError(() => of([])))
     }).subscribe({
       next: (res: any) => {
-        const rawAttendance = Array.isArray(res?.attendance?.data) ? res.attendance.data : (Array.isArray(res?.attendance) ? res.attendance : []);
-        const rawLogs = Array.isArray(res?.logs?.data) ? res.logs.data : (Array.isArray(res?.logs) ? res.logs : []);
+        const rawAttendance = Array.isArray(res?.attendance?.data)
+          ? res.attendance.data
+          : (res?.attendance?.data ? [res.attendance.data] : (Array.isArray(res?.attendance) ? res.attendance : (res?.attendance ? [res.attendance] : [])));
+        const rawLogs = Array.isArray(res?.logs?.data)
+          ? res.logs.data
+          : (res?.logs?.data ? [res.logs.data] : (Array.isArray(res?.logs) ? res.logs : (res?.logs ? [res.logs] : [])));
         const rawRequests = Array.isArray(res?.requests?.data) ? res.requests.data : (Array.isArray(res?.requests) ? res.requests : []);
 
         const now = new Date();

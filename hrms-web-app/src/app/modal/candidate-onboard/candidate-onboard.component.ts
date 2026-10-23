@@ -142,7 +142,7 @@ export class CandidateOnboardModalComponent implements OnInit {
     });
 
     // 2. Managers (Filtering strictly to managerial and leadership profiles)
-    this.employeeService.getData().subscribe({
+    this.employeeService.getLookup().subscribe({
       next: (res: any) => {
         const list: any[] = Array.isArray(res) ? res : (res?.data || res?.employeedata?.data || []);
         const activeEmps = list.filter((e: any) => !e.isDeleted);

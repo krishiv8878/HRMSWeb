@@ -2804,3 +2804,108 @@
     color: #6d28d9;
   }
 }
+
+.work-mode-widget.supervisor-view {
+  border-color: #c7d2fe;
+  background: #f8fafc;
+
+  .label-sup-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #6366f1;
+    vertical-align: middle;
+    margin-right: 2px;
+  }
+
+  .work-mode-label {
+    color: #4338ca;
+  }
+}
+
+.chip-workmode {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &.chip-wfo {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+
+  &.chip-wfh {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+
+  &.chip-od {
+    background: #f0fdfa;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+  }
+}
+
+.work-mode-drawer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &.tag-wfo {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+
+  &.tag-wfh {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+
+  &.tag-od {
+    background: #f0fdfa;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+  }
+}
+
+.badge-work-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+
+  &.mode-wfo {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+
+  &.mode-wfh {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+
+  &.mode-od {
+    background: #f0fdfa;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+  }
+}

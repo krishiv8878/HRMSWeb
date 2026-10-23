@@ -379,6 +379,31 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
   }
 
   private loadPayrollEmployees() {
+    // Non-Admin/HR: Fetch only own profile record directly to avoid over-fetching
+    if (!this.isAdminOrHr && this.employeeId) {
+      this.employeeService.getEmployeeById(this.employeeId).subscribe({
+        next: (selfRes: any) => {
+          const selfEmp = selfRes?.data || selfRes;
+          if (selfEmp && selfEmp.id) {
+            this.allPayrollEmployees = [this.mapPayrollEmployee(selfEmp)];
+          } else {
+            this.allPayrollEmployees = [];
+          }
+          this.setupEmployeeView();
+          this.recalculatePayrollState();
+          this.filterPayroll();
+        },
+        error: () => {
+          this.allPayrollEmployees = [];
+          this.setupEmployeeView();
+          this.recalculatePayrollState();
+          this.filterPayroll();
+        }
+      });
+      return;
+    }
+
+    // Admin / HR: Load all active workforce for payroll operations
     this.employeeService.getData().subscribe({
       next: (res: any) => {
         let list: any[] = [];
@@ -388,12 +413,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
           list = res.data;
         }
 
-        // Only active employees
         list = list.filter((e: any) => e.isActive !== false && e.isActive !== 0 && e.isActive !== 'false');
-
-        if (!this.isAdminOrHr && this.employeeId) {
-          list = list.filter((e: any) => String(e.id) === String(this.employeeId));
-        }
 
         this.allPayrollEmployees = list.map(emp => this.mapPayrollEmployee(emp));
         this.setupEmployeeView();
@@ -401,31 +421,9 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
         this.filterPayroll();
       },
       error: () => {
-        if (!this.isAdminOrHr && this.employeeId) {
-          this.employeeService.getEmployeeById(this.employeeId).subscribe({
-            next: (selfRes: any) => {
-              const selfEmp = selfRes?.data || selfRes;
-              if (selfEmp && selfEmp.id) {
-                this.allPayrollEmployees = [this.mapPayrollEmployee(selfEmp)];
-              } else {
-                this.allPayrollEmployees = [];
-              }
-              this.setupEmployeeView();
-              this.recalculatePayrollState();
-              this.filterPayroll();
-            },
-            error: () => {
-              this.allPayrollEmployees = [];
-              this.setupEmployeeView();
-              this.recalculatePayrollState();
-              this.filterPayroll();
-            }
-          });
-        } else {
-          this.allPayrollEmployees = [];
-          this.recalculatePayrollState();
-          this.filterPayroll();
-        }
+        this.allPayrollEmployees = [];
+        this.recalculatePayrollState();
+        this.filterPayroll();
       }
     });
   }

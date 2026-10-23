@@ -157,7 +157,7 @@ export class ProjectComponent implements OnInit {
   }
 
   fallbackLoadManagers() {
-    this.employeeService.getData().subscribe({
+    this.employeeService.getLookup().subscribe({
       next: (res: any) => {
         const raw = Array.isArray(res) ? res : (res?.data || []);
         if (raw.length > 0) {

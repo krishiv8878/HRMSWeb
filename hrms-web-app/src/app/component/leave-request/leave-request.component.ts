@@ -471,11 +471,24 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
       return false;
     }
     const text = this.getStatusText(req);
-    return text === 'Pending' || text === 'Approved';
+    if (text === 'Pending') return true;
+    if (text === 'Approved') {
+      // Approved leaves for past dates or days that have already passed cannot be cancelled
+      if (!req.startDate) return false;
+      const leaveStart = new Date(req.startDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      leaveStart.setHours(0, 0, 0, 0);
+      return leaveStart.getTime() >= today.getTime();
+    }
+    return false;
   }
 
   onCancelLeave(req: SubmittedLeaveRequest) {
-    if (!this.canCancelLeave(req)) return;
+    if (!this.canCancelLeave(req)) {
+      this.toastr.warning('Approved leaves for previous days or dates that have already passed cannot be cancelled.', 'Action Prohibited');
+      return;
+    }
 
     const dialogRef = this.dialog.open(CancelLeaveModalComponent, {
       width: '480px',
