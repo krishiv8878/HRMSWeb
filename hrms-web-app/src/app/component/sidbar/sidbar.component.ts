@@ -74,7 +74,8 @@ export class SidbarComponent implements OnInit {
         { label: 'Docs', icon: 'description', route: '/index/document' },
         { label: 'Payroll & Payslips', icon: 'payments', route: '/index/paymentinfo' },
         { label: 'Expense & Travel', icon: 'receipt_long', route: '/index/expense' },
-        { label: 'Email Templates', icon: 'mail', route: '/index/email-templates', roles: ['Admin', 'System Admin'] }
+        { label: 'Email Templates', icon: 'mail', route: '/index/email-templates', roles: ['Admin', 'System Admin'] },
+        { label: 'Workflows', icon: 'alt_route', route: '/index/workflow-config', roles: ['Admin', 'System Admin'] }
       ]
     }
   ];

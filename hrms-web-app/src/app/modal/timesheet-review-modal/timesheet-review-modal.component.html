@@ -304,6 +304,7 @@
       </button>
 
       <div class="decision-buttons">
+        <ng-container *ngIf="data?.canApprove || data?.canOverride">
         <button
           type="button"
           class="btn-danger-outline"
@@ -323,6 +324,12 @@
           <mat-icon>check_circle</mat-icon>
           <span>{{ data?.status === 'Approved' ? 'Approved' : 'Approve Timesheet' }}</span>
         </button>
+        </ng-container>
+
+        <span *ngIf="!data?.canApprove && !data?.canOverride" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 13px; font-weight: 600;">
+          <mat-icon style="font-size: 16px; width: 16px; height: 16px;">visibility</mat-icon>
+          <span>View Only</span>
+        </span>
       </div>
     </div>
   </div>

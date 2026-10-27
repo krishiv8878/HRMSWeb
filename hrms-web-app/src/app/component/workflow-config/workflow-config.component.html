@@ -1,0 +1,751 @@
+<div class="workflow-studio-container">
+  <!-- Top Header Banner -->
+  <header class="studio-header">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <mat-icon>alt_route</mat-icon>
+      </div>
+      <div>
+        <div class="breadcrumb">
+          <span>Administration</span>
+          <mat-icon>chevron_right</mat-icon>
+          <span>System Operations</span>
+          <mat-icon>chevron_right</mat-icon>
+          <span class="active">Approval Workflow Studio</span>
+        </div>
+        <h1 class="page-title">Approval Workflow Studio</h1>
+        <p class="page-subtitle">
+          Configure dynamic multi-step approval routing, conditions, escalation rules, and simulate decisions across HRMS modules.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Header Actions -->
+    <div class="header-actions">
+      <button type="button" class="btn-validate" (click)="validateOnly()" [disabled]="isLoading || isSaving">
+        <mat-icon>rule</mat-icon>
+        <span>Validate Rules</span>
+      </button>
+      <button type="button" class="btn-publish" (click)="publishWorkflow()" [disabled]="isLoading || isSaving">
+        <span class="btn-spinner" *ngIf="isSaving"></span>
+        <mat-icon *ngIf="!isSaving">rocket_launch</mat-icon>
+        <span>{{ isSaving ? 'Publishing...' : 'Publish Version' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Validation Feedback Alert Banner -->
+  <div class="validation-banner" *ngIf="showValidationBanner && validationResult" [ngClass]="validationResult.isValid ? 'banner-success' : 'banner-danger'">
+    <div class="banner-icon">
+      <mat-icon>{{ validationResult.isValid ? 'verified' : 'error' }}</mat-icon>
+    </div>
+    <div class="banner-content">
+      <h4>{{ validationResult.isValid ? 'Configuration Validated Successfully' : 'Validation Issues Detected' }}</h4>
+      <ul *ngIf="validationResult.errors.length > 0" class="error-list">
+        <li *ngFor="let err of validationResult.errors">
+          <mat-icon>cancel</mat-icon>
+          <span>{{ err }}</span>
+        </li>
+      </ul>
+      <ul *ngIf="validationResult.warnings.length > 0" class="warning-list">
+        <li *ngFor="let warn of validationResult.warnings">
+          <mat-icon>warning</mat-icon>
+          <span>{{ warn }}</span>
+        </li>
+      </ul>
+    </div>
+    <button type="button" class="banner-close" (click)="showValidationBanner = false">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Request Type Switcher Pills -->
+  <div class="type-selector-bar">
+    <span class="selector-label">Configuring Module:</span>
+    <div class="type-pills">
+      <button
+        type="button"
+        *ngFor="let def of definitions"
+        class="type-pill-btn"
+        [class.active]="selectedRequestType === def.requestType"
+        (click)="selectRequestType(def.requestType)"
+      >
+        <mat-icon class="pill-icon">
+          {{ def.requestType === 'Leave' ? 'event_busy' : (def.requestType === 'AttendanceRegularization' ? 'schedule' : (def.requestType === 'Timesheet' ? 'more_time' : 'receipt_long')) }}
+        </mat-icon>
+        <span class="pill-name">{{ def.requestType }}</span>
+        <span class="pill-version">v{{ def.version }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Navigation Tabs -->
+  <nav class="studio-nav-tabs">
+    <button
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'definitions'"
+      (click)="switchTab('definitions')"
+    >
+      <mat-icon>format_list_bulleted</mat-icon>
+      <span>All Modules Overview</span>
+    </button>
+
+    <button
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'editor'"
+      (click)="switchTab('editor')"
+    >
+      <mat-icon>account_tree</mat-icon>
+      <span>Steps & Escalation ({{ steps.length }})</span>
+    </button>
+
+    <button
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'routing'"
+      (click)="switchTab('routing')"
+    >
+      <mat-icon>alt_route</mat-icon>
+      <span>Routing Rules Matrix ({{ routingRules.length }})</span>
+    </button>
+
+    <button
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'simulator'"
+      (click)="switchTab('simulator')"
+    >
+      <mat-icon>play_circle_outline</mat-icon>
+      <span>Test Routing Simulator</span>
+    </button>
+
+    <button
+      type="button"
+      class="nav-tab-btn"
+      [class.active]="activeTab === 'history'"
+      (click)="switchTab('history')"
+    >
+      <mat-icon>history</mat-icon>
+      <span>Version History & Rollback</span>
+    </button>
+  </nav>
+
+  <!-- ================= TAB 1: ALL MODULES OVERVIEW ================= -->
+  <section class="tab-pane" *ngIf="activeTab === 'definitions'">
+    <div class="content-card">
+      <div class="card-header-row">
+        <div>
+          <h2 class="card-title">Approval Workflow Definitions</h2>
+          <p class="card-desc">Review active version numbers, approval steps count, and effective dates across all HRMS modules.</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="studio-table">
+          <thead>
+            <tr>
+              <th>REQUEST TYPE</th>
+              <th>WORKFLOW TITLE</th>
+              <th>ACTIVE VERSION</th>
+              <th>STATUS</th>
+              <th>STEPS</th>
+              <th>ROUTING RULES</th>
+              <th>EFFECTIVE DATE</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let def of definitions">
+              <td class="col-type">
+                <div class="module-badge">
+                  <mat-icon class="module-icon">
+                    {{ def.requestType === 'Leave' ? 'event_busy' : (def.requestType === 'AttendanceRegularization' ? 'schedule' : (def.requestType === 'Timesheet' ? 'more_time' : 'receipt_long')) }}
+                  </mat-icon>
+                  <strong>{{ def.requestType }}</strong>
+                </div>
+              </td>
+              <td>
+                <span class="def-title">{{ def.title }}</span>
+                <span class="def-desc">{{ def.description || 'Configurable workflow' }}</span>
+              </td>
+              <td>
+                <span class="version-tag">Version {{ def.version }}</span>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="def.isPublished ? 'pill-published' : 'pill-draft'">
+                  {{ def.isPublished ? 'Published' : 'Draft' }}
+                </span>
+              </td>
+              <td>
+                <span class="count-badge">{{ def.stepCount }} Step(s)</span>
+              </td>
+              <td>
+                <span class="count-badge">{{ def.routingRuleCount }} Rule(s)</span>
+              </td>
+              <td>
+                <span class="date-text">{{ def.effectiveDate | date:'mediumDate' }}</span>
+              </td>
+              <td class="text-right">
+                <button type="button" class="btn-action-edit" (click)="selectRequestType(def.requestType); switchTab('editor')">
+                  <mat-icon>tune</mat-icon>
+                  <span>Configure</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 2: STEPS & ESCALATION EDITOR ================= -->
+  <section class="tab-pane" *ngIf="activeTab === 'editor'">
+    <div class="content-card">
+      <!-- Definition Metadata Box -->
+      <div class="meta-form-box">
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label class="form-label">Workflow Title <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="definitionTitle" class="studio-input" placeholder="e.g. Leave Approval Policy" />
+          </div>
+          <div class="form-group flex-1">
+            <label class="form-label">Effective Date</label>
+            <input type="date" [(ngModel)]="definitionEffectiveDate" class="studio-input" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Policy Description</label>
+          <input type="text" [(ngModel)]="definitionDescription" class="studio-input" placeholder="Explain the purpose and scope of this approval policy" />
+        </div>
+      </div>
+
+      <!-- Steps List Header -->
+      <div class="steps-header-row">
+        <div>
+          <h2 class="card-title">Approval Sequence ({{ steps.length }} Steps)</h2>
+          <p class="card-desc">Requests move sequentially through ordered steps. Configure who approves, conditions, mode, and escalations.</p>
+        </div>
+        <button type="button" class="btn-add-step" (click)="addStep()">
+          <mat-icon>add</mat-icon>
+          <span>Add Approval Step</span>
+        </button>
+      </div>
+
+      <!-- Step Cards -->
+      <div class="step-card-stack">
+        <div *ngFor="let step of steps; let i = index" class="step-card">
+          <!-- Step Order Header -->
+          <div class="step-card-header">
+            <div class="step-number-badge">
+              <span>Step {{ step.stepOrder }}</span>
+            </div>
+            <input type="text" [(ngModel)]="step.stepName" class="step-name-input" placeholder="Step Name" />
+
+            <div class="step-header-actions">
+              <button type="button" class="btn-icon" (click)="moveStepUp(i)" [disabled]="i === 0" title="Move Step Up">
+                <mat-icon>arrow_upward</mat-icon>
+              </button>
+              <button type="button" class="btn-icon" (click)="moveStepDown(i)" [disabled]="i === steps.length - 1" title="Move Step Down">
+                <mat-icon>arrow_downward</mat-icon>
+              </button>
+              <button type="button" class="btn-icon btn-delete" (click)="removeStep(i)" title="Remove Step">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step Configuration Body -->
+          <!-- Step Configuration Body -->
+          <div class="step-card-body">
+            <div class="form-grid-3">
+              <!-- Rule Type -->
+              <div class="form-group">
+                <label class="form-label">Approver Rule Type <span class="required">*</span></label>
+                <select [ngModel]="step.approverRuleType" (ngModelChange)="onRuleTypeChange(step, $event)" class="studio-select">
+                  <option *ngFor="let r of ruleTypes" [value]="r.value">{{ r.label }}</option>
+                </select>
+                <small class="field-hint">Dynamic resolver algorithm for this step.</small>
+              </div>
+
+              <!-- Contextual Rule Parameters Area -->
+              <!-- CASE 1: SpecificPerson (Interactive Employee Dropdown) -->
+              <div class="form-group" *ngIf="step.approverRuleType === 'SpecificPerson'">
+                <label class="form-label">Select Designated Approver <span class="required">*</span></label>
+                <select
+                  [ngModel]="getSpecificPersonId(step)"
+                  (ngModelChange)="onSpecificPersonChange(step, $event)"
+                  class="studio-select"
+                >
+                  <option [value]="0">-- Select Specific Employee --</option>
+                  <option *ngFor="let emp of employees" [value]="emp.id">
+                    {{ emp.firstName }} {{ emp.lastName }} (ID: {{ emp.id }} - {{ emp.department || 'Staff' }})
+                  </option>
+                </select>
+                <small class="field-hint text-success" *ngIf="getSpecificPersonId(step) > 0">
+                  <mat-icon class="inline-icon">check_circle</mat-icon>
+                  Assigned Approver: <strong>{{ getStepApproverName(step) }}</strong>
+                </small>
+                <small class="field-hint text-warning" *ngIf="!getSpecificPersonId(step)">
+                  <mat-icon class="inline-icon">warning</mat-icon>
+                  Please choose an employee to approve this step.
+                </small>
+              </div>
+
+              <!-- CASE 2: ProjectOwner (Project Selection) -->
+              <div class="form-group" *ngIf="step.approverRuleType === 'ProjectOwner'">
+                <label class="form-label">Project Scope Selection</label>
+                <select
+                  [ngModel]="getStepProjectId(step)"
+                  (ngModelChange)="onProjectChange(step, $event)"
+                  class="studio-select"
+                >
+                  <option [value]="0">-- Dynamic: Requester's Assigned Project --</option>
+                  <option *ngFor="let p of projects" [value]="p.id">
+                    {{ p.projectName }} (ID: {{ p.id }})
+                  </option>
+                </select>
+                <small class="field-hint">Select a specific project or auto-detect from request context.</small>
+              </div>
+
+              <!-- CASE 3: RoleInLocation -->
+              <div class="form-group" *ngIf="step.approverRuleType === 'RoleInLocation'">
+                <label class="form-label">Target Role & Branch <span class="required">*</span></label>
+                <div class="split-inputs">
+                  <select
+                    [ngModel]="getStepRole(step)"
+                    (ngModelChange)="onRoleInLocationChange(step, $event, getStepBranch(step))"
+                    class="studio-select flex-1"
+                  >
+                    <option value="">-- Role --</option>
+                    <option *ngFor="let r of roles" [value]="r.roleName">{{ r.roleName }}</option>
+                  </select>
+                  <select
+                    [ngModel]="getStepBranch(step)"
+                    (ngModelChange)="onRoleInLocationChange(step, getStepRole(step), $event)"
+                    class="studio-select flex-1"
+                  >
+                    <option value="">-- Branch / Location --</option>
+                    <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+                  </select>
+                </div>
+                <small class="field-hint">Approver must hold this role in requester's branch.</small>
+              </div>
+
+              <!-- CASE 4: GroupQueue -->
+              <div class="form-group" *ngIf="step.approverRuleType === 'GroupQueue'">
+                <label class="form-label">Target Role Queue <span class="required">*</span></label>
+                <select
+                  [ngModel]="getStepRole(step)"
+                  (ngModelChange)="onGroupQueueRoleChange(step, $event)"
+                  class="studio-select"
+                >
+                  <option value="">-- Select Role Queue --</option>
+                  <option *ngFor="let r of roles" [value]="r.roleName">{{ r.roleName }}</option>
+                </select>
+                <small class="field-hint">Any user with this role can approve from their pending inbox.</small>
+              </div>
+
+              <!-- CASE 5: Org Hierarchy (ReportingManager, SkipLevelManager, DepartmentHead) -->
+              <div class="form-group" *ngIf="step.approverRuleType === 'ReportingManager' || step.approverRuleType === 'SkipLevelManager' || step.approverRuleType === 'DepartmentHead'">
+                <label class="form-label">Org-Chart Hierarchy Resolver</label>
+                <div class="info-banner-mini">
+                  <mat-icon class="info-icon">account_tree</mat-icon>
+                  <div class="info-text">
+                    <span *ngIf="step.approverRuleType === 'ReportingManager'">
+                      <strong>Direct Line Manager:</strong> Auto-resolved from employee's assigned reporting manager.
+                    </span>
+                    <span *ngIf="step.approverRuleType === 'SkipLevelManager'">
+                      <strong>Skip-Level Manager:</strong> Manager of requester's manager in tree.
+                    </span>
+                    <span *ngIf="step.approverRuleType === 'DepartmentHead'">
+                      <strong>Department Head:</strong> Authority for requester's department.
+                    </span>
+                  </div>
+                </div>
+                <small class="field-hint">Auto-resolved dynamically per requester at runtime.</small>
+              </div>
+
+              <!-- Approval Mode -->
+              <div class="form-group">
+                <label class="form-label">Approval Mode</label>
+                <select [(ngModel)]="step.stepMode" class="studio-select">
+                  <option value="AnyOne">Any One (First approver to act wins)</option>
+                  <option value="All">All Approvers Must Approve (Unanimous)</option>
+                </select>
+                <small class="field-hint">How decisions close this step.</small>
+              </div>
+            </div>
+
+            <!-- Project-Based Selection of Particular Person Row -->
+            <div class="form-grid-3 mt-3" *ngIf="step.approverRuleType === 'ProjectOwner'">
+              <div class="form-group">
+                <label class="form-label">Project Approver Person (Particular Person)</label>
+                <select
+                  [ngModel]="getStepProjectPersonId(step)"
+                  (ngModelChange)="onProjectPersonChange(step, $event)"
+                  class="studio-select"
+                >
+                  <option [value]="0">-- Project Manager (Auto-Resolve for Project) --</option>
+                  <option *ngFor="let emp of employees" [value]="emp.id">
+                    {{ emp.firstName }} {{ emp.lastName }} (ID: {{ emp.id }} - {{ emp.department || 'Staff' }})
+                  </option>
+                </select>
+                <small class="field-hint text-success" *ngIf="getStepProjectPersonId(step) > 0">
+                  <mat-icon class="inline-icon">person</mat-icon>
+                  Designated Project Approver: <strong>{{ getStepApproverName(step) }}</strong>
+                </small>
+                <small class="field-hint" *ngIf="!getStepProjectPersonId(step)">
+                  <mat-icon class="inline-icon">info</mat-icon>
+                  Default: Auto-resolves to Project Manager of the project.
+                </small>
+              </div>
+
+              <div class="form-group flex-2">
+                <label class="form-label">Project Rule Scope Summary</label>
+                <div class="project-summary-box">
+                  <mat-icon class="inline-icon">info_outline</mat-icon>
+                  <span *ngIf="getStepProjectId(step) > 0">
+                    Project: <strong>{{ parseRuleParams(step).ProjectName || ('Project #' + getStepProjectId(step)) }}</strong>
+                    <span *ngIf="getStepProjectPersonId(step) > 0"> | Specific Approver: <strong>{{ getStepApproverName(step) }}</strong></span>
+                    <span *ngIf="!getStepProjectPersonId(step)"> | Resolves to Project Manager</span>
+                  </span>
+                  <span *ngIf="!getStepProjectId(step)">
+                    Dynamic: Auto-detect project from requester.
+                    <span *ngIf="getStepProjectPersonId(step) > 0"> | Specific Approver: <strong>{{ getStepApproverName(step) }}</strong></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optional Raw JSON Parameters Toggle & Viewer -->
+            <div class="raw-params-toggle-row">
+              <button type="button" class="btn-text-link" (click)="toggleRawJson(step.stepOrder)">
+                <mat-icon class="inline-icon">{{ showRawJsonMap[step.stepOrder] ? 'expand_less' : 'code' }}</mat-icon>
+                <span>{{ showRawJsonMap[step.stepOrder] ? 'Hide Raw JSON Parameters' : 'View / Edit Raw JSON Parameters' }}</span>
+              </button>
+            </div>
+            <div class="raw-params-box" *ngIf="showRawJsonMap[step.stepOrder]">
+              <label class="form-label">Raw Parameters (JSON Payload)</label>
+              <input
+                type="text"
+                [(ngModel)]="step.ruleParameters"
+                class="studio-input font-mono"
+                placeholder='e.g. {"EmployeeId": 12} or {"ProjectId": 5, "EmployeeId": 12}'
+              />
+              <small class="field-hint">Direct JSON payload bound to this approval step.</small>
+            </div>
+
+            <!-- Optional Condition & Time Limit -->
+            <div class="form-grid-3 mt-3">
+              <div class="form-group">
+                <label class="form-label">Step Condition Expression</label>
+                <input
+                  type="text"
+                  [(ngModel)]="step.conditionJson"
+                  class="studio-input"
+                  placeholder='e.g. {"field":"Days","operator":"GreaterThan","value":5}'
+                />
+                <small class="field-hint">Leave blank to always execute, or filter by context (Days, Amount, etc.).</small>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Time Limit (Hours)</label>
+                <input type="number" [(ngModel)]="step.timeLimitHours" class="studio-input" min="1" max="720" placeholder="e.g. 48" />
+                <small class="field-hint">Overdue threshold before auto-escalation triggers.</small>
+              </div>
+
+              <!-- Escalation Toggle & Target -->
+              <div class="form-group">
+                <label class="form-label">Auto-Escalation</label>
+                <div class="checkbox-row">
+                  <label class="checkbox-container">
+                    <input type="checkbox" [(ngModel)]="step.isEscalationEnabled" />
+                    <span class="checkmark"></span>
+                    <span>Enable Escalation Job</span>
+                  </label>
+                </div>
+                <div *ngIf="step.isEscalationEnabled" class="mt-2">
+                  <select [(ngModel)]="step.escalationTarget" class="studio-select">
+                    <option value="SkipLevelManager">Escalate to Skip-Level Manager</option>
+                    <option value="DepartmentHead">Escalate to Department Head</option>
+                    <option value="Role:HR">Escalate to HR Operations</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 3: ROUTING RULES MATRIX ================= -->
+  <section class="tab-pane" *ngIf="activeTab === 'routing'">
+    <div class="content-card">
+      <div class="card-header-row">
+        <div>
+          <h2 class="card-title">Routing Rules Matrix (Scope Hierarchy)</h2>
+          <p class="card-desc">
+            Routing rules route requests based on requester scope (Project, Department, Branch, or Default). Lowest Priority number wins.
+          </p>
+        </div>
+        <button type="button" class="btn-add-step" (click)="addRoutingRule()">
+          <mat-icon>add</mat-icon>
+          <span>Add Routing Rule</span>
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="studio-table">
+          <thead>
+            <tr>
+              <th>SCOPE TYPE</th>
+              <th>SCOPE VALUE</th>
+              <th>PRIORITY</th>
+              <th>FALLBACK STATUS</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rule of routingRules; let idx = index">
+              <td>
+                <select [(ngModel)]="rule.scopeType" (ngModelChange)="onScopeTypeChange(rule)" class="studio-select-sm" [disabled]="rule.isDefault || rule.scopeType === 'Default'">
+                  <option *ngFor="let sc of scopeTypes" [value]="sc.value">{{ sc.label }}</option>
+                </select>
+              </td>
+              <td>
+                <!-- Project Scope Selection -->
+                <select
+                  *ngIf="rule.scopeType === 'Project'"
+                  [(ngModel)]="rule.scopeValue"
+                  class="studio-select-sm"
+                >
+                  <option value="">-- Select Project --</option>
+                  <option *ngFor="let p of projects" [value]="p.id">{{ p.projectName }} (ID: {{ p.id }})</option>
+                </select>
+
+                <!-- Department Scope Selection -->
+                <select
+                  *ngIf="rule.scopeType === 'Department'"
+                  [(ngModel)]="rule.scopeValue"
+                  class="studio-select-sm"
+                >
+                  <option value="">-- Select Department --</option>
+                  <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+                </select>
+
+                <!-- Location Scope Selection -->
+                <select
+                  *ngIf="rule.scopeType === 'Location'"
+                  [(ngModel)]="rule.scopeValue"
+                  class="studio-select-sm"
+                >
+                  <option value="">-- Select Location / Branch --</option>
+                  <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+                </select>
+
+                <!-- Default Fallback Scope -->
+                <input
+                  *ngIf="rule.scopeType === 'Default' || rule.isDefault"
+                  type="text"
+                  value="All Requests (Fallback Default)"
+                  class="studio-input-sm"
+                  disabled
+                />
+              </td>
+              <td>
+                <input type="number" [(ngModel)]="rule.priority" class="studio-input-sm w-80" min="1" max="999" />
+              </td>
+              <td>
+                <span class="scope-pill" [ngClass]="(rule.isDefault || rule.scopeType === 'Default') ? 'pill-default' : 'pill-scoped'">
+                  {{ (rule.isDefault || rule.scopeType === 'Default') ? 'Default Fallback' : 'Scoped Route' }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button
+                  type="button"
+                  class="btn-icon btn-delete"
+                  *ngIf="!rule.isDefault && rule.scopeType !== 'Default'"
+                  (click)="removeRoutingRule(idx)"
+                  title="Remove Scope Rule"
+                >
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 4: TEST ROUTING SIMULATOR ================= -->
+  <section class="tab-pane" *ngIf="activeTab === 'simulator'">
+    <div class="content-card">
+      <div class="card-header-row">
+        <div>
+          <h2 class="card-title">Test Routing Simulator</h2>
+          <p class="card-desc">
+            Simulate the exact resolver execution against live org-chart data before deploying. Verify who would approve at each step and why.
+          </p>
+        </div>
+      </div>
+
+      <!-- Simulator Input Grid -->
+      <div class="sim-grid-form">
+        <div class="form-group">
+          <label class="form-label">Requester Employee <span class="required">*</span></label>
+          <select [(ngModel)]="simulatorEmployeeId" class="studio-select">
+            <option *ngFor="let emp of employees" [value]="emp.id">
+              {{ emp.firstName }} {{ emp.lastName }} (ID: {{ emp.id }} - {{ emp.department || 'Staff' }})
+            </option>
+          </select>
+          <small class="field-hint">Choose employee submitting the sample request.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Project Scope (Optional)</label>
+          <select [(ngModel)]="simulatorProjectId" class="studio-select">
+            <option [value]="0">-- Requester Default Project --</option>
+            <option *ngFor="let p of projects" [value]="p.id">{{ p.projectName }} (ID: {{ p.id }})</option>
+          </select>
+          <small class="field-hint">Specify project to test project-based routing.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Duration (Days)</label>
+          <input type="number" [(ngModel)]="simulatorDays" class="studio-input" min="1" max="90" />
+          <small class="field-hint">Used to evaluate conditions (e.g. Days &gt; 5).</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Amount (For Expense/Claims)</label>
+          <input type="number" [(ngModel)]="simulatorAmount" class="studio-input" min="0" />
+          <small class="field-hint">Used for financial threshold rules.</small>
+        </div>
+
+        <div class="form-group flex-align-end">
+          <button type="button" class="btn-run-sim" (click)="runTestRouting()" [disabled]="isSimulating">
+            <span class="btn-spinner" *ngIf="isSimulating"></span>
+            <mat-icon *ngIf="!isSimulating">play_arrow</mat-icon>
+            <span>{{ isSimulating ? 'Simulating...' : 'Simulate Resolution' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Simulation Output Timeline -->
+      <div class="simulation-results-box" *ngIf="simulationResult">
+        <div class="sim-header" [ngClass]="simulationResult.success ? 'sim-success' : 'sim-failure'">
+          <mat-icon>{{ simulationResult.success ? 'check_circle' : 'cancel' }}</mat-icon>
+          <div>
+            <h3>{{ simulationResult.success ? 'Resolution Succeeded' : 'Resolution Blocked' }}</h3>
+            <p>{{ simulationResult.message }}</p>
+          </div>
+        </div>
+
+        <div class="sim-steps-timeline" *ngIf="simulationResult.success && simulationResult.steps.length > 0">
+          <div *ngFor="let s of simulationResult.steps" class="sim-step-node">
+            <div class="node-order">Step {{ s.stepOrder }}</div>
+            <div class="node-card">
+              <div class="node-title-row">
+                <h4>{{ s.stepName }}</h4>
+                <span class="rule-type-badge">{{ s.approverRuleType }}</span>
+                <span class="cond-pill" [ngClass]="s.conditionMet ? 'cond-true' : 'cond-false'">
+                  {{ s.conditionSummary }}
+                </span>
+              </div>
+
+              <div class="node-approvers">
+                <span class="approver-label">Eligible Approver(s):</span>
+                <div class="approver-tags">
+                  <span *ngFor="let name of s.eligibleApproverNames" class="approver-tag">
+                    <mat-icon>person</mat-icon>
+                    <strong>{{ name }}</strong>
+                  </span>
+                  <span *ngIf="s.eligibleApproverNames.length === 0" class="no-approver-warn">
+                    <mat-icon>warning</mat-icon>
+                    <span>No approvers resolved! Check fallback or org hierarchy.</span>
+                  </span>
+                </div>
+              </div>
+
+              <div class="node-reason">
+                <mat-icon>info</mat-icon>
+                <span><strong>Resolution Reason:</strong> {{ s.resolutionReason }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 5: VERSION HISTORY & ROLLBACK ================= -->
+  <section class="tab-pane" *ngIf="activeTab === 'history'">
+    <div class="content-card">
+      <div class="card-header-row">
+        <div>
+          <h2 class="card-title">Version History for {{ selectedRequestType }}</h2>
+          <p class="card-desc">
+            Audit changes across definition versions. In-flight requests remain on their starting version. You can rollback to any previous version.
+          </p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="studio-table">
+          <thead>
+            <tr>
+              <th>VERSION</th>
+              <th>TITLE</th>
+              <th>STATUS</th>
+              <th>STEPS</th>
+              <th>EFFECTIVE DATE</th>
+              <th>CREATED DATE</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let v of versionHistory">
+              <td>
+                <span class="version-tag">Version {{ v.version }}</span>
+              </td>
+              <td>
+                <strong>{{ v.title }}</strong>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="v.isPublished ? 'pill-published' : 'pill-historical'">
+                  {{ v.isPublished ? 'Active / Published' : 'Archived' }}
+                </span>
+              </td>
+              <td>
+                <span class="count-badge">{{ v.stepCount }} Steps</span>
+              </td>
+              <td>
+                <span class="date-text">{{ v.effectiveDate | date:'mediumDate' }}</span>
+              </td>
+              <td>
+                <span class="date-text">{{ v.createdDate | date:'short' }}</span>
+              </td>
+              <td class="text-right">
+                <button
+                  type="button"
+                  class="btn-rollback"
+                  *ngIf="!v.isPublished"
+                  (click)="rollbackToVersion(v.version)"
+                  title="Rollback active workflow to this version"
+                >
+                  <mat-icon>restore</mat-icon>
+                  <span>Rollback</span>
+                </button>
+                <span *ngIf="v.isPublished" class="text-green font-semibold">Active</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>

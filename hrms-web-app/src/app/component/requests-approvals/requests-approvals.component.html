@@ -35,10 +35,10 @@
           <mat-icon>bolt</mat-icon>
         </div>
       </div>
-      <div class="hub-value">{{ totalPendingCount }}</div>
+      <div class="hub-value">{{ totalPendingCount > 0 ? totalPendingCount : pendingStatusCount }}</div>
       <div class="hub-meta is-urgent">
-        <span class="dot-urgent" *ngIf="totalPendingCount > 0"></span>
-        <span>{{ totalPendingCount > 0 ? (totalPendingCount + ' awaiting decision') : 'All caught up' }}</span>
+        <span class="dot-urgent" *ngIf="(totalPendingCount > 0 || pendingStatusCount > 0)"></span>
+        <span>{{ totalPendingCount > 0 ? (totalPendingCount + ' awaiting your action') : (pendingStatusCount > 0 ? (pendingStatusCount + ' pending in workflow') : 'All caught up') }}</span>
       </div>
     </div>
 
@@ -412,6 +412,10 @@
                   'badge-pending':   item.status === 'Pending' || !item.status
                 }"
               >{{ item.status || 'Pending' }}</span>
+              <div class="pending-with-text" *ngIf="item.pendingWith && (item.status === 'Pending' || !item.status)">
+                <mat-icon style="font-size: 13px; width: 13px; height: 13px; vertical-align: middle;">schedule</mat-icon>
+                <span>Pending with: <strong>{{ item.pendingWith }}</strong></span>
+              </div>
             </td>
 
             <!-- Quick Actions -->
@@ -436,7 +440,7 @@
                 </button>
 
                 <!-- Approve / Reject for Time, Leaves, Documents, Banking -->
-                <ng-container *ngIf="isApprover && item.category !== 'Asset' && item.category !== 'Interview'">
+                <ng-container *ngIf="(item.canApprove || item.canOverride) && item.category !== 'Asset' && item.category !== 'Interview'">
                   <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)" [disabled]="isSubmittingDecision" title="Approve Request">
                     <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
@@ -448,6 +452,13 @@
                     <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Reject' }}</span>
                   </button>
                 </ng-container>
+                <span class="action-readonly-tag" *ngIf="item.status === 'Pending' && !item.canApprove && !item.canOverride && item.category !== 'Asset' && item.category !== 'Interview'" (click)="openViewOnlyModal(item)" title="Click to view details (View Only)">
+                  <mat-icon class="readonly-icon">visibility</mat-icon>
+                  <span>View Only</span>
+                </span>
+                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && item.category !== 'Asset' && item.category !== 'Interview'" [ngClass]="item.status === 'Approved' ? 'tag-approved' : (item.status === 'Cancelled' ? 'tag-cancelled' : 'tag-rejected')">
+                  {{ item.status }}
+                </span>
               </div>
             </td>
           </tr>
@@ -531,6 +542,10 @@
                 'badge-rejected': item.status === 'Rejected',
                 'badge-cancelled': item.status === 'Cancelled'
               }">{{ item.status }}</span>
+              <div class="pending-with-text" *ngIf="item.pendingWith && item.status === 'Pending'">
+                <mat-icon style="font-size: 13px; width: 13px; height: 13px; vertical-align: middle;">schedule</mat-icon>
+                <span>Pending with: <strong>{{ item.pendingWith }}</strong></span>
+              </div>
             </td>
 
             <td class="col-actions text-right">
@@ -543,7 +558,7 @@
                 </button>
 
                 <!-- Approver Actions -->
-                <ng-container *ngIf="isApprover">
+                <ng-container *ngIf="item.canApprove || item.canOverride">
                   <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)" [disabled]="isSubmittingDecision">
                     <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
@@ -555,6 +570,10 @@
                     <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Reject' }}</span>
                   </button>
                 </ng-container>
+                <span class="action-readonly-tag" *ngIf="item.status === 'Pending' && !item.canApprove && !item.canOverride && !canCancelLeave(item)" (click)="openViewOnlyModal(item)" title="Click to view details (View Only)">
+                  <mat-icon class="readonly-icon">visibility</mat-icon>
+                  <span>View Only</span>
+                </span>
 
                 <span class="action-status-tag" *ngIf="item.status !== 'Pending' && !canCancelLeave(item)" [ngClass]="item.status === 'Approved' ? 'tag-approved' : (item.status === 'Cancelled' ? 'tag-cancelled' : 'tag-rejected')">
                   {{ item.status }}
@@ -628,7 +647,7 @@
                   <span>Review Tasks</span>
                 </button>
 
-                <ng-container *ngIf="isApprover">
+                <ng-container *ngIf="item.canApprove || item.canOverride">
                   <button type="button" class="btn-approve" [class.is-active-decision]="item.status === 'Approved'" (click)="approveRequest(item)">
                     <mat-icon>check</mat-icon>
                     <span>{{ item.status === 'Approved' ? 'Approved' : 'Approve' }}</span>
@@ -638,6 +657,10 @@
                     <span>{{ item.status === 'Rejected' ? 'Rejected' : 'Reject' }}</span>
                   </button>
                 </ng-container>
+                <span class="action-readonly-tag" *ngIf="item.status === 'Pending' && !item.canApprove && !item.canOverride" (click)="reviewTimesheet(item)" title="Review Timesheet (View Only)">
+                  <mat-icon class="readonly-icon">visibility</mat-icon>
+                  <span>View Only</span>
+                </span>
               </div>
             </td>
           </tr>
@@ -779,7 +802,7 @@
                   <span>{{ item.status === 'Pending' ? 'Evaluate' : 'View' }}</span>
                 </button>
 
-                <ng-container *ngIf="isApprover && item.category !== 'Interview'">
+                <ng-container *ngIf="(item.canApprove || item.canOverride) && item.category !== 'Interview'">
                   <button type="button" class="btn-approve" *ngIf="item.status === 'Pending'" (click)="approveRequest(item)" [disabled]="isSubmittingDecision">
                     <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
@@ -791,6 +814,10 @@
                     <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Reject' }}</span>
                   </button>
                 </ng-container>
+                <span class="action-readonly-tag" *ngIf="item.status === 'Pending' && !item.canApprove && !item.canOverride && item.category !== 'Interview'" (click)="openViewOnlyModal(item)" title="Click to view details (View Only)">
+                  <mat-icon class="readonly-icon">visibility</mat-icon>
+                  <span>View Only</span>
+                </span>
 
                 <span class="action-status-tag" *ngIf="item.status !== 'Pending' && item.category !== 'Interview'" [ngClass]="item.status === 'Approved' ? 'tag-approved' : 'tag-rejected'">
                   {{ item.status }}

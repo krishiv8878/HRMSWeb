@@ -24,6 +24,7 @@ import { PaymentinfoService } from '../../services/employeePayment/paymentinfo.s
 import { NotificationService } from '../../services/notification/notification.service';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
+import { WorkflowService } from '../../services/workflow/workflow.service';
 
 export interface ApprovalRequestItem {
   id: number;
@@ -42,6 +43,12 @@ export interface ApprovalRequestItem {
   actionDate?: string;
   rawRecord?: any;
   category: 'Leave' | 'Attendance' | 'Document' | 'Timesheet' | 'Asset' | 'Interview' | 'Banking' | 'Other';
+  workflowInstanceId?: number;
+  pendingWith?: string;
+  canApprove?: boolean;
+  canOverride?: boolean;
+  canReassign?: boolean;
+  canCancel?: boolean;
 }
 
 @Component({
@@ -72,6 +79,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private globalFilterService = inject(GlobalFilterService);
   private holidayService = inject(HolidayservicesService);
+  private workflowService = inject(WorkflowService);
   private filterSub?: Subscription;
 
   holidays: any[] = [];
@@ -275,7 +283,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             actionBy: actionByVal || undefined,
             actionDate: x.actionDate,
             category: 'Leave',
-            rawRecord: x
+            rawRecord: x,
+            workflowInstanceId: x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined,
+            pendingWith: x.pendingWith,
+            canApprove: x.canApprove !== undefined ? Boolean(x.canApprove) : true,
+            canOverride: Boolean(x.canOverride),
+            canReassign: Boolean(x.canReassign),
+            canCancel: Boolean(x.canCancel)
           };
         });
 
@@ -314,7 +328,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             actionBy: x.actionBy || x.lastActionBy || undefined,
             actionDate: x.actionDate,
             category: 'Attendance',
-            rawRecord: x
+            rawRecord: x,
+            workflowInstanceId: x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined,
+            pendingWith: x.pendingWith,
+            canApprove: x.canApprove !== undefined ? Boolean(x.canApprove) : true,
+            canOverride: Boolean(x.canOverride),
+            canReassign: Boolean(x.canReassign),
+            canCancel: Boolean(x.canCancel)
           };
         });
 
@@ -393,7 +413,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               endDate: ts.endDate,
               category: 'Timesheet',
               totalHours: ts.totalTimesheetHours ?? ts.totalHours
-            }
+            },
+            workflowInstanceId: ts.workflowInstanceId ? Number(ts.workflowInstanceId) : undefined,
+            pendingWith: ts.pendingWith,
+            canApprove: ts.canApprove !== undefined ? Boolean(ts.canApprove) : true,
+            canOverride: Boolean(ts.canOverride),
+            canReassign: Boolean(ts.canReassign),
+            canCancel: Boolean(ts.canCancel)
           };
         });
 
@@ -621,7 +647,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   }
 
   updateMetricsAndFilter(): void {
-    const pendingList = this.allRequests.filter(r => r.status === 'Pending');
+    const pendingList = this.allRequests.filter(r => r.status === 'Pending' && (this.isApprover ? (r.canApprove || r.canOverride) : true));
     this.totalPendingCount = pendingList.length;
     this.urgentCount = pendingList.length;
 
@@ -678,9 +704,19 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     this.filterRequests();
   }
 
-  updateStatusCounts(): void {
+    updateStatusCounts(): void {
     let pool = [...this.allRequests];
-    if (this.activeCategory === 'time_attendance') {
+    if (this.activeCategory === 'action_required') {
+      if (this.activeSubTab === 'leave') {
+        pool = pool.filter(r => r.category === 'Leave' || r.category === 'Attendance');
+      } else if (this.activeSubTab === 'timesheet') {
+        pool = pool.filter(r => r.category === 'Timesheet');
+      } else if (this.activeSubTab === 'asset') {
+        pool = pool.filter(r => r.category === 'Asset');
+      } else if (this.activeSubTab === 'hr_banking') {
+        pool = pool.filter(r => r.category === 'Document' || r.category === 'Banking' || r.category === 'Interview');
+      }
+    } else if (this.activeCategory === 'time_attendance') {
       pool = pool.filter(r => r.category === 'Leave' || r.category === 'Attendance');
     } else if (this.activeCategory === 'timesheet') {
       pool = pool.filter(r => r.category === 'Timesheet');
@@ -728,6 +764,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   setSubTab(subTab: string): void {
     this.activeSubTab = subTab;
     this.currentPage = 1;
+    this.updateStatusCounts();
     this.filterRequests();
   }
 
@@ -742,8 +779,14 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
 
     // Filter by Active Category (Option A Hub)
     if (this.activeCategory === 'action_required') {
-      if (this.activeSubTab !== 'all') {
-        result = result.filter(r => r.category.toLowerCase() === this.activeSubTab.toLowerCase());
+      if (this.activeSubTab === 'leave') {
+        result = result.filter(r => r.category === 'Leave' || r.category === 'Attendance');
+      } else if (this.activeSubTab === 'timesheet') {
+        result = result.filter(r => r.category === 'Timesheet');
+      } else if (this.activeSubTab === 'asset') {
+        result = result.filter(r => r.category === 'Asset');
+      } else if (this.activeSubTab === 'hr_banking') {
+        result = result.filter(r => r.category === 'Document' || r.category === 'Banking' || r.category === 'Interview');
       }
     } else if (this.activeCategory === 'time_attendance') {
       result = result.filter(r => r.category === 'Leave' || r.category === 'Attendance');
@@ -909,8 +952,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.rbacService.isAdmin() && !this.rbacService.isHR() && !this.rbacService.isManager()) {
-      this.toaster.error('Only Managers, HR, and Administrators can approve requests.', 'Access Denied');
+    if (!item.canApprove && !item.canOverride) {
+      this.toaster.error('Access Denied: You are not the assigned approver for this request.', 'Permission Denied');
       return;
     }
 
@@ -1074,8 +1117,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.rbacService.isAdmin() && !this.rbacService.isHR() && !this.rbacService.isManager()) {
-      this.toaster.error('Only Managers, HR, and Administrators can reject requests.', 'Access Denied');
+    if (!item.canApprove && !item.canOverride) {
+      this.toaster.error('Access Denied: You are not the assigned approver for this request.', 'Permission Denied');
       return;
     }
 
@@ -1214,6 +1257,66 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     });
   }
 
+  overrideRequest(item: ApprovalRequestItem, decision: 'Approve' | 'Reject'): void {
+    if (!item.workflowInstanceId) {
+      this.toaster.info('Override is only available on workflow-managed requests.', 'Workflow');
+      return;
+    }
+
+    const actionType = decision === 'Approve' ? 'OverrideApprove' : 'OverrideReject';
+    const reason = prompt(`Administrative Override: Please enter mandatory justification reason to ${decision.toLowerCase()} this request:`);
+    if (reason === null) return;
+    if (!reason.trim()) {
+      this.toaster.error('A mandatory justification reason is required when executing an administrative override.', 'Override Required');
+      return;
+    }
+
+    this.setSubmittingState(true, item.id, `Executing override (${decision}) for ${item.requesterName}...`);
+    this.workflowService.actOnStep(item.workflowInstanceId, actionType, reason.trim()).subscribe({
+      next: () => {
+        this.toaster.success(`Request for ${item.requesterName} ${decision}d via administrative override.`, 'Override Executed');
+        this.setSubmittingState(false);
+        this.loadAllRequests();
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || 'Failed to execute administrative override';
+        this.toaster.error(msg, 'Override Failed');
+        this.setSubmittingState(false);
+      }
+    });
+  }
+
+  reassignRequest(item: ApprovalRequestItem): void {
+    if (!item.workflowInstanceId) {
+      this.toaster.info('Reassignment is only available on workflow-managed requests.', 'Workflow');
+      return;
+    }
+
+    const targetEmpIdStr = prompt('Enter Employee ID of the eligible approver to reassign this step to:');
+    if (!targetEmpIdStr) return;
+    const targetEmpId = Number(targetEmpIdStr);
+    if (!targetEmpId || isNaN(targetEmpId)) {
+      this.toaster.error('Please enter a valid numeric Employee ID.', 'Invalid Input');
+      return;
+    }
+
+    const reason = prompt('Enter reason for administrative reassignment (optional):') || 'Administrative reassignment';
+
+    this.setSubmittingState(true, item.id, `Reassigning approval step for ${item.requesterName}...`);
+    this.workflowService.actOnStep(item.workflowInstanceId, 'Reassign', reason, targetEmpId).subscribe({
+      next: () => {
+        this.toaster.success(`Approval step reassigned successfully.`, 'Reassigned');
+        this.setSubmittingState(false);
+        this.loadAllRequests();
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || 'Failed to reassign step';
+        this.toaster.error(msg, 'Reassignment Failed');
+        this.setSubmittingState(false);
+      }
+    });
+  }
+
   viewAssetDetails(item: ApprovalRequestItem): void {
     const raw = item.rawRecord || {};
     const asset = {
@@ -1246,7 +1349,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     });
   }
 
-  onRowClick(item: ApprovalRequestItem): void {
+    onRowClick(item: ApprovalRequestItem): void {
     if (item.category === 'Asset') {
       this.viewAssetDetails(item);
     } else if (item.category === 'Timesheet') {
@@ -1254,14 +1357,30 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     } else if (item.category === 'Interview') {
       this.openInterviewAction(item);
     } else if (item.category === 'Banking') {
-      if (this.isBankingApprover && item.status === 'Pending') {
+      if (this.isBankingApprover && item.status === 'Pending' && (item.canApprove || item.canOverride)) {
         this.approveRequest(item);
+      } else {
+        this.openViewOnlyModal(item);
       }
     } else {
-      if (this.isApprover && item.status === 'Pending') {
+      if (item.status === 'Pending' && (item.canApprove || item.canOverride)) {
         this.approveRequest(item);
+      } else {
+        this.openViewOnlyModal(item);
       }
     }
+  }
+
+  openViewOnlyModal(item: ApprovalRequestItem): void {
+    this.dialog.open(RequestsApprovalsModalComponent, {
+      width: '460px',
+      data: {
+        ...item.rawRecord,
+        status: item.status,
+        pendingWith: item.pendingWith,
+        isViewOnly: true
+      }
+    });
   }
 
   getTypeBadgeClass(type: string): string {
