@@ -261,7 +261,11 @@ export class GlobalFilterService {
       this.setPageConfig(config);
       // Retain search if user was searching, but reset page-specific status if it doesn't apply
       const current = this.currentFilters;
-      if (config.statusOptions && !config.statusOptions.includes(current.status)) {
+      if (matchedKey === '/index/request') {
+        if (!current.status || current.status === 'All') {
+          this.updateFilters({ status: 'Pending' });
+        }
+      } else if (config.statusOptions && !config.statusOptions.includes(current.status)) {
         this.updateFilters({ status: 'All' });
       }
     } else {

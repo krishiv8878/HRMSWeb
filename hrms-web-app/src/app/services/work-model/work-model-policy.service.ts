@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap, catchError, of, map } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
+import { environment } from '../../../environments/environment';
 
 export type WorkModelType = 'WFO' | 'WFH' | 'OD'; // Office, Work From Home, On-Duty
 export type WorkModelPolicyMode = 'DIRECT_SELECT' | 'REQUIRE_APPROVAL' | 'HYBRID_QUOTA';
@@ -26,12 +28,32 @@ export interface WorkModelPolicyConfig {
 }
 
 export interface EmployeeDailyWorkModel {
+  id?: number;
   employeeId: number;
+  employeeName?: string;
   dateStr: string; // YYYY-MM-DD
   workModel: WorkModelType;
   isApproved: boolean;
-  selectedBy: 'Employee' | 'Manager' | 'Policy';
+  selectedBy: 'Employee' | 'Manager' | 'Admin' | 'Policy' | string;
   notes?: string;
+}
+
+interface ApiResponse<T> {
+  statusCode: number;
+  message?: string;
+  data: T;
+}
+
+interface WorkModeBackendDTO {
+  id: number;
+  employeeId: number;
+  employeeName?: string;
+  workDate: string;
+  workMode: string;
+  selectedBy: string;
+  notes?: string;
+  createdDate?: string;
+  updatedDate?: string;
 }
 
 const STORAGE_WORK_MODEL_POLICY_KEY = 'hrms_work_model_policy_config';
@@ -41,7 +63,9 @@ const STORAGE_DAILY_WORK_MODELS_KEY = 'hrms_employee_daily_work_models';
   providedIn: 'root'
 })
 export class WorkModelPolicyService {
+  private http = inject(HttpClient);
   private toaster = inject(ToastrService);
+  private apiUrl = `${environment.host}/WorkMode`;
 
   private defaultPolicy: WorkModelPolicyConfig = {
     id: 'default_hybrid_2wfo_3wfh',
@@ -68,6 +92,7 @@ export class WorkModelPolicyService {
 
   private dailyModelsMap: Map<string, EmployeeDailyWorkModel> = new Map(); // Key: `${empId}_${dateStr}`
   private dailyModelsSubject = new BehaviorSubject<Map<string, EmployeeDailyWorkModel>>(this.dailyModelsMap);
+  public dailyModels$: Observable<Map<string, EmployeeDailyWorkModel>> = this.dailyModelsSubject.asObservable();
 
   constructor() {
     this.loadFromStorage();
@@ -146,13 +171,18 @@ export class WorkModelPolicyService {
     }
   }
 
+  public getWorkModelDetails(employeeId: number, dateStr: string): EmployeeDailyWorkModel | undefined {
+    const key = `${employeeId}_${dateStr}`;
+    return this.dailyModelsMap.get(key);
+  }
+
   public setWorkModelForDate(
     employeeId: number,
     dateStr: string,
     model: WorkModelType,
-    selectedBy: 'Employee' | 'Manager' | 'Policy' = 'Employee',
+    selectedBy: 'Employee' | 'Manager' | 'Admin' | 'Policy' | string = 'Employee',
     notes?: string
-  ): void {
+  ): Observable<any> {
     const key = `${employeeId}_${dateStr}`;
     const policy = this.getPolicy();
     const isApproved = policy.policyMode !== 'REQUIRE_APPROVAL';
@@ -166,9 +196,48 @@ export class WorkModelPolicyService {
       notes
     };
 
+    // Update locally immediately for instant UI feedback
     this.dailyModelsMap.set(key, item);
     this.persistStorage();
     this.dailyModelsSubject.next(this.dailyModelsMap);
+
+    // Persist to database via backend API
+    const payload = {
+      employeeId,
+      workDate: dateStr,
+      workMode: model,
+      selectedBy,
+      notes
+    };
+
+    const req$ = this.http.post<ApiResponse<WorkModeBackendDTO>>(`${this.apiUrl}/SetWorkMode`, payload).pipe(
+      tap(res => {
+        if (res?.data) {
+          const syncedItem: EmployeeDailyWorkModel = {
+            id: res.data.id,
+            employeeId: res.data.employeeId,
+            employeeName: res.data.employeeName,
+            dateStr: res.data.workDate,
+            workModel: res.data.workMode as WorkModelType,
+            isApproved: true,
+            selectedBy: res.data.selectedBy,
+            notes: res.data.notes
+          };
+          this.dailyModelsMap.set(key, syncedItem);
+          this.persistStorage();
+          this.dailyModelsSubject.next(this.dailyModelsMap);
+        }
+      }),
+      catchError(err => {
+        console.error('Failed to persist work mode to backend database', err);
+        return of(null);
+      })
+    );
+
+    // Auto-subscribe so the HTTP request always executes even if caller didn't subscribe
+    req$.subscribe();
+
+    return req$;
   }
 
   public getTodayWorkModel(employeeId: number): WorkModelType {
@@ -176,9 +245,108 @@ export class WorkModelPolicyService {
     return this.getWorkModelForDate(employeeId, todayStr);
   }
 
-  public setTodayWorkModel(employeeId: number, model: WorkModelType, notes?: string): void {
+  public setTodayWorkModel(employeeId: number, model: WorkModelType, selectedBy: string = 'Employee', notes?: string): Observable<any> {
     const todayStr = this.formatDate(new Date());
-    this.setWorkModelForDate(employeeId, todayStr, model, 'Employee', notes);
+    return this.setWorkModelForDate(employeeId, todayStr, model, selectedBy, notes);
+  }
+
+  /**
+   * Fetches the persistent work mode for an employee from the backend database and caches it.
+   */
+  public fetchForDate(employeeId: number, dateStr: string): Observable<WorkModelType> {
+    return this.http.get<ApiResponse<WorkModeBackendDTO | null>>(`${this.apiUrl}/GetForDate?employeeId=${employeeId}&date=${dateStr}`).pipe(
+      map(res => {
+        if (res?.data) {
+          const item: EmployeeDailyWorkModel = {
+            id: res.data.id,
+            employeeId: res.data.employeeId,
+            employeeName: res.data.employeeName,
+            dateStr: res.data.workDate,
+            workModel: res.data.workMode as WorkModelType,
+            isApproved: true,
+            selectedBy: res.data.selectedBy,
+            notes: res.data.notes
+          };
+          this.dailyModelsMap.set(`${employeeId}_${dateStr}`, item);
+          this.persistStorage();
+          this.dailyModelsSubject.next(this.dailyModelsMap);
+          return item.workModel;
+        }
+        return this.getWorkModelForDate(employeeId, dateStr);
+      }),
+      catchError(err => {
+        console.warn('Could not fetch work mode for date, falling back to local/preset', err);
+        return of(this.getWorkModelForDate(employeeId, dateStr));
+      })
+    );
+  }
+
+  /**
+   * Fetches work modes for an employee across a date range and caches them.
+   */
+  public fetchRange(employeeId: number, startDate: string, endDate: string): Observable<EmployeeDailyWorkModel[]> {
+    return this.http.get<ApiResponse<WorkModeBackendDTO[]>>(`${this.apiUrl}/GetRange?employeeId=${employeeId}&startDate=${startDate}&endDate=${endDate}`).pipe(
+      map(res => {
+        const results: EmployeeDailyWorkModel[] = [];
+        if (res?.data && Array.isArray(res.data)) {
+          res.data.forEach(d => {
+            const item: EmployeeDailyWorkModel = {
+              id: d.id,
+              employeeId: d.employeeId,
+              employeeName: d.employeeName,
+              dateStr: d.workDate,
+              workModel: d.workMode as WorkModelType,
+              isApproved: true,
+              selectedBy: d.selectedBy,
+              notes: d.notes
+            };
+            this.dailyModelsMap.set(`${d.employeeId}_${d.workDate}`, item);
+            results.push(item);
+          });
+          this.persistStorage();
+          this.dailyModelsSubject.next(this.dailyModelsMap);
+        }
+        return results;
+      }),
+      catchError(err => {
+        console.warn('Could not fetch work mode range from backend', err);
+        return of([]);
+      })
+    );
+  }
+
+  /**
+   * Fetches all employees' work modes for a date (for Admin/HR/Manager overview) and caches them.
+   */
+  public fetchAllForDate(dateStr: string): Observable<EmployeeDailyWorkModel[]> {
+    return this.http.get<ApiResponse<WorkModeBackendDTO[]>>(`${this.apiUrl}/GetAllForDate?date=${dateStr}`).pipe(
+      map(res => {
+        const results: EmployeeDailyWorkModel[] = [];
+        if (res?.data && Array.isArray(res.data)) {
+          res.data.forEach(d => {
+            const item: EmployeeDailyWorkModel = {
+              id: d.id,
+              employeeId: d.employeeId,
+              employeeName: d.employeeName,
+              dateStr: d.workDate,
+              workModel: d.workMode as WorkModelType,
+              isApproved: true,
+              selectedBy: d.selectedBy,
+              notes: d.notes
+            };
+            this.dailyModelsMap.set(`${d.employeeId}_${d.workDate}`, item);
+            results.push(item);
+          });
+          this.persistStorage();
+          this.dailyModelsSubject.next(this.dailyModelsMap);
+        }
+        return results;
+      }),
+      catchError(err => {
+        console.warn('Could not fetch all work modes for date from backend', err);
+        return of([]);
+      })
+    );
   }
 
   /**
@@ -264,7 +432,7 @@ export class WorkModelPolicyService {
     return appliedCount;
   }
 
-  private formatDate(d: Date): string {
+  public formatDate(d: Date): string {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');

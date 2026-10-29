@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, Observable, catchError, of, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, of, shareReplay, tap, throwError } from 'rxjs';
 
 export interface UserProfileInfo {
   firstName: string;
@@ -143,6 +143,26 @@ export class EmployeeService {
         return of({ data: [] });
       })
     );
+  }
+
+  private lookupCache$: Observable<any> | null = null;
+
+  getLookup(forceRefresh: boolean = false): Observable<any> {
+    if (!this.lookupCache$ || forceRefresh) {
+      this.lookupCache$ = this.http.get<any>(this.apiUrl + "/Employee/GetEmployeesLookup").pipe(
+        shareReplay(1),
+        catchError((err) => {
+          console.error('Error fetching employee lookup:', err);
+          this.lookupCache$ = null;
+          return of({ data: [] });
+        })
+      );
+    }
+    return this.lookupCache$;
+  }
+
+  clearLookupCache(): void {
+    this.lookupCache$ = null;
   }
 
   getEmployeeById(id: number | string): Observable<any> {

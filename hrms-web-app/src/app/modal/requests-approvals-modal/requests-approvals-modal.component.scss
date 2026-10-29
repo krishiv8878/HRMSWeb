@@ -287,3 +287,25 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+
+/* View Only Header, Badge & Notice */
+.modal-header.header-view {
+  background: linear-gradient(135deg, #1e3a8a, #0f172a);
+}
+
+.icon-badge.badge-view {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  color: #60a5fa !important;
+}
+
+.confirmation-notice.notice-info {
+  background-color: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1e40af !important;
+
+  .notice-icon {
+    color: #3b82f6 !important;
+  }
+}

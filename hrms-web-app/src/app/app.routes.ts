@@ -31,6 +31,7 @@ import { EmailTemplatesComponent } from './component/email-templates/email-templ
 import { DashboardComponent } from './component/dashboard/dashboard.component';
 import { PmsComponent } from './component/pms/pms.component';
 import { ExpenseComponent } from './component/expense/expense.component';
+import { WorkflowConfigComponent } from './component/workflow-config/workflow-config.component';
 
 export const routes: Routes = [
     {
@@ -127,6 +128,9 @@ export const routes: Routes = [
             },
             {
                 path: 'expense', component: ExpenseComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management', 'Employee'] }
+            },
+            {
+                path: 'workflow-config', component: WorkflowConfigComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin'] }
             }
         ]
     }

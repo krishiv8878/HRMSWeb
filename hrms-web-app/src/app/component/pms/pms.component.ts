@@ -88,7 +88,7 @@ export class PmsComponent implements OnInit {
     this.isLoading = true;
     const period = this.selectedPeriod !== 'All' ? this.selectedPeriod : undefined;
     const cat = this.selectedCategory !== 'All' ? this.selectedCategory : undefined;
-    const empId = this.isAdminOrHr ? undefined : this.currentEmpId;
+    const empId = (this.isAdminOrHr || this.isManager) ? undefined : this.currentEmpId;
 
     this.pmsService.getGoals(empId, period, cat).subscribe({
       next: (res) => {
@@ -183,7 +183,7 @@ export class PmsComponent implements OnInit {
 
   loadAppraisals(): void {
     const cycleId = this.selectedCycleId || undefined;
-    const empId = this.isAdminOrHr ? undefined : this.currentEmpId;
+    const empId = (this.isAdminOrHr || this.isManager) ? undefined : this.currentEmpId;
 
     this.pmsService.getAppraisals(cycleId, empId).subscribe({
       next: (res) => {
@@ -244,8 +244,8 @@ export class PmsComponent implements OnInit {
 
   // 4. 1-ON-1 METHODS
   loadOneOnOnes(): void {
-    const mgrId = this.isManager ? this.currentEmpId : undefined;
-    const empId = !this.isManager ? this.currentEmpId : undefined;
+    const mgrId = this.isManager && !this.isAdminOrHr ? this.currentEmpId : undefined;
+    const empId = !this.isManager && !this.isAdminOrHr ? this.currentEmpId : undefined;
 
     this.pmsService.getOneOnOnes(mgrId, empId).subscribe({
       next: (res) => {
@@ -280,7 +280,7 @@ export class PmsComponent implements OnInit {
 
   // 5. PIP METHODS
   loadPips(): void {
-    const empId = this.isAdminOrHr ? undefined : this.currentEmpId;
+    const empId = (this.isAdminOrHr || this.isManager) ? undefined : this.currentEmpId;
     this.pmsService.getPips(empId).subscribe({
       next: (res) => {
         this.pips = res?.data || [];

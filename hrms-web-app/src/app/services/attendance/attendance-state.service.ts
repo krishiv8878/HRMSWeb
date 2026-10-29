@@ -2,12 +2,14 @@ import { inject, Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, forkJoin, of, catchError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { EmployeeeService } from './employeee.service';
+import { AttendanceRequestService } from '../attenRequest/attendance-request.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AttendanceStateService implements OnDestroy {
   private attendanceService = inject(EmployeeeService);
+  private attendanceRequestService = inject(AttendanceRequestService);
   private toaster = inject(ToastrService);
 
   private isClockedInSubject = new BehaviorSubject<boolean>(false);
@@ -30,6 +32,12 @@ export class AttendanceStateService implements OnDestroy {
 
   private currentTimeSubject = new BehaviorSubject<string>('');
   public currentTime$: Observable<string> = this.currentTimeSubject.asObservable();
+
+  private isTodayRegularizedSubject = new BehaviorSubject<boolean>(false);
+  public isTodayRegularized$: Observable<boolean> = this.isTodayRegularizedSubject.asObservable();
+
+  private regularizedStatusLabelSubject = new BehaviorSubject<string>('');
+  public regularizedStatusLabel$: Observable<string> = this.regularizedStatusLabelSubject.asObservable();
 
   // Event emitter for components to know a punch occurred
   public punchChanged$ = new Subject<{ type: 'clockIn' | 'clockOut'; time: Date }>();
@@ -70,6 +78,14 @@ export class AttendanceStateService implements OnDestroy {
 
   public get currentElapsedDisplay(): string {
     return this.sessionElapsedSubject.value;
+  }
+
+  public get isTodayRegularized(): boolean {
+    return this.isTodayRegularizedSubject.value;
+  }
+
+  public get regularizedStatusLabel(): string {
+    return this.regularizedStatusLabelSubject.value;
   }
 
   public get employeeId(): string {
@@ -152,18 +168,50 @@ export class AttendanceStateService implements OnDestroy {
     if (!empId) return;
 
     forkJoin({
-      attendance: this.attendanceService.getAllData().pipe(catchError(() => of([]))),
-      logs: this.attendanceService.getAttendanceLogs().pipe(catchError(() => of([])))
+      attendance: this.attendanceService.getByEmployeeId(empId).pipe(catchError(() => of([]))),
+      logs: this.attendanceService.getAttendanceLogsByEmployeeId(empId).pipe(catchError(() => of([]))),
+      requests: this.attendanceRequestService.getAllData().pipe(catchError(() => of([])))
     }).subscribe({
       next: (res: any) => {
-        const rawAttendance = Array.isArray(res?.attendance?.data) ? res.attendance.data : (Array.isArray(res?.attendance) ? res.attendance : []);
-        const rawLogs = Array.isArray(res?.logs?.data) ? res.logs.data : (Array.isArray(res?.logs) ? res.logs : []);
+        const rawAttendance = Array.isArray(res?.attendance?.data)
+          ? res.attendance.data
+          : (res?.attendance?.data ? [res.attendance.data] : (Array.isArray(res?.attendance) ? res.attendance : (res?.attendance ? [res.attendance] : [])));
+        const rawLogs = Array.isArray(res?.logs?.data)
+          ? res.logs.data
+          : (res?.logs?.data ? [res.logs.data] : (Array.isArray(res?.logs) ? res.logs : (res?.logs ? [res.logs] : [])));
+        const rawRequests = Array.isArray(res?.requests?.data) ? res.requests.data : (Array.isArray(res?.requests) ? res.requests : []);
 
         const now = new Date();
         const todayDateStr = this.toYMD(now);
 
         const getEmpId = (item: any) => String(item.employeeId ?? item.EmployeeId ?? item.requestedBy ?? item.RequestedBy ?? '');
         const loggedInId = String(empId).trim();
+
+        // 1. Check if today has an Approved or Pending regularization request (strictly RequestType == 'Regularization')
+        const todayReq = rawRequests.find((r: any) => {
+          const reqEmpId = getEmpId(r);
+          const rawDate = r.requestedDate || r.RequestedDate || r.attendanceDate || r.AttendanceDate;
+          const reqDateStr = rawDate ? this.toYMD(new Date(rawDate)) : '';
+          const st = String(r.status || r.Status || '').toLowerCase().trim();
+          const type = String(r.requestType || r.RequestType || '').toLowerCase().trim();
+          const isRegularization = type === 'regularization' || type.includes('regular');
+          return reqEmpId === loggedInId && reqDateStr === todayDateStr && isRegularization && (st === 'approved' || st === 'pending');
+        });
+
+        if (todayReq) {
+          const st = String(todayReq.status || todayReq.Status || '').toLowerCase().trim();
+          const isApproved = st === 'approved';
+          this.isTodayRegularizedSubject.next(true);
+          this.regularizedStatusLabelSubject.next(isApproved ? 'Regularized' : 'Reg. Pending');
+          
+          const inT = this.parseDateSafe(todayReq.clockIn || todayReq.ClockIn);
+          const outT = this.parseDateSafe(todayReq.clockOut || todayReq.ClockOut);
+          this.setClockedOutState(inT, outT, '08h 30m 00s');
+          return;
+        }
+
+        this.isTodayRegularizedSubject.next(false);
+        this.regularizedStatusLabelSubject.next('');
 
         const todayLoggedInLogs = rawLogs.filter((l: any) => {
           const d = l.attendanceDate || l.AttendanceDate;
@@ -270,6 +318,12 @@ export class AttendanceStateService implements OnDestroy {
   }
 
   public clockIn(callback?: (success: boolean, errorMsg?: string) => void) {
+    if (this.isTodayRegularized) {
+      const msg = "Today's attendance has been regularized. Punching (Clock-In / Clock-Out) is disabled for today.";
+      this.toaster.warning(msg, 'Attendance Regularized');
+      if (callback) callback(false, msg);
+      return;
+    }
     if (this.isProcessingPunch) {
       if (callback) callback(false, 'A punch action is already in progress.');
       return;
@@ -315,6 +369,12 @@ export class AttendanceStateService implements OnDestroy {
   }
 
   public clockOut(callback?: (success: boolean, errorMsg?: string) => void) {
+    if (this.isTodayRegularized) {
+      const msg = "Today's attendance has been regularized. Punching (Clock-In / Clock-Out) is disabled for today.";
+      this.toaster.warning(msg, 'Attendance Regularized');
+      if (callback) callback(false, msg);
+      return;
+    }
     if (this.isProcessingPunch) {
       if (callback) callback(false, 'A punch action is already in progress.');
       return;

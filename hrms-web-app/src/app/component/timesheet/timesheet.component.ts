@@ -576,6 +576,14 @@ export class TimesheetComponent implements OnInit {
       this.toastr.warning(`Cannot regularize attendance prior to your official joining date (${this.joiningDateStr || day.date}).`, 'Prior to Joining');
       return;
     }
+    if (day.isHoliday) {
+      this.toastr.warning(`Cannot regularize attendance for ${day.date} as it is a designated company holiday (${day.holidayName || 'Holiday'}).`, 'Company Holiday');
+      return;
+    }
+    if (day.isLeave) {
+      this.toastr.warning(`Cannot regularize attendance for ${day.date} as you are on leave (${day.leaveTypeName || 'On Leave'}).`, 'On Leave');
+      return;
+    }
     if (day.regularizationStatus === 'Approved' || day.isRegularized) {
       this.toastr.info('Attendance for this date has already been regularized and approved.', 'Already Regularized');
       return;
@@ -587,6 +595,9 @@ export class TimesheetComponent implements OnInit {
 
     const currentEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
     const targetDateObj = new Date(day.date + 'T00:00:00');
+
+    const holidays = (this.timesheetData?.days || []).filter(d => d.isHoliday).map(d => ({ holidayDate: d.date, holidayName: d.holidayName }));
+    const leaves = (this.timesheetData?.days || []).filter(d => d.isLeave).map(d => ({ startDate: d.date, endDate: d.date, status: 'Approved', leaveTypeName: d.leaveTypeName }));
 
     const dialogRef = this.dialog.open(AttendaseditComponent, {
       width: '560px',
@@ -604,7 +615,9 @@ export class TimesheetComponent implements OnInit {
         joiningDateStr: this.joiningDateStr,
         canRegularize: true,
         regularizationStatus: day.regularizationStatus || null,
-        rejectionReason: ''
+        rejectionReason: '',
+        holidays,
+        leaves
       }
     });
 

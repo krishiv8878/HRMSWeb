@@ -13,6 +13,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { CommonModule } from '@angular/common';
 import { MatDividerModule } from '@angular/material/divider';
+import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
+import { EmailService } from '../../services/leaveRequest/email.service';
 
 export interface DateStatusBadge {
   label: string;
@@ -43,6 +45,8 @@ export interface DateStatusBadge {
 })
 export class AttendaseditComponent implements OnInit {
   services = inject(EmployeeeService);
+  holidayService = inject(HolidayservicesService);
+  emailService = inject(EmailService);
   formbuilder = inject(FormBuilder);
   toaster = inject(ToastrService);
 
@@ -56,10 +60,17 @@ export class AttendaseditComponent implements OnInit {
   autoSelectedAbsentNotice: string = '';
   selectedDateStatusBadge: DateStatusBadge | null = null;
 
+  getYesterday(): Date {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
   hasExistingClockIn: boolean = false;
   existingClockInDisplay: string = '';
   minDate: Date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  maxDate: Date = new Date();
+  maxDate: Date = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   // Calendar State Sets
   presentDateMap = new Map<string, { clockIn: string; clockOut: string; status: string }>();
@@ -73,7 +84,7 @@ export class AttendaseditComponent implements OnInit {
 
   attendaseform = this.formbuilder.group({
     RequestType: ['Regularization', Validators.required],
-    selectedDate: [new Date(), Validators.required],
+    selectedDate: [new Date(Date.now() - 24 * 60 * 60 * 1000), Validators.required],
     Reason: ['', Validators.required],
     clockIn: ['09:30', Validators.required],
     clockOut: ['18:30', Validators.required],
@@ -85,7 +96,15 @@ export class AttendaseditComponent implements OnInit {
   onRequestTypeChange(type: string): void {
     this.attendaseform.patchValue({ RequestType: type });
     if (type === 'Regularization') {
-      this.maxDate = new Date();
+      this.maxDate = this.getYesterday();
+      const currentSelected = this.attendaseform.get('selectedDate')?.value;
+      if (currentSelected instanceof Date) {
+        const curYmd = this.toLocalYMD(currentSelected);
+        const todayYmd = this.toLocalYMD(new Date());
+        if (curYmd >= todayYmd) {
+          this.attendaseform.patchValue({ selectedDate: this.getYesterday() });
+        }
+      }
     } else {
       // WFH and On-Duty can be requested in advance
       this.maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -94,6 +113,10 @@ export class AttendaseditComponent implements OnInit {
         clockIn: '09:30',
         clockOut: type === 'Work From Home' && this.attendaseform.get('wfhDuration')?.value === 'Half Day' ? '14:00' : '18:30'
       });
+    }
+    const curVal = this.attendaseform.get('selectedDate')?.value;
+    if (curVal instanceof Date) {
+      this.evaluateDateRegularization(curVal);
     }
   }
 
@@ -128,7 +151,15 @@ export class AttendaseditComponent implements OnInit {
       this.minDate = thirtyDaysAgo;
     }
 
-    const parsedDate = this.parseInputDate(this.data);
+    let parsedDate = this.parseInputDate(this.data);
+    const initialReqType = this.data?.requestType || 'Regularization';
+    if (initialReqType === 'Regularization') {
+      const todayStr = this.toLocalYMD(new Date());
+      const parsedStr = this.toLocalYMD(parsedDate);
+      if (parsedStr >= todayStr) {
+        parsedDate = this.getYesterday();
+      }
+    }
 
     this.attendaseform.patchValue({
       selectedDate: parsedDate,
@@ -153,29 +184,52 @@ export class AttendaseditComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const records = this.data?.attendanceRecords || [];
-    const requests = this.data?.existingRequests || [];
-    const leaves = this.data?.leaves || [];
-    const holidays = this.data?.holidays || [];
+    let records = this.data?.attendanceRecords || [];
+    let requests = this.data?.existingRequests || [];
+    let leaves = this.data?.leaves || [];
+    let holidays = this.data?.holidays || [];
 
     if (this.data?.requestType) {
       this.onRequestTypeChange(this.data.requestType);
     }
 
-    if (records.length > 0 || requests.length > 0) {
+    const initSets = () => {
       this.buildAttendanceSets(records, requests, leaves, holidays);
       this.autoSelectAbsentIfPresentPassed();
+    };
+
+    // If holidays or leaves are missing from dialog data, fetch them
+    if (!holidays || holidays.length === 0) {
+      this.holidayService.getHoliday().subscribe({
+        next: (res: any) => {
+          holidays = Array.isArray(res) ? res : (res?.data || res?.result || []);
+          initSets();
+        },
+        error: () => {}
+      });
+    }
+
+    if (!leaves || leaves.length === 0) {
+      this.emailService.getData().subscribe({
+        next: (res: any) => {
+          leaves = Array.isArray(res) ? res : (res?.data || res?.result || []);
+          initSets();
+        },
+        error: () => {}
+      });
+    }
+
+    if (records.length > 0 || requests.length > 0) {
+      initSets();
     } else {
       // Fetch attendance data directly to power the calendar badges
       this.services.getAllData().subscribe({
         next: (res: any) => {
-          const list = Array.isArray(res) ? res : (res?.data || res?.result || []);
-          this.buildAttendanceSets(list, requests, leaves, holidays);
-          this.autoSelectAbsentIfPresentPassed();
+          records = Array.isArray(res) ? res : (res?.data || res?.result || []);
+          initSets();
         },
         error: () => {
-          this.buildAttendanceSets([], requests, leaves, holidays);
-          this.autoSelectAbsentIfPresentPassed();
+          initSets();
         }
       });
     }
@@ -195,18 +249,23 @@ export class AttendaseditComponent implements OnInit {
 
     // 1. Process Holidays
     (holidays || []).forEach((h: any) => {
-      const d = new Date(h.holidayDate || h.date);
-      const dStr = this.toLocalYMD(d);
+      if (h.isDeleted || h.isActive === false || h.isActive === 0) return;
+      const rawDate = h.holidayDate || h.HolidayDate || h.date || h.Date;
+      const dStr = this.toLocalYMD(rawDate);
       if (dStr) this.holidayDateSet.add(dStr);
     });
 
-    // 2. Process Leaves
+    // 2. Process Leaves (Approved and Pending)
     (leaves || []).forEach((l: any) => {
-      const lEmpId = Number(l.employeeId || l.EmployeeId);
-      if ((!empId || lEmpId === empId) && (l.status === 'Approved' || l.status === 'Pending')) {
-        const start = new Date(l.startDate);
-        const end = new Date(l.endDate || l.startDate);
-        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+      if (l.isDeleted || l.isDeleted === 1 || l.isDeleted === true) return;
+      const lEmpId = Number(l.employeeId ?? l.EmployeeId ?? 0);
+      const st = String(l.status || l.Status || '').toLowerCase().trim();
+      if ((!empId || lEmpId === 0 || lEmpId === empId) && (st === 'approved' || st === 'pending')) {
+        const rawStart = l.startDate || l.StartDate || l.fromDate || l.FromDate;
+        const rawEnd = l.endDate || l.EndDate || l.toDate || l.ToDate || rawStart;
+        const start = this.parseDateSafe(rawStart);
+        const end = this.parseDateSafe(rawEnd) || start;
+        if (start && end) {
           const cur = new Date(start);
           while (cur <= end) {
             this.leaveDateSet.add(this.toLocalYMD(cur));
@@ -315,8 +374,9 @@ export class AttendaseditComponent implements OnInit {
         d.setHours(0, 0, 0, 0);
         const dStr = this.toLocalYMD(d);
 
-        // Skip if already pending or approved
+        // Skip if already pending or approved, or is holiday/leave
         if (this.pendingDateSet.has(dStr) || this.approvedDateSet.has(dStr)) continue;
+        if (this.holidayDateSet.has(dStr) || this.leaveDateSet.has(dStr)) continue;
 
         if (this.missingPunchMap.has(dStr) || this.absentDateSet.has(dStr)) {
           foundAbsentDate = d;
@@ -385,37 +445,61 @@ export class AttendaseditComponent implements OnInit {
       return;
     }
 
-    // 5. Check Today (ongoing workday)
+    // 5. Check Today or Future Date for Regularization (ongoing or future day)
     const todayStr = this.toLocalYMD(new Date());
+    const reqType = this.attendaseform.get('RequestType')?.value || 'Regularization';
+
+    if (reqType === 'Regularization' && dateStr >= todayStr) {
+      this.canSubmit = false;
+      this.currentStatus = 'TodayNotAllowed';
+      this.rejectionReason = '';
+      this.statusMessage = 'Attendance regularization can only be requested for past completed workdays. Current day attendance must be recorded using Clock-In / Clock-Out.';
+      this.selectedDateStatusBadge = {
+        label: dateStr === todayStr ? "Today's Workday (In Progress)" : 'Future Date',
+        type: 'absent',
+        icon: 'block',
+        details: 'Attendance regularization cannot be requested for today or future dates. Please use Clock-In / Clock-Out for today.'
+      };
+      return;
+    }
+
     if (dateStr === todayStr) {
       this.canSubmit = true;
       this.currentStatus = '';
       this.rejectionReason = '';
-      this.statusMessage = "Note: Today's workday is currently in progress. Attendance regularization is intended for completed past workdays.";
-      this.selectedDateStatusBadge = { label: "Today's Workday (In Progress)", type: 'neutral', icon: 'timelapse', details: 'Regularization is typically applied to completed past shifts.' };
+      this.statusMessage = "Note: Today's workday is currently in progress.";
+      this.selectedDateStatusBadge = { label: "Today's Workday (In Progress)", type: 'neutral', icon: 'timelapse', details: 'Applying request for current date.' };
       this.applyPunchesForDate(dateStr);
       return;
     }
 
-    // 6. Check Leave
+    // 6. Check Leave (Disallow Regularization)
     if (this.leaveDateSet.has(dateStr)) {
-      this.canSubmit = true;
-      this.currentStatus = '';
+      this.canSubmit = false;
+      this.currentStatus = 'LeaveNotAllowed';
       this.rejectionReason = '';
-      this.statusMessage = 'You were scheduled for approved leave on this date. If you worked instead, specify your in/out times.';
-      this.selectedDateStatusBadge = { label: 'On Approved Leave', type: 'leave', icon: 'beach_access', details: 'Approved leave on record for this day.' };
-      this.applyPunchesForDate(dateStr);
+      this.statusMessage = 'Attendance regularization cannot be requested for dates on which you have scheduled or approved leave.';
+      this.selectedDateStatusBadge = {
+        label: 'On Leave',
+        type: 'leave',
+        icon: 'beach_access',
+        details: 'An active leave request exists for this date. Attendance regularization is not permitted.'
+      };
       return;
     }
 
-    // 7. Check Holiday
+    // 7. Check Holiday (Disallow Regularization)
     if (this.holidayDateSet.has(dateStr)) {
-      this.canSubmit = true;
-      this.currentStatus = '';
+      this.canSubmit = false;
+      this.currentStatus = 'HolidayNotAllowed';
       this.rejectionReason = '';
-      this.statusMessage = 'This date is an official company holiday. If you worked on this day, specify your punch timings.';
-      this.selectedDateStatusBadge = { label: 'Company Holiday', type: 'holiday', icon: 'celebration', details: 'Official holiday on company calendar.' };
-      this.applyPunchesForDate(dateStr);
+      this.statusMessage = 'Attendance regularization cannot be requested for designated company holidays.';
+      this.selectedDateStatusBadge = {
+        label: 'Company Holiday',
+        type: 'holiday',
+        icon: 'celebration',
+        details: 'This date is a designated company holiday. Attendance regularization is not permitted.'
+      };
       return;
     }
 
@@ -675,7 +759,7 @@ export class AttendaseditComponent implements OnInit {
     if (this.isSubmitting) return;
 
     if (!this.canSubmit) {
-      this.toaster.warning('Regularization is already submitted for this date.');
+      this.toaster.warning(this.statusMessage || 'Regularization cannot be submitted for this date.');
       return;
     }
 
@@ -696,8 +780,25 @@ export class AttendaseditComponent implements OnInit {
       const m = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
       const d = selectedDate.getDate().toString().padStart(2, '0');
       const dateStr = `${y}-${m}-${d}`;
+      const todayStr = this.toLocalYMD(new Date());
+
+      if (RequestType === 'Regularization' && dateStr >= todayStr) {
+        this.toaster.warning('Attendance regularization can only be requested for past completed workdays. Current day attendance must be recorded using Clock-In / Clock-Out.');
+        return;
+      }
+
       if (this.data?.joiningDateStr && dateStr < this.data.joiningDateStr) {
         this.toaster.error(`Cannot submit attendance request prior to your official joining date (${this.data.joiningDateStr}).`);
+        return;
+      }
+
+      if (this.holidayDateSet.has(dateStr)) {
+        this.toaster.error('Cannot submit attendance regularization on a designated company holiday.');
+        return;
+      }
+
+      if (this.leaveDateSet.has(dateStr)) {
+        this.toaster.error('Cannot submit attendance regularization for dates on which you have an active leave request.');
         return;
       }
     }

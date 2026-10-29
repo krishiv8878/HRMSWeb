@@ -21,26 +21,37 @@
 
       <!-- Clock In / Out Action (Strictly for personal self-attendance) -->
       <ng-container *ngIf="!isViewingOtherEmployee">
-        <button
-          type="button"
-          *ngIf="isClockedIn; else clockInTpl"
-          class="btn-punch btn-clock-out"
-          (click)="openClockOutDialog()"
+        <div
+          *ngIf="isTodayRegularized; else normalPunchTpl"
+          class="btn-punch btn-regularized-chip"
+          title="Today's attendance has been regularized. Punching is disabled for today."
         >
-          <mat-icon>logout</mat-icon>
-          <span>Clock-Out</span>
-          <span class="session-duration-tag">{{ activeSessionDuration }}</span>
-        </button>
+          <mat-icon class="punch-icon">verified</mat-icon>
+          <span>{{ regularizedStatusLabel || 'Regularized' }}</span>
+        </div>
 
-        <ng-template #clockInTpl>
+        <ng-template #normalPunchTpl>
           <button
             type="button"
-            class="btn-punch btn-clock-in"
-            (click)="openClockInDialog()"
+            *ngIf="isClockedIn; else clockInTpl"
+            class="btn-punch btn-clock-out"
+            (click)="openClockOutDialog()"
           >
-            <mat-icon>login</mat-icon>
-            <span>Clock-In</span>
+            <mat-icon>logout</mat-icon>
+            <span>Clock-Out</span>
+            <span class="session-duration-tag">{{ activeSessionDuration }}</span>
           </button>
+
+          <ng-template #clockInTpl>
+            <button
+              type="button"
+              class="btn-punch btn-clock-in"
+              (click)="openClockInDialog()"
+            >
+              <mat-icon>login</mat-icon>
+              <span>Clock-In</span>
+            </button>
+          </ng-template>
         </ng-template>
       </ng-container>
 
@@ -89,15 +100,18 @@
       </div>
 
       <!-- Work Mode Selector (Office vs WFH vs On-Duty) -->
-      <div *ngIf="!isViewingOtherEmployee" class="work-mode-widget">
-        <span class="work-mode-label">Work Mode:</span>
+      <div class="work-mode-widget" [class.supervisor-view]="isViewingOtherEmployee">
+        <span class="work-mode-label">
+          <mat-icon *ngIf="isViewingOtherEmployee" class="label-sup-icon">admin_panel_settings</mat-icon>
+          {{ isViewingOtherEmployee ? 'Work Mode:' : 'Work Mode:' }}
+        </span>
         <div class="work-mode-toggle-group">
           <button
             type="button"
             class="btn-mode mode-wfo"
             [class.active]="todayWorkMode === 'WFO'"
             (click)="selectWorkMode('WFO')"
-            title="Working from Office (In-Person)"
+            [title]="isViewingOtherEmployee ? 'Set this employee to Office' : 'Working from Office (In-Person)'"
           >
             <mat-icon>business</mat-icon>
             <span>Office</span>
@@ -107,7 +121,7 @@
             class="btn-mode mode-wfh"
             [class.active]="todayWorkMode === 'WFH'"
             (click)="selectWorkMode('WFH')"
-            title="Work From Home (Remote)"
+            [title]="isViewingOtherEmployee ? 'Set this employee to Work From Home' : 'Work From Home (Remote)'"
           >
             <mat-icon>home_work</mat-icon>
             <span>WFH</span>
@@ -117,7 +131,7 @@
             class="btn-mode mode-od"
             [class.active]="todayWorkMode === 'OD'"
             (click)="selectWorkMode('OD')"
-            title="On-Duty (Client Site / Field)"
+            [title]="isViewingOtherEmployee ? 'Set this employee to On-Duty' : 'On-Duty (Client Site / Field)'"
           >
             <mat-icon>badge</mat-icon>
             <span>On-Duty</span>
@@ -127,7 +141,7 @@
 
       <!-- Hybrid Compliance Indicator -->
       <div
-        *ngIf="!isViewingOtherEmployee && weeklyHybridProgress"
+        *ngIf="weeklyHybridProgress"
         class="hybrid-progress-pill"
         [class.compliant]="weeklyHybridProgress.isCompliant"
         [title]="'Hybrid Policy: ' + weeklyHybridProgress.requiredWfo + ' days WFO / ' + weeklyHybridProgress.allowedWfh + ' days WFH required per week'"
@@ -369,6 +383,9 @@
                 <span class="day-number" [class.today-badge]="day.isToday">{{ day.dayNumber }}</span>
 
                 <div class="day-indicators">
+                  <span class="chip-workmode" [ngClass]="'chip-' + day.workMode.toLowerCase()" *ngIf="day.workMode && !day.isWeekend && !day.isHoliday && !day.isLeave" [title]="'Work Mode: ' + (day.workMode === 'WFO' ? 'Office' : day.workMode === 'WFH' ? 'Work From Home' : 'On-Duty')">
+                    {{ day.workMode }}
+                  </span>
                   <span class="chip-overtime" *ngIf="day.isOvertime" title="Overtime: {{ day.overtimeDisplay }}">OT</span>
                   <span class="chip-reg" *ngIf="day.isRegularized" title="Approved Regularization">
                     <mat-icon>verified</mat-icon>
@@ -476,6 +493,12 @@
           </span>
           <span class="punch-mode-tag" *ngIf="selectedDay.punchType === 'Regularized'">
             <mat-icon>verified</mat-icon> Regularized (Manager Approved)
+          </span>
+          <span class="punch-mode-tag work-mode-drawer-tag" [ngClass]="'tag-' + selectedDay.workMode.toLowerCase()" *ngIf="selectedDay.workMode && !selectedDay.isWeekend && !selectedDay.isHoliday">
+            <mat-icon *ngIf="selectedDay.workMode === 'WFO'">business</mat-icon>
+            <mat-icon *ngIf="selectedDay.workMode === 'WFH'">home_work</mat-icon>
+            <mat-icon *ngIf="selectedDay.workMode === 'OD'">badge</mat-icon>
+            {{ selectedDay.workMode === 'WFO' ? 'Office' : selectedDay.workMode === 'WFH' ? 'Work From Home' : 'On-Duty' }}
           </span>
         </div>
 
@@ -609,7 +632,7 @@
             <p class="leave-reason-text">{{ selectedDay.leaveRecord?.leaveReason || selectedDay.leaveRecord?.reason }}</p>
           </div>
 
-          <div class="leave-actions-row">
+          <div class="leave-actions-row" *ngIf="canCancelSelectedLeave()">
             <button
               type="button"
               class="btn-cancel-leave-drawer"
@@ -785,6 +808,13 @@
                 <span class="badge-punch-type type-self" *ngIf="!row.isRegularized && row.clockIn && !row.isWeekend" title="Recorded via Clock In / Clock Out">
                   <mat-icon>fingerprint</mat-icon>
                   <span>Self Punch</span>
+                </span>
+                <!-- Persistent Work Mode Badge -->
+                <span class="badge-work-mode" [ngClass]="'mode-' + row.workMode.toLowerCase()" *ngIf="row.workMode && !row.isWeekend && !row.isHoliday && !row.isLeave" [title]="'Work Mode: ' + (row.workMode === 'WFO' ? 'Office' : row.workMode === 'WFH' ? 'Work From Home' : 'On-Duty')">
+                  <mat-icon *ngIf="row.workMode === 'WFO'">business</mat-icon>
+                  <mat-icon *ngIf="row.workMode === 'WFH'">home_work</mat-icon>
+                  <mat-icon *ngIf="row.workMode === 'OD'">badge</mat-icon>
+                  <span>{{ row.workMode }}</span>
                 </span>
               </div>
             </td>

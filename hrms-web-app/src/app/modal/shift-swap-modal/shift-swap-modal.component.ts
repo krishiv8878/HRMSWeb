@@ -44,7 +44,7 @@ export class ShiftSwapModalComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.employeesList.length === 0) {
-      this.employeeService.getData().subscribe({
+      this.employeeService.getLookup().subscribe({
         next: (res: any) => {
           let emps: any[] = [];
           if (Array.isArray(res)) emps = res;

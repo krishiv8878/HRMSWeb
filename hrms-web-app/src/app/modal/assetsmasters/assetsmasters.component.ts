@@ -128,7 +128,7 @@ export class AssetsmastersComponent implements OnInit {
   }
 
   loadLiveEmployees() {
-    this.employeeService.getData().subscribe({
+    this.employeeService.getLookup().subscribe({
       next: (res: any) => {
         let list: any[] = [];
         if (Array.isArray(res)) {

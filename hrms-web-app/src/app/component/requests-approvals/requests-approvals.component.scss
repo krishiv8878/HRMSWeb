@@ -1140,3 +1140,33 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+
+/* View Only Badge in Requests Approvals Tables */
+.action-readonly-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .readonly-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    color: #64748b;
+  }
+
+  &:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+    border-color: #94a3b8;
+  }
+}

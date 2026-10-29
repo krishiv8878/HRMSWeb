@@ -72,6 +72,7 @@ export interface AttendanceRow {
   rejectionReason?: string;
   canRegularize: boolean;
   punchType: 'Self Punch' | 'Regularized' | 'None';
+  workMode?: WorkModelType;
 }
 
 export interface CalendarDay extends AttendanceRow {
@@ -145,6 +146,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   private clockedInSub?: Subscription;
   private sessionElapsedSub?: Subscription;
   private clockInTimeSub?: Subscription;
+  private isTodayRegularizedSub?: Subscription;
+  private regularizedStatusLabelSub?: Subscription;
 
   Math = Math;
 
@@ -213,6 +216,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   // Component state
   employeeId: string = '1';
   isClockedIn: boolean = false;
+  isTodayRegularized: boolean = false;
+  regularizedStatusLabel: string = '';
   clockInTime: Date | null = null;
   activeSessionDuration: string = '00h 00m 00s';
 
@@ -248,6 +253,13 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   get isViewingOtherEmployee(): boolean {
     if (!this.selectedEmployeeId || this.selectedEmployeeId === 'All') return false;
     return String(this.selectedEmployeeId) !== String(this.loggedInEmployeeId);
+  }
+
+  get effectiveTargetEmployeeId(): number {
+    if (this.isViewingOtherEmployee && this.selectedEmployeeId && this.selectedEmployeeId !== 'All') {
+      return Number(this.selectedEmployeeId);
+    }
+    return Number(this.loggedInEmployeeId || this.employeeId || 1);
   }
 
   // Pagination State
@@ -317,6 +329,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
         const targetId = f.employeeId === 'All' ? storedId : String(f.employeeId);
         this.selectedEmployeeId = f.employeeId === 'All' ? 'All' : String(f.employeeId);
         this.selectedEmployeeName = f.employeeName || '';
+        this.loadWorkModelState();
         if (targetId && targetId !== this.employeeId) {
           this.employeeId = targetId;
           needsDataReload = true;
@@ -390,6 +403,14 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       this.clockInTime = time;
     });
 
+    this.isTodayRegularizedSub = this.attendanceStateService.isTodayRegularized$.subscribe(isReg => {
+      this.isTodayRegularized = isReg;
+    });
+
+    this.regularizedStatusLabelSub = this.attendanceStateService.regularizedStatusLabel$.subscribe(label => {
+      this.regularizedStatusLabel = label;
+    });
+
     // Sync with punches triggered from the top header
     this.punchSub = this.attendanceStateService.punchChanged$.subscribe(() => {
       this.getAllData();
@@ -404,6 +425,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     if (this.clockedInSub) this.clockedInSub.unsubscribe();
     if (this.sessionElapsedSub) this.sessionElapsedSub.unsubscribe();
     if (this.clockInTimeSub) this.clockInTimeSub.unsubscribe();
+    if (this.isTodayRegularizedSub) this.isTodayRegularizedSub.unsubscribe();
+    if (this.regularizedStatusLabelSub) this.regularizedStatusLabelSub.unsubscribe();
     if (this.routeSub) this.routeSub.unsubscribe();
   }
 
@@ -661,6 +684,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
 
         this.buildMonthCalendar();
         this.generateLast30DaysRows(employeeRecords, employeeRequests, employeeLeaves, rawHolidays, employeeLogs);
+        this.loadWorkModelState();
       },
       error: () => {
         this.cachedRecords = [];
@@ -738,6 +762,9 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     const dd = d.getDate().toString().padStart(2, '0');
     const dateStr = `${yyyy}-${mm}-${dd}`;
 
+    const targetEmpId = this.effectiveTargetEmployeeId;
+    const workMode = this.workModelService.getWorkModelForDate(targetEmpId, dateStr);
+
     const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short' };
     const formattedDate = `${d.toLocaleDateString('en-GB', options)}, ${dayName}`;
 
@@ -756,11 +783,11 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       holidayName = holidayMatch.holidayName || holidayMatch.HolidayName || 'Holiday';
     }
 
-    // Check Approved Leave
+    // Check Approved or Pending Leave
     let leaveTypeName = '';
     const leaveMatch = leaves.find((l: any) => {
       const st = String(l.status || l.Status || '').toLowerCase().trim();
-      if (st !== 'approved') return false;
+      if (st !== 'approved' && st !== 'pending') return false;
       if (l.isDeleted === 1 || l.isDeleted === true) return false;
       const start = this.toYMD(l.startDate || l.StartDate || l.fromDate || l.FromDate);
       const end = this.toYMD(l.endDate || l.EndDate || l.toDate || l.ToDate) || start;
@@ -768,7 +795,9 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       return dateStr >= start && dateStr <= end;
     });
     if (leaveMatch) {
-      leaveTypeName = leaveMatch.leaveTypeName || leaveMatch.LeaveTypeName || leaveMatch.leaveName || leaveMatch.type || 'On Leave';
+      const isPending = String(leaveMatch.status || leaveMatch.Status || '').toLowerCase().trim() === 'pending';
+      const baseType = leaveMatch.leaveTypeName || leaveMatch.LeaveTypeName || leaveMatch.leaveName || leaveMatch.type || 'On Leave';
+      leaveTypeName = isPending ? `${baseType} (Pending)` : baseType;
     }
 
     // Check matching punch record in DB
@@ -905,11 +934,13 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     const hasActiveSession = (isToday && this.isClockedIn) || dayLogs.some((l: any) => this.isRealTime(l.inTime || l.InTime) && !this.isRealTime(l.outTime || l.OutTime));
     const hasPunchToday = isToday && (this.isClockedIn || hasLogsForDate);
 
-    const isPastDate = d < today;
+    const todayDateStr = this.toYMD(new Date());
+    const isPastDate = dateStr < todayDateStr;
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     thirtyDaysAgo.setHours(0, 0, 0, 0);
-    const isWithinBackfillWindow = d >= thirtyDaysAgo && d <= today;
+    const thirtyDaysAgoStr = this.toYMD(thirtyDaysAgo);
+    const isWithinBackfillWindow = dateStr >= thirtyDaysAgoStr && isPastDate;
 
     const isPriorToJoining = !!(this.joiningDateStr && dateStr < this.joiningDateStr);
 
@@ -1057,10 +1088,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
 
       // Allow regularization if punch was incomplete on a past date within backfill window
       const missedPunchOut = isPastDate && (!rawLatestOut || hasActiveSession);
-      canRegularize = isWithinBackfillWindow && missedPunchOut && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved';
+      canRegularize = isWithinBackfillWindow && missedPunchOut && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved' && !holidayMatch && !leaveMatch && !isWeekend;
     } else {
       status = 'Absent';
-      canRegularize = isWithinBackfillWindow && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved';
+      canRegularize = isPastDate && isWithinBackfillWindow && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved' && !holidayMatch && !leaveMatch && !isWeekend;
     }
 
     let punchType: 'Self Punch' | 'Regularized' | 'None' = 'None';
@@ -1101,6 +1132,7 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       rejectionReason,
       canRegularize,
       punchType,
+      workMode,
       rawItem: match || { Date: formattedDate, clockIn, clockOut }
     };
   }
@@ -1394,6 +1426,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
       return;
     }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
+      return;
+    }
 
     const dialogRef = this.dialog.open(EmployeeAttendComponent, {
       width: '430px',
@@ -1418,6 +1454,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   openClockOutDialog() {
     if (this.isViewingOtherEmployee) {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
+      return;
+    }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
       return;
     }
 
@@ -1448,6 +1488,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
       return;
     }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
+      return;
+    }
 
     this.attendanceStateService.clockIn((success) => {
       if (success) {
@@ -1459,6 +1503,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   onClockOut() {
     if (this.isViewingOtherEmployee) {
       this.toaster.warning('Clock in/out can only be performed by the employee directly.', 'Action Restricted');
+      return;
+    }
+    if (this.isTodayRegularized) {
+      this.toaster.warning("Today's attendance has been regularized. Clock-in and clock-out are disabled for today.", 'Attendance Regularized');
       return;
     }
 
@@ -1511,16 +1559,38 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (row && !row.canRegularize) {
-      const msg = row.regularizationStatus === 'Approved'
-        ? 'Attendance for this date has already been regularized and approved.'
-        : 'A regularization request for this date is already pending approval.';
-      this.toaster.info(msg, 'Regularization Active');
+    const todayDateStr = this.toYMD(new Date());
+    if (initialType === 'Regularization' && row?.dateStr && row.dateStr >= todayDateStr) {
+      this.toaster.warning('Attendance regularization can only be requested for past completed workdays. Current day attendance must be recorded using Clock-In / Clock-Out.', 'Action Restricted');
       return;
     }
 
-    const defaultRow = row || this.missingPunchDay || this.allRows.find(r => r.canRegularize && !r.isPriorToJoining);
-    const targetDateObj = defaultRow?.dateObj || new Date();
+    if (row && row.isHoliday) {
+      this.toaster.warning(`Cannot regularize attendance for ${row.formattedDate || row.dateStr} as it is a designated company holiday (${row.status || 'Holiday'}).`, 'Company Holiday');
+      return;
+    }
+
+    if (row && row.isLeave) {
+      this.toaster.warning(`Cannot regularize attendance for ${row.formattedDate || row.dateStr} as you have an active leave request for this date.`, 'On Leave');
+      return;
+    }
+
+    if (row && !row.canRegularize) {
+      const msg = row.regularizationStatus === 'Approved'
+        ? 'Attendance for this date has already been regularized and approved.'
+        : (row.regularizationStatus === 'Pending'
+          ? 'A regularization request for this date is already pending approval.'
+          : 'Attendance regularization cannot be requested for this date.');
+      this.toaster.info(msg, 'Regularization Restricted');
+      return;
+    }
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const defaultRow = row || this.missingPunchDay || this.allRows.find(r => r.canRegularize && !r.isPriorToJoining && !r.isHoliday && !r.isLeave && r.dateStr < todayDateStr);
+    const targetDateObj = defaultRow?.dateObj || yesterday;
 
     const hasExistingIn = !!(defaultRow && defaultRow.clockInDisplay && defaultRow.clockInDisplay !== '--');
     const existingInTime24 = hasExistingIn ? this.extractTime24(defaultRow?.clockIn || defaultRow?.clockInDisplay) : '09:30';
@@ -1590,9 +1660,45 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     this.toaster.success('Attendance logs exported successfully!', 'Export Complete');
   }
 
+  canCancelSelectedLeave(): boolean {
+    if (!this.selectedDay || !this.selectedDay.isLeave || !this.selectedDay.leaveRecord) {
+      return false;
+    }
+
+    const leave = this.selectedDay.leaveRecord;
+    const status = (leave.status || 'Approved').toLowerCase().trim();
+    if (status !== 'pending' && status !== 'approved') {
+      return false;
+    }
+
+    // Approved leaves for past dates or days that have already passed cannot be cancelled
+    if (status === 'approved') {
+      const leaveDateStr = leave.startDate || this.selectedDay.dateStr || this.selectedDay.dateObj;
+      if (leaveDateStr) {
+        const leaveDate = new Date(leaveDateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        leaveDate.setHours(0, 0, 0, 0);
+        if (leaveDate.getTime() < today.getTime()) {
+          return false;
+        }
+      }
+    }
+
+    const loggedUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 0) : 0;
+    const leaveEmpId = Number(leave.employeeId || leave.empId || this.selectedEmployeeId || 0);
+
+    return (loggedUserId > 0 && leaveEmpId === loggedUserId) || this.isHrOrAdmin;
+  }
+
   cancelLeaveFromDrawer(leaveRecord: any) {
     if (!leaveRecord) {
       this.toaster.error('Leave details not found for this date.', 'Error');
+      return;
+    }
+
+    if (!this.canCancelSelectedLeave()) {
+      this.toaster.warning('Approved leaves for previous days or dates that have already passed cannot be cancelled.', 'Action Prohibited');
       return;
     }
 
@@ -1839,6 +1945,32 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
           }
         }
 
+        // 4b. Persistent Work Mode (WFH / OD) check
+        const empWorkMode = this.workModelService.getWorkModelForDate(Number(empIdStr), dateStr);
+        if (empWorkMode === 'WFH') {
+          wfhCount++;
+          dayCells.push({
+            dayNumber: day,
+            dateStr,
+            dayName: headers[day - 1].dayName,
+            code: 'WFH',
+            label: 'Work From Home',
+            badgeClass: 'cell-badge-wfh'
+          });
+          continue;
+        } else if (empWorkMode === 'OD') {
+          odCount++;
+          dayCells.push({
+            dayNumber: day,
+            dateStr,
+            dayName: headers[day - 1].dayName,
+            code: 'OD',
+            label: 'On-Duty',
+            badgeClass: 'cell-badge-od'
+          });
+          continue;
+        }
+
         // 5. Punch Checks
         const matchedAtt = empRecords.find(r => {
           const ad = this.toYMD(r.attendanceDate || r.AttendanceDate || r.clockIn);
@@ -1966,32 +2098,48 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
 
   // --- Work Model & Shift Swap Integration ---
   loadWorkModelState(): void {
-    const empId = Number(this.loggedInEmployeeId || this.employeeId || 1);
-    this.todayWorkMode = this.workModelService.getTodayWorkModel(empId);
+    const empId = this.effectiveTargetEmployeeId;
+    const todayStr = this.workModelService.formatDate(new Date());
+
+    // 1. Initial immediate sync from memory/storage
+    this.todayWorkMode = this.workModelService.getWorkModelForDate(empId, todayStr);
     this.weeklyHybridProgress = this.workModelService.getWeeklyHybridProgress(empId, this.calendarDate);
+
+    // 2. Fetch fresh record from backend database
+    this.workModelService.fetchForDate(empId, todayStr).subscribe(mode => {
+      this.todayWorkMode = mode;
+      this.weeklyHybridProgress = this.workModelService.getWeeklyHybridProgress(empId, this.calendarDate);
+    });
+
+    // 3. Fetch current month's range from backend database
+    const dStart = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth(), 1);
+    const dEnd = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 0);
+    this.workModelService.fetchRange(
+      empId,
+      this.workModelService.formatDate(dStart),
+      this.workModelService.formatDate(dEnd)
+    ).subscribe();
   }
 
   selectWorkMode(mode: WorkModelType): void {
-    const empId = Number(this.loggedInEmployeeId || this.employeeId || 1);
+    const empId = this.effectiveTargetEmployeeId;
+    const isOther = this.isViewingOtherEmployee;
     const canDirect = this.workModelService.canEmployeeDirectSelect();
 
-    if (canDirect) {
-      this.workModelService.setTodayWorkModel(empId, mode);
+    if (isOther || canDirect || mode === 'WFO') {
+      const selectedBy = isOther ? (this.isHrOrAdmin ? 'Admin' : 'Manager') : 'Employee';
+      this.workModelService.setTodayWorkModel(empId, mode, selectedBy);
       this.todayWorkMode = mode;
       this.loadWorkModelState();
       const label = mode === 'WFO' ? 'Office' : mode === 'WFH' ? 'Work From Home' : 'On-Duty';
-      this.toaster.success(`Your work mode for today is recorded as ${label}.`, 'Work Mode Updated');
+      const targetMsg = isOther
+        ? `Work mode for ${this.selectedEmployeeName || 'employee'} recorded as ${label}.`
+        : `Your work mode for today is recorded as ${label}.`;
+      this.toaster.success(targetMsg, 'Work Mode Updated');
     } else {
-      if (mode === 'WFO') {
-        this.workModelService.setTodayWorkModel(empId, mode);
-        this.todayWorkMode = mode;
-        this.loadWorkModelState();
-        this.toaster.success('Work mode set to Office.', 'Work Mode');
-      } else {
-        const typeStr = mode === 'WFH' ? 'Work From Home' : 'On-Duty';
-        this.toaster.info(`Your project requires approval for ${typeStr}. Opening request form.`, 'Approval Policy');
-        this.openRegularizationModal(null, typeStr);
-      }
+      const typeStr = mode === 'WFH' ? 'Work From Home' : 'On-Duty';
+      this.toaster.info(`Your project requires approval for ${typeStr}. Opening request form.`, 'Approval Policy');
+      this.openRegularizationModal(null, typeStr);
     }
   }
 
