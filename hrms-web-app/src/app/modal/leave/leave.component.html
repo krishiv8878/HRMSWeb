@@ -1,13 +1,13 @@
 <div class="leave-type-modal-container">
-  <!-- Modal Header Bar -->
+  <!-- Modal Header Bar (Fixed at Top) -->
   <div class="modal-header">
     <div class="header-left">
       <div class="icon-badge">
-        <mat-icon>category</mat-icon>
+        <mat-icon>tune</mat-icon>
       </div>
       <div class="header-text">
         <h2 class="modal-title">{{ isEdit ? 'Edit Leave Type Policy' : 'Create Leave Type Policy' }}</h2>
-        <p class="modal-subtitle">Configure employee time-off entitlement category and rules.</p>
+        <p class="modal-subtitle">Configure accrual, rollover, sandwich rules, encashment and LOP parameters.</p>
       </div>
     </div>
     <button type="button" class="close-btn" (click)="onCancel()" aria-label="Close dialog">
@@ -15,80 +15,256 @@
     </button>
   </div>
 
-  <!-- Form Body -->
-  <form [formGroup]="leaveForm" (ngSubmit)="onSubmit()" class="leave-type-form-body">
-    <!-- Leave Type Name -->
-    <div class="form-group">
-      <label class="field-label">Leave Category / Title <span class="required">*</span></label>
-      <div class="input-wrapper">
-        <mat-icon class="input-icon">label</mat-icon>
-        <input
-          type="text"
-          formControlName="type"
-          (keypress)="allowOnlyLetters($event)"
-          placeholder="e.g. Earned Leave, Casual Leave, Sick Leave, Maternity Leave"
-          class="custom-input"
-        />
+  <!-- Form Wrapper -->
+  <form [formGroup]="leaveForm" (ngSubmit)="onSubmit()" class="modal-form-wrapper">
+    
+    <!-- Scrollable Body Content -->
+    <div class="modal-scrollable-body">
+      
+      <!-- Section 1: Basic Classification -->
+      <div class="policy-section">
+        <h3 class="section-heading">
+          <mat-icon>label</mat-icon>
+          <span>Basic Entitlement</span>
+        </h3>
+        
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label class="field-label">Leave Category Title <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <mat-icon class="input-icon">category</mat-icon>
+              <input
+                type="text"
+                formControlName="type"
+                (keypress)="allowOnlyLetters($event)"
+                placeholder="e.g. Earned Leave, Casual Leave, Sick Leave"
+                class="custom-input"
+              />
+            </div>
+          </div>
+
+          <div class="form-group flex-1">
+            <label class="field-label">Annual Quota (Days) <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <mat-icon class="input-icon">event_available</mat-icon>
+              <input
+                type="number"
+                min="0"
+                max="365"
+                formControlName="allowedDays"
+                class="custom-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="field-label">Policy Guidelines & Description <span class="required">*</span></label>
+          <div class="input-wrapper-textarea">
+            <mat-icon class="input-icon-textarea">notes</mat-icon>
+            <textarea
+              formControlName="description"
+              rows="2"
+              placeholder="Eligibility requirements, notice periods, and guidelines..."
+              class="custom-textarea"
+            ></textarea>
+          </div>
+        </div>
       </div>
+
+      <!-- Section 2: Paid/Unpaid & Sandwich Rule -->
+      <div class="policy-section">
+        <h3 class="section-heading">
+          <mat-icon>rule</mat-icon>
+          <span>Paid Leave & Sandwich Rule</span>
+        </h3>
+        
+        <div class="toggle-grid">
+          <label class="toggle-card" [class.toggle-card-active]="leaveForm.get('isPaid')?.value">
+            <div class="toggle-info">
+              <span class="toggle-label">Paid Leave Type</span>
+              <span class="toggle-desc">Leave is paid; uncheck for explicit Loss of Pay (LOP)</span>
+            </div>
+            <input type="checkbox" formControlName="isPaid" class="custom-checkbox" />
+          </label>
+
+          <label class="toggle-card" [class.toggle-card-active]="leaveForm.get('sandwichRuleEnabled')?.value">
+            <div class="toggle-info">
+              <span class="toggle-label">Sandwich Rule Enabled</span>
+              <span class="toggle-desc">Count intervening weekends/holidays as leave</span>
+            </div>
+            <input type="checkbox" formControlName="sandwichRuleEnabled" class="custom-checkbox" />
+          </label>
+        </div>
+
+        <!-- Sub-config when sandwich rule is enabled -->
+        <div *ngIf="leaveForm.get('sandwichRuleEnabled')?.value" class="sub-config-box sub-config-accent">
+          <div class="form-group">
+            <label class="field-label">Allowed Sandwich Leaves (e.g. 1 or 2 Leaves Allowed) <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <mat-icon class="input-icon">layers</mat-icon>
+              <input
+                type="number"
+                min="0"
+                max="20"
+                formControlName="maxSandwichLeavesAllowed"
+                class="custom-input"
+                placeholder="e.g. 1 or 2"
+              />
+            </div>
+            <p class="field-helper-text">
+              Number of sandwich leaves an employee can take per year (e.g. 1 or 2). Once this limit is reached, intervening weekends and public holidays are counted as leaves.
+            </p>
+          </div>
+        </div>
+
+        <!-- Hint when sandwich rule is disabled -->
+        <div *ngIf="!leaveForm.get('sandwichRuleEnabled')?.value" class="sub-config-hint">
+          <mat-icon class="hint-icon">info_outline</mat-icon>
+          <span>Sandwich rule is currently <strong>disabled</strong>. Intervening weekends or holidays will not be counted as leaves. Check <em>Sandwich Rule Enabled</em> above to set the allowed sandwich leave limit (e.g. 1 or 2 leaves).</span>
+        </div>
+      </div>
+
+      <!-- Section 3: Accrual & Rollover Engine -->
+      <div class="policy-section">
+        <h3 class="section-heading">
+          <mat-icon>autorenew</mat-icon>
+          <span>Accrual & Rollover</span>
+        </h3>
+
+        <div class="toggle-grid">
+          <label class="toggle-card" [class.toggle-card-active]="leaveForm.get('accrualEnabled')?.value">
+            <div class="toggle-info">
+              <span class="toggle-label">Periodic Accrual</span>
+              <span class="toggle-desc">Automatically credit leave via monthly background worker</span>
+            </div>
+            <input type="checkbox" formControlName="accrualEnabled" class="custom-checkbox" />
+          </label>
+
+          <label class="toggle-card" [class.toggle-card-active]="leaveForm.get('carryForwardEnabled')?.value">
+            <div class="toggle-info">
+              <span class="toggle-label">Year-End Carry Forward</span>
+              <span class="toggle-desc">Permit rollover of unconsumed balance to next year</span>
+            </div>
+            <input type="checkbox" formControlName="carryForwardEnabled" class="custom-checkbox" />
+          </label>
+        </div>
+
+        <div class="sub-config-box" *ngIf="leaveForm.get('accrualEnabled')?.value || leaveForm.get('carryForwardEnabled')?.value">
+          <div class="config-fields-grid">
+            <div *ngIf="leaveForm.get('accrualEnabled')?.value" class="form-group">
+              <label class="field-label">Accrual Frequency</label>
+              <select formControlName="accrualFrequency" class="custom-select">
+                <option value="Monthly">Monthly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Annual">Annual</option>
+              </select>
+            </div>
+
+            <div *ngIf="leaveForm.get('accrualEnabled')?.value" class="form-group">
+              <label class="field-label">Accrual Credit (Days)</label>
+              <input type="number" step="0.25" min="0" formControlName="accrualAmount" class="custom-input" />
+            </div>
+
+            <div *ngIf="leaveForm.get('carryForwardEnabled')?.value" class="form-group">
+              <label class="field-label">Max Carry Forward Cap</label>
+              <input type="number" min="0" formControlName="maxCarryForwardDays" class="custom-input" />
+            </div>
+
+            <div *ngIf="leaveForm.get('carryForwardEnabled')?.value" class="form-group">
+              <label class="field-label">Excess Balance Action</label>
+              <select formControlName="excessBalanceTreatment" class="custom-select">
+                <option value="Lapse">Lapse (Forfeit)</option>
+                <option value="Encash">Encash via Payroll</option>
+                <option value="Unlimited">Unlimited</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Encashment, Comp-Off & Negative Balance -->
+      <div class="policy-section">
+        <h3 class="section-heading">
+          <mat-icon>monetization_on</mat-icon>
+          <span>Encashment & Comp-Off</span>
+        </h3>
+
+        <div class="toggle-grid">
+          <label class="toggle-card" [class.toggle-card-active]="leaveForm.get('encashmentAllowed')?.value">
+            <div class="toggle-info">
+              <span class="toggle-label">Leave Encashment</span>
+              <span class="toggle-desc">Allow employee to encash unutilized leave balance</span>
+            </div>
+            <input type="checkbox" formControlName="encashmentAllowed" class="custom-checkbox" />
+          </label>
+
+          <label class="toggle-card" [class.toggle-card-active]="leaveForm.get('isCompOff')?.value">
+            <div class="toggle-info">
+              <span class="toggle-label">Compensatory Off (Comp-Off)</span>
+              <span class="toggle-desc">Earned from holiday or weekend attendance</span>
+            </div>
+            <input type="checkbox" formControlName="isCompOff" class="custom-checkbox" />
+          </label>
+
+          <label class="toggle-card" [class.toggle-card-active]="leaveForm.get('isNegativeBalanceAllowed')?.value">
+            <div class="toggle-info">
+              <span class="toggle-label">Allow Negative Balance</span>
+              <span class="toggle-desc">Allow advance leave beyond current balance</span>
+            </div>
+            <input type="checkbox" formControlName="isNegativeBalanceAllowed" class="custom-checkbox" />
+          </label>
+        </div>
+
+        <div class="sub-config-box" *ngIf="leaveForm.get('encashmentAllowed')?.value || leaveForm.get('isCompOff')?.value || leaveForm.get('isNegativeBalanceAllowed')?.value">
+          <div class="config-fields-grid">
+            <div *ngIf="leaveForm.get('encashmentAllowed')?.value" class="form-group">
+              <label class="field-label">Min Retained Balance</label>
+              <input type="number" min="0" formControlName="minBalanceForEncashment" class="custom-input" />
+            </div>
+
+            <div *ngIf="leaveForm.get('encashmentAllowed')?.value" class="form-group">
+              <label class="field-label">Max Encashment Days</label>
+              <input type="number" min="1" formControlName="maxEncashmentDaysPerRequest" class="custom-input" />
+            </div>
+
+            <div *ngIf="leaveForm.get('isCompOff')?.value" class="form-group">
+              <label class="field-label">Comp-Off Validity (Days)</label>
+              <input type="number" min="30" formControlName="compOffValidityDays" class="custom-input" />
+            </div>
+
+            <div *ngIf="leaveForm.get('isNegativeBalanceAllowed')?.value" class="form-group">
+              <label class="field-label">Negative Balance Limit</label>
+              <input type="number" min="0" formControlName="negativeBalanceLimit" class="custom-input" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Status Toggle -->
+      <div class="status-card-group">
+        <div class="status-text-left">
+          <label class="status-title">Active Policy Status</label>
+          <p class="status-desc">Active policies can be selected by employees when applying for leaves.</p>
+        </div>
+
+        <label class="switch-control">
+          <input type="checkbox" formControlName="isActive" />
+          <span class="slider-round"></span>
+        </label>
+      </div>
+
     </div>
 
-    <!-- Allowed Days / Quota without LOP -->
-    <div class="form-group">
-      <div class="label-row">
-        <label class="field-label">Allowed Days / Quota (Days without LOP) <span class="required">*</span></label>
-        <span class="field-hint">e.g. 10 days</span>
-      </div>
-      <div class="input-wrapper">
-        <mat-icon class="input-icon">event_available</mat-icon>
-        <input
-          type="number"
-          min="0"
-          max="365"
-          formControlName="allowedDays"
-          placeholder="e.g. 10 (without loss of pay)"
-          class="custom-input"
-        />
-      </div>
-      <p class="field-helper-text">
-        Employees receive this quota per year without Loss of Pay. Days requested beyond this limit (or if set to 0) will be considered Loss of Pay (LOP).
-      </p>
-    </div>
-
-    <!-- Description -->
-    <div class="form-group">
-      <label class="field-label">Policy Guidelines & Description <span class="required">*</span></label>
-      <div class="input-wrapper-textarea">
-        <mat-icon class="input-icon-textarea">notes</mat-icon>
-        <textarea
-          formControlName="description"
-          rows="3"
-          placeholder="Enter eligibility rules, notice periods, and documentation requirements..."
-          class="custom-textarea"
-        ></textarea>
-      </div>
-    </div>
-
-    <!-- Status Switch Card -->
-    <div class="status-card-group">
-      <div class="status-text-left">
-        <label class="status-title">Active Policy Status</label>
-        <p class="status-desc">Allow employees to select and request this leave type in requests.</p>
-      </div>
-
-      <label class="switch-control">
-        <input type="checkbox" formControlName="isActive" />
-        <span class="slider-round"></span>
-      </label>
-    </div>
-
-    <!-- Modal Footer Actions -->
+    <!-- Modal Footer Actions (Fixed at Bottom) -->
     <div class="modal-footer">
       <button type="button" class="btn-cancel" (click)="onCancel()">
         Cancel
       </button>
       <button type="submit" class="btn-submit">
         <mat-icon>{{ isEdit ? 'save' : 'add_task' }}</mat-icon>
-        <span>{{ isEdit ? 'Save Changes' : 'Add Leave Type' }}</span>
+        <span>{{ isEdit ? 'Save Policy' : 'Create Policy' }}</span>
       </button>
     </div>
   </form>

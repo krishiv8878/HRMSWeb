@@ -23,6 +23,7 @@ export class RequestsApprovalsModalComponent {
 
   confirmSend(): void {
     if (this.isSubmitting) return;
+    if (this.data?.isReturn && (!this.rejectionReason || !this.rejectionReason.trim())) return;
     this.isSubmitting = true;
     this.dialogRef.close({
       confirmed: true,

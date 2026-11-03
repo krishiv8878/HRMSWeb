@@ -140,6 +140,8 @@ export class ShiftComponent implements OnInit {
       // Send formatted TimeSpan string (HH:mm:ss) which maps directly to C# TimeSpan
       startTime: `${startNormalized}:00`,
       endTime: `${endNormalized}:00`,
+      gracePeriodMinutes: Number(formVal.gracePeriodMinutes || 15),
+      scheduledBreakMinutes: Number(formVal.breakDurationMinutes || 60),
       isActive: formVal.isActive !== false
     };
 

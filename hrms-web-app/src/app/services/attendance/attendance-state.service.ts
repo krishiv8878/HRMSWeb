@@ -169,7 +169,7 @@ export class AttendanceStateService implements OnDestroy {
 
     forkJoin({
       attendance: this.attendanceService.getByEmployeeId(empId).pipe(catchError(() => of([]))),
-      logs: this.attendanceService.getAttendanceLogsByEmployeeId(empId).pipe(catchError(() => of([]))),
+      logs: this.attendanceService.getAttendanceLogs().pipe(catchError(() => of([]))),
       requests: this.attendanceRequestService.getAllData().pipe(catchError(() => of([])))
     }).subscribe({
       next: (res: any) => {
@@ -218,12 +218,21 @@ export class AttendanceStateService implements OnDestroy {
           return getEmpId(l) === loggedInId && d && this.toYMD(d) === todayDateStr;
         });
 
-        // Check if there is an open session in AttendanceLog
-        const activeLog = todayLoggedInLogs.find((l: any) => {
+        // Check if there is an open session in AttendanceLog (InTime present, OutTime empty/null)
+        const openLogs = todayLoggedInLogs.filter((l: any) => {
           const inT = l.inTime || l.InTime;
           const outT = l.outTime || l.OutTime;
           return this.isRealTime(inT) && !this.isRealTime(outT);
         });
+
+        // If multiple sessions occurred today, pick the latest open session by inTime
+        const activeLog = openLogs.length > 0
+          ? openLogs.reduce((latest: any, cur: any) => {
+              const curT = this.parseDateSafe(cur.inTime || cur.InTime)?.getTime() || 0;
+              const latT = this.parseDateSafe(latest.inTime || latest.InTime)?.getTime() || 0;
+              return curT > latT ? cur : latest;
+            }, openLogs[0])
+          : null;
 
         // Check today's EmployeeAttendance record
         const todayAttendance = rawAttendance.find((r: any) => {
@@ -237,7 +246,20 @@ export class AttendanceStateService implements OnDestroy {
           const inTime = this.parseDateSafe(activeLog.inTime || activeLog.InTime);
           this.setClockedInState(true, inTime);
         } else if (hasOpenAttendance) {
-          const inTime = this.parseDateSafe(todayAttendance.clockIn || todayAttendance.ClockIn);
+          // If logs exist for today, the current active clock-in session started at the LATEST inTime among logs!
+          // Note: todayAttendance.clockIn stores the day's first punch-in (e.g. 10:20 AM), not the latest re-punch (e.g. 2:00 PM).
+          let inTime: Date | null = null;
+          if (todayLoggedInLogs.length > 0) {
+            const sortedLogs = [...todayLoggedInLogs].sort((a: any, b: any) => {
+              const aT = this.parseDateSafe(a.inTime || a.InTime)?.getTime() || 0;
+              const bT = this.parseDateSafe(b.inTime || b.InTime)?.getTime() || 0;
+              return bT - aT;
+            });
+            inTime = this.parseDateSafe(sortedLogs[0].inTime || sortedLogs[0].InTime);
+          }
+          if (!inTime) {
+            inTime = this.parseDateSafe(todayAttendance.clockIn || todayAttendance.ClockIn);
+          }
           this.setClockedInState(true, inTime);
         } else {
           // If no active session found on backend, check if user clocked out today

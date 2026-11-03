@@ -10,7 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ToastrService } from 'ngx-toastr';
 import { RoleservicesService } from '../../services/rolemaster/roleservices.service';
-import { PermissionMaster, PermissionService } from '../../services/permission/permission.service';
+import { PermissionMaster, PermissionService, RolePermissionAssignment } from '../../services/permission/permission.service';
 import { RbacService } from '../../core/rbac.service';
 
 export interface ModulePermissionGroup {
@@ -53,6 +53,9 @@ export class RolemastersComponent implements OnInit {
   allPermissions: PermissionMaster[] = [];
   groupedPermissions: ModulePermissionGroup[] = [];
   selectedPermissionIds: Set<number> = new Set<number>();
+  permissionScopes: { [permId: number]: string } = {};
+  availableScopes: string[] = ['Self', 'Team', 'TeamAndIndirect', 'Department', 'Branch', 'All'];
+
   isLoadingPermissions: boolean = false;
   activeModuleTab: string = 'All';
   permSearchQuery: string = '';
@@ -60,7 +63,8 @@ export class RolemastersComponent implements OnInit {
   roledateForm = this.formBuilder.group({
     id: [0],
     roleName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-_/&]+$')]],
-    isActive: [true]
+    isActive: [true],
+    reason: ['', [Validators.required, Validators.minLength(3)]]
   });
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
@@ -72,7 +76,8 @@ export class RolemastersComponent implements OnInit {
       this.roledateForm.patchValue({
         id: this.data.id || 0,
         roleName: this.data.roleName || '',
-        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
+        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true,
+        reason: ''
       });
     }
 
@@ -101,14 +106,34 @@ export class RolemastersComponent implements OnInit {
   }
 
   loadRolePermissions(roleId: number) {
-    this.permissionService.getRolePermissions(roleId).subscribe({
+    this.permissionService.getRolePermissionsWithScope(roleId).subscribe({
       next: (res: any) => {
-        const ids: number[] = res?.data || [];
-        this.selectedPermissionIds = new Set(ids);
+        const items = res?.data || [];
+        if (Array.isArray(items) && items.length > 0) {
+          this.selectedPermissionIds.clear();
+          for (const item of items) {
+            const pId = item.permissionId || item.id;
+            if (pId) {
+              this.selectedPermissionIds.add(pId);
+              this.permissionScopes[pId] = item.scope || 'All';
+            }
+          }
+        } else {
+          // Fallback to legacy ID array
+          this.permissionService.getRolePermissions(roleId).subscribe({
+            next: (legacyRes: any) => {
+              const ids: number[] = legacyRes?.data || [];
+              this.selectedPermissionIds = new Set(ids);
+              for (const id of ids) {
+                this.permissionScopes[id] = 'All';
+              }
+            }
+          });
+        }
         this.isLoadingPermissions = false;
       },
       error: (err) => {
-        console.error('Failed to load assigned role permissions:', err);
+        console.error('Failed to load assigned role permissions with scope:', err);
         this.isLoadingPermissions = false;
       }
     });
@@ -172,11 +197,25 @@ export class RolemastersComponent implements OnInit {
       this.selectedPermissionIds.delete(id);
     } else {
       this.selectedPermissionIds.add(id);
+      if (!this.permissionScopes[id]) {
+        this.permissionScopes[id] = 'All';
+      }
     }
   }
 
   isPermissionSelected(id: number): boolean {
     return this.selectedPermissionIds.has(id);
+  }
+
+  getPermissionScope(id: number): string {
+    return this.permissionScopes[id] || 'All';
+  }
+
+  onScopeChange(id: number, scope: string, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.permissionScopes[id] = scope;
   }
 
   toggleModuleAll(group: ModulePermissionGroup) {
@@ -186,6 +225,9 @@ export class RolemastersComponent implements OnInit {
         this.selectedPermissionIds.delete(p.id);
       } else {
         this.selectedPermissionIds.add(p.id);
+        if (!this.permissionScopes[p.id]) {
+          this.permissionScopes[p.id] = 'All';
+        }
       }
     }
   }
@@ -207,6 +249,9 @@ export class RolemastersComponent implements OnInit {
   selectAllPermissions() {
     for (const p of this.allPermissions) {
       this.selectedPermissionIds.add(p.id);
+      if (!this.permissionScopes[p.id]) {
+        this.permissionScopes[p.id] = 'All';
+      }
     }
   }
 
@@ -233,15 +278,21 @@ export class RolemastersComponent implements OnInit {
 
     if (this.roledateForm.invalid) {
       this.roledateForm.markAllAsTouched();
-      this.toaster.error('Please enter a valid role name', 'Validation Error');
+      this.toaster.error('Please enter a role title and a business reason for modification.', 'Validation Error');
       return;
     }
 
     const val = this.roledateForm.value;
     const trimmedName = (val.roleName || '').trim();
+    const reason = (val.reason || '').trim();
 
     if (!trimmedName) {
       this.toaster.error('Role name cannot be blank', 'Validation Error');
+      return;
+    }
+
+    if (!reason || reason.length < 3) {
+      this.toaster.error('A mandatory justification reason (min 3 chars) is required for audit logging.', 'Validation Error');
       return;
     }
 
@@ -273,44 +324,43 @@ export class RolemastersComponent implements OnInit {
       isActive: Boolean(val.isActive)
     };
 
-    const permissionIdsArray = Array.from(this.selectedPermissionIds);
+    const scopedAssignments: RolePermissionAssignment[] = Array.from(this.selectedPermissionIds).map(pId => ({
+      permissionId: pId,
+      scope: this.permissionScopes[pId] || 'All'
+    }));
 
     if (this.isEdit) {
       this.services.updateData(payload, payload.id).subscribe({
-        next: (roleRes) => {
-          this.permissionService.saveRolePermissions(payload.id, permissionIdsArray).subscribe({
+        next: () => {
+          this.permissionService.saveRolePermissionsWithScope(payload.id, scopedAssignments, reason).subscribe({
             next: () => {
               this.isSaving = false;
-              this.toaster.success('Role permissions matrix successfully updated', 'Updated');
+              this.toaster.success('Role and scoped permissions successfully updated', 'Updated');
               this.dialogRef.close(true);
             },
-            error: () => {
+            error: (permErr) => {
               this.isSaving = false;
-              this.toaster.success('Role updated with permissions', 'Updated');
+              const msg = permErr?.error?.message || 'Role updated but permissions update failed.';
+              this.toaster.error(msg, 'Permission Matrix');
               this.dialogRef.close(true);
             }
           });
         },
         error: (err) => {
-          console.error('Error updating role:', err);
-          this.permissionService.saveRolePermissions(payload.id, permissionIdsArray).subscribe({
-            next: () => {
-              this.isSaving = false;
-              this.toaster.success('Role updated with permissions', 'Updated');
-              this.dialogRef.close(true);
-            }
-          });
+          this.isSaving = false;
+          const msg = err?.error?.message || 'Failed to update role.';
+          this.toaster.error(msg, 'Role Error');
         }
       });
     } else {
       this.services.createData(payload).subscribe({
         next: (roleRes: any) => {
           const newRoleId = roleRes?.data?.id || roleRes?.id;
-          if (newRoleId && permissionIdsArray.length > 0) {
-            this.permissionService.saveRolePermissions(newRoleId, permissionIdsArray).subscribe({
+          if (newRoleId && scopedAssignments.length > 0) {
+            this.permissionService.saveRolePermissionsWithScope(newRoleId, scopedAssignments, reason).subscribe({
               next: () => {
                 this.isSaving = false;
-                this.toaster.success('New role and permissions created successfully', 'Created');
+                this.toaster.success('New role and scoped permissions created successfully', 'Created');
                 this.dialogRef.close(true);
               },
               error: () => {
@@ -328,7 +378,8 @@ export class RolemastersComponent implements OnInit {
         error: (err) => {
           console.error('Error creating role:', err);
           this.isSaving = false;
-          this.toaster.error('Failed to create role', 'Error');
+          const msg = err?.error?.message || 'Failed to create role.';
+          this.toaster.error(msg, 'Error');
         }
       });
     }

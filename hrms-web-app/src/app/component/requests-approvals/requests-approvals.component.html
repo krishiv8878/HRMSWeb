@@ -159,6 +159,17 @@
 
         <button
           type="button"
+          class="status-tab revision-tab"
+          [class.active]="activeStatusTab === 'NeedsRevision'"
+          (click)="setStatusTab('NeedsRevision')"
+        >
+          <span class="tab-indicator"></span>
+          <span class="tab-title">Needs Revision</span>
+          <span class="tab-count-badge" [class.has-count]="needsRevisionStatusCount > 0">{{ needsRevisionStatusCount }}</span>
+        </button>
+
+        <button
+          type="button"
           class="status-tab cancelled-tab"
           [class.active]="activeStatusTab === 'Cancelled'"
           (click)="setStatusTab('Cancelled')"
@@ -446,6 +457,10 @@
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
                     <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Approve' }}</span>
                   </button>
+                  <button type="button" class="btn-return" *ngIf="item.status === 'Pending'" (click)="returnForRevisionRequest(item)" [disabled]="isSubmittingDecision" title="Return for Revision">
+                    <mat-icon>edit_note</mat-icon>
+                    <span>Revise</span>
+                  </button>
                   <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)" [disabled]="isSubmittingDecision" title="Reject Request">
                     <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">close</mat-icon>
@@ -456,7 +471,7 @@
                   <mat-icon class="readonly-icon">visibility</mat-icon>
                   <span>View Only</span>
                 </span>
-                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && item.category !== 'Asset' && item.category !== 'Interview'" [ngClass]="item.status === 'Approved' ? 'tag-approved' : (item.status === 'Cancelled' ? 'tag-cancelled' : 'tag-rejected')">
+                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && item.category !== 'Asset' && item.category !== 'Interview'" [ngClass]="item.status === 'Approved' ? 'tag-approved' : (item.status === 'Cancelled' ? 'tag-cancelled' : (item.status === 'NeedsRevision' ? 'tag-revision' : 'tag-rejected'))">
                   {{ item.status }}
                 </span>
               </div>
@@ -564,6 +579,10 @@
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
                     <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Approve' }}</span>
                   </button>
+                  <button type="button" class="btn-return" *ngIf="item.status === 'Pending'" (click)="returnForRevisionRequest(item)" [disabled]="isSubmittingDecision" title="Return for Revision">
+                    <mat-icon>edit_note</mat-icon>
+                    <span>Revise</span>
+                  </button>
                   <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)" [disabled]="isSubmittingDecision">
                     <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">close</mat-icon>
@@ -575,7 +594,7 @@
                   <span>View Only</span>
                 </span>
 
-                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && !canCancelLeave(item)" [ngClass]="item.status === 'Approved' ? 'tag-approved' : (item.status === 'Cancelled' ? 'tag-cancelled' : 'tag-rejected')">
+                <span class="action-status-tag" *ngIf="item.status !== 'Pending' && !canCancelLeave(item)" [ngClass]="item.status === 'Approved' ? 'tag-approved' : (item.status === 'Cancelled' ? 'tag-cancelled' : (item.status === 'NeedsRevision' ? 'tag-revision' : 'tag-rejected'))">
                   {{ item.status }}
                 </span>
               </div>
@@ -807,6 +826,10 @@
                     <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>
                     <mat-icon *ngIf="!isSubmittingDecision || processingItemId !== item.id">check</mat-icon>
                     <span>{{ (isSubmittingDecision && processingItemId === item.id) ? 'Processing...' : 'Approve' }}</span>
+                  </button>
+                  <button type="button" class="btn-return" *ngIf="item.status === 'Pending'" (click)="returnForRevisionRequest(item)" [disabled]="isSubmittingDecision" title="Return for Revision">
+                    <mat-icon>edit_note</mat-icon>
+                    <span>Revise</span>
                   </button>
                   <button type="button" class="btn-reject" *ngIf="item.status === 'Pending'" (click)="rejectRequest(item)" [disabled]="isSubmittingDecision">
                     <span class="btn-spinner" *ngIf="isSubmittingDecision && processingItemId === item.id"></span>

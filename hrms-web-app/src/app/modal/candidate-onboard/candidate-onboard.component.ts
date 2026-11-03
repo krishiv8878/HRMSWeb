@@ -46,6 +46,8 @@ export class CandidateOnboardModalComponent implements OnInit {
   managersList: any[] = [];
   shiftsList: any[] = [];
   rolesList: any[] = [];
+  formerEmployeeMatches: any[] = [];
+  linkedFormerEmployee: any = null;
 
   departmentsList: string[] = [
     'Engineering & Technology',
@@ -101,6 +103,8 @@ export class CandidateOnboardModalComponent implements OnInit {
       dateOfJoining: [todayStr, [Validators.required]],
       gender: ['Male'],
       roleName: ['Employee'],
+      employmentType: ['FullTime', [Validators.required]],
+      probationEndDate: [new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10), [Validators.required]],
       annualCtc: [this.annualCtcNumber, [Validators.required, Validators.min(10000)]],
       basicSalary: [this.basicSalaryMonthly, [Validators.required]],
       hra: [this.hraMonthly, [Validators.required]],
@@ -109,9 +113,11 @@ export class CandidateOnboardModalComponent implements OnInit {
       grossMonthlySalary: [this.grossSalaryMonthly],
       netMonthlySalary: [this.netTakeHomeMonthly],
       temporaryPassword: [defaultPw, [Validators.required]],
+      previousEmployeeId: [null as any],
       sendCredentialsEmail: [true]
     });
 
+    this.checkFormerEmployeeHints();
     this.loadDropdowns();
   }
 
@@ -197,6 +203,36 @@ export class CandidateOnboardModalComponent implements OnInit {
     });
   }
 
+  checkFormerEmployeeHints(): void {
+    const email = this.candidate?.emailAddress || this.onboardForm?.get('emailAddress')?.value;
+    if (!email) return;
+
+    this.employeeService.getMatchingFormerEmployees(email).subscribe({
+      next: (res: any) => {
+        this.formerEmployeeMatches = res?.data || res || [];
+      },
+      error: () => {
+        this.formerEmployeeMatches = [];
+      }
+    });
+  }
+
+  linkAsRehire(match: any): void {
+    this.linkedFormerEmployee = match;
+    this.onboardForm.patchValue({ previousEmployeeId: match.employeeId });
+    this.formerEmployeeMatches = [];
+    this.toaster.info(`Linked candidate to former employee ${match.fullName}. Onboarding will create a new tenure linked to #${match.employeeId}.`, 'Former Employee Linked');
+  }
+
+  unlinkFormerEmployee(): void {
+    this.linkedFormerEmployee = null;
+    this.onboardForm.patchValue({ previousEmployeeId: null });
+  }
+
+  dismissFormerEmployeeMatch(): void {
+    this.formerEmployeeMatches = [];
+  }
+
   onDesignationChange(event: any): void {
     const selectedId = Number(event.target.value);
     const found = this.designationsList.find(d => d.id === selectedId);
@@ -268,6 +304,34 @@ export class CandidateOnboardModalComponent implements OnInit {
     return `${lpa} LPA`;
   }
 
+  formatInLacs(annualVal: number): string {
+    return this.formatLpa(annualVal);
+  }
+
+  onAnnualCtcChange(event: any): void {
+    this.onAnnualCtcInput(event);
+  }
+
+  regeneratePassword(): void {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    const num = Math.floor(1000 + Math.random() * 9000);
+    const pw = `Hrms@${num}!`;
+    this.onboardForm.patchValue({ temporaryPassword: pw });
+  }
+
+  navigateToEmployee(empId?: number): void {
+    this.dialogRef.close(true);
+    if (empId) {
+      this.router.navigate(['/index/user-profile'], { queryParams: { id: empId } });
+    } else {
+      this.router.navigate(['/index/home']);
+    }
+  }
+
+  onSubmit(): void {
+    this.submitOnboarding();
+  }
+
   copyCredentials(): void {
     if (!this.createdResponse) return;
     const text = `Portal URL: ${window.location.origin}/login\nEmail: ${this.createdResponse.email}\nTemporary Password: ${this.createdResponse.temporaryPassword}`;
@@ -313,6 +377,8 @@ export class CandidateOnboardModalComponent implements OnInit {
       dateOfJoining: val.dateOfJoining ? new Date(val.dateOfJoining).toISOString() : new Date().toISOString(),
       gender: val.gender || 'Male',
       roleName: val.roleName || 'Employee',
+      employmentType: val.employmentType || 'FullTime',
+      probationEndDate: val.probationEndDate ? new Date(val.probationEndDate).toISOString() : null,
       annualCtc: Number(val.annualCtc),
       basicSalary: Number(val.basicSalary),
       hra: Number(val.hra),
@@ -320,6 +386,7 @@ export class CandidateOnboardModalComponent implements OnInit {
       pfDeduction: Number(val.pfDeduction),
       netMonthlySalary: Number(val.netMonthlySalary),
       temporaryPassword: val.temporaryPassword,
+      previousEmployeeId: val.previousEmployeeId ? Number(val.previousEmployeeId) : null,
       sendCredentialsEmail: Boolean(val.sendCredentialsEmail),
       clientUrl: `${window.location.origin}/login`
     };

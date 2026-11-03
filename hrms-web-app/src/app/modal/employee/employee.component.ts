@@ -64,12 +64,20 @@ export class EmployeeComponent implements OnInit {
 
   genderOptions: string[] = ['Male', 'Female', 'Other'];
 
+  formerEmployeeMatches: any[] = [];
+  isCheckingFormerEmployee: boolean = false;
+  linkedFormerEmployee: any = null;
+  canOverrideNotice: boolean = false;
+
   Employeeform = this.formBuilder.group({
     id: [0],
     employeeId: [0],
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     emailAddress: ['', [Validators.required, Validators.email]],
+    personalEmail: [''],
+    panNumber: [''],
+    uanNumber: [''],
     mobileNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
     gender: ['Male'],
     dateOfJoining: [new Date()],
@@ -83,6 +91,9 @@ export class EmployeeComponent implements OnInit {
     skillIds: [<any[]>[]],
     projectIds: [<any[]>[]],
     employeeCode: [0],
+    previousEmployeeId: [null as any],
+    noticePeriodOverrideDays: [null as any],
+    noticePeriodOverrideReason: [''],
     currentAddress: [''],
     permanentAddress: [''],
     isActive: [true]
@@ -91,6 +102,7 @@ export class EmployeeComponent implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 
   ngOnInit() {
+    this.canOverrideNotice = this.rbacService.isAdmin() || this.rbacService.hasPermission('NOTICE_OVERRIDE');
     this.loadDropdownData();
 
     if (this.data) {
@@ -138,6 +150,9 @@ export class EmployeeComponent implements OnInit {
         firstName: this.data.firstName || '',
         lastName: this.data.lastName || '',
         emailAddress: this.data.emailAddress || '',
+        personalEmail: this.data.personalEmail || '',
+        panNumber: this.data.panNumber || '',
+        uanNumber: this.data.uanNumber || '',
         mobileNumber: this.data.mobileNumber || this.data.phone || this.data.contactNumber || this.data.primaryContactPhone || '',
         gender: this.data.gender || 'Male',
         dateOfJoining: joinDate,
@@ -151,6 +166,9 @@ export class EmployeeComponent implements OnInit {
         skillIds: sIds,
         projectIds: pIds,
         employeeCode: this.data.employeeCode || 0,
+        previousEmployeeId: this.data.previousEmployeeId || null,
+        noticePeriodOverrideDays: this.data.noticePeriodOverrideDays ?? null,
+        noticePeriodOverrideReason: this.data.noticePeriodOverrideReason || '',
         currentAddress: this.data.currentAddress || this.data.address || this.data.primaryContactAddress || '',
         permanentAddress: this.data.permanentAddress || this.data.currentAddress || this.data.address || '',
         isActive: this.data.isActive !== false && this.data.isActive !== 0 && this.data.isActive !== 'false'
@@ -160,6 +178,51 @@ export class EmployeeComponent implements OnInit {
     if (!this.rbacService.isAdmin()) {
       this.Employeeform.get('roleIds')?.disable();
     }
+  }
+
+  checkMatchingFormerEmployee(): void {
+    const val = this.Employeeform.getRawValue();
+    const email = (val.personalEmail || val.emailAddress || '').trim();
+    const pan = (val.panNumber || '').trim();
+    const uan = (val.uanNumber || '').trim();
+
+    if (!email && !pan && !uan) {
+      this.formerEmployeeMatches = [];
+      return;
+    }
+
+    this.isCheckingFormerEmployee = true;
+    this.services.getMatchingFormerEmployees(email || undefined, pan || undefined, uan || undefined).subscribe({
+      next: (res: any) => {
+        this.isCheckingFormerEmployee = false;
+        let list: any[] = res?.data || res || [];
+        if (this.isEdit) {
+          const currentId = Number(this.Employeeform.get('id')?.value || this.Employeeform.get('employeeId')?.value || 0);
+          list = list.filter(m => Number(m.employeeId) !== currentId);
+        }
+        this.formerEmployeeMatches = list;
+      },
+      error: () => {
+        this.isCheckingFormerEmployee = false;
+        this.formerEmployeeMatches = [];
+      }
+    });
+  }
+
+  linkAsRehire(match: any): void {
+    this.linkedFormerEmployee = match;
+    this.Employeeform.patchValue({ previousEmployeeId: match.employeeId });
+    this.formerEmployeeMatches = [];
+    this.toaster.info(`Linked to former employee ${match.fullName}. New employee record will represent a new tenure.`, 'Former Employee Linked');
+  }
+
+  unlinkFormerEmployee(): void {
+    this.linkedFormerEmployee = null;
+    this.Employeeform.patchValue({ previousEmployeeId: null });
+  }
+
+  dismissMatch(): void {
+    this.formerEmployeeMatches = [];
   }
 
   private loadDropdownData() {
@@ -319,6 +382,18 @@ export class EmployeeComponent implements OnInit {
 
     const val = this.Employeeform.getRawValue();
 
+    if (val.noticePeriodOverrideDays !== null && val.noticePeriodOverrideDays !== undefined && val.noticePeriodOverrideDays !== '') {
+      const days = Number(val.noticePeriodOverrideDays);
+      if (isNaN(days) || days < 0) {
+        this.toaster.error('Notice period override days must be a non-negative number.', 'Validation Error');
+        return;
+      }
+      if (!val.noticePeriodOverrideReason || !val.noticePeriodOverrideReason.trim()) {
+        this.toaster.error('A mandatory justification reason is required when overriding notice period.', 'Validation Error');
+        return;
+      }
+    }
+
     const clientUrl = typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
       : 'http://localhost:4200';
@@ -366,6 +441,14 @@ export class EmployeeComponent implements OnInit {
       lastName: (val.lastName || '').trim(),
       emailAddress: (val.emailAddress || '').trim(),
       primaryEmailAddress: (val.emailAddress || existingData.primaryEmailAddress || '').trim(),
+      personalEmail: (val.personalEmail || '').trim() || null,
+      panNumber: (val.panNumber || '').trim().toUpperCase() || null,
+      uanNumber: (val.uanNumber || '').trim() || null,
+      previousEmployeeId: val.previousEmployeeId ? Number(val.previousEmployeeId) : null,
+      noticePeriodOverrideDays: (val.noticePeriodOverrideDays !== null && val.noticePeriodOverrideDays !== undefined && val.noticePeriodOverrideDays !== '')
+        ? Number(val.noticePeriodOverrideDays)
+        : null,
+      noticePeriodOverrideReason: (val.noticePeriodOverrideReason || '').trim() || null,
       mobileNumber: String(val.mobileNumber || '').trim(),
       gender: val.gender || 'Male',
       dateOfJoining: this.formatDateOnly(val.dateOfJoining) || new Date().toISOString(),

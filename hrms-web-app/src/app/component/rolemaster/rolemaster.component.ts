@@ -299,6 +299,13 @@ export class RolemasterComponent implements OnInit {
 
   Delete(roleId: any) {
     const roleItem = this.allRoles.find(r => r.id === roleId);
+    if (roleItem && roleItem.assignedUsersCount > 0) {
+      this.toaster.error(
+        `Cannot delete role '${roleItem.roleName}' because it is currently assigned to ${roleItem.assignedUsersCount} active employee(s). Please reassign them first.`,
+        'Action Forbidden'
+      );
+      return;
+    }
     const defaultProtectedRoles = ['admin', 'system admin', 'employee'];
     if (roleItem && defaultProtectedRoles.includes(roleItem.roleName.toLowerCase().trim())) {
       this.toaster.error(`System core role '${roleItem.roleName}' is protected and cannot be deleted.`, 'Action Forbidden');
@@ -317,8 +324,8 @@ export class RolemasterComponent implements OnInit {
             this.toaster.success('Role record successfully deleted', 'Deleted');
             this.getData();
           },
-          error: () => {
-            this.toaster.success('Role record successfully deleted', 'Deleted');
+          error: (err: any) => {
+            this.toaster.error(err?.error?.message || 'Failed to delete role.', 'Delete Error');
             this.getData();
           }
         });

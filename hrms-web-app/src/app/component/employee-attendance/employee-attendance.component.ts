@@ -20,6 +20,8 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
 import { AttendanceStateService } from '../../services/attendance/attendance-state.service';
 import { RbacService } from '../../core/rbac.service';
+import { AttendanceLockService, AttendanceLockDTO } from '../../services/attendance/attendance-lock.service';
+import { DailyAttendanceService, DailyAttendanceRecordDTO, AttendanceMonthlySummaryDTO } from '../../services/attendance/daily-attendance.service';
 import { Subscription } from 'rxjs';
 
 export interface BreakInterval {
@@ -148,6 +150,17 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   private clockInTimeSub?: Subscription;
   private isTodayRegularizedSub?: Subscription;
   private regularizedStatusLabelSub?: Subscription;
+
+  public attendanceLockService = inject(AttendanceLockService);
+  public dailyAttendanceService = inject(DailyAttendanceService);
+
+  // Month-End Attendance Lock State (Phase 4)
+  isMonthLocked: boolean = false;
+  currentMonthLock: AttendanceLockDTO | null = null;
+  canLockUnlockAttendance: boolean = false;
+  showUnlockModal: boolean = false;
+  unlockReasonText: string = '';
+  isProcessingLock: boolean = false;
 
   Math = Math;
 
@@ -286,6 +299,8 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
     } else {
       this.isHrOrAdmin = this.rbacService.hasAnyRole(['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management']);
     }
+    this.canLockUnlockAttendance = this.rbacService.hasPermission('ATTENDANCE_LOCK') || this.rbacService.hasAnyRole(['Admin', 'System Admin', 'HR', 'HR Operations']);
+    this.checkMonthLockStatus();
     if (typeof window !== 'undefined') {
       this.initClock();
       if (typeof localStorage !== 'undefined') {
@@ -636,11 +651,18 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
         });
 
         // 1. Check if there is an active session in AttendanceLog for logged-in user
-        const activeLog = todayLoggedInLogs.find((l: any) => {
+        const openLogs = todayLoggedInLogs.filter((l: any) => {
           const inT = l.inTime || l.InTime;
           const outT = l.outTime || l.OutTime;
           return this.isRealTime(inT) && !this.isRealTime(outT);
         });
+        const activeLog = openLogs.length > 0
+          ? openLogs.reduce((latest: any, cur: any) => {
+              const curT = this.parseDateSafe(cur.inTime || cur.InTime)?.getTime() || 0;
+              const latT = this.parseDateSafe(latest.inTime || latest.InTime)?.getTime() || 0;
+              return curT > latT ? cur : latest;
+            }, openLogs[0])
+          : null;
 
         // 2. Check today's EmployeeAttendance record for logged-in user
         const todayLoggedInAttendance = rawAttendance.find((r: any) => {
@@ -654,8 +676,21 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
           const inTime = this.parseDateSafe(activeLog.inTime || activeLog.InTime);
           this.attendanceStateService.setClockedInState(true, inTime);
         } else if (hasOpenAttendance) {
-          const inTime = this.parseDateSafe(todayLoggedInAttendance.clockIn || todayLoggedInAttendance.ClockIn);
+          // If logs exist for today, the current active clock-in session started at the LATEST inTime among logs!
+          let inTime: Date | null = null;
+          if (todayLoggedInLogs.length > 0) {
+            const sortedLogs = [...todayLoggedInLogs].sort((a: any, b: any) => {
+              const aT = this.parseDateSafe(a.inTime || a.InTime)?.getTime() || 0;
+              const bT = this.parseDateSafe(b.inTime || b.InTime)?.getTime() || 0;
+              return bT - aT;
+            });
+            inTime = this.parseDateSafe(sortedLogs[0].inTime || sortedLogs[0].InTime);
+          }
+          if (!inTime) {
+            inTime = this.parseDateSafe(todayLoggedInAttendance.clockIn || todayLoggedInAttendance.ClockIn);
+          }
           this.attendanceStateService.setClockedInState(true, inTime);
+        } else {
           // If no active session for logged-in user, check if closed attendance exists today
           const hasClosedAttendance = todayLoggedInAttendance && this.isRealTime(todayLoggedInAttendance.clockOut || todayLoggedInAttendance.ClockOut);
           const hasAnyLogs = todayLoggedInLogs.length > 0;
@@ -713,28 +748,107 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   prevMonth() {
     this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
     this.buildMonthCalendar();
+    this.checkMonthLockStatus();
   }
 
   nextMonth() {
     this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 1);
     this.buildMonthCalendar();
+    this.checkMonthLockStatus();
   }
 
   goToToday() {
     this.calendarDate = new Date();
     this.buildMonthCalendar();
+    this.checkMonthLockStatus();
   }
 
   onMonthChange(mVal: any) {
     const m = Number(mVal);
     this.calendarDate = new Date(this.calendarDate.getFullYear(), m, 1);
     this.buildMonthCalendar();
+    this.checkMonthLockStatus();
   }
 
   onYearChange(yVal: any) {
     const y = Number(yVal);
     this.calendarDate = new Date(y, this.calendarDate.getMonth(), 1);
     this.buildMonthCalendar();
+    this.checkMonthLockStatus();
+  }
+
+  checkMonthLockStatus(): void {
+    const monthNum = this.currentMonthIndex + 1;
+    const yearNum = this.currentYear;
+    this.attendanceLockService.getLockForMonth(monthNum, yearNum).subscribe({
+      next: (res) => {
+        if (res && res.data && res.data.isLocked) {
+          this.isMonthLocked = true;
+          this.currentMonthLock = res.data;
+        } else {
+          this.isMonthLocked = false;
+          this.currentMonthLock = null;
+        }
+      },
+      error: () => {
+        this.isMonthLocked = false;
+        this.currentMonthLock = null;
+      }
+    });
+  }
+
+  lockCurrentMonth(): void {
+    const monthNum = this.currentMonthIndex + 1;
+    const yearNum = this.currentYear;
+    if (!confirm(`Are you sure you want to freeze and lock attendance for ${this.calendarMonthTitle} for payroll processing?`)) {
+      return;
+    }
+    this.isProcessingLock = true;
+    this.attendanceLockService.lockMonth(monthNum, yearNum).subscribe({
+      next: (res) => {
+        this.isProcessingLock = false;
+        this.toaster.success(`Attendance for ${this.calendarMonthTitle} locked successfully.`, 'Month Locked');
+        this.checkMonthLockStatus();
+        this.getAllData();
+      },
+      error: (err) => {
+        this.isProcessingLock = false;
+        this.toaster.error(err?.error?.message || 'Failed to lock month.', 'Error');
+      }
+    });
+  }
+
+  openUnlockDialog(): void {
+    this.unlockReasonText = '';
+    this.showUnlockModal = true;
+  }
+
+  closeUnlockDialog(): void {
+    this.showUnlockModal = false;
+    this.unlockReasonText = '';
+  }
+
+  confirmUnlockMonth(): void {
+    if (!this.unlockReasonText || this.unlockReasonText.trim().length < 5) {
+      this.toaster.warning('A valid justification reason of at least 5 characters is mandatory to unlock attendance.', 'Reason Required');
+      return;
+    }
+    const monthNum = this.currentMonthIndex + 1;
+    const yearNum = this.currentYear;
+    this.isProcessingLock = true;
+    this.attendanceLockService.unlockMonth(monthNum, yearNum, this.unlockReasonText.trim()).subscribe({
+      next: (res) => {
+        this.isProcessingLock = false;
+        this.closeUnlockDialog();
+        this.toaster.success(`Attendance for ${this.calendarMonthTitle} unlocked successfully.`, 'Month Unlocked');
+        this.checkMonthLockStatus();
+        this.getAllData();
+      },
+      error: (err) => {
+        this.isProcessingLock = false;
+        this.toaster.error(err?.error?.message || 'Failed to unlock month.', 'Error');
+      }
+    });
   }
 
   selectDay(day: CalendarDay) {
@@ -1088,10 +1202,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
 
       // Allow regularization if punch was incomplete on a past date within backfill window
       const missedPunchOut = isPastDate && (!rawLatestOut || hasActiveSession);
-      canRegularize = isWithinBackfillWindow && missedPunchOut && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved' && !holidayMatch && !leaveMatch && !isWeekend;
+      canRegularize = !this.isMonthLocked && isWithinBackfillWindow && missedPunchOut && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved' && !holidayMatch && !leaveMatch && !isWeekend;
     } else {
       status = 'Absent';
-      canRegularize = isPastDate && isWithinBackfillWindow && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved' && !holidayMatch && !leaveMatch && !isWeekend;
+      canRegularize = !this.isMonthLocked && isPastDate && isWithinBackfillWindow && regularizationStatus !== 'Pending' && regularizationStatus !== 'Approved' && !holidayMatch && !leaveMatch && !isWeekend;
     }
 
     let punchType: 'Self Punch' | 'Regularized' | 'None' = 'None';
@@ -1552,6 +1666,10 @@ export class EmployeeAttendanceComponent implements OnInit, OnDestroy {
   openRegularizationModal(row?: AttendanceRow | any, initialType: string = 'Regularization') {
     if (this.isViewingOtherEmployee) {
       this.toaster.info('Regularization requests can only be submitted by the employee directly. As a supervisor, review pending requests under Requests & Approvals.', 'Supervisor View');
+      return;
+    }
+    if (this.isMonthLocked) {
+      this.toaster.warning(`Attendance for ${this.calendarMonthTitle} is locked for payroll processing. Regularization requests cannot be submitted.`, 'Month Locked');
       return;
     }
     if (row && row.isPriorToJoining) {

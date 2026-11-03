@@ -178,6 +178,11 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes alertPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
 /* =========================================================================
    LOADING SKELETON / OVERLAY
    ========================================================================= */
@@ -213,7 +218,7 @@
    ========================================================================= */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.15rem;
   margin-bottom: 1.75rem;
 
@@ -257,6 +262,15 @@
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
       border-color: #cbd5e1;
+    }
+
+    &.kpi-card-alert {
+      border-color: #fecdd3;
+      background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%);
+    }
+
+    .pulse-alert {
+      animation: alertPulse 2s infinite;
     }
 
     .kpi-top {

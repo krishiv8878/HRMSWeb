@@ -94,10 +94,10 @@ export class LoginComponent implements OnInit {
 
     //return this.http.get<any>
     if (this.login.valid) {
-      console.log(this.login.value)
+
       this.services.createLogin(this.login.value).subscribe({
         next: (res) => {
-          console.log("ress", res)
+
           // Clear any leftover session data from previously logged-in user
           localStorage.clear();
 
@@ -126,7 +126,7 @@ export class LoginComponent implements OnInit {
           setTimeout(() => {
             this.toster.clear();
             const val = localStorage.getItem('PasswordResetStatus');
-            console.log("val",val)
+
             if(res.data.isResetPasswordRequired==true){
               this.router.navigateByUrl('reset-password');
               this.login.reset();

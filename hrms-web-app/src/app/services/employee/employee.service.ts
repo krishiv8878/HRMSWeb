@@ -317,4 +317,33 @@ export class EmployeeService {
       })
     );
   }
+
+  getProbationReminders(): Observable<any> {
+    return this.http.get<any>(this.apiUrl + '/Employee/probation-reminders');
+  }
+
+  processProbationDecision(employeeId: number, data: { decision: string; newEndDate?: string; remarks?: string }): Observable<any> {
+    return this.http.post<any>(this.apiUrl + `/Employee/${employeeId}/probation-decision`, data);
+  }
+
+  getMatchingFormerEmployees(email?: string, pan?: string, uan?: string): Observable<any> {
+    let params: string[] = [];
+    if (email) params.push(`email=${encodeURIComponent(email)}`);
+    if (pan) params.push(`pan=${encodeURIComponent(pan)}`);
+    if (uan) params.push(`uan=${encodeURIComponent(uan)}`);
+    const q = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<any>(this.apiUrl + `/Employee/matching-hints${q}`);
+  }
+
+  getHistoricalRehireReport(): Observable<any> {
+    return this.http.get<any>(this.apiUrl + '/Employee/historical-rehire-report');
+  }
+
+  getPreviousEmploymentHistory(employeeId: number): Observable<any> {
+    return this.http.get<any>(this.apiUrl + `/Employee/${employeeId}/previous-employment`);
+  }
+
+  updateNoticeOverride(employeeId: number, data: { noticePeriodDays: number; reason: string }): Observable<any> {
+    return this.http.put<any>(this.apiUrl + `/Employee/${employeeId}/notice-override`, data);
+  }
 }

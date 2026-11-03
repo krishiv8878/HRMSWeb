@@ -1,14 +1,14 @@
 <div class="approval-modal-container">
   <!-- Modal Header Bar -->
-  <div class="modal-header" [ngClass]="data?.isViewOnly ? 'header-view' : (data?.isApproved ? 'header-approve' : 'header-reject')">
+  <div class="modal-header" [ngClass]="data?.isReturn ? 'header-return' : (data?.isViewOnly ? 'header-view' : (data?.isApproved ? 'header-approve' : 'header-reject'))">
     <div class="header-left">
-      <div class="icon-badge" [ngClass]="data?.isViewOnly ? 'badge-view' : (data?.isApproved ? 'badge-approve' : 'badge-reject')">
-        <mat-icon>{{ data?.isViewOnly ? 'visibility' : (data?.isApproved ? 'fact_check' : 'highlight_off') }}</mat-icon>
+      <div class="icon-badge" [ngClass]="data?.isReturn ? 'badge-return' : (data?.isViewOnly ? 'badge-view' : (data?.isApproved ? 'badge-approve' : 'badge-reject'))">
+        <mat-icon>{{ data?.isReturn ? 'edit_note' : (data?.isViewOnly ? 'visibility' : (data?.isApproved ? 'fact_check' : 'highlight_off')) }}</mat-icon>
       </div>
       <div class="header-text">
-        <h2 class="modal-title">{{ data?.isViewOnly ? 'Workforce Request Details' : (data?.isApproved ? 'Approve Workforce Request' : 'Reject Workforce Request') }}</h2>
+        <h2 class="modal-title">{{ data?.isReturn ? 'Return Request for Revision' : (data?.isViewOnly ? 'Workforce Request Details' : (data?.isApproved ? 'Approve Workforce Request' : 'Reject Workforce Request')) }}</h2>
         <p class="modal-subtitle">
-          {{ data?.isViewOnly ? 'Review submission details and current approval workflow status.' : (data?.isApproved ? 'Review and grant managerial approval for this employee submission.' : 'Review and submit decision to reject this employee request.') }}
+          {{ data?.isReturn ? 'Request changes or corrections from the employee before deciding.' : (data?.isViewOnly ? 'Review submission details and current approval workflow status.' : (data?.isApproved ? 'Review and grant managerial approval for this employee submission.' : 'Review and submit decision to reject this employee request.')) }}
         </p>
       </div>
     </div>
@@ -75,23 +75,31 @@
       </p>
     </div>
 
+    <!-- Return for Revision Notice -->
+    <div class="confirmation-notice notice-return" *ngIf="data?.isReturn && !data?.isViewOnly">
+      <mat-icon class="notice-icon">edit_note</mat-icon>
+      <p class="notice-text">
+        Are you sure you want to <strong>RETURN FOR REVISION</strong> this request? The employee will receive your feedback and must update and resubmit.
+      </p>
+    </div>
+
     <!-- Approval/Rejection Notice -->
-    <div class="confirmation-notice" [ngClass]="data?.isApproved ? 'notice-approve' : 'notice-reject'" *ngIf="!data?.isViewOnly">
+    <div class="confirmation-notice" [ngClass]="data?.isApproved ? 'notice-approve' : 'notice-reject'" *ngIf="!data?.isViewOnly && !data?.isReturn">
       <mat-icon class="notice-icon">{{ data?.isApproved ? 'verified' : 'info' }}</mat-icon>
       <p class="notice-text">
         Are you sure you want to <strong>{{ data?.isApproved ? 'APPROVE' : 'REJECT' }}</strong> this request? An automated notification will be updated for the employee.
       </p>
     </div>
 
-    <!-- Rejection Remarks Field -->
-    <div class="form-group-remarks" *ngIf="!data?.isApproved && !data?.isViewOnly" style="margin-top: 14px;">
+    <!-- Remarks / Revision Comments Field -->
+    <div class="form-group-remarks" *ngIf="(!data?.isApproved || data?.isReturn) && !data?.isViewOnly" style="margin-top: 14px;">
       <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">
-        Reason for Rejection (Optional)
+        {{ data?.isReturn ? 'Revision Instructions / Required Changes (Mandatory)' : 'Reason for Rejection (Optional)' }}
       </label>
       <textarea
         [(ngModel)]="rejectionReason"
         rows="2"
-        placeholder="Provide notes or clarification regarding this rejection..."
+        [placeholder]="data?.isReturn ? 'Specify what changes or corrections are needed before approval...' : 'Provide notes or clarification regarding this rejection...'"
         style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px; box-sizing: border-box; resize: vertical; outline: none;"
       ></textarea>
     </div>
@@ -112,13 +120,13 @@
     <button
       type="button"
       class="btn-decision"
-      [ngClass]="data?.isApproved ? 'btn-approve' : 'btn-reject'"
-      [disabled]="isSubmitting"
+      [ngClass]="data?.isReturn ? 'btn-return' : (data?.isApproved ? 'btn-approve' : 'btn-reject')"
+      [disabled]="isSubmitting || (data?.isReturn && (!rejectionReason || !rejectionReason.trim()))"
       (click)="confirmSend()"
     >
-      <mat-icon *ngIf="!isSubmitting">{{ data?.isApproved ? 'check' : 'close' }}</mat-icon>
+      <mat-icon *ngIf="!isSubmitting">{{ data?.isReturn ? 'edit_note' : (data?.isApproved ? 'check' : 'close') }}</mat-icon>
       <span class="btn-spinner" *ngIf="isSubmitting"></span>
-      <span>{{ isSubmitting ? 'Processing...' : (data?.isApproved ? 'Confirm Approval' : 'Reject Request') }}</span>
+      <span>{{ isSubmitting ? 'Processing...' : (data?.isReturn ? 'Return for Revision' : (data?.isApproved ? 'Confirm Approval' : 'Reject Request')) }}</span>
     </button>
   </div>
 </div>

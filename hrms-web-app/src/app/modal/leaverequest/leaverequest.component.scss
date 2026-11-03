@@ -1,16 +1,20 @@
 .leave-modal-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
   padding: 0;
   background-color: #ffffff;
-  border-radius: 8px;
+  border-radius: 12px;
   max-width: 880px;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow: hidden;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Modal Header */
 .modal-header {
+  flex-shrink: 0;
   padding: 20px 24px;
   background: linear-gradient(135deg, #1e293b, #0f172a);
   color: #ffffff;
@@ -86,6 +90,9 @@
 
 /* Modal Grid Body */
 .modal-grid-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 20px;
@@ -93,6 +100,21 @@
   box-sizing: border-box;
   overflow-x: hidden;
   width: 100%;
+
+  /* Custom Sleek Scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f8fafc;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
 
   @media (max-width: 840px) {
     grid-template-columns: 1fr;
@@ -298,6 +320,62 @@
 
       .lop-title {
         color: #15803d;
+      }
+    }
+
+    &.is-split {
+      background-color: #f0fdf4;
+      border: 1px solid #86efac;
+      color: #14532d;
+
+      .lop-icon-wrap {
+        background-color: #dcfce7;
+        color: #15803d;
+      }
+
+      .lop-title {
+        color: #166534;
+      }
+
+      .split-badges-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+
+        .badge-split-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-size: 11.5px;
+          font-weight: 600;
+
+          mat-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+          }
+
+          &.badge-paid {
+            background-color: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+          }
+
+          &.badge-lop {
+            background-color: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+          }
+        }
+
+        .badge-split-sep {
+          font-weight: 800;
+          color: #64748b;
+          font-size: 14px;
+        }
       }
     }
   }
@@ -589,5 +667,69 @@
         line-height: 1.4;
       }
     }
+  }
+}
+
+.application-type-bar {
+  display: flex;
+  gap: 10px;
+  background-color: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+
+  .type-switch-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &.active {
+      background: #ffffff;
+      color: #1e293b;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+.btn-switch-lop {
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  background: #dc2626;
+  border: 1px solid #b91c1c;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: #b91c1c;
   }
 }

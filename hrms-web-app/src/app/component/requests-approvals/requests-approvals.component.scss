@@ -305,6 +305,17 @@
           }
         }
 
+        &.revision-tab {
+          &.active {
+            color: #c2410c;
+            .tab-indicator { background: #ea580c; }
+          }
+          .tab-count-badge.has-count {
+            background: #ffedd5;
+            color: #ea580c;
+          }
+        }
+
         &.cancelled-tab {
           &.active {
             color: #475569;
@@ -796,6 +807,33 @@
                   }
                 }
 
+                .btn-return {
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 0.3rem;
+                  padding: 0.4rem 0.85rem;
+                  border-radius: 6px;
+                  font-size: 0.8rem;
+                  font-weight: 600;
+                  border: 1px solid #fed7aa;
+                  background-color: #fff7ed;
+                  color: #ea580c;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+
+                  mat-icon {
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                  }
+
+                  &:hover {
+                    background-color: #ea580c;
+                    color: #ffffff;
+                    border-color: #ea580c;
+                  }
+                }
+
                 .btn-reject {
                   display: inline-flex;
                   align-items: center;
@@ -843,6 +881,11 @@
                   &.tag-rejected {
                     background-color: #fee2e2;
                     color: #b91c1c;
+                  }
+
+                  &.tag-revision {
+                    background-color: #ffedd5;
+                    color: #c2410c;
                   }
 
                   &.tag-cancelled {

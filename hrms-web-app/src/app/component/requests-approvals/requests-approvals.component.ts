@@ -25,6 +25,7 @@ import { NotificationService } from '../../services/notification/notification.se
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { WorkflowService } from '../../services/workflow/workflow.service';
+import { ResignationService } from '../../services/Resignation/resignation.service';
 
 export interface ApprovalRequestItem {
   id: number;
@@ -38,7 +39,7 @@ export interface ApprovalRequestItem {
   endDate?: string;
   durationText?: string;
   reasonPreview?: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'NeedsRevision';
   actionBy?: number;
   actionDate?: string;
   rawRecord?: any;
@@ -46,6 +47,7 @@ export interface ApprovalRequestItem {
   workflowInstanceId?: number;
   pendingWith?: string;
   canApprove?: boolean;
+  canReturnForRevision?: boolean;
   canOverride?: boolean;
   canReassign?: boolean;
   canCancel?: boolean;
@@ -80,6 +82,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   private globalFilterService = inject(GlobalFilterService);
   private holidayService = inject(HolidayservicesService);
   private workflowService = inject(WorkflowService);
+  private resignationService = inject(ResignationService);
   private filterSub?: Subscription;
 
   holidays: any[] = [];
@@ -97,7 +100,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   activeCategory: 'action_required' | 'time_attendance' | 'timesheet' | 'asset' | 'hr_banking' = 'action_required';
   activeSubTab: string = 'all';
   activeTab: 'all' | 'leave' | 'attendance' | 'document' | 'timesheet' | 'asset' | 'interview' | 'banking' = 'all';
-  activeStatusTab: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'All' = 'Pending';
+  activeStatusTab: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'NeedsRevision' | 'All' = 'Pending';
   sortOrder: 'desc' | 'asc' = 'desc';
 
   // Dynamic Status Tab Counts
@@ -105,6 +108,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
   approvedStatusCount: number = 0;
   rejectedStatusCount: number = 0;
   cancelledStatusCount: number = 0;
+  needsRevisionStatusCount: number = 0;
   allStatusCount: number = 0;
 
   searchQuery: string = '';
@@ -192,7 +196,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       }
       if (f.status && f.status !== this.selectedStatus) {
         this.selectedStatus = f.status;
-        if (['Pending', 'Approved', 'Rejected', 'Cancelled', 'All'].includes(f.status)) {
+        if (['Pending', 'Approved', 'Rejected', 'Cancelled', 'NeedsRevision', 'All'].includes(f.status)) {
           this.activeStatusTab = f.status as any;
         }
         changed = true;
@@ -231,9 +235,18 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       tsResponse: this.timesheetService.getPendingApprovals().pipe(catchError(() => of([]))),
       assetRes: this.assetRequestService.fetchRequests(this.isApprover ? undefined : loggedUserId).pipe(catchError(() => of([]))),
       candRes: (this.isApprover || isAdminOrHr) ? this.candidateService.getData().pipe(catchError(() => of([]))) : of([]),
-      empRes: this.isBankingApprover ? this.employeeService.getData().pipe(catchError(() => of([]))) : of([])
+      empRes: this.isBankingApprover ? this.employeeService.getData().pipe(catchError(() => of([]))) : of([]),
+      inboxRes: this.workflowService.getPendingInbox().pipe(catchError(() => of([]))),
+      resignationRes: this.resignationService.getAllResignations().pipe(catchError(() => of([])))
     }).subscribe({
-      next: ({ leaveResponse, attResponse, docResponse, tsResponse, assetRes, candRes, empRes }: any) => {
+      next: ({ leaveResponse, attResponse, docResponse, tsResponse, assetRes, candRes, empRes, inboxRes, resignationRes }: any) => {
+        const rawInbox: any[] = Array.isArray(inboxRes) ? inboxRes : (inboxRes?.data || []);
+        const wfMap = new Map<string, any>();
+        rawInbox.forEach((w: any) => {
+          if (w.requestType && w.requestId) {
+            wfMap.set(`${String(w.requestType).toLowerCase()}_${w.requestId}`, w);
+          }
+        });
         // 1. Process Leave Requests
         let rawLeaveList: any[] = [];
         if (Array.isArray(leaveResponse)) rawLeaveList = leaveResponse;
@@ -243,12 +256,15 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         const leaveItems: ApprovalRequestItem[] = rawLeaveList.map((x: any, idx: number) => {
           const empName = x.fullName || x.employeeName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
           const leaveTypeName = typeof x.leaveType === 'string' ? x.leaveType : (x.leaveType?.type || x.leaveType?.leaveTypeName || x.leaveTypeName || x.type || 'Annual Leave');
+          const reqId = Number(x.id || x.leaveRequestId || (idx + 1));
+          const wfMatch = wfMap.get(`leave_${reqId}`);
           const actionByVal = Number(x.actionBy || 0);
           const rawStatus = x.status ? String(x.status).trim() : '';
-          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' = 
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'NeedsRevision' = 
             rawStatus.toLowerCase() === 'approved' ? 'Approved' :
             (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' :
-            (rawStatus.toLowerCase() === 'cancelled' ? 'Cancelled' : 'Pending'));
+            (rawStatus.toLowerCase() === 'cancelled' ? 'Cancelled' :
+            (rawStatus.toLowerCase() === 'needsrevision' || rawStatus.toLowerCase() === 'revision' ? 'NeedsRevision' : 'Pending')));
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
           let avatarUrl: string | undefined = undefined;
@@ -284,12 +300,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             actionDate: x.actionDate,
             category: 'Leave',
             rawRecord: x,
-            workflowInstanceId: x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined,
-            pendingWith: x.pendingWith,
-            canApprove: x.canApprove !== undefined ? Boolean(x.canApprove) : true,
-            canOverride: Boolean(x.canOverride),
-            canReassign: Boolean(x.canReassign),
-            canCancel: Boolean(x.canCancel)
+            workflowInstanceId: wfMatch?.workflowInstanceId || (x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined),
+            pendingWith: wfMatch?.pendingWith || x.pendingWith,
+            canApprove: wfMatch ? Boolean(wfMatch.canApprove) : (x.canApprove !== undefined ? Boolean(x.canApprove) : true),
+            canReturnForRevision: wfMatch ? Boolean(wfMatch.canReturnForRevision) : true,
+            canOverride: wfMatch ? Boolean(wfMatch.canOverride) : Boolean(x.canOverride),
+            canReassign: wfMatch ? Boolean(wfMatch.canReassign) : Boolean(x.canReassign),
+            canCancel: wfMatch ? Boolean(wfMatch.canCancel) : Boolean(x.canCancel)
           };
         });
 
@@ -302,7 +319,12 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         const attItems: ApprovalRequestItem[] = attList.map((x: any, idx: number) => {
           const empName = x.employeeName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || 'Employee';
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-          const statusStr: 'Pending' | 'Approved' | 'Rejected' = (x.status?.toLowerCase() === 'approved' ? 'Approved' : (x.status?.toLowerCase() === 'rejected' ? 'Rejected' : 'Pending'));
+          const wfMatch = wfMap.get(`attendanceregularization_${x.id}`) || wfMap.get(`attendance_${x.id}`);
+          const rawStatus = (x.status || '').toLowerCase().trim();
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'NeedsRevision' = 
+            rawStatus === 'approved' ? 'Approved' :
+            (rawStatus === 'rejected' ? 'Rejected' :
+            (rawStatus === 'needsrevision' || rawStatus === 'revision' ? 'NeedsRevision' : 'Pending'));
 
           let avatarUrl: string | undefined = undefined;
           if (x.profileImage) {
@@ -329,12 +351,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             actionDate: x.actionDate,
             category: 'Attendance',
             rawRecord: x,
-            workflowInstanceId: x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined,
-            pendingWith: x.pendingWith,
-            canApprove: x.canApprove !== undefined ? Boolean(x.canApprove) : true,
-            canOverride: Boolean(x.canOverride),
-            canReassign: Boolean(x.canReassign),
-            canCancel: Boolean(x.canCancel)
+            workflowInstanceId: wfMatch?.workflowInstanceId || (x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined),
+            pendingWith: wfMatch?.pendingWith || x.pendingWith,
+            canApprove: wfMatch ? Boolean(wfMatch.canApprove) : (x.canApprove !== undefined ? Boolean(x.canApprove) : true),
+            canReturnForRevision: wfMatch ? Boolean(wfMatch.canReturnForRevision) : true,
+            canOverride: wfMatch ? Boolean(wfMatch.canOverride) : Boolean(x.canOverride),
+            canReassign: wfMatch ? Boolean(wfMatch.canReassign) : Boolean(x.canReassign),
+            canCancel: wfMatch ? Boolean(wfMatch.canCancel) : Boolean(x.canCancel)
           };
         });
 
@@ -346,15 +369,18 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         docList = docList.filter((x: any) => !x.isDeleted && x.isDeleted !== 1 && x.isDeleted !== '1');
 
         const docItems: ApprovalRequestItem[] = docList.map((x: any, idx: number) => {
+          const docId = Number(x.id ?? x.Id ?? (idx + 500));
+          const wfMatch = wfMap.get(`document_${docId}`) || wfMap.get(`employeedocument_${docId}`);
           const empName = x.employeeName || x.uploadedByName || x.ownerName || x.fullName || (x.employee ? `${x.employee.firstName || ''} ${x.employee.lastName || ''}`.trim() : '') || (x.employeeId ? `Employee #${x.employeeId}` : 'Employee');
           const rawStatus = x.status ? String(x.status).trim() : 'Approved';
-          const statusStr: 'Pending' | 'Approved' | 'Rejected' = 
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'NeedsRevision' = 
             rawStatus.toLowerCase() === 'pending' ? 'Pending' :
-            (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' : 'Approved');
+            (rawStatus.toLowerCase() === 'rejected' ? 'Rejected' :
+            (rawStatus.toLowerCase() === 'needsrevision' || rawStatus.toLowerCase() === 'revision' ? 'NeedsRevision' : 'Approved'));
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
           return {
-            id: Number(x.id ?? x.Id ?? (idx + 500)),
+            id: docId,
             requesterName: empName,
             requesterRole: x.category || 'Document Verification',
             avatarUrl: undefined,
@@ -368,6 +394,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             actionBy: x.actionBy || undefined,
             actionDate: x.actionDate,
             category: 'Document',
+            workflowInstanceId: wfMatch?.workflowInstanceId || (x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined),
+            pendingWith: wfMatch?.pendingWith || x.pendingWith,
+            canApprove: wfMatch ? Boolean(wfMatch.canApprove) : true,
+            canReturnForRevision: wfMatch ? Boolean(wfMatch.canReturnForRevision) : true,
+            canOverride: wfMatch ? Boolean(wfMatch.canOverride) : false,
+            canReassign: wfMatch ? Boolean(wfMatch.canReassign) : false,
+            canCancel: wfMatch ? Boolean(wfMatch.canCancel) : false,
             rawRecord: {
               ...x,
               documentName: x.documentName,
@@ -386,12 +419,15 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         const tsItems: ApprovalRequestItem[] = tsList.map((ts: any) => {
           const empName = ts.employeeName || 'Employee';
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-          const statusStr: 'Pending' | 'Approved' | 'Rejected' =
+          const tsId = Number(ts.timesheetId);
+          const wfMatch = wfMap.get(`timesheet_${tsId}`);
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'NeedsRevision' =
             ts.status === 'Approved' ? 'Approved' :
-            (ts.status === 'Rejected' ? 'Rejected' : 'Pending');
+            (ts.status === 'Rejected' ? 'Rejected' :
+            (ts.status === 'NeedsRevision' || ts.status === 'Revision' ? 'NeedsRevision' : 'Pending'));
 
           return {
-            id: Number(ts.timesheetId),
+            id: tsId,
             requesterName: empName,
             requesterRole: `Timesheet (${ts.periodType})`,
             avatarUrl: undefined,
@@ -414,12 +450,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               category: 'Timesheet',
               totalHours: ts.totalTimesheetHours ?? ts.totalHours
             },
-            workflowInstanceId: ts.workflowInstanceId ? Number(ts.workflowInstanceId) : undefined,
-            pendingWith: ts.pendingWith,
-            canApprove: ts.canApprove !== undefined ? Boolean(ts.canApprove) : true,
-            canOverride: Boolean(ts.canOverride),
-            canReassign: Boolean(ts.canReassign),
-            canCancel: Boolean(ts.canCancel)
+            workflowInstanceId: wfMatch?.workflowInstanceId || (ts.workflowInstanceId ? Number(ts.workflowInstanceId) : undefined),
+            pendingWith: wfMatch?.pendingWith || ts.pendingWith,
+            canApprove: wfMatch ? Boolean(wfMatch.canApprove) : (ts.canApprove !== undefined ? Boolean(ts.canApprove) : true),
+            canReturnForRevision: wfMatch ? Boolean(wfMatch.canReturnForRevision) : true,
+            canOverride: wfMatch ? Boolean(wfMatch.canOverride) : Boolean(ts.canOverride),
+            canReassign: wfMatch ? Boolean(wfMatch.canReassign) : Boolean(ts.canReassign),
+            canCancel: wfMatch ? Boolean(wfMatch.canCancel) : Boolean(ts.canCancel)
           };
         });
 
@@ -428,6 +465,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         const assetItems: ApprovalRequestItem[] = rawAssetList.map((a: any) => {
           const empName = a.employeeName || 'Employee';
           const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+          const assetId = Number(a.id);
+          const wfMatch = wfMap.get(`asset_${assetId}`) || wfMap.get(`assetrequest_${assetId}`);
           const s = (a.status || '').toLowerCase().trim();
           const isClosed = s.includes('closed');
           const remarksCombined = ((a.adminRemarks || '') + ' ' + (a.remarks || '') + ' ' + (a.inspectionRemarks || '')).toLowerCase();
@@ -441,12 +480,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             s.includes('repair') || s.includes('dispatch') || s.includes('transit') || s.includes('deliver') ||
             (isClosed && !isRejected);
 
-          const statusStr: 'Pending' | 'Approved' | 'Rejected' =
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'NeedsRevision' =
             isRejected ? 'Rejected' :
-            (isApproved ? 'Approved' : 'Pending');
+            (s.includes('revision') || s.includes('needsrevision') ? 'NeedsRevision' :
+            (isApproved ? 'Approved' : 'Pending'));
 
           return {
-            id: Number(a.id),
+            id: assetId,
             requesterName: empName,
             requesterRole: `Asset (${a.requestType || 'Service'})`,
             avatarUrl: undefined,
@@ -462,6 +502,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             actionBy: a.actionByEmployeeId,
             actionDate: a.updatedDate,
             category: 'Asset',
+            workflowInstanceId: wfMatch?.workflowInstanceId || (a.workflowInstanceId ? Number(a.workflowInstanceId) : undefined),
+            pendingWith: wfMatch?.pendingWith || a.pendingWith,
+            canApprove: wfMatch ? Boolean(wfMatch.canApprove) : true,
+            canReturnForRevision: wfMatch ? Boolean(wfMatch.canReturnForRevision) : true,
+            canOverride: wfMatch ? Boolean(wfMatch.canOverride) : false,
+            canReassign: wfMatch ? Boolean(wfMatch.canReassign) : false,
+            canCancel: wfMatch ? Boolean(wfMatch.canCancel) : false,
             rawRecord: {
               ...a,
               fullName: empName,
@@ -620,7 +667,48 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           });
         }
 
-        const finalCombined = [...combined, ...interviewItems, ...bankingItems];
+        let rawResignationList: any[] = [];
+        if (Array.isArray(resignationRes)) rawResignationList = resignationRes;
+        else if (resignationRes && Array.isArray(resignationRes.data)) rawResignationList = resignationRes.data;
+        rawResignationList = rawResignationList.filter((x: any) => !x.isDeleted);
+
+        const resignationItems: ApprovalRequestItem[] = rawResignationList.map((x: any, idx: number) => {
+          const empName = x.employeeName || 'Staff Member';
+          const reqId = Number(x.id || (idx + 1));
+          const wfMatch = wfMap.get(`resignation_${reqId}`);
+          const rawStatus = x.resignationStatus ? String(x.resignationStatus).trim().toLowerCase() : '';
+          const statusStr: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'NeedsRevision' =
+            rawStatus === 'exitclearance' || rawStatus === 'exited' || x.status === true ? 'Approved' :
+            (rawStatus === 'rejected' ? 'Rejected' :
+            (rawStatus === 'withdrawn' ? 'Cancelled' :
+            (rawStatus === 'needsrevision' ? 'NeedsRevision' : 'Pending')));
+
+          const initials = empName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+          return {
+            id: reqId,
+            requesterName: empName,
+            requesterRole: x.department || 'Employee',
+            avatarUrl: undefined,
+            initials: initials,
+            requestType: 'Resignation & Notice Period',
+            startDate: x.resignation_Date,
+            endDate: x.approvedLwd || x.proposedLwd || x.requestedLwd,
+            durationText: x.noticePeriod || '30 Days',
+            reasonPreview: x.reason ? (x.reason.length > 80 ? x.reason.substring(0, 80) + '...' : x.reason) : 'Resignation submitted',
+            status: statusStr,
+            actionBy: x.managerId,
+            rawRecord: x,
+            category: 'Banking',
+            workflowInstanceId: wfMatch?.workflowInstanceId,
+            pendingWith: wfMatch?.pendingWith || x.managerName || (rawStatus === 'pendinghr' ? 'HR Operations' : 'Reporting Manager'),
+            canApprove: wfMatch ? wfMatch.canApprove : (rawStatus === 'submitted' || rawStatus === 'pendingmanager' || rawStatus === 'pendinghr'),
+            canReturnForRevision: wfMatch ? wfMatch.canReturnForRevision : true,
+            canCancel: !x.isLwdLocked && x.employeeId === loggedUserId
+          };
+        });
+
+        const finalCombined = [...combined, ...interviewItems, ...bankingItems, ...resignationItems];
         this.allRequests = finalCombined;
         const names = Array.from(new Set(finalCombined.map(r => r.requesterName).filter(n => n && n !== 'Employee'))).sort();
         this.employeeOptions = names;
@@ -734,10 +822,11 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     this.approvedStatusCount = pool.filter(r => r.status === 'Approved').length;
     this.rejectedStatusCount = pool.filter(r => r.status === 'Rejected').length;
     this.cancelledStatusCount = pool.filter(r => r.status === 'Cancelled').length;
+    this.needsRevisionStatusCount = pool.filter(r => r.status === 'NeedsRevision').length;
     this.allStatusCount = pool.length;
   }
 
-  setStatusTab(tab: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'All'): void {
+  setStatusTab(tab: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'NeedsRevision' | 'All'): void {
     this.activeStatusTab = tab;
     this.selectedStatus = tab;
     this.currentPage = 1;
@@ -968,6 +1057,23 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         this.setSubmittingState(true, item.id, `Approving ${item.category} request for ${item.requesterName}...`);
         const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
 
+        if (item.workflowInstanceId) {
+          const action = item.canOverride && !item.canApprove ? 'OverrideApprove' : 'Approve';
+          this.workflowService.actOnStep(item.workflowInstanceId, action, res?.rejectionReason).subscribe({
+            next: () => {
+              this.toaster.success(`${item.requestType} for ${item.requesterName} Approved`, 'Approved');
+              this.setSubmittingState(false);
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to approve request via workflow';
+              this.toaster.error(msg, 'Approval Error');
+              this.setSubmittingState(false);
+            }
+          });
+          return;
+        }
+
         if (item.category === 'Leave') {
           const payload = {
             id: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
@@ -1076,6 +1182,46 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               this.setSubmittingState(false);
             }
           });
+        } else if (item.requestType?.includes('Resignation') || item.rawRecord?.resignationStatus !== undefined) {
+          const resignId = Number(item.id || item.rawRecord?.id);
+          const raw = item.rawRecord || {};
+          const isPendingHr = raw.resignationStatus?.toLowerCase() === 'pendinghr';
+          const isHrUser = this.rbacService.isAdmin() || this.rbacService.isHR();
+
+          if (isPendingHr || isHrUser) {
+            const approvedLwd = raw.proposedLwd || raw.requestedLwd || new Date().toISOString();
+            this.resignationService.hrApprove(resignId, {
+              approvedLwd: approvedLwd,
+              noticeHandling: 'Standard',
+              remarks: 'Approved by HR Operations'
+            }).subscribe({
+              next: () => {
+                this.toaster.success(`Resignation for ${item.requesterName} Approved, LWD locked, and Exit checklist initiated.`, 'Approved');
+                this.setSubmittingState(false);
+                this.loadAllRequests();
+              },
+              error: (err: any) => {
+                this.toaster.error(err?.error?.message || 'Failed to approve resignation', 'Approval Error');
+                this.setSubmittingState(false);
+              }
+            });
+          } else {
+            this.resignationService.managerReview(resignId, {
+              accept: true,
+              proposedLwd: raw.proposedLwd || raw.requestedLwd,
+              remarks: 'Accepted by reporting manager'
+            }).subscribe({
+              next: () => {
+                this.toaster.success(`Resignation for ${item.requesterName} accepted and forwarded to HR.`, 'Accepted');
+                this.setSubmittingState(false);
+                this.loadAllRequests();
+              },
+              error: (err: any) => {
+                this.toaster.error(err?.error?.message || 'Failed to review resignation', 'Review Error');
+                this.setSubmittingState(false);
+              }
+            });
+          }
         } else {
           const raw = item.rawRecord || {};
           const payload = {
@@ -1134,6 +1280,23 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         const loggedManagerId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
         const loggedManagerName = typeof window !== 'undefined' ? (localStorage.getItem('fullName') || localStorage.getItem('userName') || 'HR/Manager') : 'HR/Manager';
         const reason = res?.rejectionReason || '';
+
+        if (item.workflowInstanceId) {
+          const action = item.canOverride && !item.canApprove ? 'OverrideReject' : 'Reject';
+          this.workflowService.actOnStep(item.workflowInstanceId, action, reason).subscribe({
+            next: () => {
+              this.toaster.warning(`${item.requestType} for ${item.requesterName} Rejected`, 'Rejected');
+              this.setSubmittingState(false);
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to reject request via workflow';
+              this.toaster.error(msg, 'Rejection Error');
+              this.setSubmittingState(false);
+            }
+          });
+          return;
+        }
 
         if (item.category === 'Leave') {
           const payload = {
@@ -1221,6 +1384,22 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               this.loadAllRequests();
             }
           });
+        } else if (item.requestType?.includes('Resignation') || item.rawRecord?.resignationStatus !== undefined) {
+          const resignId = Number(item.id || item.rawRecord?.id);
+          this.resignationService.managerReview(resignId, {
+            accept: false,
+            remarks: reason || 'Rejected'
+          }).subscribe({
+            next: () => {
+              this.toaster.warning(`Resignation for ${item.requesterName} rejected.`, 'Rejected');
+              this.setSubmittingState(false);
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              this.toaster.error(err?.error?.message || 'Failed to reject resignation', 'Rejection Error');
+              this.setSubmittingState(false);
+            }
+          });
         } else {
           const raw = item.rawRecord || {};
           const payload = {
@@ -1252,6 +1431,104 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               this.setSubmittingState(false);
             }
           });
+        }
+      }
+    });
+  }
+
+  returnForRevisionRequest(item: ApprovalRequestItem): void {
+    if (!item.canReturnForRevision && !item.canApprove && !item.canOverride) {
+      this.toaster.error('Access Denied: You are not authorized to return this request for revision.', 'Permission Denied');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
+      width: '440px',
+      data: {
+        ...item.rawRecord,
+        isApproved: false,
+        isReturn: true,
+        fullName: item.requesterName,
+        requestType: item.requestType,
+        status: item.status
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((res: any) => {
+      const isConfirmed = res === true || res?.confirmed === true;
+      if (isConfirmed) {
+        const revisionComment = res?.rejectionReason?.trim();
+        if (!revisionComment) {
+          this.toaster.error('A mandatory revision comment/instruction must be provided.', 'Comment Required');
+          return;
+        }
+
+        this.setSubmittingState(true, item.id, `Returning request for ${item.requesterName} for revision...`);
+
+        if (item.workflowInstanceId) {
+          this.workflowService.actOnStep(item.workflowInstanceId, 'ReturnForRevision', revisionComment).subscribe({
+            next: () => {
+              this.toaster.info(`Request for ${item.requesterName} returned for revision.`, 'Returned for Revision');
+              this.setSubmittingState(false);
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              const msg = err?.error?.message || 'Failed to return request for revision.';
+              this.toaster.error(msg, 'Action Error');
+              this.setSubmittingState(false);
+            }
+          });
+          return;
+        }
+
+        if (item.category === 'Leave') {
+          const payload = {
+            id: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
+            leaveRequestId: Number(item.id || item.rawRecord?.id || item.rawRecord?.leaveRequestId),
+            status: 'NeedsRevision',
+            rejectionReason: revisionComment
+          };
+          this.service.approveLeaveRequest(payload).subscribe({
+            next: () => {
+              this.toaster.info(`Leave request for ${item.requesterName} returned for revision.`, 'Returned for Revision');
+              this.setSubmittingState(false);
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              this.toaster.error(err?.error?.message || 'Failed to return leave request.', 'Error');
+              this.setSubmittingState(false);
+            }
+          });
+        } else if (item.category === 'Attendance') {
+          const raw = item.rawRecord || {};
+          const payload = {
+            id: Number(item.id || raw.id),
+            employeeId: Number(raw.employeeId || 0),
+            employeeName: item.requesterName || raw.employeeName || 'Employee',
+            requestType: raw.requestType || 'Regularization',
+            requestedDate: raw.requestedDate || new Date().toISOString(),
+            requestedBy: Number(raw.requestedBy || raw.employeeId || 0),
+            reason: raw.reason || '',
+            status: 'NeedsRevision',
+            rejectionReason: revisionComment,
+            clockIn: raw.clockIn || raw.clockInTime || new Date().toISOString(),
+            clockOut: raw.clockOut || raw.clockOutTime || new Date().toISOString()
+          };
+          this.service2.updateData(payload).subscribe({
+            next: () => {
+              this.toaster.info(`Attendance request for ${item.requesterName} returned for revision.`, 'Returned for Revision');
+              this.setSubmittingState(false);
+              this.loadAllRequests();
+            },
+            error: (err: any) => {
+              this.toaster.error(err?.error?.message || 'Failed to update attendance request.', 'Error');
+              this.setSubmittingState(false);
+            }
+          });
+        } else {
+          this.toaster.info(`Request for ${item.requesterName} marked as Needs Revision.`, 'Needs Revision');
+          this.setSubmittingState(false);
+          this.loadAllRequests();
         }
       }
     });

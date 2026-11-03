@@ -15,6 +15,46 @@
     </button>
   </div>
 
+  <!-- Former Employee Matching Hint Banner -->
+  <div class="former-employee-alert" *ngIf="formerEmployeeMatches.length > 0">
+    <div class="alert-icon-col">
+      <mat-icon>history_edu</mat-icon>
+    </div>
+    <div class="alert-body-col">
+      <div class="alert-head">
+        <strong>⚠️ Possible Former Employee Detected</strong>
+        <span class="match-badge">Matching Identity Record</span>
+      </div>
+      <div class="match-item-card" *ngFor="let match of formerEmployeeMatches">
+        <p class="match-text">
+          <strong>{{ match.fullName }}</strong> (Ex-Code: {{ match.employeeCode }}, Exited: {{ match.exitDate | date:'mediumDate' }})
+          <span *ngIf="match.designation">• {{ match.designation }}</span>
+          <span class="matched-by-tag">Matched via: {{ match.matchedBy }}</span>
+        </p>
+        <div class="match-actions">
+          <button type="button" class="btn-link-rehire" (click)="linkAsRehire(match)">
+            <mat-icon>link</mat-icon> Link as Rehire (New Tenure)
+          </button>
+          <button type="button" class="btn-dismiss-match" (click)="dismissMatch()">
+            Create as New (Ignore)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linked Former Employee Indicator -->
+  <div class="linked-rehire-banner" *ngIf="linkedFormerEmployee">
+    <div class="linked-left">
+      <mat-icon>verified</mat-icon>
+      <span>
+        Linked to Former Employee: <strong>{{ linkedFormerEmployee.fullName }}</strong> (Tenure Record #{{ linkedFormerEmployee.employeeId }}).
+        This will create a distinct new tenure while linking historical employment, payslips, and documents.
+      </span>
+    </div>
+    <button type="button" class="btn-unlink" (click)="unlinkFormerEmployee()">Unlink</button>
+  </div>
+
   <!-- Form Body -->
   <form [formGroup]="Employeeform" (ngSubmit)="submitdata()" class="employee-form-body">
     <!-- Section 1: Basic Personal Info -->
@@ -71,6 +111,7 @@
             formControlName="emailAddress"
             placeholder="e.g. sarah.j@khrms.com"
             class="custom-input"
+            (blur)="checkMatchingFormerEmployee()"
           />
         </div>
         <span class="error-text" *ngIf="getControl('emailAddress')?.touched && getControl('emailAddress')?.invalid">
@@ -97,6 +138,54 @@
         <span class="error-text" *ngIf="getControl('mobileNumber')?.touched && getControl('mobileNumber')?.invalid">
           Valid 10-digit mobile number required (numbers only)
         </span>
+      </div>
+    </div>
+
+    <!-- Row 2b: Identity & Compliance (Personal Email, PAN, UAN) -->
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="field-label">Personal Email</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">alternate_email</mat-icon>
+          <input
+            type="email"
+            formControlName="personalEmail"
+            placeholder="e.g. sarah.personal@gmail.com"
+            class="custom-input"
+            (blur)="checkMatchingFormerEmployee()"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">PAN Number</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">credit_card</mat-icon>
+          <input
+            type="text"
+            formControlName="panNumber"
+            placeholder="e.g. ABCDE1234F"
+            maxlength="10"
+            class="custom-input"
+            style="text-transform: uppercase;"
+            (blur)="checkMatchingFormerEmployee()"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">UAN Number</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">account_balance_wallet</mat-icon>
+          <input
+            type="text"
+            formControlName="uanNumber"
+            placeholder="e.g. 100123456789"
+            maxlength="12"
+            class="custom-input"
+            (blur)="checkMatchingFormerEmployee()"
+          />
+        </div>
       </div>
     </div>
 
@@ -191,6 +280,44 @@
             <option *ngFor="let m of managers" [value]="m.id">{{ m.managerName }}</option>
           </select>
         </div>
+      </div>
+    </div>
+
+    <!-- Notice Period Policy Override (Restricted to NOTICE_OVERRIDE or Admin) -->
+    <div class="form-row-2" *ngIf="canOverrideNotice">
+      <div class="form-group">
+        <label class="field-label">
+          Notice Period Override (Days)
+          <span style="font-size: 0.72rem; color: #2563eb; font-weight: normal; margin-left: 6px;">[NOTICE_OVERRIDE]</span>
+        </label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">timelapse</mat-icon>
+          <input
+            type="number"
+            formControlName="noticePeriodOverrideDays"
+            placeholder="Leave blank for designation default (e.g. 30)"
+            min="0"
+            max="180"
+            class="custom-input"
+          />
+        </div>
+        <span class="field-hint">Overrides standard designation notice period policy for this employee.</span>
+      </div>
+
+      <div class="form-group" *ngIf="Employeeform.get('noticePeriodOverrideDays')?.value !== null && Employeeform.get('noticePeriodOverrideDays')?.value !== ''">
+        <label class="field-label">Notice Override Reason <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">rate_review</mat-icon>
+          <input
+            type="text"
+            formControlName="noticePeriodOverrideReason"
+            placeholder="Mandatory justification (e.g. Executive Contract, Key Hire SLA)"
+            class="custom-input"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('noticePeriodOverrideReason')?.touched && !getControl('noticePeriodOverrideReason')?.value">
+          Mandatory reason required when overriding notice period
+        </span>
       </div>
     </div>
 

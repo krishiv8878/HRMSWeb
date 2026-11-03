@@ -2909,3 +2909,118 @@
     border: 1px solid #99f6e4;
   }
 }
+
+// Phase 4: Month-End Attendance Lock Banner & Modal Styles
+.attendance-lock-active-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border: 1px solid #fde68a !important;
+  border-left: 4px solid #f59e0b !important;
+  margin-bottom: 16px;
+
+  .lock-icon-box {
+    background: #fef3c7 !important;
+    color: #d97706 !important;
+    border: 1px solid #fcd34d !important;
+  }
+
+  .lock-tag {
+    background: #f59e0b !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-banner-unlock {
+    background: #ffffff !important;
+    color: #dc2626 !important;
+    border: 1px solid #fca5a5 !important;
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.1);
+
+    &:hover {
+      background: #fee2e2 !important;
+      border-color: #f87171 !important;
+    }
+  }
+}
+
+.btn-lock-month-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #d97706;
+  }
+
+  &:hover {
+    background: #fde68a;
+    color: #78350f;
+    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.15);
+  }
+}
+
+.attendance-unlock-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+
+  .attendance-unlock-modal-content {
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    animation: modalPop 0.2s ease-out;
+
+    .modal-header h3 {
+      color: #0f172a;
+    }
+
+    textarea.form-control {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13.5px;
+      padding: 10px;
+      resize: vertical;
+
+      &:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+        outline: none;
+      }
+    }
+  }
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

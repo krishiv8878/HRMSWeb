@@ -62,6 +62,8 @@ body {
 
 /* Clean container styling for custom dialogs to eliminate default mat-dialog padding */
 .mat-mdc-dialog-container:has(app-cancel-leave-modal) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(app-leave) .mdc-dialog__surface,
+.mat-mdc-dialog-container:has(.leave-type-modal-container) .mdc-dialog__surface,
 .mat-mdc-dialog-container:has(app-timesheet-submit-modal) .mdc-dialog__surface,
 .mat-mdc-dialog-container:has(.cancel-modal-container) .mdc-dialog__surface,
 .mat-mdc-dialog-container:has(.submit-modal-container) .mdc-dialog__surface,
@@ -88,6 +90,8 @@ body {
   padding: 0 !important;
   border-radius: 12px !important;
   overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 /* Global clean modal close icon button to prevent Bootstrap SVG conflicts */

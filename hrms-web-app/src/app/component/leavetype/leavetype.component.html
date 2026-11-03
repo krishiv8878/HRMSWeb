@@ -6,8 +6,16 @@
       <p class="page-subtitle">Configure employee leave categories, quotas, and accrual policies.</p>
     </div>
 
-    <!-- Header Action Button: + Add Leave Type -->
+    <!-- Header Action Buttons -->
     <div class="action-buttons">
+      <button type="button" class="btn-action-outline" (click)="triggerAccrual()" title="Process monthly leave accrual for active employees">
+        <mat-icon class="btn-icon">autorenew</mat-icon>
+        <span>Run Accrual</span>
+      </button>
+      <button type="button" class="btn-action-outline" (click)="triggerRollover()" title="Process year-end carry forward and rollover">
+        <mat-icon class="btn-icon">update</mat-icon>
+        <span>Run Rollover</span>
+      </button>
       <button type="button" class="btn-add-leavetype" (click)="openAddForm()">
         <mat-icon class="btn-icon">add</mat-icon>
         <span>Add Leave Type</span>

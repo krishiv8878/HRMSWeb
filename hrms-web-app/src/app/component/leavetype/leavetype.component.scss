@@ -33,6 +33,34 @@
     align-items: center;
     gap: 12px;
 
+    .btn-action-outline {
+      height: 38px;
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      .btn-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #2563eb;
+      }
+
+      &:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+      }
+    }
+
     .btn-add-leavetype {
       height: 38px;
       background: linear-gradient(135deg, #1d4ed8, #1e40af);

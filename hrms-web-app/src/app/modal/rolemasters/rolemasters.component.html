@@ -7,7 +7,7 @@
       </div>
       <div class="header-text">
         <h2 class="modal-title">{{ isEdit ? 'Edit Security Role & Permissions' : 'Add New Role & Define Permissions' }}</h2>
-        <p class="modal-subtitle">Configure authorization tier, portal permissions, and system access rights.</p>
+        <p class="modal-subtitle">Configure authorization tier, portal permissions, scopes, and administrative safeguards.</p>
       </div>
     </div>
     <button type="button" class="close-btn" (click)="closeModal()" aria-label="Close modal">
@@ -47,6 +47,28 @@
       </div>
     </div>
 
+    <!-- Mandatory Audit Reason Row -->
+    <div class="reason-field-row" style="margin-bottom: 16px; padding: 0 4px;">
+      <div class="form-group" style="width: 100%;">
+        <label class="field-label" style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: #334155;">
+          <mat-icon style="font-size: 16px; width: 16px; height: 16px; color: #4f46e5;">history_edu</mat-icon>
+          Business Justification / Reason for Role Modification <span class="required" style="color: #ef4444;">*</span>
+        </label>
+        <div class="input-wrapper" style="margin-top: 4px;">
+          <input
+            type="text"
+            formControlName="reason"
+            placeholder="Mandatory audit trail reason (e.g. Annual HR audit, Team scope adjustment, New department role)"
+            class="custom-input"
+            style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 13px;"
+          />
+        </div>
+        <span class="error-text" *ngIf="getControl('reason')?.touched && getControl('reason')?.invalid" style="color: #ef4444; font-size: 11px; margin-top: 3px; display: block;">
+          A valid business reason (at least 3 characters) is mandatory for audit logging.
+        </span>
+      </div>
+    </div>
+
     <!-- Permission Matrix Section -->
     <div class="permissions-matrix-section">
       <!-- Section Header -->
@@ -54,13 +76,13 @@
         <div class="matrix-title-group">
           <div class="matrix-title-row">
             <mat-icon class="matrix-icon">lock_open</mat-icon>
-            <h3 class="matrix-title">System Permissions Matrix</h3>
+            <h3 class="matrix-title">System Permissions Matrix & Scopes</h3>
             <span class="perm-counter-badge" [class.badge-has-perms]="selectedCount > 0">
               {{ selectedCount }} of {{ allPermissions.length }} Permissions Selected
             </span>
           </div>
           <p class="matrix-subtitle">
-            Users assigned this role automatically inherit all checked permissions across HRMS modules.
+            Assign module actions and select data scoping tiers (Self, Team, TeamAndIndirect, Department, Branch, All).
           </p>
         </div>
 
@@ -147,19 +169,36 @@
               [class.selected]="isPermissionSelected(perm.id)"
               (click)="togglePermission(perm.id)"
             >
-              <input
-                type="checkbox"
-                [checked]="isPermissionSelected(perm.id)"
-                (change)="togglePermission(perm.id)"
-                (click)="$event.stopPropagation()"
-                class="perm-checkbox"
-              />
-              <div class="perm-text">
-                <div class="perm-name-row">
-                  <span class="perm-display-name">{{ perm.displayName }}</span>
-                  <span class="perm-code-tag">{{ perm.permissionCode }}</span>
+              <div class="perm-top-row" style="display: flex; align-items: flex-start; gap: 8px; width: 100%;">
+                <input
+                  type="checkbox"
+                  [checked]="isPermissionSelected(perm.id)"
+                  (change)="togglePermission(perm.id)"
+                  (click)="$event.stopPropagation()"
+                  class="perm-checkbox"
+                />
+                <div class="perm-text" style="flex: 1;">
+                  <div class="perm-name-row" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span class="perm-display-name">{{ perm.displayName }}</span>
+                    <span class="perm-code-tag">{{ perm.permissionCode }}</span>
+                    <span *ngIf="perm.isSensitive" style="background: #fee2e2; color: #dc2626; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Sensitive</span>
+                  </div>
+                  <p class="perm-description" *ngIf="perm.description">{{ perm.description }}</p>
                 </div>
-                <p class="perm-description" *ngIf="perm.description">{{ perm.description }}</p>
+              </div>
+
+              <!-- Scope Selector Dropdown (visible when permission is checked) -->
+              <div *ngIf="isPermissionSelected(perm.id)" class="perm-scope-row" style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;" (click)="$event.stopPropagation()">
+                <span style="font-size: 11px; font-weight: 600; color: #64748b; display: flex; align-items: center; gap: 4px;">
+                  <mat-icon style="font-size: 14px; width: 14px; height: 14px;">filter_alt</mat-icon> Data Scope:
+                </span>
+                <select
+                  [value]="getPermissionScope(perm.id)"
+                  (change)="onScopeChange(perm.id, $any($event.target).value, $event)"
+                  style="font-size: 12px; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; font-weight: 500; color: #1e293b;"
+                >
+                  <option *ngFor="let sc of availableScopes" [value]="sc">{{ sc }}</option>
+                </select>
               </div>
             </div>
           </div>
@@ -177,7 +216,7 @@
       <div class="footer-left">
         <span class="auto-assign-note">
           <mat-icon class="info-icon">info</mat-icon>
-          Personnel assigned this role will automatically receive all {{ selectedCount }} checked permissions.
+          Personnel assigned this role will inherit all {{ selectedCount }} checked permissions within their configured data scopes.
         </span>
       </div>
       <div class="footer-buttons">

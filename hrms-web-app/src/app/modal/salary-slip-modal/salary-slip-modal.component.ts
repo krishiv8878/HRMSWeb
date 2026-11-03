@@ -33,7 +33,7 @@ export class SalarySlipModalComponent implements OnInit {
   ngOnInit(): void {
     this.employee = this.data?.employee || {};
     this.disbursement = this.data?.disbursement || this.getFallbackDisbursement();
-    this.bankInfo = this.data?.bankInfo || {
+    this.bankInfo = this.data?.bankInfo || this.data?.paymentInfo || {
       bankName: this.disbursement.bankName || 'Direct Deposit',
       accountNumber: this.disbursement.accountNumber || '—',
       ifscCode: this.disbursement.ifscCode || '—'

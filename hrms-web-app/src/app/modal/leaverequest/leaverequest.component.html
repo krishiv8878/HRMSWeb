@@ -19,6 +19,28 @@
   <div class="modal-grid-body">
     <!-- Left Main Form -->
     <form [formGroup]="leaveForm" (ngSubmit)="onSubmitRequest()" class="leave-form-body">
+      <!-- Leave Application Type Mode Switch -->
+      <div class="application-type-bar">
+        <button
+          type="button"
+          class="type-switch-btn"
+          [class.active]="!isLopMode"
+          (click)="setLopMode(false)"
+        >
+          <mat-icon>check_circle</mat-icon>
+          <span>Paid Leave</span>
+        </button>
+        <button
+          type="button"
+          class="type-switch-btn"
+          [class.active]="isLopMode"
+          (click)="setLopMode(true)"
+        >
+          <mat-icon>money_off</mat-icon>
+          <span>Loss of Pay (LOP)</span>
+        </button>
+      </div>
+
       <!-- Row 1: Leave Type & Leave Mode -->
       <div class="form-row-2">
         <!-- Leave Type -->
@@ -29,7 +51,7 @@
             <select formControlName="leaveTypeId" class="custom-select">
               <option [ngValue]="null" disabled selected>Select leave type...</option>
               <option *ngFor="let type of leaveTypes" [ngValue]="type.id">
-                {{ type.leaveTypeName }}
+                {{ type.leaveTypeName }} {{ type.isPaid === false ? '(Unpaid / LOP)' : '' }}
               </option>
             </select>
           </div>
@@ -94,30 +116,55 @@
         </span>
       </div>
 
-      <!-- LOP Warning / Status Banner -->
-      <div class="lop-notice-banner" *ngIf="calculatedDays > 0 && selectedLeaveQuota !== null" [class.is-lop]="lopDays > 0" [class.is-covered]="lopDays === 0">
+      <!-- Balance Shortfall Alert Banner (Mandatory: Strict balance enforcement) -->
+      <!-- Automatic Split Coverage Notice (Paid Leave + LOP) -->
+      <div class="lop-notice-banner is-split" *ngIf="calculatedDays > 0 && hasBalanceShortfall && !isLopMode">
         <div class="lop-icon-wrap">
-          <mat-icon>{{ lopDays > 0 ? 'warning_amber' : 'verified' }}</mat-icon>
+          <mat-icon>call_split</mat-icon>
         </div>
         <div class="lop-text-wrap">
-          <span class="lop-title" *ngIf="isFullLop">
-            Loss of Pay (LOP) Policy Notice
+          <span class="lop-title">
+            Split Coverage: Paid Leave + Loss of Pay (LOP)
           </span>
-          <span class="lop-title" *ngIf="!isFullLop && lopDays > 0">
-            Leave Quota Exceeded: {{ lopDays }} Day{{ lopDays > 1 ? 's' : '' }} will be Loss of Pay (LOP)
-          </span>
-          <span class="lop-title" *ngIf="!isFullLop && lopDays === 0">
-            Within Paid Leave Quota (0 Days LOP)
-          </span>
+          <p class="lop-desc">
+            You have <strong>{{ coveredPaidDays }} day(s)</strong> of paid leave quota available (including negative allowance). The remaining <strong>{{ shortfallDays }} day(s)</strong> will be applied as Loss of Pay (LOP).
+          </p>
+          <div class="split-badges-container">
+            <span class="badge-split-item badge-paid">
+              <mat-icon>check_circle</mat-icon>
+              <strong>{{ coveredPaidDays }}d Paid Leave</strong>
+            </span>
+            <span class="badge-split-sep">+</span>
+            <span class="badge-split-item badge-lop">
+              <mat-icon>money_off</mat-icon>
+              <strong>{{ shortfallDays }}d Loss of Pay</strong>
+            </span>
+          </div>
+        </div>
+      </div>
 
-          <p class="lop-desc" *ngIf="isFullLop">
-            {{ selectedLeaveName }} has 0 paid quota days. All <strong>{{ calculatedDays }} day{{ calculatedDays > 1 ? 's' : '' }}</strong> will be treated as Loss of Pay (unpaid leave).
+      <!-- LOP Mode Notice -->
+      <div class="lop-notice-banner" style="background: #eff6ff; border-color: #bfdbfe; color: #1e40af;" *ngIf="isLopMode">
+        <div class="lop-icon-wrap">
+          <mat-icon style="color: #2563eb;">info</mat-icon>
+        </div>
+        <div class="lop-text-wrap">
+          <span class="lop-title" style="color: #1e3a8a;">Loss of Pay (LOP) Application</span>
+          <p class="lop-desc" style="color: #1e40af;">
+            This request will be processed as <strong>unpaid leave (Loss of Pay)</strong>. 0 days will be deducted from your leave quota. Salary deduction will be calculated in payroll.
           </p>
-          <p class="lop-desc" *ngIf="!isFullLop && lopDays > 0">
-            You have <strong>{{ selectedLeaveRemaining }} day{{ selectedLeaveRemaining !== 1 ? 's' : '' }}</strong> remaining out of your {{ selectedLeaveQuota }}-day quota for {{ selectedLeaveName }}. Applying for {{ calculatedDays }} days results in <strong>{{ lopDays }} day{{ lopDays > 1 ? 's' : '' }} Loss of Pay (LOP)</strong>.
-          </p>
-          <p class="lop-desc" *ngIf="!isFullLop && lopDays === 0">
-            This request is completely covered by your remaining <strong>{{ selectedLeaveRemaining }} day{{ selectedLeaveRemaining !== 1 ? 's' : '' }}</strong> balance (no salary deduction).
+        </div>
+      </div>
+
+      <!-- Sandwich Rule Notice -->
+      <div class="lop-notice-banner" style="background: #fefce8; border-color: #fef08a; color: #854d0e;" *ngIf="isSandwichActive && !isLopMode && calculatedDays > 0">
+        <div class="lop-icon-wrap">
+          <mat-icon style="color: #ca8a04;">layers</mat-icon>
+        </div>
+        <div class="lop-text-wrap">
+          <span class="lop-title" style="color: #713f12;">Sandwich Rule Configured</span>
+          <p class="lop-desc" style="color: #854d0e;">
+            Sandwich rule is active for this policy (quota: {{ maxSandwichAllowed }} per year). Any intervening weekend days or public holidays between leave dates will be deducted from your leave balance.
           </p>
         </div>
       </div>
@@ -165,7 +212,11 @@
         <button type="submit" class="btn-submit" [disabled]="isSubmitting">
           <span class="btn-spinner" *ngIf="isSubmitting"></span>
           <mat-icon *ngIf="!isSubmitting">send</mat-icon>
-          <span>{{ isSubmitting ? 'Submitting Leave...' : 'Submit Request' }}</span>
+          <span>
+            {{ isSubmitting ? 'Submitting Leave...' :
+               (isLopMode ? 'Submit Full LOP Request' :
+               (hasBalanceShortfall ? 'Submit Request (' + coveredPaidDays + 'd Paid + ' + shortfallDays + 'd LOP)' : 'Submit Paid Leave')) }}
+          </span>
         </button>
       </div>
     </form>

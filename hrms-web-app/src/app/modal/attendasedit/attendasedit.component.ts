@@ -69,7 +69,7 @@ export class AttendaseditComponent implements OnInit {
 
   hasExistingClockIn: boolean = false;
   existingClockInDisplay: string = '';
-  minDate: Date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  minDate: Date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   maxDate: Date = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   // Calendar State Sets
@@ -85,7 +85,7 @@ export class AttendaseditComponent implements OnInit {
   attendaseform = this.formbuilder.group({
     RequestType: ['Regularization', Validators.required],
     selectedDate: [new Date(Date.now() - 24 * 60 * 60 * 1000), Validators.required],
-    Reason: ['', Validators.required],
+    Reason: ['', [Validators.required, Validators.minLength(5)]],
     clockIn: ['09:30', Validators.required],
     clockOut: ['18:30', Validators.required],
     clientName: [''],
@@ -140,15 +140,15 @@ export class AttendaseditComponent implements OnInit {
       ? this.formatTime12(this.data.existingClockInDisplay)
       : (this.data?.clockIn ? this.formatTime12(this.data.clockIn) : '');
 
-    // Clamp minDate to joiningDate if joiningDate is later than 30 days ago
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    // Clamp minDate to joiningDate if joiningDate is later than 7 days ago (Phase 4 Policy)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
     const joiningDate = this.data?.joiningDate ? new Date(this.data.joiningDate) : null;
     if (joiningDate && !isNaN(joiningDate.getTime())) {
       joiningDate.setHours(0, 0, 0, 0);
-      this.minDate = joiningDate > thirtyDaysAgo ? joiningDate : thirtyDaysAgo;
+      this.minDate = joiningDate > sevenDaysAgo ? joiningDate : sevenDaysAgo;
     } else {
-      this.minDate = thirtyDaysAgo;
+      this.minDate = sevenDaysAgo;
     }
 
     let parsedDate = this.parseInputDate(this.data);

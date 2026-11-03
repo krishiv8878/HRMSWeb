@@ -309,3 +309,35 @@
     color: #3b82f6 !important;
   }
 }
+
+/* Return for Revision Header, Badge, Notice & Button */
+.modal-header.header-return {
+  background: linear-gradient(135deg, #78350f, #451a03);
+}
+
+.icon-badge.badge-return {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  color: #fbbf24 !important;
+}
+
+.confirmation-notice.notice-return {
+  background-color: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+  color: #92400e !important;
+
+  .notice-icon {
+    color: #d97706 !important;
+  }
+}
+
+.btn-decision.btn-return {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  border: 1px solid #d97706 !important;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2) !important;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #d97706, #b45309) !important;
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3) !important;
+  }
+}

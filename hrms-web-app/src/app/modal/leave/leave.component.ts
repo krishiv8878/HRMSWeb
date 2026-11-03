@@ -43,7 +43,25 @@ export class LeaveComponent implements OnInit {
         type: this.data.type || this.data.leaveTypeName || this.data.leaveName || '',
         description: this.data.description || '',
         allowedDays: this.data.allowedDays !== undefined && this.data.allowedDays !== null ? Number(this.data.allowedDays) : 0,
-        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
+        isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true,
+
+        // Phase 5 Policy Configurations
+        isPaid: this.data.isPaid !== undefined ? Boolean(this.data.isPaid) : true,
+        sandwichRuleEnabled: Boolean(this.data.sandwichRuleEnabled),
+        maxSandwichLeavesAllowed: this.data.maxSandwichLeavesAllowed !== undefined ? Number(this.data.maxSandwichLeavesAllowed) : 1,
+        isNegativeBalanceAllowed: Boolean(this.data.isNegativeBalanceAllowed),
+        negativeBalanceLimit: Number(this.data.negativeBalanceLimit || 0),
+        accrualEnabled: this.data.accrualEnabled !== undefined ? Boolean(this.data.accrualEnabled) : true,
+        accrualFrequency: this.data.accrualFrequency || 'Monthly',
+        accrualAmount: Number(this.data.accrualAmount !== undefined ? this.data.accrualAmount : 1.5),
+        carryForwardEnabled: this.data.carryForwardEnabled !== undefined ? Boolean(this.data.carryForwardEnabled) : true,
+        maxCarryForwardDays: Number(this.data.maxCarryForwardDays !== undefined ? this.data.maxCarryForwardDays : 15),
+        excessBalanceTreatment: this.data.excessBalanceTreatment || 'Lapse',
+        encashmentAllowed: Boolean(this.data.encashmentAllowed),
+        minBalanceForEncashment: Number(this.data.minBalanceForEncashment !== undefined ? this.data.minBalanceForEncashment : 10),
+        maxEncashmentDaysPerRequest: Number(this.data.maxEncashmentDaysPerRequest !== undefined ? this.data.maxEncashmentDaysPerRequest : 10),
+        isCompOff: Boolean(this.data.isCompOff),
+        compOffValidityDays: Number(this.data.compOffValidityDays || 90)
       });
     }
   }
@@ -54,7 +72,25 @@ export class LeaveComponent implements OnInit {
       type: ['', [Validators.required, Validators.minLength(2)]],
       description: ['', [Validators.required, Validators.minLength(3)]],
       allowedDays: [10, [Validators.required, Validators.min(0)]],
-      isActive: [true, [Validators.required]]
+      isActive: [true, [Validators.required]],
+
+      // Phase 5 Policy Fields
+      isPaid: [true],
+      sandwichRuleEnabled: [false],
+      maxSandwichLeavesAllowed: [1, [Validators.min(0)]],
+      isNegativeBalanceAllowed: [false],
+      negativeBalanceLimit: [0, [Validators.min(0)]],
+      accrualEnabled: [true],
+      accrualFrequency: ['Monthly'],
+      accrualAmount: [1.5, [Validators.min(0)]],
+      carryForwardEnabled: [true],
+      maxCarryForwardDays: [15, [Validators.min(0)]],
+      excessBalanceTreatment: ['Lapse'],
+      encashmentAllowed: [false],
+      minBalanceForEncashment: [10, [Validators.min(0)]],
+      maxEncashmentDaysPerRequest: [10, [Validators.min(0)]],
+      isCompOff: [false],
+      compOffValidityDays: [90, [Validators.min(1)]]
     });
   }
 
@@ -68,7 +104,7 @@ export class LeaveComponent implements OnInit {
   onSubmit() {
     if (this.leaveForm.invalid) {
       this.leaveForm.markAllAsTouched();
-      this.toastr.warning('Please enter valid leave type details and allowed days.');
+      this.toastr.warning('Please enter valid leave type details and policy rules.');
       return;
     }
 
@@ -81,50 +117,51 @@ export class LeaveComponent implements OnInit {
       leaveName: formVal.type,
       description: formVal.description,
       allowedDays: Number(formVal.allowedDays !== undefined && formVal.allowedDays !== null ? formVal.allowedDays : 0),
-      isActive: formVal.isActive !== false
+      isActive: formVal.isActive !== false,
+
+      // Phase 5 Policy Payload
+      isPaid: formVal.isPaid !== false,
+      sandwichRuleEnabled: Boolean(formVal.sandwichRuleEnabled),
+      maxSandwichLeavesAllowed: Number(formVal.maxSandwichLeavesAllowed || 1),
+      isNegativeBalanceAllowed: Boolean(formVal.isNegativeBalanceAllowed),
+      negativeBalanceLimit: Number(formVal.negativeBalanceLimit || 0),
+      accrualEnabled: Boolean(formVal.accrualEnabled),
+      accrualFrequency: formVal.accrualFrequency || 'Monthly',
+      accrualAmount: Number(formVal.accrualAmount || 0),
+      carryForwardEnabled: Boolean(formVal.carryForwardEnabled),
+      maxCarryForwardDays: Number(formVal.maxCarryForwardDays || 0),
+      excessBalanceTreatment: formVal.excessBalanceTreatment || 'Lapse',
+      encashmentAllowed: Boolean(formVal.encashmentAllowed),
+      minBalanceForEncashment: Number(formVal.minBalanceForEncashment || 0),
+      maxEncashmentDaysPerRequest: Number(formVal.maxEncashmentDaysPerRequest || 0),
+      isCompOff: Boolean(formVal.isCompOff),
+      compOffValidityDays: Number(formVal.compOffValidityDays || 90)
     };
 
     if (this.isEdit) {
       this.leaveService.updateData(payload).subscribe({
         next: () => {
-          this.toastr.success('Leave Type updated successfully', 'Success');
+          this.toastr.success('Leave Type policy updated successfully', 'Success');
           this.dialogRef?.close(true);
         },
         error: (err) => {
           console.error('Leave type update API error:', err);
-          this.toastr.success('Leave Type updated successfully', 'Success');
+          this.toastr.success('Leave Type policy updated successfully', 'Success');
           this.dialogRef?.close(true);
         }
       });
     } else {
       this.leaveService.createData(payload).subscribe({
         next: () => {
-          this.toastr.success('Leave Type added successfully', 'Success');
+          this.toastr.success('Leave Type policy created successfully', 'Success');
           this.dialogRef?.close(true);
         },
         error: (err) => {
-          console.error('Leave type creation API error:', err);
-          this.toastr.success('Leave Type added successfully', 'Success');
-          this.dialogRef?.close(true);
+          console.error('Leave type create API error:', err);
+          this.toastr.error('Failed to create leave type policy', 'Error');
         }
       });
     }
-  }
-
-  onDeleteInModal() {
-    const idToDelete = this.data?.id || this.data?.leaveTypeId;
-    if (!idToDelete) return;
-
-    this.leaveService.DeleteData(idToDelete).subscribe({
-      next: () => {
-        this.toastr.success('Leave Type deleted successfully', 'Delete');
-        this.dialogRef?.close(true);
-      },
-      error: () => {
-        this.toastr.success('Leave Type deleted successfully', 'Delete');
-        this.dialogRef?.close(true);
-      }
-    });
   }
 
   onCancel() {

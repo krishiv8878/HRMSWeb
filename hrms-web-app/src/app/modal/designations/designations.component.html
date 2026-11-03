@@ -58,6 +58,41 @@
       </div>
     </div>
 
+    <!-- Row: Notice Period Policy Configuration -->
+    <div class="form-row-2">
+      <div class="form-group">
+        <label class="field-label">Notice Period (Days) <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">timelapse</mat-icon>
+          <input
+            type="number"
+            formControlName="noticePeriodDays"
+            placeholder="e.g. 30"
+            min="0"
+            max="180"
+            class="custom-input"
+          />
+        </div>
+        <span class="field-hint" style="font-size: 11px; color: #64748b; margin-top: 4px;">Standard notice period policy for this designation.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Probation Notice Period (Days)</label>
+        <div class="input-wrapper">
+          <mat-icon class="input-icon">hourglass_top</mat-icon>
+          <input
+            type="number"
+            formControlName="probationNoticePeriodDays"
+            placeholder="Optional (e.g. 15)"
+            min="0"
+            max="180"
+            class="custom-input"
+          />
+        </div>
+        <span class="field-hint" style="font-size: 11px; color: #64748b; margin-top: 4px;">Applies during employee probation if configured.</span>
+      </div>
+    </div>
+
     <!-- Active Status Card -->
     <div class="form-group-checkbox">
       <label class="checkbox-label">

@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
+import { LeaveLedgerService } from '../../services/leave-ledger/leave-ledger.service';
 import { LeaveComponent } from '../../modal/leave/leave.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
@@ -17,6 +18,22 @@ export interface LeaveTypeRecord {
   description?: string;
   allowedDays?: number;
   isActive?: boolean;
+  isPaid?: boolean;
+  sandwichRuleEnabled?: boolean;
+  maxSandwichLeavesAllowed?: number;
+  isNegativeBalanceAllowed?: boolean;
+  negativeBalanceLimit?: number;
+  accrualEnabled?: boolean;
+  accrualFrequency?: string;
+  accrualAmount?: number;
+  carryForwardEnabled?: boolean;
+  maxCarryForwardDays?: number;
+  excessBalanceTreatment?: string;
+  encashmentAllowed?: boolean;
+  minBalanceForEncashment?: number;
+  maxEncashmentDaysPerRequest?: number;
+  isCompOff?: boolean;
+  compOffValidityDays?: number;
 }
 
 @Component({
@@ -34,6 +51,7 @@ export interface LeaveTypeRecord {
 })
 export class LeavetypeComponent implements OnInit {
   private leaveService = inject(LeavetypeService);
+  private leaveLedgerService = inject(LeaveLedgerService);
   private dialog = inject(MatDialog);
   private toastr = inject(ToastrService);
 
@@ -77,11 +95,20 @@ export class LeavetypeComponent implements OnInit {
 
         if (rawList.length > 0) {
           this.allLeaveTypes = rawList.map((item: any, idx: number) => ({
+            ...item,
             id: Number(item.id || item.leaveTypeId || (idx + 1)),
             type: item.type || item.leaveTypeName || item.leaveName || 'General Leave',
             description: item.description || 'Employee corporate leave policy',
             allowedDays: item.allowedDays !== undefined && item.allowedDays !== null ? Number(item.allowedDays) : 0,
-            isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false'
+            isActive: item.isActive !== false && item.isActive !== 0 && item.isActive !== 'false',
+            isPaid: item.isPaid !== false,
+            sandwichRuleEnabled: Boolean(item.sandwichRuleEnabled),
+            maxSandwichLeavesAllowed: Number(item.maxSandwichLeavesAllowed || 1),
+            accrualEnabled: Boolean(item.accrualEnabled),
+            accrualFrequency: item.accrualFrequency || 'Monthly',
+            carryForwardEnabled: Boolean(item.carryForwardEnabled),
+            encashmentAllowed: Boolean(item.encashmentAllowed),
+            isCompOff: Boolean(item.isCompOff)
           }));
         } else {
           this.allLeaveTypes = [];
@@ -162,8 +189,11 @@ export class LeavetypeComponent implements OnInit {
 
   openAddForm() {
     const dialogRef = this.dialog.open(LeaveComponent, {
-      width: '540px',
+      width: '740px',
       maxWidth: '95vw',
+      height: '85vh',
+      maxHeight: '85vh',
+      panelClass: 'custom-clean-dialog',
       autoFocus: false
     });
 
@@ -176,8 +206,11 @@ export class LeavetypeComponent implements OnInit {
 
   Edit(data: any) {
     const dialogRef = this.dialog.open(LeaveComponent, {
-      width: '540px',
+      width: '740px',
       maxWidth: '95vw',
+      height: '85vh',
+      maxHeight: '85vh',
+      panelClass: 'custom-clean-dialog',
       autoFocus: false,
       data
     });
@@ -186,6 +219,24 @@ export class LeavetypeComponent implements OnInit {
       if (res) {
         this.getAllData();
       }
+    });
+  }
+
+  triggerAccrual() {
+    this.leaveLedgerService.triggerAccrual().subscribe({
+      next: (res) => {
+        this.toastr.success(res.message || 'Leave accrual executed successfully', 'Accrual Complete');
+      },
+      error: (err) => this.toastr.error(err.error?.message || 'Accrual processing failed', 'Error')
+    });
+  }
+
+  triggerRollover() {
+    this.leaveLedgerService.triggerRollover().subscribe({
+      next: (res) => {
+        this.toastr.success(res.message || 'Year-end rollover executed successfully', 'Rollover Complete');
+      },
+      error: (err) => this.toastr.error(err.error?.message || 'Rollover processing failed', 'Error')
     });
   }
 

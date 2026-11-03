@@ -131,6 +131,17 @@
       <button
         type="button"
         class="tab-btn"
+        [class.active]="activeTab === 'loans'"
+        (click)="switchTab('loans')"
+      >
+        <mat-icon class="tab-icon">credit_score</mat-icon>
+        <span class="tab-title">Loans & Advances</span>
+        <span class="tab-badge" *ngIf="allLoans.length > 0">{{ allLoans.length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
         [class.active]="activeTab === 'accounts'"
         (click)="switchTab('accounts')"
       >
@@ -454,11 +465,11 @@
                   <div *ngIf="!emp.isJoinedAfterSelectedMonth && !emp.isCreditedThisMonth" class="pending-block">
                     <span class="status-badge badge-pending">
                       <span class="dot-amber-pulse"></span>
-                      <span *ngIf="emp.linkedPayRun && emp.linkedPayRun.status !== 'Disbursed'">Pay Run #PR-{{ emp.linkedPayRun.id }} ({{ emp.linkedPayRun.status }})</span>
-                      <span *ngIf="!emp.linkedPayRun || emp.linkedPayRun.status === 'Disbursed'">Pending Credit</span>
+                      <span *ngIf="emp.linkedPayRun">Pay Run #PR-{{ emp.linkedPayRun.id }} ({{ emp.linkedPayRun.status }})</span>
+                      <span *ngIf="!emp.linkedPayRun">Pending Credit</span>
                     </span>
-                    <span class="pending-hint" *ngIf="emp.linkedPayRun && emp.linkedPayRun.status !== 'Disbursed'">Batch Created &bull; Awaiting Disburse</span>
-                    <span class="pending-hint" *ngIf="!emp.linkedPayRun || emp.linkedPayRun.status === 'Disbursed'">Awaiting Disbursement</span>
+                    <span class="pending-hint" *ngIf="emp.linkedPayRun">Batch Created &bull; {{ emp.linkedPayRun.status }}</span>
+                    <span class="pending-hint" *ngIf="!emp.linkedPayRun">Awaiting Disbursement</span>
                   </div>
                 </td>
 
@@ -497,7 +508,7 @@
 
                     <!-- If Pending & Admin/HR: Credit Salary Button -->
                     <button
-                      *ngIf="!emp.isJoinedAfterSelectedMonth && !emp.isCreditedThisMonth && (!emp.linkedPayRun || emp.linkedPayRun.status === 'Disbursed') && isAdminOrHr"
+                      *ngIf="!emp.isJoinedAfterSelectedMonth && !emp.isCreditedThisMonth && (!emp.linkedPayRun || (emp.linkedPayRun.status !== 'Disbursed' && emp.linkedPayRun.status !== 'Approved')) && isAdminOrHr"
                       type="button"
                       class="btn-credit-action"
                       (click)="openSalaryCredit(emp)"
@@ -936,20 +947,26 @@
               <td class="text-danger">{{ formatCurrency(run.totalDeductions) }}</td>
               <td class="net-salary-cell">{{ formatCurrency(run.totalNetPay) }}</td>
               <td>
-                <span class="status-pill status-{{ run.status.toLowerCase() }}">{{ run.status }}</span>
+                <span class="status-pill status-{{ (run.status || 'draft').toLowerCase().replace(' ', '-') }}">
+                  <mat-icon *ngIf="run.isLocked || run.status === 'Locked'" style="font-size: 13px; width: 13px; height: 13px; vertical-align: middle; margin-right: 2px;">lock</mat-icon>
+                  {{ run.status }}
+                </span>
               </td>
               <td>
                 <div style="display: flex; gap: 8px;">
-                  <button *ngIf="run.status !== 'Disbursed'" type="button" class="action-btn" style="color: #16a34a;" (click)="disbursePayRunDirect(run)" title="Disburse Batch & Publish Payslips">
+                  <button *ngIf="run.status === 'Approved' && !run.isLocked" type="button" class="action-btn" style="color: #d97706;" (click)="lockPayRunDirect(run)" title="Lock & Seal Pay Run">
+                    <mat-icon>lock</mat-icon>
+                  </button>
+                  <button *ngIf="run.status === 'Approved' || run.status === 'Locked'" type="button" class="action-btn" style="color: #16a34a;" (click)="disbursePayRunDirect(run)" title="Disburse Batch & Publish Payslips">
                     <mat-icon>paid</mat-icon>
                   </button>
-                  <button type="button" class="action-btn" (click)="openPayRunDetails(run)" title="Review Line Items & Approvals">
+                  <button type="button" class="action-btn" (click)="openPayRunDetails(run)" title="Review Line Items, Exceptions & Controls">
                     <mat-icon>visibility</mat-icon>
                   </button>
                   <button type="button" class="action-btn" (click)="downloadBankPayoutCsv(run.id)" title="Export Bank Payout File">
                     <mat-icon>download</mat-icon>
                   </button>
-                  <button *ngIf="run.status === 'Draft'" type="button" class="action-btn btn-danger-icon" (click)="deleteDraftPayRun(run)" title="Discard Draft Pay Run">
+                  <button *ngIf="(run.status === 'Draft' || run.status === 'Calculated') && !run.isLocked" type="button" class="action-btn btn-danger-icon" (click)="deleteDraftPayRun(run)" title="Discard Draft Pay Run">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </div>
@@ -1170,6 +1187,48 @@
               </div>
             </div>
           </div>
+
+          <!-- Salary Revision History (Audit Trail) -->
+          <div *ngIf="selectedCtcEmployee && salaryHistoryList.length > 0" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <mat-icon style="color: #4f46e5; font-size: 18px; width: 18px; height: 18px;">history</mat-icon>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">Salary Revision History</span>
+              </div>
+              <span style="font-size: 11px; color: #64748b;">{{ salaryHistoryList.length }} Revision(s) Preserved</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div
+                *ngFor="let rev of salaryHistoryList"
+                style="padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;"
+                [style.background]="rev.isCurrent ? '#f0fdf4' : '#fff'"
+                [style.border-color]="rev.isCurrent ? '#86efac' : '#e2e8f0'"
+              >
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-weight: 700; font-size: 13px; color: #0f172a;">{{ formatCurrency(rev.annualCtc) }} / yr</span>
+                    <span
+                      style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;"
+                      [style.background]="rev.isCurrent ? '#bbf7d0' : '#e2e8f0'"
+                      [style.color]="rev.isCurrent ? '#166534' : '#475569'"
+                    >
+                      {{ rev.isCurrent ? 'Current Active' : 'Archived' }}
+                    </span>
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                    Gross: {{ formatCurrency(rev.monthlyGross) }} &bull; In-Hand: {{ formatCurrency(rev.monthlyNetTakeHome) }} ({{ rev.taxRegime }} Regime)
+                  </div>
+                </div>
+
+                <div style="text-align: right; font-size: 11px; color: #64748b;">
+                  <div>Effective: {{ rev.effectiveFromDate | date:'mediumDate' }}</div>
+                  <div *ngIf="rev.effectiveToDate">To: {{ rev.effectiveToDate | date:'mediumDate' }}</div>
+                  <div *ngIf="!rev.effectiveToDate && rev.isCurrent" style="color: #16a34a; font-weight: 600;">Present</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </ng-container>
@@ -1272,6 +1331,236 @@
           <mat-icon class="btn-icon">play_arrow</mat-icon>
           <span>Open FnF Settlement Engine</span>
         </button>
+      </div>
+    </ng-container>
+
+    <!-- ================= TAB 8: EMPLOYEE LOANS & SALARY ADVANCES ================= -->
+    <ng-container *ngIf="activeTab === 'loans'">
+      <div class="period-selector-banner">
+        <div class="selector-left">
+          <div class="period-icon-box">
+            <mat-icon>credit_score</mat-icon>
+          </div>
+          <div class="selector-text">
+            <span class="selector-label">EMPLOYEE LOANS & SALARY ADVANCES</span>
+            <span class="page-subtitle" style="margin: 0; font-size: 13px;">Automated EMI recovery in pay runs, balance decrementing, and ledger tracking.</span>
+          </div>
+        </div>
+
+        <div class="selector-summary">
+          <button type="button" class="btn-add-account" (click)="openLoanModal()">
+            <mat-icon class="btn-icon">add</mat-icon>
+            <span>+ Apply for Loan / Advance</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loan Filter Pills -->
+      <div class="review-filter-bar" style="margin-top: 16px;">
+        <button
+          type="button"
+          class="filter-tab-pill"
+          [class.active]="loanFilterStatus === 'All'"
+          (click)="loanFilterStatus = 'All'; filterLoans()"
+        >
+          All ({{ allLoans.length }})
+        </button>
+        <button
+          type="button"
+          class="filter-tab-pill"
+          [class.active]="loanFilterStatus === 'Active'"
+          (click)="loanFilterStatus = 'Active'; filterLoans()"
+        >
+          Active
+        </button>
+        <button
+          type="button"
+          class="filter-tab-pill pill-hold"
+          [class.active]="loanFilterStatus === 'Pending'"
+          (click)="loanFilterStatus = 'Pending'; filterLoans()"
+        >
+          Pending Approval
+        </button>
+        <button
+          type="button"
+          class="filter-tab-pill"
+          [class.active]="loanFilterStatus === 'Closed'"
+          (click)="loanFilterStatus = 'Closed'; filterLoans()"
+        >
+          Closed / Settled
+        </button>
+      </div>
+
+      <!-- Loans Grid -->
+      <div class="table-card" style="margin-top: 12px;">
+        <table class="payroll-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Employee</th>
+              <th>Loan Type</th>
+              <th>Principal (₹)</th>
+              <th>Tenure & Rate</th>
+              <th>Monthly EMI</th>
+              <th>Remaining Balance</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let loan of filteredLoans">
+              <td><strong>#LN-{{ loan.id }}</strong></td>
+              <td>
+                <div style="font-weight: 600; color: #0f172a;">{{ loan.employeeName || ('Employee #' + loan.employeeId) }}</div>
+                <div style="font-size: 11px; color: #64748b;">Created {{ loan.createdDate | date:'mediumDate' }}</div>
+              </td>
+              <td>
+                <span class="status-pill status-draft" style="text-transform: none; font-size: 11px;">{{ loan.loanType }}</span>
+              </td>
+              <td><strong>{{ formatCurrency(loan.principalAmount) }}</strong></td>
+              <td>{{ loan.tenureMonths }} mos <span *ngIf="loan.interestRatePercent > 0">&#64; {{ loan.interestRatePercent }}%</span></td>
+              <td class="text-danger"><strong>{{ formatCurrency(loan.monthlyEmiAmount) }} / mo</strong></td>
+              <td class="net-salary-cell">
+                <span [style.color]="loan.remainingBalance > 0 ? '#b45309' : '#15803d'">
+                  {{ formatCurrency(loan.remainingBalance) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-pill status-{{ loan.status.toLowerCase() }}">{{ loan.status }}</span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 6px;">
+                  <button
+                    *ngIf="loan.status === 'Pending'"
+                    type="button"
+                    class="action-btn"
+                    style="color: #16a34a;"
+                    (click)="updateLoanStatus(loan, 'Active')"
+                    title="Approve Loan & Activate Recovery"
+                  >
+                    <mat-icon>check_circle</mat-icon>
+                  </button>
+                  <button
+                    *ngIf="loan.status === 'Pending'"
+                    type="button"
+                    class="action-btn btn-danger-icon"
+                    (click)="updateLoanStatus(loan, 'Rejected')"
+                    title="Reject Loan Application"
+                  >
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                  <button
+                    *ngIf="loan.status === 'Active'"
+                    type="button"
+                    class="action-btn"
+                    style="color: #64748b;"
+                    (click)="updateLoanStatus(loan, 'Closed')"
+                    title="Mark Loan as Settled / Closed"
+                  >
+                    <mat-icon>done_all</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredLoans.length === 0">
+              <td colspan="9" style="text-align: center; padding: 30px; color: #64748b;">
+                No employee loans found for the selected filter. Click "+ Apply for Loan / Advance" above to register an advance.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Apply Loan Modal Dialog -->
+      <div *ngIf="isLoanModalOpen" class="adjustment-overlay">
+        <div class="adjustment-dialog" style="max-width: 520px;">
+          <div class="adj-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <mat-icon class="text-primary">credit_score</mat-icon>
+              <h3>Issue Employee Loan or Salary Advance</h3>
+            </div>
+            <button type="button" class="modal-close-icon-btn" (click)="closeLoanModal()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="adj-body">
+            <div class="form-group">
+              <label>Select Beneficiary Employee *</label>
+              <select class="form-input" [(ngModel)]="newLoan.employeeId">
+                <option *ngFor="let emp of allPayrollEmployees" [value]="emp.id">
+                  {{ emp.fullName }} ({{ emp.department || 'General' }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group half-width">
+                <label>Loan / Advance Type *</label>
+                <select class="form-input" [(ngModel)]="newLoan.loanType">
+                  <option value="Salary Advance">Salary Advance</option>
+                  <option value="Personal Loan">Personal Loan</option>
+                  <option value="Emergency Loan">Emergency Loan</option>
+                  <option value="Equipment Advance">Equipment Advance</option>
+                </select>
+              </div>
+
+              <div class="form-group half-width">
+                <label>Principal Amount (₹) *</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  [(ngModel)]="newLoan.principalAmount"
+                  placeholder="25000"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group half-width">
+                <label>Tenure (Months) *</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  [(ngModel)]="newLoan.tenureMonths"
+                  placeholder="6"
+                />
+              </div>
+
+              <div class="form-group half-width">
+                <label>Interest Rate (% Annual)</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  [(ngModel)]="newLoan.interestRatePercent"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Reason / Purpose *</label>
+              <textarea
+                class="form-textarea"
+                rows="2"
+                [(ngModel)]="newLoan.reason"
+                placeholder="Reason for advance or loan request..."
+              ></textarea>
+            </div>
+
+            <div *ngIf="newLoan.principalAmount > 0 && newLoan.tenureMonths > 0" style="padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 13px; color: #166534;">
+              Estimated Monthly EMI to recover from salary: 
+              <strong>{{ formatCurrency(Math.round(newLoan.principalAmount / newLoan.tenureMonths)) }} / month</strong>
+            </div>
+          </div>
+
+          <div class="adj-footer">
+            <button type="button" class="btn btn-outline" (click)="closeLoanModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" [disabled]="isSavingLoan" (click)="submitLoanApplication()">
+              <mat-icon>save</mat-icon> Submit & Approve Loan
+            </button>
+          </div>
+        </div>
       </div>
     </ng-container>
   </ng-container>

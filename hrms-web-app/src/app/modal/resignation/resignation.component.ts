@@ -156,6 +156,8 @@ export class ResignationComponent implements OnInit {
       managerName: val.managerName,
       noticePeriod: val.noticePeriod,
       resignation_Date: val.resignation_Date ? new Date(val.resignation_Date).toISOString() : new Date().toISOString(),
+      requestedLwd: val.resignation_Date ? new Date(new Date(val.resignation_Date).getTime() + (this.noticePeriodOptions.find(o => o.value === val.noticePeriod)?.days || 30) * 86400000).toISOString() : new Date(Date.now() + 30 * 86400000).toISOString(),
+      proposedLwd: val.resignation_Date ? new Date(new Date(val.resignation_Date).getTime() + (this.noticePeriodOptions.find(o => o.value === val.noticePeriod)?.days || 30) * 86400000).toISOString() : new Date(Date.now() + 30 * 86400000).toISOString(),
       reason: fullStatement
     };
 

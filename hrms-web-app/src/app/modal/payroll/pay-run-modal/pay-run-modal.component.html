@@ -8,11 +8,14 @@
         <h2 class="modal-title">Monthly Pay Run Engine</h2>
         <p class="modal-subtitle" *ngIf="payRun">
           {{ monthNames[payRun.month] }} {{ payRun.year }} &bull; Batch #PR-{{ payRun.id }}
+          <span *ngIf="payRun.isLocked" class="locked-sub-badge">
+            <mat-icon>lock</mat-icon> Locked & Sealed ({{ payRun.lockedDate | date:'short' }})
+          </span>
         </p>
       </div>
     </div>
     <div class="header-right">
-      <span class="status-pill status-{{ payRun?.status?.toLowerCase() }}">{{ payRun?.status }}</span>
+      <span class="status-pill status-{{ getStatusSlug(payRun?.status) }}">{{ payRun?.status }}</span>
       <button type="button" class="modal-close-icon-btn" (click)="close()" title="Close dialog">
         <mat-icon>close</mat-icon>
       </button>
@@ -20,33 +23,62 @@
   </div>
 
   <div class="modal-body" *ngIf="!isLoading && payRun">
+    <!-- State Machine Progression Steps -->
+    <div class="state-machine-stepper">
+      <div class="step-item" [class.step-active]="payRun.status === 'Draft' || payRun.status === 'Calculated'" [class.step-done]="payRun.status === 'In Review' || payRun.status === 'Approved' || payRun.status === 'Locked' || payRun.status === 'Disbursed' || payRun.status === 'Paid'">
+        <div class="step-num">1</div>
+        <div class="step-name">Calculated</div>
+      </div>
+      <div class="step-line" [class.line-done]="payRun.status === 'In Review' || payRun.status === 'Approved' || payRun.status === 'Locked' || payRun.status === 'Disbursed' || payRun.status === 'Paid'"></div>
+      <div class="step-item" [class.step-active]="payRun.status === 'In Review' || payRun.status === 'Submitted'" [class.step-done]="payRun.status === 'Approved' || payRun.status === 'Locked' || payRun.status === 'Disbursed' || payRun.status === 'Paid'">
+        <div class="step-num">2</div>
+        <div class="step-name">In Review</div>
+      </div>
+      <div class="step-line" [class.line-done]="payRun.status === 'Approved' || payRun.status === 'Locked' || payRun.status === 'Disbursed' || payRun.status === 'Paid'"></div>
+      <div class="step-item" [class.step-active]="payRun.status === 'Approved'" [class.step-done]="payRun.status === 'Locked' || payRun.status === 'Disbursed' || payRun.status === 'Paid'">
+        <div class="step-num">3</div>
+        <div class="step-name">Approved</div>
+      </div>
+      <div class="step-line" [class.line-done]="payRun.status === 'Locked' || payRun.status === 'Disbursed' || payRun.status === 'Paid'"></div>
+      <div class="step-item" [class.step-active]="payRun.status === 'Locked'" [class.step-done]="payRun.status === 'Disbursed' || payRun.status === 'Paid'">
+        <div class="step-num">4</div>
+        <div class="step-name">Locked</div>
+      </div>
+      <div class="step-line" [class.line-done]="payRun.status === 'Disbursed' || payRun.status === 'Paid'"></div>
+      <div class="step-item" [class.step-active]="payRun.status === 'Disbursed' || payRun.status === 'Paid'" [class.step-done]="payRun.status === 'Disbursed' || payRun.status === 'Paid'">
+        <div class="step-num">5</div>
+        <div class="step-name">Disbursed</div>
+      </div>
+    </div>
+
     <!-- Pay Run Purpose & Next Steps Explainer Card -->
-    <div class="lifecycle-banner" [ngClass]="'banner-' + payRun.status.toLowerCase()">
+    <div class="lifecycle-banner" [ngClass]="'banner-' + getStatusSlug(payRun.status)">
       <div class="lifecycle-icon">
-        <mat-icon>{{ payRun.status === 'Disbursed' ? 'task_alt' : (payRun.status === 'Approved' ? 'check_circle' : 'info') }}</mat-icon>
+        <mat-icon>{{ payRun.status === 'Disbursed' || payRun.status === 'Paid' ? 'task_alt' : (payRun.isLocked ? 'lock' : (payRun.status === 'Approved' ? 'check_circle' : 'info')) }}</mat-icon>
       </div>
       <div class="lifecycle-content">
         <div class="lifecycle-title">
-          <span *ngIf="payRun.status === 'Draft'">Stage 1 of 3: Draft Calculation Review</span>
-          <span *ngIf="payRun.status === 'Submitted'">Stage 2 of 3: Awaiting Maker-Checker Approval</span>
-          <span *ngIf="payRun.status === 'Approved'">Stage 3 of 3: Approved & Ready to Disburse</span>
-          <span *ngIf="payRun.status === 'Disbursed'">Completed: Payroll Disbursed & Payslips Published</span>
+          <span *ngIf="payRun.status === 'Draft' || payRun.status === 'Calculated'">Stage 1: Calculation & Validation</span>
+          <span *ngIf="payRun.status === 'In Review' || payRun.status === 'Submitted'">Stage 2: Reconciliation & Maker-Checker Review</span>
+          <span *ngIf="payRun.status === 'Approved'">Stage 3: Approved & Ready for Lock / Disbursement</span>
+          <span *ngIf="payRun.status === 'Locked'">Stage 4: Sealed & Frozen</span>
+          <span *ngIf="payRun.status === 'Disbursed' || payRun.status === 'Paid'">Stage 5: Finalized & Disbursed</span>
         </div>
         <p class="lifecycle-desc">
-          <span *ngIf="payRun.status === 'Draft'">
-            Calculated automatically from employee attendance, Loss of Pay (LOP) days, Indian statutory taxes (EPF, ESIC, PT, TDS), and pending reimbursement claims. Verify the figures below, then submit for approval or discard if adjustments are needed.
+          <span *ngIf="payRun.status === 'Draft' || payRun.status === 'Calculated'">
+            Attendance data, Loss of Pay (LOP), statutory taxes (EPF, ESIC, PT, TDS), employee loan EMIs, and pending reimbursements are calculated. Review exceptions and line-item controls below.
           </span>
-          <span *ngIf="payRun.status === 'Submitted'">
-            This batch has been locked by HR and submitted to Finance / Approvers. Once verified, click <strong>"Approve Pay Run"</strong> to authorize bank disbursement.
+          <span *ngIf="payRun.status === 'In Review' || payRun.status === 'Submitted'">
+            Pay run is under review by Finance / HR. Verify automated exception warnings (negative net pay, missing bank info, variance). Hold items or make manual adjustments as required before final approval.
           </span>
           <span *ngIf="payRun.status === 'Approved'">
-            <strong>What happens when you click "Disburse & Publish Payslips":</strong>
-            1) Generates official digital payslips in employee self-service portals; 
-            2) Marks approved reimbursements as "Paid"; 
-            3) Finalizes the NEFT/RTGS bank payout file.
+            Approved for execution. Lock this pay run to seal it from attendance edits or proceed to direct disbursement.
           </span>
-          <span *ngIf="payRun.status === 'Disbursed'">
-            Salaries were disbursed on <strong>{{ payRun.disbursedDate | date:'mediumDate' }}</strong>. Official payslips are available for employees to view and download. You can re-download the bank payout CSV at any time below.
+          <span *ngIf="payRun.status === 'Locked'">
+            Batch is <strong>Locked & Sealed</strong>. Attendance records and figures cannot be recalculated or altered. Ready for bank file export and fund transfer.
+          </span>
+          <span *ngIf="payRun.status === 'Disbursed' || payRun.status === 'Paid'">
+            Salaries were disbursed on <strong>{{ payRun.disbursedDate | date:'mediumDate' }}</strong>. Official payslips are published and active employee loans have been decremented.
           </span>
         </p>
       </div>
@@ -63,7 +95,7 @@
         <div class="card-value">{{ formatCurrency(payRun.totalGrossPay) }}</div>
       </div>
       <div class="summary-card">
-        <div class="card-label">Total Deductions (PF/ESI/PT/TDS/LOP)</div>
+        <div class="card-label">Total Deductions (PF/ESI/PT/TDS/Loans/LOP)</div>
         <div class="card-value text-red">{{ formatCurrency(payRun.totalDeductions) }}</div>
       </div>
       <div class="summary-card card-primary">
@@ -76,37 +108,63 @@
     <div class="workflow-bar">
       <div class="workflow-info">
         <span class="info-title">Workflow Actions:</span>
-        <span class="info-desc" *ngIf="payRun.status === 'Draft'">Review calculations or discard to regenerate.</span>
-        <span class="info-desc" *ngIf="payRun.status === 'Submitted'">Pending finance approval.</span>
-        <span class="info-desc" *ngIf="payRun.status === 'Approved'">Ready to publish payslips and disburse.</span>
-        <span class="info-desc" *ngIf="payRun.status === 'Disbursed'">Cycle completed successfully.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Draft' || payRun.status === 'Calculated'">Review exceptions or move to In Review.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'In Review' || payRun.status === 'Submitted'">Pending finance approval.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Approved'">Ready to lock batch and disburse.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Locked'">Locked & sealed. Ready for fund transfer.</span>
+        <span class="info-desc" *ngIf="payRun.status === 'Disbursed' || payRun.status === 'Paid'">Payroll finalized. Payslips published.</span>
       </div>
 
       <div class="workflow-actions">
-        <!-- Discard Draft Button -->
+        <!-- Recalculate Button (Available if not locked or disbursed) -->
         <button
-          *ngIf="payRun.status === 'Draft'"
+          *ngIf="!payRun.isLocked && payRun.status !== 'Locked' && payRun.status !== 'Disbursed' && payRun.status !== 'Paid'"
+          type="button"
+          class="btn btn-outline"
+          [disabled]="isUpdating"
+          (click)="recalculatePayRun()"
+          title="Recalculate totals with latest adjustments, holds, and loan deductions"
+        >
+          <mat-icon>refresh</mat-icon> Recalculate
+        </button>
+
+        <!-- Discard Draft / Calculated Button -->
+        <button
+          *ngIf="(payRun.status === 'Draft' || payRun.status === 'Calculated') && !payRun.isLocked"
           type="button"
           class="btn btn-danger"
           [disabled]="isUpdating"
           (click)="discardPayRun()"
-          title="Discard this draft run and release reimbursements"
+          title="Discard this batch and release reimbursements"
         >
-          <mat-icon>delete_forever</mat-icon> Discard Draft
+          <mat-icon>delete_forever</mat-icon> Discard Batch
         </button>
 
+        <!-- Advance to In Review -->
         <button
-          *ngIf="payRun.status === 'Draft'"
+          *ngIf="payRun.status === 'Draft' || payRun.status === 'Calculated'"
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isUpdating"
+          (click)="updateStatus('In Review')"
+        >
+          <mat-icon>rate_review</mat-icon> Move to Review
+        </button>
+
+        <!-- Return to Calculated from In Review -->
+        <button
+          *ngIf="(payRun.status === 'In Review' || payRun.status === 'Submitted') && !payRun.isLocked"
           type="button"
           class="btn btn-outline"
           [disabled]="isUpdating"
-          (click)="updateStatus('Submitted')"
+          (click)="updateStatus('Calculated')"
         >
-          <mat-icon>send</mat-icon> Submit for Approval
+          <mat-icon>undo</mat-icon> Return to Calculated
         </button>
 
+        <!-- Approve Pay Run -->
         <button
-          *ngIf="payRun.status === 'Submitted'"
+          *ngIf="payRun.status === 'In Review' || payRun.status === 'Submitted'"
           type="button"
           class="btn btn-primary"
           [disabled]="isUpdating"
@@ -115,17 +173,31 @@
           <mat-icon>check_circle</mat-icon> Approve Pay Run
         </button>
 
+        <!-- Lock Pay Run -->
         <button
-          *ngIf="payRun.status !== 'Disbursed'"
+          *ngIf="payRun.status === 'Approved' && !payRun.isLocked"
+          type="button"
+          class="btn btn-warning"
+          [disabled]="isUpdating"
+          (click)="lockPayRun()"
+          title="Lock and seal this pay run against attendance modifications"
+        >
+          <mat-icon>lock</mat-icon> Lock Pay Run
+        </button>
+
+        <!-- Disburse & Publish Payslips Button -->
+        <button
+          *ngIf="payRun.status !== 'Disbursed' && payRun.status !== 'Paid'"
           type="button"
           class="btn btn-success"
           [disabled]="isUpdating"
           (click)="updateStatus('Disbursed')"
-          title="Disburse salaries and publish digital payslips immediately"
+          title="Disburse salaries, decrement loans, and publish digital payslips immediately"
         >
           <mat-icon>paid</mat-icon> Disburse & Publish Payslips
         </button>
 
+        <!-- Export Bank CSV -->
         <button
           type="button"
           class="btn btn-export"
@@ -137,6 +209,38 @@
       </div>
     </div>
 
+    <!-- Filter Pills Bar (All vs Exceptions Only vs On Hold) -->
+    <div class="review-filter-bar">
+      <button
+        type="button"
+        class="filter-tab-pill"
+        [class.active]="filterMode === 'all'"
+        (click)="filterMode = 'all'"
+      >
+        All Line Items ({{ employees.length }})
+      </button>
+
+      <button
+        type="button"
+        class="filter-tab-pill pill-exception"
+        [class.active]="filterMode === 'exceptions'"
+        (click)="filterMode = 'exceptions'"
+      >
+        <mat-icon class="pill-icon">warning</mat-icon>
+        <span>Exceptions ({{ exceptionCount }})</span>
+      </button>
+
+      <button
+        type="button"
+        class="filter-tab-pill pill-hold"
+        [class.active]="filterMode === 'on-hold'"
+        (click)="filterMode = 'on-hold'"
+      >
+        <mat-icon class="pill-icon">pause_circle</mat-icon>
+        <span>On Hold ({{ onHoldCount }})</span>
+      </button>
+    </div>
+
     <!-- Employee Line Items Table -->
     <div class="table-container">
       <table class="details-table">
@@ -145,35 +249,89 @@
             <th>Employee</th>
             <th>Work / LOP Days</th>
             <th>Gross Pay</th>
-            <th>LOP Loss</th>
-            <th>Reimbursements</th>
-            <th>PF & ESI</th>
-            <th>PT & TDS</th>
+            <th>Adjustments / Bonus</th>
+            <th>Loan EMI</th>
             <th>Total Deductions</th>
             <th>Net Take Home</th>
             <th>Bank & IFSC</th>
+            <th *ngIf="!payRun.isLocked && payRun.status !== 'Disbursed' && payRun.status !== 'Paid'">Controls</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let emp of employees">
+          <tr *ngFor="let emp of filteredEmployees" [class.row-exception]="emp.hasExceptionFlag" [class.row-hold]="emp.isOnHold">
             <td>
               <div class="emp-name">{{ emp.employeeName }}</div>
               <div class="emp-code">{{ emp.employeeCode }}</div>
+
+              <!-- Automated Exception Flags -->
+              <div *ngIf="emp.hasExceptionFlag" class="exception-badge-group">
+                <span class="exception-pill" [title]="emp.exceptionDetails">
+                  <mat-icon class="exp-icon">warning</mat-icon>
+                  {{ emp.exceptionDetails }}
+                </span>
+              </div>
+
+              <!-- Hold Status Indicator -->
+              <div *ngIf="emp.isOnHold" class="hold-indicator">
+                <mat-icon class="hold-icon">pause_circle</mat-icon>
+                <span>ON HOLD: {{ emp.holdReason || 'Administrative Review' }}</span>
+              </div>
             </td>
             <td>
               <span class="days-badge">{{ emp.presentDays }} / {{ emp.totalWorkingDays }}d</span>
               <span class="lop-badge" *ngIf="emp.lopDays > 0">-{{ emp.lopDays }}d LOP</span>
             </td>
             <td>{{ formatCurrency(emp.grossPay) }}</td>
-            <td class="text-danger">{{ formatCurrency(emp.lopDeduction) }}</td>
-            <td class="text-success">+{{ formatCurrency(emp.reimbursements) }}</td>
-            <td>{{ formatCurrency(emp.epfDeduction + emp.esicDeduction) }}</td>
-            <td>{{ formatCurrency(emp.ptDeduction + emp.tdsDeduction) }}</td>
-            <td class="text-danger">{{ formatCurrency(emp.totalDeductions) }}</td>
-            <td class="net-pay-cell">{{ formatCurrency(emp.netPay) }}</td>
             <td>
-              <div class="bank-name">{{ emp.bankName }}</div>
-              <div class="bank-ifsc">{{ emp.ifscCode }} &bull; {{ emp.accountNumber || '—' }}</div>
+              <div *ngIf="(emp.arrearsAmount || 0) > 0" class="text-success">+{{ formatCurrency(emp.arrearsAmount || 0) }} Arrears</div>
+              <div *ngIf="(emp.bonusAmount || 0) > 0" class="text-success">+{{ formatCurrency(emp.bonusAmount || 0) }} Bonus</div>
+              <div *ngIf="(emp.manualAdjustmentAmount || 0) !== 0" [class.text-success]="(emp.manualAdjustmentAmount || 0) > 0" [class.text-danger]="(emp.manualAdjustmentAmount || 0) < 0">
+                {{ (emp.manualAdjustmentAmount || 0) > 0 ? '+' : '' }}{{ formatCurrency(emp.manualAdjustmentAmount || 0) }} Adj
+              </div>
+              <span *ngIf="!emp.arrearsAmount && !emp.bonusAmount && !emp.manualAdjustmentAmount" class="text-muted">—</span>
+            </td>
+            <td>
+              <span *ngIf="(emp.loanEmiDeduction || 0) > 0" class="text-danger">-{{ formatCurrency(emp.loanEmiDeduction || 0) }}</span>
+              <span *ngIf="!emp.loanEmiDeduction" class="text-muted">—</span>
+            </td>
+            <td class="text-danger">{{ formatCurrency(emp.totalDeductions) }}</td>
+            <td class="net-pay-cell">
+              <span *ngIf="emp.isOnHold" class="net-on-hold">₹0.00 (HELD)</span>
+              <span *ngIf="!emp.isOnHold">{{ formatCurrency(emp.netPay) }}</span>
+            </td>
+            <td>
+              <div class="bank-name">{{ emp.bankName || 'Not Set' }}</div>
+              <div class="bank-ifsc">{{ emp.ifscCode || '—' }} &bull; {{ emp.accountNumber || '—' }}</div>
+            </td>
+            <td *ngIf="!payRun.isLocked && payRun.status !== 'Disbursed' && payRun.status !== 'Paid'">
+              <div class="control-actions">
+                <button
+                  type="button"
+                  class="btn-control"
+                  [class.btn-control-held]="emp.isOnHold"
+                  (click)="toggleHold(emp)"
+                  [title]="emp.isOnHold ? 'Release salary hold' : 'Put salary on hold'"
+                >
+                  <mat-icon>{{ emp.isOnHold ? 'play_arrow' : 'pause' }}</mat-icon>
+                  <span>{{ emp.isOnHold ? 'Release' : 'Hold' }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-control btn-control-edit"
+                  (click)="openAdjustmentModal(emp)"
+                  title="Make manual adjustments, add arrears or bonus"
+                >
+                  <mat-icon>tune</mat-icon>
+                  <span>Adjust</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredEmployees.length === 0">
+            <td colspan="9" class="no-records-cell">
+              No employee records match the selected filter criteria.
             </td>
           </tr>
         </tbody>
@@ -183,5 +341,72 @@
 
   <div class="modal-footer">
     <button class="btn btn-outline" (click)="close()">Close</button>
+  </div>
+</div>
+
+<!-- ================= LINE-ITEM ADJUSTMENT MODAL DIALOG ================= -->
+<div *ngIf="adjustmentModalOpen && currentAdjustment" class="adjustment-overlay">
+  <div class="adjustment-dialog">
+    <div class="adj-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <mat-icon class="text-primary">tune</mat-icon>
+        <h3>Salary Adjustments: {{ currentAdjustment.employeeName }}</h3>
+      </div>
+      <button type="button" class="modal-close-icon-btn" (click)="closeAdjustmentModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="adj-body">
+      <div class="form-group">
+        <label>Manual Net Adjustment (₹)</label>
+        <input
+          type="number"
+          class="form-input"
+          [(ngModel)]="currentAdjustment.manualAdjustment"
+          placeholder="e.g. +500 for addition, -500 for deduction"
+        />
+        <span class="field-hint">Use positive value for credit, negative value for debit.</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label>Arrears Amount (₹)</label>
+          <input
+            type="number"
+            class="form-input"
+            [(ngModel)]="currentAdjustment.arrears"
+            placeholder="0"
+          />
+        </div>
+
+        <div class="form-group half-width">
+          <label>Bonus Amount (₹)</label>
+          <input
+            type="number"
+            class="form-input"
+            [(ngModel)]="currentAdjustment.bonus"
+            placeholder="0"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Adjustment Reason & Notes *</label>
+        <textarea
+          class="form-textarea"
+          rows="2"
+          [(ngModel)]="currentAdjustment.reason"
+          placeholder="State reason for manual adjustment (e.g. Performance bonus, Overtime settlement, Attendance regularization)..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="adj-footer">
+      <button type="button" class="btn btn-outline" (click)="closeAdjustmentModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="isUpdating" (click)="saveAdjustment()">
+        <mat-icon>save</mat-icon> Apply Adjustments
+      </button>
+    </div>
   </div>
 </div>

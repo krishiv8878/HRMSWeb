@@ -28,6 +28,8 @@ export interface WorkflowInboxItem {
   status: string;
   isEscalated: boolean;
   canApprove: boolean;
+  canReturnForRevision?: boolean;
+  isDelegated?: boolean;
   canOverride: boolean;
   canReassign: boolean;
   canCancel: boolean;
@@ -49,6 +51,8 @@ export interface WorkflowScopedRequest {
   currentStepName: string;
   pendingWith: string;
   canApprove: boolean;
+  canReturnForRevision?: boolean;
+  isDelegated?: boolean;
   canOverride: boolean;
   canReassign: boolean;
   canCancel: boolean;
@@ -97,6 +101,8 @@ export interface WorkflowInstanceDetail {
   completedDate?: string;
   pendingWith: string;
   canApprove: boolean;
+  canReturnForRevision?: boolean;
+  isDelegated?: boolean;
   canOverride: boolean;
   canReassign: boolean;
   canCancel: boolean;
@@ -275,11 +281,11 @@ export class WorkflowService {
   }
 
   /**
-   * Take action on a pending step: Approve, Reject, OverrideApprove, OverrideReject, or Reassign.
+   * Take action on a pending step: Approve, Reject, ReturnForRevision, OverrideApprove, OverrideReject, or Reassign.
    */
   actOnStep(
     instanceId: number,
-    action: 'Approve' | 'Reject' | 'OverrideApprove' | 'OverrideReject' | 'Reassign',
+    action: 'Approve' | 'Reject' | 'ReturnForRevision' | 'OverrideApprove' | 'OverrideReject' | 'Reassign',
     reason?: string,
     reassignToEmployeeId?: number
   ): Observable<ApiResponse<WorkflowActionResult>> {
@@ -289,6 +295,26 @@ export class WorkflowService {
       reassignToEmployeeId: reassignToEmployeeId || null
     };
     return this.http.post<ApiResponse<WorkflowActionResult>>(`${this.apiUrl}/Workflow/instance/${instanceId}/action`, payload);
+  }
+
+  /**
+   * Resubmit a request that was returned for revision.
+   */
+  resubmit(requestType: string, requestId: number, comment?: string): Observable<ApiResponse<WorkflowActionResult>> {
+    return this.http.post<ApiResponse<WorkflowActionResult>>(`${this.apiUrl}/Workflow/resubmit`, {
+      requestType,
+      requestId,
+      comment: comment || ''
+    });
+  }
+
+  /**
+   * Resubmit a workflow instance that was returned for revision.
+   */
+  resubmitInstance(instanceId: number, comment?: string): Observable<ApiResponse<WorkflowActionResult>> {
+    return this.http.post<ApiResponse<WorkflowActionResult>>(`${this.apiUrl}/Workflow/instance/${instanceId}/resubmit`, {
+      comment: comment || ''
+    });
   }
 
   /**

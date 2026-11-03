@@ -129,6 +129,9 @@
           <select [(ngModel)]="selectedStatus" (change)="filterEmployees()" class="custom-select">
             <option value="All">Status: All</option>
             <option value="Active">Active</option>
+            <option value="Probation">Probation</option>
+            <option value="Notice Period">Notice Period</option>
+            <option value="Exited">Exited</option>
             <option value="Inactive">Inactive</option>
           </select>
         </div>
@@ -248,9 +251,18 @@
 
               <!-- Active Status Badge -->
               <td class="col-status">
-                <span class="status-badge" [ngClass]="emp.isActive ? 'badge-active' : 'badge-inactive'">
+                <span class="status-badge"
+                  [ngClass]="{
+                    'badge-active': emp.isActive && (!emp.employmentStatus || emp.employmentStatus.toLowerCase() === 'active'),
+                    'badge-probation': emp.employmentStatus?.toLowerCase() === 'probation' || emp.probationStatus?.toLowerCase() === 'underprobation',
+                    'badge-notice': emp.employmentStatus?.toLowerCase() === 'noticeperiod' || emp.employmentStatus?.toLowerCase() === 'notice period',
+                    'badge-exited': !emp.isActive || emp.employmentStatus?.toLowerCase() === 'exited'
+                  }">
                   <span class="dot"></span>
-                  <span>{{ emp.isActive ? 'Active' : 'Inactive' }}</span>
+                  <span *ngIf="emp.employmentStatus?.toLowerCase() === 'probation' || emp.probationStatus?.toLowerCase() === 'underprobation'">Probation</span>
+                  <span *ngIf="emp.employmentStatus?.toLowerCase() === 'noticeperiod' || emp.employmentStatus?.toLowerCase() === 'notice period'">Notice Period</span>
+                  <span *ngIf="!emp.isActive || emp.employmentStatus?.toLowerCase() === 'exited'">Exited</span>
+                  <span *ngIf="emp.isActive && (!emp.employmentStatus || emp.employmentStatus.toLowerCase() === 'active')">Active</span>
                 </span>
               </td>
 
@@ -267,6 +279,15 @@
                   </button>
                   <button type="button" class="btn-action-icon payroll-btn" (click)="navigateToPayroll(emp)" title="Banking &amp; Payroll">
                     <mat-icon>account_balance</mat-icon>
+                  </button>
+                  <button type="button" class="btn-action-icon checklist-btn" (click)="openChecklist(emp)" title="View Checklist &amp; Clearance Dossier">
+                    <mat-icon>checklist</mat-icon>
+                  </button>
+                  <button type="button" class="btn-action-icon probation-btn" *ngIf="emp.employmentStatus?.toLowerCase() === 'probation' || emp.probationStatus?.toLowerCase() === 'underprobation'" (click)="openProbationDecision(emp)" title="Process Probation (Confirm / Extend)">
+                    <mat-icon>verified</mat-icon>
+                  </button>
+                  <button type="button" class="btn-action-icon rehire-btn" *ngIf="!emp.isActive || emp.employmentStatus?.toLowerCase() === 'exited'" (click)="openRehireModal(emp)" title="Rehire Exited Employee">
+                    <mat-icon>person_add_alt</mat-icon>
                   </button>
                   <button type="button" class="btn-action-icon edit-btn" (click)="Edit(emp)" title="Edit Employee">
                     <mat-icon>edit</mat-icon>

@@ -45,11 +45,15 @@ export interface PayRun {
   totalGrossPay: number;
   totalDeductions: number;
   totalNetPay: number;
-  status: 'Draft' | 'Submitted' | 'Approved' | 'Disbursed';
+  status: 'Draft' | 'Calculated' | 'In Review' | 'Approved' | 'Locked' | 'Disbursed' | 'Paid' | 'Submitted';
   paymentMode: string;
   notes?: string;
   approvedDate?: string;
   disbursedDate?: string;
+  isLocked?: boolean;
+  lockedDate?: string;
+  lockedByEmployeeId?: number;
+  workflowInstanceId?: string;
 }
 
 export interface PayRunEmployeeDetail {
@@ -78,6 +82,31 @@ export interface PayRunEmployeeDetail {
   bankName: string;
   accountNumber?: number;
   ifscCode: string;
+  isOnHold?: boolean;
+  holdReason?: string;
+  manualAdjustmentAmount?: number;
+  adjustmentReason?: string;
+  loanEmiDeduction?: number;
+  arrearsAmount?: number;
+  bonusAmount?: number;
+  hasExceptionFlag?: boolean;
+  exceptionDetails?: string;
+}
+
+export interface EmployeeLoan {
+  id: number;
+  employeeId: number;
+  employeeName?: string;
+  loanType: string;
+  principalAmount: number;
+  interestRatePercent: number;
+  tenureMonths: number;
+  monthlyEmiAmount: number;
+  remainingBalance: number;
+  disbursedDate?: string;
+  status: 'Pending' | 'Active' | 'Closed' | 'Rejected' | 'Defaulted';
+  remarks?: string;
+  createdDate: string;
 }
 
 export interface PayslipDto {
@@ -219,6 +248,10 @@ export class PayrollService {
     });
   }
 
+  recordIndividualCredit(request: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/individual-credit`, request);
+  }
+
   // 4. Payslips
   getPayslips(employeeId?: number): Observable<any> {
     const url = employeeId ? `${this.apiUrl}/payslips/${employeeId}` : `${this.apiUrl}/payslips`;
@@ -266,5 +299,39 @@ export class PayrollService {
     const params: any = { status };
     if (remarks) params.remarks = remarks;
     return this.http.post<any>(`${this.apiUrl}/fnf/${id}/status`, null, { params });
+  }
+
+  // 7. Cycle Overhaul & Reconciliation (Phase 6)
+  lockPayRun(id: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/payrun/${id}/lock`, {});
+  }
+
+  recalculatePayRun(id: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/payrun/${id}/recalculate`, {});
+  }
+
+  toggleHoldDetail(req: { detailId: number; isOnHold: boolean; reason?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/payrun/detail/hold`, req);
+  }
+
+  updateDetailAdjustment(req: { detailId: number; manualAdjustmentAmount: number; arrearsAmount: number; bonusAmount: number; adjustmentReason?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/payrun/detail/adjustment`, req);
+  }
+
+  getSalaryHistory(employeeId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/salary-assignment/history/${employeeId}`);
+  }
+
+  getLoans(employeeId?: number): Observable<any> {
+    const url = employeeId ? `${this.apiUrl}/loans/${employeeId}` : `${this.apiUrl}/loans`;
+    return this.http.get<any>(url);
+  }
+
+  applyLoan(req: { employeeId: number; loanType: string; principalAmount: number; interestRatePercent: number; tenureMonths: number; reason?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/loans/apply`, req);
+  }
+
+  updateLoanStatus(req: { loanId: number; status: string; reason?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/loans/status`, req);
   }
 }

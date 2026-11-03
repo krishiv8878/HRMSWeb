@@ -18,7 +18,7 @@ import { SalarySlipModalComponent } from '../../modal/salary-slip-modal/salary-s
 import { PayrollLopService } from '../../services/payroll/payroll-lop.service';
 import { PayrollLopSettingsModalComponent } from '../../modal/payroll-lop-settings-modal/payroll-lop-settings-modal.component';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
-import { PayrollService, PayRun, PayslipDto, ReimbursementClaim, FullAndFinalSettlement, SalaryCalculationResult } from '../../services/payroll/payroll.service';
+import { PayrollService, PayRun, PayslipDto, ReimbursementClaim, FullAndFinalSettlement, SalaryCalculationResult, EmployeeLoan } from '../../services/payroll/payroll.service';
 import { PayRunModalComponent } from '../../modal/payroll/pay-run-modal/pay-run-modal.component';
 import { ReimbursementModalComponent } from '../../modal/payroll/reimbursement-modal/reimbursement-modal.component';
 import { FnfModalComponent } from '../../modal/payroll/fnf-modal/fnf-modal.component';
@@ -90,7 +90,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
   Math = Math;
 
   // Active View Tab
-  activeTab: 'disbursements' | 'payruns' | 'ctc-calculator' | 'reimbursements' | 'fnf' | 'accounts' | 'my-payslips' = 'disbursements';
+  activeTab: 'disbursements' | 'payruns' | 'ctc-calculator' | 'loans' | 'reimbursements' | 'fnf' | 'accounts' | 'my-payslips' = 'disbursements';
 
   // Dedicated Employee View Active Tab (!isAdminOrHr)
   empActiveTab: 'my-payslips' | 'my-structure' | 'my-reimbursements' | 'bank-details' = 'my-payslips';
@@ -116,6 +116,30 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
   filteredCtcEmployees: PayrollEmployeeItem[] = [];
   allSalaryAssignments: Map<number, any> = new Map();
   configuredCtcCount: number = 0;
+  salaryHistoryList: any[] = [];
+  isLoadingSalaryHistory: boolean = false;
+
+  // 2.1 Employee Loans & Advances
+  allLoans: EmployeeLoan[] = [];
+  filteredLoans: EmployeeLoan[] = [];
+  loanFilterStatus: string = 'All';
+  isLoanModalOpen: boolean = false;
+  isSavingLoan: boolean = false;
+  newLoan: {
+    employeeId: number;
+    loanType: string;
+    principalAmount: number;
+    interestRatePercent: number;
+    tenureMonths: number;
+    reason: string;
+  } = {
+    employeeId: 0,
+    loanType: 'Salary Advance',
+    principalAmount: 25000,
+    interestRatePercent: 0,
+    tenureMonths: 6,
+    reason: ''
+  };
 
   // 3. Reimbursements & FBP
   allReimbursements: ReimbursementClaim[] = [];
@@ -295,13 +319,15 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     this.selectedMonth = result[0];
   }
 
-  switchTab(tab: 'disbursements' | 'payruns' | 'ctc-calculator' | 'reimbursements' | 'fnf' | 'accounts' | 'my-payslips') {
+  switchTab(tab: 'disbursements' | 'payruns' | 'ctc-calculator' | 'loans' | 'reimbursements' | 'fnf' | 'accounts' | 'my-payslips') {
     this.activeTab = tab;
     if (tab === 'payruns') {
       this.loadPayRuns();
     } else if (tab === 'ctc-calculator') {
       this.loadAllSalaryAssignments();
       this.calculateLiveCtc();
+    } else if (tab === 'loans') {
+      this.loadLoans();
     } else if (tab === 'reimbursements') {
       this.loadReimbursements();
     } else if (tab === 'my-payslips') {
@@ -344,7 +370,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
         rawList = rawList.filter((item: any) => !item.isDeleted && item.isDeleted !== 1 && item.isDeleted !== 'true');
 
         if (!this.isAdminOrHr && this.employeeId && rawList.length > 0) {
-          const userSpecific = rawList.filter((item: any) => String(item.employeeId) === String(this.employeeId));
+          const userSpecific = rawList.filter((item: any) => String(item.employeeId ?? item.EmployeeId) === String(this.employeeId));
           if (userSpecific.length > 0) {
             rawList = userSpecific;
           }
@@ -354,7 +380,8 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
         if (rawList.length > 0) {
           const uniqueMap = new Map<string, any>();
           rawList.forEach((item: any) => {
-            const key = item.employeeId ? String(item.employeeId) : String(item.id || Math.random());
+            const empId = item.employeeId ?? item.EmployeeId;
+            const key = empId ? String(empId) : String(item.id || Math.random());
             if (!uniqueMap.has(key) || (item.id && Number(item.id) > Number(uniqueMap.get(key).id))) {
               uniqueMap.set(key, item);
             }
@@ -458,7 +485,8 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     }
 
     // Match bank info
-    const bankAccount = this.allPayments.find(p => String(p.employeeId) === String(emp.id)) || null;
+    const targetEmpId = Number(emp.id ?? emp.EmployeeId ?? 0);
+    const bankAccount = this.allPayments.find(p => Number(p.employeeId) === targetEmpId) || null;
 
     let avatarUrl: string | undefined = undefined;
     if (emp.profileImage) {
@@ -483,7 +511,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
       monthlyGross,
       monthlyNet,
       bankAccount,
-      hasBankConfigured: !!(bankAccount && bankAccount.accountNumber),
+      hasBankConfigured: !!(bankAccount && (bankAccount.accountNumber || bankAccount.maskedAccount)),
       disbursements,
       currentMonthDisbursement: null,
       isCreditedThisMonth: false,
@@ -505,6 +533,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     const endOfSelectedMonth = new Date(selYear, selMonthNum, 0, 23, 59, 59, 999);
 
     const matchingRun = this.allPayRuns.find(r => r.month === selMonthNum && r.year === selYear);
+    const normalizedSelMonth = (this.selectedMonth || '').toLowerCase().trim();
 
     this.allPayrollEmployees.forEach(emp => {
       // Determine if employee joined after the selected month
@@ -525,21 +554,84 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Check if employee has an actual recorded disbursement for this month
-      let disb = emp.disbursements.find((d: any) =>
-        (d.month && d.month.toLowerCase() === this.selectedMonth.toLowerCase()) ||
-        (d.monthYear && d.monthYear.toLowerCase() === this.selectedMonth.toLowerCase())
-      ) || null;
+      // 1. Check if employee has an actual recorded disbursement in responsibilities
+      let disb = (emp.disbursements || []).find((d: any) => {
+        const m = (d.month || d.monthYear || '').toLowerCase().trim();
+        if (m === normalizedSelMonth) return true;
+        if (d.paymentDate || d.creditDate) {
+          const dt = new Date(d.paymentDate || d.creditDate);
+          if (!isNaN(dt.getTime()) && (dt.getMonth() + 1) === selMonthNum && dt.getFullYear() === selYear) {
+            return true;
+          }
+        }
+        return false;
+      }) || null;
 
+      // 2. Check server payslips for this employee & period
+      const matchingSlip = (this.serverPayslips || []).find((p: any) =>
+        Number(p.employeeId) === Number(emp.id) &&
+        Number(p.month) === selMonthNum &&
+        Number(p.year) === selYear
+      );
+
+      // 3. Synthesize disbursement object if credited by server payslip or pay run
+      if (!disb && matchingSlip) {
+        const dt = matchingSlip.generatedDate ? new Date(matchingSlip.generatedDate) : new Date();
+        disb = {
+          id: 'PAYSLIP-' + matchingSlip.id,
+          payslipId: matchingSlip.id,
+          monthYear: this.selectedMonth,
+          month: this.selectedMonth,
+          creditDate: matchingSlip.generatedDate || dt.toISOString(),
+          paymentDate: dt.toISOString().slice(0, 10),
+          paymentMode: 'Direct Deposit / Pay Run',
+          transactionRef: matchingSlip.payslipNumber || ('PR-SLIP-' + matchingSlip.id),
+          grossSalary: matchingSlip.grossSalary || emp.monthlyGross,
+          basicSalary: matchingSlip.basicSalary,
+          hra: matchingSlip.hra,
+          specialAllowance: matchingSlip.specialAllowance,
+          pfDeduction: matchingSlip.epfDeduction,
+          additionalDeductions: Math.max(0, (matchingSlip.totalDeductions || 0) - (matchingSlip.epfDeduction || 0)),
+          netSalaryCredited: matchingSlip.netSalary || emp.monthlyNet,
+          netSalary: matchingSlip.netSalary || emp.monthlyNet,
+          status: 'Credited',
+          markedBy: 'Automated Pay Run Engine',
+          markedAt: matchingSlip.generatedDate
+        };
+      } else if (!disb && matchingRun && matchingRun.status === 'Disbursed') {
+        const dt = matchingRun.disbursedDate ? new Date(matchingRun.disbursedDate) : new Date();
+        disb = {
+          id: 'PR-' + matchingRun.id + '-EMP-' + emp.id,
+          monthYear: this.selectedMonth,
+          month: this.selectedMonth,
+          creditDate: matchingRun.disbursedDate || dt.toISOString(),
+          paymentDate: dt.toISOString().slice(0, 10),
+          paymentMode: 'Direct Deposit / Pay Run',
+          transactionRef: 'PR-' + matchingRun.id + '-UTR-' + emp.id,
+          grossSalary: emp.monthlyGross,
+          basicSalary: emp.ctcBreakdown?.basicSalary || Math.round(emp.monthlyGross * 0.5),
+          hra: emp.ctcBreakdown?.hra || Math.round(emp.monthlyGross * 0.25),
+          specialAllowance: emp.ctcBreakdown?.specialAllowance || 0,
+          pfDeduction: emp.ctcBreakdown?.pfDeduction || 0,
+          additionalDeductions: 0,
+          netSalaryCredited: emp.monthlyNet,
+          netSalary: emp.monthlyNet,
+          status: 'Credited',
+          markedBy: 'Pay Run Batch #' + matchingRun.id,
+          markedAt: matchingRun.disbursedDate
+        };
+      }
+
+      const isCredited = !!disb || !!matchingSlip || (!!matchingRun && matchingRun.status === 'Disbursed');
       emp.currentMonthDisbursement = disb;
-      emp.isCreditedThisMonth = !!disb;
+      emp.isCreditedThisMonth = isCredited;
       emp.linkedPayRun = matchingRun || null;
 
       budgetSum += emp.monthlyNet || 0;
 
-      if (disb) {
+      if (isCredited) {
         creditedCnt++;
-        creditedSum += Number(disb.netSalaryCredited || disb.netSalary) || emp.monthlyNet || 0;
+        creditedSum += Number(disb?.netSalaryCredited || disb?.netSalary || matchingSlip?.netSalary) || emp.monthlyNet || 0;
       }
 
       if (emp.hasBankConfigured) {
@@ -624,6 +716,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
       maxWidth: '96vw',
       data: {
         employee: emp.rawRecord,
+        bankInfo: emp.bankAccount?.rawRecord || emp.bankAccount,
         paymentInfo: emp.bankAccount?.rawRecord || emp.bankAccount,
         selectedMonth: this.selectedMonth
       }
@@ -643,6 +736,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
       data: {
         disbursement: disb || emp.currentMonthDisbursement,
         employee: emp.rawRecord,
+        bankInfo: emp.bankAccount?.rawRecord || emp.bankAccount,
         paymentInfo: emp.bankAccount?.rawRecord || emp.bankAccount
       }
     });
@@ -810,11 +904,11 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
 
   // Direct Deposit Accounts Mapping
   private mapPaymentItem(item: any, idx: number): PaymentItem {
-    const acc = String(item.accountNumber || '');
+    const acc = String(item.accountNumber || item.AccountNumber || '');
     const masked = acc.length > 4 ? `•••• •••• ${acc.slice(-4)}` : (acc || '••••');
-    const bank = item.bankName || 'Not Specified';
-    const ifsc = (item.ifscCode || '—').toUpperCase();
-    const name = item.nameOnAccount || 'Account Holder';
+    const bank = item.bankName || item.BankName || 'Not Specified';
+    const ifsc = (item.ifscCode || item.IFSCCode || '-').toUpperCase();
+    const name = item.nameOnAccount || item.NameOnAccount || 'Account Holder';
 
     let avatarUrl: string | undefined = undefined;
     if (item.profileImage) {
@@ -825,7 +919,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
 
     return {
       id: Number(item.id || (idx + 1)),
-      employeeId: Number(item.employeeId || this.employeeId || (idx + 101)),
+      employeeId: Number(item.employeeId ?? item.EmployeeId ?? (idx + 101)),
       bankName: bank,
       ifscCode: ifsc,
       accountNumber: acc,
@@ -1222,7 +1316,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
 
   disbursePayRunDirect(run: PayRun) {
     const monthName = this.monthNames[run.month] || ('Month ' + run.month);
-    if (!confirm(`Are you sure you want to disburse Pay Run batch #PR-${run.id} for ${monthName} ${run.year}? This will publish official payslips to all employees and mark linked reimbursement claims as paid.`)) {
+    if (!confirm(`Are you sure you want to disburse Pay Run batch #PR-${run.id} for ${monthName} ${run.year}? This will publish official payslips to all employees, decrement loan balances, and mark linked reimbursement claims as paid.`)) {
       return;
     }
     this.payrollService.updatePayRunStatus({
@@ -1238,6 +1332,21 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
       error: (err: any) => {
         const msg = err?.error?.message || 'Failed to disburse pay run batch';
         this.toaster.error(msg, 'Error');
+      }
+    });
+  }
+
+  lockPayRunDirect(run: PayRun) {
+    if (!confirm(`Are you sure you want to lock Pay Run batch #PR-${run.id} for ${this.monthNames[run.month]} ${run.year}? This seals the batch against any further attendance or calculation adjustments.`)) {
+      return;
+    }
+    this.payrollService.lockPayRun(run.id).subscribe({
+      next: () => {
+        this.toaster.success(`Pay Run batch #PR-${run.id} is now Locked & Sealed.`, 'Locked');
+        this.loadPayRuns();
+      },
+      error: (err: any) => {
+        this.toaster.error(err?.error?.message || 'Failed to lock pay run batch', 'Error');
       }
     });
   }
@@ -1352,6 +1461,21 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     }
 
     this.calculateLiveCtc();
+    this.loadSalaryHistory(Number(emp.id));
+  }
+
+  loadSalaryHistory(empId: number) {
+    this.isLoadingSalaryHistory = true;
+    this.payrollService.getSalaryHistory(empId).subscribe({
+      next: (res: any) => {
+        this.isLoadingSalaryHistory = false;
+        this.salaryHistoryList = res?.data || [];
+      },
+      error: () => {
+        this.isLoadingSalaryHistory = false;
+        this.salaryHistoryList = [];
+      }
+    });
   }
 
   calculateLiveCtc() {
@@ -1383,7 +1507,7 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: () => {
         this.isSavingAssignment = false;
-        this.toaster.success(`CTC structure saved for ${this.selectedCtcEmployee?.fullName || 'employee'}!`, 'Assigned Successfully');
+        this.toaster.success(`CTC structure saved for ${this.selectedCtcEmployee?.fullName || 'employee'}! Revision history archived.`, 'Assigned Successfully');
         if (this.selectedCtcEmployee) {
           this.selectedCtcEmployee.annualCtc = this.calcAnnualCtc;
         }
@@ -1393,6 +1517,9 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
           taxRegime: this.calcRegime
         });
         this.syncEmployeeCtcWithAssignments();
+        if (this.selectedEmpForCtc) {
+          this.loadSalaryHistory(this.selectedEmpForCtc);
+        }
       },
       error: () => {
         this.isSavingAssignment = false;
@@ -1449,18 +1576,34 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
 
   // ================= 4. SERVER PAYSLIPS =================
   loadServerPayslips() {
-    const targetId = this.employeeId ? Number(this.employeeId) : (this.myEmployeeRecord?.id ? Number(this.myEmployeeRecord.id) : 0);
-    if (!targetId) return;
+    if (this.isAdminOrHr) {
+      this.payrollService.getPayslips().subscribe({
+        next: (res: any) => {
+          this.serverPayslips = res?.data || [];
+          this.mergeServerPayslipsIntoDisbursements();
+          this.recalculatePayrollState();
+          this.filterPayroll();
+        },
+        error: () => {
+          this.serverPayslips = [];
+        }
+      });
+    } else {
+      const targetId = this.employeeId ? Number(this.employeeId) : (this.myEmployeeRecord?.id ? Number(this.myEmployeeRecord.id) : 0);
+      if (!targetId) return;
 
-    this.payrollService.getPayslips(targetId).subscribe({
-      next: (res: any) => {
-        this.serverPayslips = res?.data || [];
-        this.mergeServerPayslipsIntoDisbursements();
-      },
-      error: () => {
-        this.serverPayslips = [];
-      }
-    });
+      this.payrollService.getPayslips(targetId).subscribe({
+        next: (res: any) => {
+          this.serverPayslips = res?.data || [];
+          this.mergeServerPayslipsIntoDisbursements();
+          this.recalculatePayrollState();
+          this.filterPayroll();
+        },
+        error: () => {
+          this.serverPayslips = [];
+        }
+      });
+    }
   }
 
   mergeServerPayslipsIntoDisbursements() {
@@ -1573,6 +1716,95 @@ export class PaymentinfoComponent implements OnInit, OnDestroy {
 
     ref.afterClosed().subscribe(() => {
       this.loadFnFSettlements();
+    });
+  }
+
+  // ================= 6. EMPLOYEE LOANS & ADVANCES =================
+  loadLoans() {
+    this.payrollService.getLoans().subscribe({
+      next: (res: any) => {
+        this.allLoans = res?.data || [];
+        this.filterLoans();
+      },
+      error: () => {
+        this.allLoans = [];
+        this.filterLoans();
+      }
+    });
+  }
+
+  filterLoans() {
+    if (this.loanFilterStatus === 'All') {
+      this.filteredLoans = [...this.allLoans];
+    } else {
+      this.filteredLoans = this.allLoans.filter(l => l.status === this.loanFilterStatus);
+    }
+  }
+
+  openLoanModal() {
+    this.newLoan = {
+      employeeId: this.allPayrollEmployees[0]?.id || 0,
+      loanType: 'Salary Advance',
+      principalAmount: 25000,
+      interestRatePercent: 0,
+      tenureMonths: 6,
+      reason: ''
+    };
+    this.isLoanModalOpen = true;
+  }
+
+  closeLoanModal() {
+    this.isLoanModalOpen = false;
+  }
+
+  submitLoanApplication() {
+    if (!this.newLoan.employeeId || Number(this.newLoan.employeeId) <= 0) {
+      this.toaster.warning('Please select an employee.', 'Required');
+      return;
+    }
+    if (!this.newLoan.principalAmount || Number(this.newLoan.principalAmount) <= 0) {
+      this.toaster.warning('Please enter a valid loan/advance principal amount.', 'Required');
+      return;
+    }
+    if (!this.newLoan.tenureMonths || Number(this.newLoan.tenureMonths) <= 0) {
+      this.toaster.warning('Please enter valid tenure months.', 'Required');
+      return;
+    }
+
+    this.isSavingLoan = true;
+    this.payrollService.applyLoan({
+      employeeId: Number(this.newLoan.employeeId),
+      loanType: this.newLoan.loanType,
+      principalAmount: Number(this.newLoan.principalAmount),
+      interestRatePercent: Number(this.newLoan.interestRatePercent) || 0,
+      tenureMonths: Number(this.newLoan.tenureMonths),
+      reason: this.newLoan.reason
+    }).subscribe({
+      next: () => {
+        this.isSavingLoan = false;
+        this.toaster.success('Loan/advance application approved and added to active recovery schedule!', 'Loan Created');
+        this.closeLoanModal();
+        this.loadLoans();
+      },
+      error: (err: any) => {
+        this.isSavingLoan = false;
+        this.toaster.error(err?.error?.message || 'Failed to submit loan application', 'Error');
+      }
+    });
+  }
+
+  updateLoanStatus(loan: EmployeeLoan, status: string) {
+    if (!confirm(`Are you sure you want to mark Loan #LN-${loan.id} as ${status}?`)) {
+      return;
+    }
+    this.payrollService.updateLoanStatus({ loanId: loan.id, status }).subscribe({
+      next: () => {
+        this.toaster.success(`Loan #LN-${loan.id} status updated to ${status}`, 'Success');
+        this.loadLoans();
+      },
+      error: (err: any) => {
+        this.toaster.error(err?.error?.message || 'Failed to update loan status', 'Error');
+      }
     });
   }
 }

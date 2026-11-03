@@ -178,6 +178,48 @@
     </div>
   </div>
 
+  <!-- Month-End Attendance Lock Alert Banner (Phase 4) -->
+  <div *ngIf="isMonthLocked" class="missing-punch-alert-banner attendance-lock-active-banner">
+    <div class="banner-left">
+      <div class="banner-icon-box lock-icon-box">
+        <mat-icon>lock</mat-icon>
+      </div>
+      <div class="banner-text">
+        <div class="banner-title-line">
+          <span class="banner-title">Attendance Frozen & Locked for Payroll: {{ calendarMonthTitle }}</span>
+          <span class="banner-tag lock-tag">LOCKED</span>
+        </div>
+        <p class="banner-desc">
+          Attendance records for <strong>{{ calendarMonthTitle }}</strong> were frozen on {{ currentMonthLock?.lockedDate | date:'mediumDate' }} by {{ currentMonthLock?.lockedByEmployeeName }}. All employee punches, regularizations, and retrospective edits for this month are locked.
+        </p>
+      </div>
+    </div>
+    <div class="banner-actions" *ngIf="canLockUnlockAttendance">
+      <button
+        type="button"
+        class="btn-banner-regularize btn-banner-unlock"
+        (click)="openUnlockDialog()"
+        [disabled]="isProcessingLock"
+      >
+        <mat-icon>lock_open</mat-icon>
+        <span>Unlock Attendance</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Lock Month Trigger for HR / Admin when unlocked -->
+  <div *ngIf="!isMonthLocked && canLockUnlockAttendance" class="d-flex justify-content-end mb-3">
+    <button
+      type="button"
+      class="btn-lock-month-trigger"
+      (click)="lockCurrentMonth()"
+      [disabled]="isProcessingLock"
+    >
+      <mat-icon>lock</mat-icon>
+      <span>Freeze & Lock {{ calendarMonthTitle }} for Payroll</span>
+    </button>
+  </div>
+
   <!-- Missing Clock-Out Prompt / Alert Banner -->
   <div *ngIf="missingPunchDay && !isViewingOtherEmployee" class="missing-punch-alert-banner">
     <div class="banner-left">
@@ -1120,6 +1162,48 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unlock Month Confirmation Dialog Modal (Phase 4) -->
+  <div *ngIf="showUnlockModal" class="attendance-unlock-modal-overlay">
+    <div class="attendance-unlock-modal-content">
+      <div class="modal-header d-flex align-items-center justify-content-between p-3 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <mat-icon class="text-danger">lock_open</mat-icon>
+          <h3 class="mb-0 fs-5 font-weight-bold">Unlock Attendance Period</h3>
+        </div>
+        <button type="button" class="btn btn-sm btn-link text-muted" (click)="closeUnlockDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="modal-body p-3">
+        <p class="text-muted mb-3">
+          Unlocking <strong>{{ calendarMonthTitle }}</strong> will permit employees to submit attendance regularizations and adjustments. A mandatory justification reason is required and will be permanently recorded in the system audit trail.
+        </p>
+        <div class="form-group mb-3">
+          <label class="form-label font-weight-bold mb-1">Justification Reason <span class="text-danger">*</span></label>
+          <textarea
+            class="form-control"
+            rows="3"
+            [(ngModel)]="unlockReasonText"
+            placeholder="e.g. Authorized by HR Operations to accommodate biometric server sync delay for 3 employees..."
+          ></textarea>
+          <small class="text-muted d-block mt-1">Minimum 5 characters required.</small>
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-end gap-2 p-3 border-top">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closeUnlockDialog()" [disabled]="isProcessingLock">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-danger btn-sm d-flex align-items-center gap-1"
+          (click)="confirmUnlockMonth()"
+          [disabled]="isProcessingLock || !unlockReasonText || unlockReasonText.trim().length < 5"
+        >
+          <mat-icon inline>lock_open</mat-icon>
+          <span>Confirm Unlock</span>
+        </button>
       </div>
     </div>
   </div>

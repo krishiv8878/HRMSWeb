@@ -2,8 +2,8 @@
   <!-- Top Header Title & Actions Area -->
   <div class="dashboard-header">
     <div class="title-group">
-      <h1 class="page-title">Leave Request</h1>
-      <p class="page-subtitle">Track, request, and manage employee time off.</p>
+      <h1 class="page-title">Leave Management</h1>
+      <p class="page-subtitle">Track, request, and administer employee leaves, policies, LOP conversions, comp-offs, and encashments.</p>
     </div>
 
     <!-- Header Action Buttons: + Apply Leave (Self Only) or Supervisor Mode Pill -->
@@ -20,333 +20,889 @@
     </div>
   </div>
 
-  <!-- Metric Category Cards Grid (4 Column Layout) -->
-  <div class="metrics-cards-grid">
-    <!-- Card 1: Available Leave Balance -->
-    <div class="metric-card clickable-metric" (click)="setTab('All')" title="View all requests">
-      <div class="card-header">
-        <span class="card-title">AVAILABLE BALANCE</span>
-        <div class="icon-box icon-blue">
-          <mat-icon>account_balance_wallet</mat-icon>
-        </div>
-      </div>
-      <div class="card-value">{{ availableBalanceDays }} <small style="font-size: 13px; font-weight: 500; color: #64748b;">days</small></div>
-      <div class="card-subtitle">
-        <span>Across {{ totalCount }} total requests</span>
-      </div>
-    </div>
+  <!-- Primary Sub-Navigation Pill Bar -->
+  <div class="phase5-nav-bar">
+    <button
+      type="button"
+      class="phase5-nav-pill"
+      [class.active]="activeViewTab === 'requests'"
+      (click)="setActiveViewTab('requests')"
+    >
+      <mat-icon>event_note</mat-icon>
+      <span>Leave Requests</span>
+    </button>
 
-    <!-- Card 2: Approved Leaves -->
-    <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Approved'" (click)="setTab('Approved')" title="Filter by Approved Leaves">
-      <div class="card-header">
-        <span class="card-title">APPROVED LEAVES</span>
-        <div class="icon-box icon-indigo">
-          <mat-icon>check_circle</mat-icon>
-        </div>
-      </div>
-      <div class="card-value">{{ approvedCount }}</div>
-      <div class="card-subtitle is-positive">
-        <span>Confirmed & authorized</span>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="phase5-nav-pill"
+      [class.active]="activeViewTab === 'breakdown'"
+      (click)="setActiveViewTab('breakdown')"
+    >
+      <mat-icon>account_balance_wallet</mat-icon>
+      <span>Balance Breakdown</span>
+    </button>
 
-    <!-- Card 3: Pending Approval -->
-    <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Pending'" (click)="setTab('Pending')" title="Filter by Pending Approval">
-      <div class="card-header">
-        <span class="card-title">PENDING APPROVAL</span>
-        <div class="icon-box icon-amber">
-          <mat-icon>pending_actions</mat-icon>
-        </div>
-      </div>
-      <div class="card-value">{{ pendingCount }}</div>
-      <div class="card-subtitle" [class.is-warning]="pendingCount > 0">
-        <span>{{ pendingCount > 0 ? 'Awaiting manager review' : 'No pending approvals' }}</span>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="phase5-nav-pill"
+      [class.active]="activeViewTab === 'conversions'"
+      (click)="setActiveViewTab('conversions')"
+    >
+      <mat-icon>published_with_changes</mat-icon>
+      <span>LOP Conversions</span>
+    </button>
 
-    <!-- Card 4: Rejected Leaves -->
-    <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Rejected'" (click)="setTab('Rejected')" title="Filter by Rejected Leaves">
-      <div class="card-header">
-        <span class="card-title">REJECTED</span>
-        <div class="icon-box icon-rose">
-          <mat-icon>cancel</mat-icon>
-        </div>
-      </div>
-      <div class="card-value">{{ rejectedCount }}</div>
-      <div class="card-subtitle">
-        <span>Declined requests</span>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="phase5-nav-pill"
+      [class.active]="activeViewTab === 'compoff'"
+      (click)="setActiveViewTab('compoff')"
+    >
+      <mat-icon>work_history</mat-icon>
+      <span>Comp-Off Grants</span>
+    </button>
+
+    <button
+      type="button"
+      class="phase5-nav-pill"
+      [class.active]="activeViewTab === 'encashment'"
+      (click)="setActiveViewTab('encashment')"
+    >
+      <mat-icon>payments</mat-icon>
+      <span>Leave Encashment</span>
+    </button>
+
+    <button
+      type="button"
+      class="phase5-nav-pill"
+      [class.active]="activeViewTab === 'ledger'"
+      (click)="setActiveViewTab('ledger')"
+    >
+      <mat-icon>receipt_long</mat-icon>
+      <span>Ledger Audit Trail</span>
+    </button>
   </div>
 
-  <!-- Table Boxed Container -->
-  <div class="table-card-container">
-    <!-- Category Tabs Navigation Bar (Landing default: Pending) -->
-    <div class="leave-tabs-bar" role="tablist">
-      <div class="tabs-group">
-        <!-- Tab 1: Pending Requests (Default Landing) -->
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'Pending'"
-          (click)="setTab('Pending')"
-          role="tab"
-          [attr.aria-selected]="activeTab === 'Pending'"
-        >
-          <mat-icon class="tab-icon text-amber">pending_actions</mat-icon>
-          <span class="tab-text">Pending Requests</span>
-          <span class="tab-count-pill pill-amber">{{ pendingCount }}</span>
-        </button>
-
-        <!-- Tab 2: Approved -->
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'Approved'"
-          (click)="setTab('Approved')"
-          role="tab"
-          [attr.aria-selected]="activeTab === 'Approved'"
-        >
-          <mat-icon class="tab-icon text-emerald">check_circle</mat-icon>
-          <span class="tab-text">Approved</span>
-          <span class="tab-count-pill pill-emerald">{{ approvedCount }}</span>
-        </button>
-
-        <!-- Tab 3: Cancelled -->
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'Cancelled'"
-          (click)="setTab('Cancelled')"
-          role="tab"
-          [attr.aria-selected]="activeTab === 'Cancelled'"
-        >
-          <mat-icon class="tab-icon text-slate">block</mat-icon>
-          <span class="tab-text">Cancelled</span>
-          <span class="tab-count-pill pill-slate">{{ cancelledCount }}</span>
-        </button>
-
-        <!-- Tab 4: Rejected -->
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'Rejected'"
-          (click)="setTab('Rejected')"
-          role="tab"
-          [attr.aria-selected]="activeTab === 'Rejected'"
-        >
-          <mat-icon class="tab-icon text-rose">cancel</mat-icon>
-          <span class="tab-text">Rejected</span>
-          <span class="tab-count-pill pill-rose">{{ rejectedCount }}</span>
-        </button>
-
-        <!-- Tab 5: All Requests -->
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeTab === 'All'"
-          (click)="setTab('All')"
-          role="tab"
-          [attr.aria-selected]="activeTab === 'All'"
-        >
-          <mat-icon class="tab-icon text-blue">view_list</mat-icon>
-          <span class="tab-text">All Requests</span>
-          <span class="tab-count-pill pill-blue">{{ totalCount }}</span>
-        </button>
+  <!-- VIEW 1: LEAVE REQUESTS (DEFAULT) -->
+  <ng-container *ngIf="activeViewTab === 'requests'">
+    <!-- Metric Category Cards Grid (4 Column Layout) -->
+    <div class="metrics-cards-grid">
+      <!-- Card 1: Available Leave Balance -->
+      <div class="metric-card clickable-metric" (click)="setTab('All')" title="View all requests">
+        <div class="card-header">
+          <span class="card-title">AVAILABLE BALANCE</span>
+          <div class="icon-box icon-blue">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+        </div>
+        <div class="card-value">{{ availableBalanceDays }} <small style="font-size: 13px; font-weight: 500; color: #64748b;">days</small></div>
+        <div class="card-subtitle">
+          <span>Across {{ totalCount }} total requests</span>
+        </div>
       </div>
 
-      <div class="tabs-actions-group">
-        <!-- Quick Sort Toggle -->
-        <button
-          type="button"
-          class="btn-tab-sort"
-          (click)="toggleSortOrder()"
-          [title]="'Sorting: ' + (sortOrder === 'desc' ? 'Latest First (Descending)' : 'Oldest First (Ascending)')"
-        >
-          <mat-icon>{{ sortOrder === 'desc' ? 'south' : 'north' }}</mat-icon>
-          <span>{{ sortOrder === 'desc' ? 'Latest First' : 'Oldest First' }}</span>
-        </button>
+      <!-- Card 2: Approved Leaves -->
+      <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Approved'" (click)="setTab('Approved')" title="Filter by Approved Leaves">
+        <div class="card-header">
+          <span class="card-title">APPROVED LEAVES</span>
+          <div class="icon-box icon-indigo">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        </div>
+        <div class="card-value">{{ approvedCount }}</div>
+        <div class="card-subtitle is-positive">
+          <span>Confirmed & authorized</span>
+        </div>
+      </div>
 
-        <!-- Quick Export CSV -->
-        <button type="button" class="btn-tab-export" (click)="onExport()" title="Export current list to CSV">
-          <mat-icon>file_download</mat-icon>
-          <span>Export CSV</span>
-        </button>
+      <!-- Card 3: Pending Approval -->
+      <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Pending'" (click)="setTab('Pending')" title="Filter by Pending Approval">
+        <div class="card-header">
+          <span class="card-title">PENDING APPROVAL</span>
+          <div class="icon-box icon-amber">
+            <mat-icon>pending_actions</mat-icon>
+          </div>
+        </div>
+        <div class="card-value">{{ pendingCount }}</div>
+        <div class="card-subtitle" [class.is-warning]="pendingCount > 0">
+          <span>{{ pendingCount > 0 ? 'Awaiting manager review' : 'No pending approvals' }}</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Rejected Leaves -->
+      <div class="metric-card clickable-metric" [class.active-metric]="activeTab === 'Rejected'" (click)="setTab('Rejected')" title="Filter by Rejected Leaves">
+        <div class="card-header">
+          <span class="card-title">REJECTED</span>
+          <div class="icon-box icon-rose">
+            <mat-icon>cancel</mat-icon>
+          </div>
+        </div>
+        <div class="card-value">{{ rejectedCount }}</div>
+        <div class="card-subtitle">
+          <span>Declined requests</span>
+        </div>
       </div>
     </div>
 
-    <!-- Table Header Controls Bar -->
-    <div class="table-header">
-      <!-- Left Search Input -->
-      <div class="table-search-box">
-        <mat-icon class="search-icon">search</mat-icon>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          (input)="filterRequests()"
-          placeholder="Search requests by reason or leave type..."
-          class="search-input"
-          aria-label="Search requests"
-        />
-      </div>
+    <!-- Table Boxed Container -->
+    <div class="table-card-container">
+      <!-- Category Tabs Navigation Bar (Landing default: Pending) -->
+      <div class="leave-tabs-bar" role="tablist">
+        <div class="tabs-group">
+          <!-- Tab 1: Pending Requests (Default Landing) -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'Pending'"
+            (click)="setTab('Pending')"
+            role="tab"
+            [attr.aria-selected]="activeTab === 'Pending'"
+          >
+            <mat-icon class="tab-icon text-amber">pending_actions</mat-icon>
+            <span class="tab-text">Pending Requests</span>
+            <span class="tab-count-pill pill-amber">{{ pendingCount }}</span>
+          </button>
 
-      <!-- Right Filters Group -->
-      <div class="header-filters-group">
-        <!-- Leave Type Filter (Dynamic) -->
-        <div class="filter-dropdown">
-          <select [(ngModel)]="selectedType" (change)="filterRequests()" class="custom-select">
-            <option value="All">All Leave Types</option>
-            <option *ngFor="let type of leaveTypes" [value]="type.leaveTypeName">
-              {{ type.leaveTypeName }}
-            </option>
-          </select>
+          <!-- Tab 2: Approved -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'Approved'"
+            (click)="setTab('Approved')"
+            role="tab"
+            [attr.aria-selected]="activeTab === 'Approved'"
+          >
+            <mat-icon class="tab-icon text-emerald">check_circle</mat-icon>
+            <span class="tab-text">Approved</span>
+            <span class="tab-count-pill pill-emerald">{{ approvedCount }}</span>
+          </button>
+
+          <!-- Tab 3: Cancelled -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'Cancelled'"
+            (click)="setTab('Cancelled')"
+            role="tab"
+            [attr.aria-selected]="activeTab === 'Cancelled'"
+          >
+            <mat-icon class="tab-icon text-slate">block</mat-icon>
+            <span class="tab-text">Cancelled</span>
+            <span class="tab-count-pill pill-slate">{{ cancelledCount }}</span>
+          </button>
+
+          <!-- Tab 4: Rejected -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'Rejected'"
+            (click)="setTab('Rejected')"
+            role="tab"
+            [attr.aria-selected]="activeTab === 'Rejected'"
+          >
+            <mat-icon class="tab-icon text-rose">cancel</mat-icon>
+            <span class="tab-text">Rejected</span>
+            <span class="tab-count-pill pill-rose">{{ rejectedCount }}</span>
+          </button>
+
+          <!-- Tab 5: All Requests -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="activeTab === 'All'"
+            (click)="setTab('All')"
+            role="tab"
+            [attr.aria-selected]="activeTab === 'All'"
+          >
+            <mat-icon class="tab-icon text-blue">view_list</mat-icon>
+            <span class="tab-text">All Requests</span>
+            <span class="tab-count-pill pill-blue">{{ totalCount }}</span>
+          </button>
         </div>
 
-        <span class="results-counter-pill">
-          Showing {{ filteredRequests.length }} {{ activeTab === 'All' ? '' : activeTab }} request(s)
+        <div class="tabs-actions-group">
+          <!-- Quick Sort Toggle -->
+          <button
+            type="button"
+            class="btn-tab-sort"
+            (click)="toggleSortOrder()"
+            [title]="'Sorting: ' + (sortOrder === 'desc' ? 'Latest First (Descending)' : 'Oldest First (Ascending)')"
+          >
+            <mat-icon>{{ sortOrder === 'desc' ? 'south' : 'north' }}</mat-icon>
+            <span>{{ sortOrder === 'desc' ? 'Latest First' : 'Oldest First' }}</span>
+          </button>
+
+          <!-- Quick Export CSV -->
+          <button type="button" class="btn-tab-export" (click)="onExport()" title="Export current list to CSV">
+            <mat-icon>file_download</mat-icon>
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Table Header Controls Bar -->
+      <div class="table-header">
+        <!-- Left Search Input -->
+        <div class="table-search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterRequests()"
+            placeholder="Search requests by reason or leave type..."
+            class="search-input"
+            aria-label="Search requests"
+          />
+        </div>
+
+        <!-- Right Filters Group -->
+        <div class="header-filters-group">
+          <!-- Leave Type Filter (Dynamic) -->
+          <div class="filter-dropdown">
+            <select [(ngModel)]="selectedType" (change)="filterRequests()" class="custom-select">
+              <option value="All">All Leave Types</option>
+              <option *ngFor="let type of leaveTypes" [value]="type.leaveTypeName">
+                {{ type.leaveTypeName }}
+              </option>
+            </select>
+          </div>
+
+          <span class="results-counter-pill">
+            Showing {{ filteredRequests.length }} {{ activeTab === 'All' ? '' : activeTab }} request(s)
+          </span>
+        </div>
+      </div>
+
+      <!-- Requests Data Table -->
+      <div class="table-responsive">
+        <table class="requests-table">
+          <thead>
+            <tr>
+              <th>FROM</th>
+              <th>TO</th>
+              <th>DAYS</th>
+              <th>LEAVE TYPE</th>
+              <th>REASON</th>
+              <th>STATUS</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let req of paginatedRequests">
+              <!-- From Date -->
+              <td class="col-date">
+                <span class="date-text">{{ req.startDate | date:'dd MMM yyyy' }}</span>
+              </td>
+
+              <!-- To Date -->
+              <td class="col-date">
+                <span class="date-text">{{ req.endDate | date:'dd MMM yyyy' }}</span>
+              </td>
+
+              <!-- Days Count (Excludes weekends & holidays, shows sandwich & LOP pills) -->
+              <td class="col-days">
+                <span class="days-pill" [title]="req.leaveMode || 'Full Day'" style="display: inline-flex; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px; line-height: 13px; margin-right: 4px; color: #16a34a;">event_available</mat-icon>
+                  <span>{{ formatLeaveDuration(req) }}</span>
+                </span>
+
+                <!-- Sandwich Rule Applied Pill -->
+                <span *ngIf="req.isSandwichApplied" class="badge-sandwich" [title]="(req.sandwichDays || 0) + ' sandwich day(s) included'">
+                  🥪 +{{ req.sandwichDays }}d
+                </span>
+              </td>
+
+              <!-- Leave Type -->
+              <td class="col-type">
+                <span class="type-text">{{ req.leaveTypeName || 'Annual Leave' }}</span>
+                <!-- LOP Tag -->
+                <span *ngIf="req.isLop" class="badge-lop-tag">LOP (Unpaid)</span>
+                <!-- Converted Tag -->
+                <span *ngIf="req.isConvertedFromLop" class="badge-converted-tag">Converted</span>
+              </td>
+
+              <!-- Reason -->
+              <td class="col-reason">
+                <span class="reason-text">{{ req.leaveReason || 'Time off request' }}</span>
+                <div *ngIf="req.rejectionReason && getStatusText(req) === 'Rejected'" style="font-size: 11px; color: #dc2626; margin-top: 3px;">
+                  <strong>Declined:</strong> {{ req.rejectionReason }}
+                </div>
+              </td>
+
+              <!-- Status Badge -->
+              <td class="col-status">
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(req)">
+                  {{ getStatusText(req) }}
+                </span>
+              </td>
+
+              <!-- Actions Column -->
+              <td class="col-actions text-right">
+                <button
+                  *ngIf="canCancelLeave(req)"
+                  type="button"
+                  class="btn-cancel-leave-action"
+                  (click)="onCancelLeave(req)"
+                  title="Cancel this leave request and restore quota"
+                >
+                  <mat-icon>cancel</mat-icon>
+                  <span>Cancel</span>
+                </button>
+                <span *ngIf="!canCancelLeave(req)" class="text-muted-dash">--</span>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="paginatedRequests.length === 0">
+              <td colspan="7" class="empty-state">
+                <div class="empty-box">
+                  <mat-icon class="empty-icon">{{ activeTab === 'Pending' ? 'hourglass_empty' : 'event_busy' }}</mat-icon>
+                  <h4 class="empty-heading">
+                    No {{ activeTab === 'All' ? '' : activeTab }} Leave Requests Found
+                  </h4>
+                  <p *ngIf="activeTab === 'Pending'">
+                    There are currently no pending leave requests awaiting approval. All submissions have been processed.
+                  </p>
+                  <p *ngIf="activeTab === 'Approved'">
+                    No approved leave requests found for the selected view.
+                  </p>
+                  <p *ngIf="activeTab === 'Cancelled'">
+                    No cancelled leave requests recorded.
+                  </p>
+                  <p *ngIf="activeTab === 'Rejected'">
+                    No rejected leave requests on file.
+                  </p>
+                  <p *ngIf="activeTab === 'All'">
+                    No leave requests found. Click <strong>'+ Apply Leave'</strong> above to submit a new time-off request.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Pagination Footer -->
+      <div class="table-footer">
+        <span class="entry-count" *ngIf="filteredRequests.length > 0">
+          Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredRequests.length) }} of {{ filteredRequests.length }} requests
         </span>
+        <span class="entry-count" *ngIf="filteredRequests.length === 0">0 requests</span>
+
+        <!-- Pagination Buttons -->
+        <div class="pagination-controls">
+          <button
+            type="button"
+            class="page-nav-btn"
+            [disabled]="currentPage === 1"
+            (click)="prevPage()"
+            aria-label="Previous Page"
+          >
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+
+          <button
+            *ngFor="let p of pages"
+            type="button"
+            class="page-num-btn"
+            [class.active]="currentPage === p"
+            (click)="goToPage(p)"
+          >
+            {{ p }}
+          </button>
+
+          <button
+            type="button"
+            class="page-nav-btn"
+            [disabled]="currentPage === totalPages || filteredRequests.length === 0"
+            (click)="nextPage()"
+            aria-label="Next Page"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
+  </ng-container>
 
-    <!-- Requests Data Table -->
-    <div class="table-responsive">
-      <table class="requests-table">
-        <thead>
-          <tr>
-            <th>FROM</th>
-            <th>TO</th>
-            <th>DAYS</th>
-            <th>LEAVE TYPE</th>
-            <th>REASON</th>
-            <th>STATUS</th>
-            <th class="text-right">ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let req of paginatedRequests">
-            <!-- From Date -->
-            <td class="col-date">
-              <span class="date-text">{{ req.startDate | date:'dd MMM yyyy' }}</span>
-            </td>
+  <!-- VIEW 2: BALANCE BREAKDOWN -->
+  <ng-container *ngIf="activeViewTab === 'breakdown'">
+    <div class="view-panel-container">
+      <div class="panel-section-header">
+        <div>
+          <h2 class="panel-title">Leave Balance & Policy Breakdown</h2>
+          <p class="panel-desc">Real-time entitlement balances, accruals, reservations, and rule limits for each leave category.</p>
+        </div>
+        <button type="button" class="btn-refresh" (click)="loadBalanceBreakdown()">
+          <mat-icon>refresh</mat-icon>
+          <span>Refresh Balances</span>
+        </button>
+      </div>
 
-            <!-- To Date -->
-            <td class="col-date">
-              <span class="date-text">{{ req.endDate | date:'dd MMM yyyy' }}</span>
-            </td>
-
-            <!-- Days Count (Excludes weekends & holidays) -->
-            <td class="col-days">
-              <span class="days-pill" [title]="req.leaveMode || 'Full Day'" style="display: inline-flex; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
-                <mat-icon style="font-size: 13px; width: 13px; height: 13px; line-height: 13px; margin-right: 4px; color: #16a34a;">event_available</mat-icon>
-                <span>{{ formatLeaveDuration(req) }}</span>
+      <div class="balance-cards-grid">
+        <div *ngFor="let item of balanceSummaries" class="balance-card">
+          <div class="balance-card-header">
+            <div>
+              <h3 class="leave-type-name">{{ item.leaveTypeName }}</h3>
+              <span class="paid-badge" [class.unpaid]="!item.isPaid">
+                {{ item.isPaid ? 'Paid Leave' : 'Loss of Pay (Unpaid)' }}
               </span>
-            </td>
+            </div>
+            <div class="available-chip">
+              <span class="chip-number">{{ item.availableDays }}</span>
+              <span class="chip-label">Available Days</span>
+            </div>
+          </div>
 
-            <!-- Leave Type -->
-            <td class="col-type">
-              <span class="type-text">{{ req.leaveTypeName || 'Annual Leave' }}</span>
-            </td>
+          <div class="balance-metrics-list">
+            <div class="metric-row">
+              <span class="m-label">Annual Quota</span>
+              <span class="m-value">{{ item.totalQuota }} d</span>
+            </div>
+            <div class="metric-row">
+              <span class="m-label">Accrued to Date</span>
+              <span class="m-value">{{ item.accruedDays }} d</span>
+            </div>
+            <div class="metric-row">
+              <span class="m-label">Carried Forward</span>
+              <span class="m-value">{{ item.carriedForwardDays }} d</span>
+            </div>
+            <div class="metric-row">
+              <span class="m-label">Approved & Used</span>
+              <span class="m-value used-text">{{ item.usedDays }} d</span>
+            </div>
+            <div class="metric-row">
+              <span class="m-label">Pending / Reserved</span>
+              <span class="m-value reserved-text">{{ item.reservedDays }} d</span>
+            </div>
+          </div>
 
-            <!-- Reason -->
-            <td class="col-reason">
-              <span class="reason-text">{{ req.leaveReason || 'Time off request' }}</span>
-              <div *ngIf="req.rejectionReason && getStatusText(req) === 'Rejected'" style="font-size: 11px; color: #dc2626; margin-top: 3px;">
-                <strong>Declined:</strong> {{ req.rejectionReason }}
-              </div>
-            </td>
+          <div class="balance-policy-pills">
+            <span *ngIf="item.sandwichRuleEnabled" class="rule-pill" title="Sandwich rule applies to this leave type">
+              🥪 Sandwich (Max {{ item.maxSandwichLeavesAllowed }}/yr)
+            </span>
+            <span *ngIf="item.negativeBalanceAllowed" class="rule-pill" title="Negative balance allowed">
+              🔻 Negative allowed (Max -{{ item.negativeBalanceLimit }}d)
+            </span>
+            <span *ngIf="item.encashmentAllowed" class="rule-pill highlight" title="Leave encashment eligible">
+              💰 Encashment Eligible
+            </span>
+            <span *ngIf="item.isCompOff" class="rule-pill comp-off" title="Compensatory off type">
+              ⏱️ Comp-Off Type
+            </span>
+          </div>
+        </div>
 
-            <!-- Status Badge -->
-            <td class="col-status">
-              <span class="status-badge" [ngClass]="getStatusBadgeClass(req)">
-                {{ getStatusText(req) }}
+        <div *ngIf="balanceSummaries.length === 0" class="empty-box full-width">
+          <mat-icon class="empty-icon">account_balance_wallet</mat-icon>
+          <h4>No Leave Entitlements Available</h4>
+          <p>No leave policy balances have been calculated or assigned for this employee yet.</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- VIEW 3: LOP CONVERSIONS -->
+  <ng-container *ngIf="activeViewTab === 'conversions'">
+    <div class="view-panel-container">
+      <!-- Apply for LOP Conversion Box -->
+      <div *ngIf="!isViewingOtherEmployee" class="action-card-panel">
+        <h3 class="panel-card-title">
+          <mat-icon>published_with_changes</mat-icon>
+          <span>Apply for LOP to Paid Leave Conversion</span>
+        </h3>
+        <p class="panel-card-subtitle">Convert an already-approved Loss of Pay (LOP) leave into a paid leave against your available balance.</p>
+
+        <div class="conversion-form-grid" *ngIf="eligibleLopLeaves.length > 0">
+          <div class="form-col">
+            <label class="form-label">Select Approved LOP Leave</label>
+            <select [(ngModel)]="selectedConversionLopId" (change)="onLopSelectChange()" class="form-select">
+              <option *ngFor="let lop of eligibleLopLeaves" [value]="lop.id">
+                #{{ lop.id }} - {{ lop.startDate | date:'dd MMM yyyy' }} to {{ lop.endDate | date:'dd MMM yyyy' }} ({{ lop.lopDays || lop.totalDays }} d)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-col">
+            <label class="form-label">Target Paid Leave Type</label>
+            <select [(ngModel)]="selectedConversionTargetLtId" class="form-select">
+              <option [value]="0">-- Choose Paid Leave Type --</option>
+              <option *ngFor="let lt of leaveTypes" [value]="lt.id">
+                {{ lt.leaveTypeName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-col">
+            <label class="form-label">Days to Convert</label>
+            <input type="number" [(ngModel)]="selectedConversionDays" min="0.5" step="0.5" class="form-input" />
+          </div>
+
+          <div class="form-col full-span">
+            <label class="form-label">Conversion Reason</label>
+            <input type="text" [(ngModel)]="conversionReason" placeholder="Enter reason for converting this LOP leave..." class="form-input" />
+          </div>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-submit-action" (click)="submitLopConversion()">
+              <mat-icon>send</mat-icon>
+              <span>Submit Conversion Request</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="eligibleLopLeaves.length === 0" class="info-alert-box">
+          <mat-icon>info</mat-icon>
+          <span>No eligible approved LOP leaves found that can be converted.</span>
+        </div>
+      </div>
+
+      <!-- Conversion Requests Table -->
+      <div class="table-card-container">
+        <div class="panel-section-header">
+          <h3 class="panel-title">LOP Conversion Requests</h3>
+          <button type="button" class="btn-refresh" (click)="loadConversionData()">
+            <mat-icon>refresh</mat-icon>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th>REQ ID</th>
+                <th>EMPLOYEE</th>
+                <th>ORIGINAL LOP DATES</th>
+                <th>TARGET LEAVE</th>
+                <th>CONVERTED DAYS</th>
+                <th>REASON</th>
+                <th>STATUS</th>
+                <th class="text-right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of conversionRequests">
+                <td>#{{ item.id }}</td>
+                <td>{{ item.employee ? (item.employee.firstName + ' ' + (item.employee.lastName || '')) : ('Emp #' + item.employeeId) }}</td>
+                <td>{{ item.fromDate | date:'dd MMM yyyy' }} - {{ item.toDate | date:'dd MMM yyyy' }}</td>
+                <td><span class="type-text">{{ item.targetLeaveType?.type || ('Type #' + item.targetLeaveTypeId) }}</span></td>
+                <td><span class="days-pill">{{ item.conversionDays }} Days</span></td>
+                <td>{{ item.reason }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="'badge-' + item.status.toLowerCase()">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="col-actions text-right">
+                  <div *ngIf="item.status === 'Pending'" class="action-btn-group">
+                    <button type="button" class="btn-action-approve" (click)="approveConversion(item.id)" title="Approve conversion">
+                      <mat-icon>check</mat-icon>
+                      <span>Approve</span>
+                    </button>
+                    <button type="button" class="btn-action-reject" (click)="rejectConversion(item.id)" title="Reject conversion">
+                      <mat-icon>close</mat-icon>
+                      <span>Reject</span>
+                    </button>
+                  </div>
+                  <span *ngIf="item.status !== 'Pending'" class="text-muted-dash">--</span>
+                </td>
+              </tr>
+              <tr *ngIf="conversionRequests.length === 0">
+                <td colspan="8" class="empty-state">
+                  <div class="empty-box">
+                    <mat-icon class="empty-icon">published_with_changes</mat-icon>
+                    <h4>No LOP Conversion Requests</h4>
+                    <p>No conversion requests have been submitted.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- VIEW 4: COMP-OFF GRANTS -->
+  <ng-container *ngIf="activeViewTab === 'compoff'">
+    <div class="view-panel-container">
+      <!-- Eligible Weekend/Holiday Attendance Dates to Claim -->
+      <div *ngIf="!isViewingOtherEmployee" class="action-card-panel">
+        <h3 class="panel-card-title">
+          <mat-icon>work_history</mat-icon>
+          <span>Eligible Weekend / Holiday Attendance Dates (Past 90 Days)</span>
+        </h3>
+        <p class="panel-card-subtitle">Attendance records on weekends or gazetted holidays meeting minimum work hours (4h for half-day, 8h for full-day) can be claimed as Comp-Off.</p>
+
+        <div class="eligible-dates-list" *ngIf="eligibleCompOffDates.length > 0">
+          <div *ngFor="let dateItem of eligibleCompOffDates" class="eligible-date-card">
+            <div class="date-meta">
+              <span class="meta-date">{{ dateItem.attendanceDate | date:'dd MMM yyyy, EEEE' }}</span>
+              <span class="meta-type" [class.holiday]="dateItem.dayType === 'Holiday'">
+                {{ dateItem.dayType }} {{ dateItem.holidayName ? '(' + dateItem.holidayName + ')' : '' }}
               </span>
-            </td>
-
-            <!-- Actions Column -->
-            <td class="col-actions text-right">
+              <span class="meta-hours">Worked: {{ (dateItem.workedMinutes / 60).toFixed(1) }} hrs</span>
+            </div>
+            <div class="claim-action">
+              <span class="claim-credit-tag">+{{ dateItem.eligibleDays }} Day Credit</span>
               <button
-                *ngIf="canCancelLeave(req)"
                 type="button"
-                class="btn-cancel-leave-action"
-                (click)="onCancelLeave(req)"
-                title="Cancel this leave request and restore quota"
+                class="btn-claim-compoff"
+                [disabled]="dateItem.alreadyRequested"
+                (click)="claimCompOff(dateItem)"
               >
-                <mat-icon>cancel</mat-icon>
-                <span>Cancel</span>
+                <mat-icon>{{ dateItem.alreadyRequested ? 'done' : 'add_circle' }}</mat-icon>
+                <span>{{ dateItem.alreadyRequested ? (dateItem.requestStatus || 'Claimed') : 'Claim Comp-Off' }}</span>
               </button>
-              <span *ngIf="!canCancelLeave(req)" class="text-muted-dash">--</span>
-            </td>
-          </tr>
+            </div>
+          </div>
+        </div>
 
-          <!-- Empty State -->
-          <tr *ngIf="paginatedRequests.length === 0">
-            <td colspan="6" class="empty-state">
-              <div class="empty-box">
-                <mat-icon class="empty-icon">{{ activeTab === 'Pending' ? 'hourglass_empty' : 'event_busy' }}</mat-icon>
-                <h4 class="empty-heading">
-                  No {{ activeTab === 'All' ? '' : activeTab }} Leave Requests Found
-                </h4>
-                <p *ngIf="activeTab === 'Pending'">
-                  There are currently no pending leave requests awaiting approval. All submissions have been processed.
-                </p>
-                <p *ngIf="activeTab === 'Approved'">
-                  No approved leave requests found for the selected view.
-                </p>
-                <p *ngIf="activeTab === 'Cancelled'">
-                  No cancelled leave requests recorded.
-                </p>
-                <p *ngIf="activeTab === 'Rejected'">
-                  No rejected leave requests on file.
-                </p>
-                <p *ngIf="activeTab === 'All'">
-                  No leave requests found. Click <strong>'+ Apply Leave'</strong> above to submit a new time-off request.
-                </p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <div *ngIf="eligibleCompOffDates.length === 0" class="info-alert-box">
+          <mat-icon>info</mat-icon>
+          <span>No unclaimed weekend or holiday attendance records found in the last 90 days.</span>
+        </div>
+      </div>
 
-    <!-- Table Pagination Footer -->
-    <div class="table-footer">
-      <span class="entry-count" *ngIf="filteredRequests.length > 0">
-        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredRequests.length) }} of {{ filteredRequests.length }} requests
-      </span>
-      <span class="entry-count" *ngIf="filteredRequests.length === 0">0 requests</span>
+      <!-- Comp-Off Claims Table -->
+      <div class="table-card-container">
+        <div class="panel-section-header">
+          <h3 class="panel-title">Comp-Off Grant Requests</h3>
+          <button type="button" class="btn-refresh" (click)="loadCompOffData()">
+            <mat-icon>refresh</mat-icon>
+            <span>Refresh</span>
+          </button>
+        </div>
 
-      <!-- Pagination Buttons -->
-      <div class="pagination-controls">
-        <button
-          type="button"
-          class="page-nav-btn"
-          [disabled]="currentPage === 1"
-          (click)="prevPage()"
-          aria-label="Previous Page"
-        >
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-
-        <button
-          *ngFor="let p of pages"
-          type="button"
-          class="page-num-btn"
-          [class.active]="currentPage === p"
-          (click)="goToPage(p)"
-        >
-          {{ p }}
-        </button>
-
-        <button
-          type="button"
-          class="page-nav-btn"
-          [disabled]="currentPage === totalPages || filteredRequests.length === 0"
-          (click)="nextPage()"
-          aria-label="Next Page"
-        >
-          <mat-icon>chevron_right</mat-icon>
-        </button>
+        <div class="table-responsive">
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th>REQ ID</th>
+                <th>EMPLOYEE</th>
+                <th>WORKED DATE</th>
+                <th>WORKED HOURS</th>
+                <th>CREDIT DAYS</th>
+                <th>REASON</th>
+                <th>STATUS</th>
+                <th class="text-right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of compOffRequests">
+                <td>#{{ item.id }}</td>
+                <td>{{ item.employee ? (item.employee.firstName + ' ' + (item.employee.lastName || '')) : ('Emp #' + item.employeeId) }}</td>
+                <td>{{ item.attendanceDate | date:'dd MMM yyyy' }}</td>
+                <td>{{ (item.workedMinutes / 60).toFixed(1) }} hrs</td>
+                <td><span class="days-pill">{{ item.eligibleDays }} Day</span></td>
+                <td>{{ item.reason }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="'badge-' + item.status.toLowerCase()">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="col-actions text-right">
+                  <div *ngIf="item.status === 'Pending'" class="action-btn-group">
+                    <button type="button" class="btn-action-approve" (click)="approveCompOff(item.id)" title="Approve Comp-Off grant">
+                      <mat-icon>check</mat-icon>
+                      <span>Approve</span>
+                    </button>
+                    <button type="button" class="btn-action-reject" (click)="rejectCompOff(item.id)" title="Reject Comp-Off grant">
+                      <mat-icon>close</mat-icon>
+                      <span>Reject</span>
+                    </button>
+                  </div>
+                  <span *ngIf="item.status !== 'Pending'" class="text-muted-dash">--</span>
+                </td>
+              </tr>
+              <tr *ngIf="compOffRequests.length === 0">
+                <td colspan="8" class="empty-state">
+                  <div class="empty-box">
+                    <mat-icon class="empty-icon">work_history</mat-icon>
+                    <h4>No Comp-Off Grant Requests</h4>
+                    <p>No compensatory off requests have been submitted.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
+  </ng-container>
+
+  <!-- VIEW 5: LEAVE ENCASHMENT -->
+  <ng-container *ngIf="activeViewTab === 'encashment'">
+    <div class="view-panel-container">
+      <!-- Request Encashment Box -->
+      <div *ngIf="!isViewingOtherEmployee" class="action-card-panel">
+        <h3 class="panel-card-title">
+          <mat-icon>payments</mat-icon>
+          <span>Request Leave Encashment</span>
+        </h3>
+        <p class="panel-card-subtitle">Convert unused paid leave credits into monetary compensation routed to payroll based on your configured salary formula.</p>
+
+        <div class="conversion-form-grid">
+          <div class="form-col">
+            <label class="form-label">Eligible Leave Type</label>
+            <select [(ngModel)]="selectedEncashLtId" class="form-select">
+              <option [value]="0">-- Select Leave Type --</option>
+              <option *ngFor="let lt of leaveTypes" [value]="lt.id">
+                {{ lt.leaveTypeName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-col">
+            <label class="form-label">Days to Encash</label>
+            <input type="number" [(ngModel)]="selectedEncashDays" min="1" step="1" class="form-input" />
+          </div>
+
+          <div class="form-col full-span">
+            <label class="form-label">Encashment Reason</label>
+            <input type="text" [(ngModel)]="encashReason" placeholder="Enter reason for encashment..." class="form-input" />
+          </div>
+
+          <div class="form-actions-row">
+            <button type="button" class="btn-submit-action" (click)="submitEncashment()">
+              <mat-icon>monetization_on</mat-icon>
+              <span>Submit Encashment Request</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Encashment Requests Table -->
+      <div class="table-card-container">
+        <div class="panel-section-header">
+          <h3 class="panel-title">Leave Encashment Requests</h3>
+          <button type="button" class="btn-refresh" (click)="loadEncashmentData()">
+            <mat-icon>refresh</mat-icon>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th>REQ ID</th>
+                <th>EMPLOYEE</th>
+                <th>LEAVE TYPE</th>
+                <th>DAYS</th>
+                <th>DAILY BASIS (₹)</th>
+                <th>ESTIMATED AMOUNT (₹)</th>
+                <th>REASON</th>
+                <th>STATUS</th>
+                <th class="text-right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of encashmentRequests">
+                <td>#{{ item.id }}</td>
+                <td>{{ item.employee ? (item.employee.firstName + ' ' + (item.employee.lastName || '')) : ('Emp #' + item.employeeId) }}</td>
+                <td><span class="type-text">{{ item.leaveType?.type || ('Type #' + item.leaveTypeId) }}</span></td>
+                <td><span class="days-pill">{{ item.requestedDays }} Days</span></td>
+                <td>₹{{ item.dailySalaryBasis | number:'1.2-2' }}</td>
+                <td><strong>₹{{ item.estimatedAmount | number:'1.2-2' }}</strong></td>
+                <td>{{ item.reason }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="'badge-' + item.status.toLowerCase()">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="col-actions text-right">
+                  <div *ngIf="item.status === 'Pending'" class="action-btn-group">
+                    <button type="button" class="btn-action-approve" (click)="approveEncashment(item.id)" title="Approve encashment">
+                      <mat-icon>check</mat-icon>
+                      <span>Approve</span>
+                    </button>
+                    <button type="button" class="btn-action-reject" (click)="rejectEncashment(item.id)" title="Reject encashment">
+                      <mat-icon>close</mat-icon>
+                      <span>Reject</span>
+                    </button>
+                  </div>
+                  <span *ngIf="item.status !== 'Pending'" class="text-muted-dash">--</span>
+                </td>
+              </tr>
+              <tr *ngIf="encashmentRequests.length === 0">
+                <td colspan="9" class="empty-state">
+                  <div class="empty-box">
+                    <mat-icon class="empty-icon">payments</mat-icon>
+                    <h4>No Encashment Requests</h4>
+                    <p>No leave encashment requests have been submitted.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- VIEW 6: LEDGER AUDIT TRAIL -->
+  <ng-container *ngIf="activeViewTab === 'ledger'">
+    <div class="view-panel-container">
+      <div class="panel-section-header">
+        <div>
+          <h2 class="panel-title">Relational Leave Ledger & Transaction Audit Trail</h2>
+          <p class="panel-desc">Immutable append-only balance transactions recording accruals, deductions, restorations, rollovers, comp-offs, and conversions.</p>
+        </div>
+        <button type="button" class="btn-refresh" (click)="loadLedgerHistory()">
+          <mat-icon>refresh</mat-icon>
+          <span>Refresh Ledger</span>
+        </button>
+      </div>
+
+      <div class="table-card-container">
+        <div class="table-responsive">
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th>TRANSACTION ID</th>
+                <th>DATE</th>
+                <th>LEAVE TYPE</th>
+                <th>TRANSACTION TYPE</th>
+                <th>DAYS CHANGED</th>
+                <th>BALANCE AFTER</th>
+                <th>PERIOD</th>
+                <th>REMARKS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of ledgerHistory">
+                <td>#{{ item.id }}</td>
+                <td>{{ item.effectiveDate | date:'dd MMM yyyy HH:mm' }}</td>
+                <td><span class="type-text">{{ item.leaveType?.type || ('Type #' + item.leaveTypeId) }}</span></td>
+                <td>
+                  <span class="ledger-tag" [ngClass]="'tag-' + item.transactionType.toLowerCase()">
+                    {{ item.transactionType }}
+                  </span>
+                </td>
+                <td>
+                  <strong [ngClass]="item.days >= 0 ? 'text-green' : 'text-red'">
+                    {{ item.days >= 0 ? '+' : '' }}{{ item.days }} d
+                  </strong>
+                </td>
+                <td><strong>{{ item.balanceAfter }} d</strong></td>
+                <td>{{ item.period || '--' }}</td>
+                <td class="col-reason">{{ item.remarks || '--' }}</td>
+              </tr>
+              <tr *ngIf="ledgerHistory.length === 0">
+                <td colspan="8" class="empty-state">
+                  <div class="empty-box">
+                    <mat-icon class="empty-icon">receipt_long</mat-icon>
+                    <h4>No Ledger Transactions Found</h4>
+                    <p>No balance entries have been posted to this employee's leave ledger yet.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </ng-container>
 </div>

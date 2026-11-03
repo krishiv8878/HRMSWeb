@@ -1,0 +1,230 @@
+<div class="checklist-modal-container">
+  <!-- Header -->
+  <div class="modal-header">
+    <div class="header-left">
+      <div class="header-icon-box" [ngClass]="checklist?.checklistType?.toLowerCase() === 'offboarding' ? 'icon-offboarding' : 'icon-onboarding'">
+        <mat-icon>{{ checklist?.checklistType?.toLowerCase() === 'offboarding' ? 'exit_to_app' : 'assignment_turned_in' }}</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="modal-title">{{ checklist?.title || (data.checklistType || 'Employee') + ' Checklist' }}</h2>
+        <p class="modal-subtitle">
+          Employee: <strong>{{ checklist?.employeeName || data.employeeName || 'Staff Member' }}</strong>
+          <span *ngIf="checklist?.department">• {{ checklist?.department }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="status-pill" [ngClass]="'status-' + (checklist?.status?.toLowerCase() || 'inprogress')">
+        {{ checklist?.status || 'InProgress' }}
+      </span>
+      <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="modal-body loading-state" *ngIf="isLoading">
+    <mat-icon class="spin-icon">autorenew</mat-icon>
+    <p>Loading checklist dossier...</p>
+  </div>
+
+  <!-- Main Body -->
+  <div class="modal-body" *ngIf="!isLoading">
+    <!-- Progress Bar & Summary -->
+    <div class="progress-card">
+      <div class="progress-info">
+        <div class="progress-text-block">
+          <span class="progress-label">Task Clearance Progress</span>
+          <span class="progress-numbers"><strong>{{ checklist?.completedTasks || 0 }}</strong> of {{ checklist?.totalTasks || 0 }} tasks cleared</span>
+        </div>
+        <span class="progress-percentage">{{ checklist?.completionPercentage || 0 }}%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" [style.width.%]="checklist?.completionPercentage || 0"></div>
+      </div>
+    </div>
+
+    <!-- Asset Return Alert (Offboarding specific) -->
+    <div class="asset-alert-card" *ngIf="assetVerification && checklist?.checklistType?.toLowerCase() === 'offboarding'">
+      <div class="alert-icon-box" [ngClass]="assetVerification.allCleared ? 'cleared-box' : 'pending-box'">
+        <mat-icon>{{ assetVerification.allCleared ? 'check_circle' : 'inventory_2' }}</mat-icon>
+      </div>
+      <div class="alert-content">
+        <div class="alert-title-row">
+          <span class="alert-title">Hardware Asset Clearance Verification</span>
+          <span class="badge-asset" [ngClass]="assetVerification.allCleared ? 'badge-cleared' : 'badge-pending'">
+            {{ assetVerification.allCleared ? 'All Assets Returned' : (assetVerification.pendingAssets + ' Asset(s) Pending Return') }}
+          </span>
+        </div>
+        <p class="alert-desc" *ngIf="!assetVerification.allCleared">
+          The following assigned assets must be returned before exit finalization:
+        </p>
+        <ul class="asset-list" *ngIf="!assetVerification.allCleared">
+          <li *ngFor="let item of assetVerification.pendingAssetDetails">{{ item }}</li>
+        </ul>
+        <p class="alert-desc cleared-desc" *ngIf="assetVerification.allCleared">
+          All corporate assets have been verified and returned to IT/Admin inventory.
+        </p>
+      </div>
+    </div>
+
+    <!-- Category Filter Tabs -->
+    <div class="category-tabs">
+      <button
+        type="button"
+        class="cat-tab-btn"
+        *ngFor="let cat of categories"
+        [class.active]="selectedCategory === cat"
+        (click)="selectCategory(cat)">
+        {{ cat }}
+      </button>
+    </div>
+
+    <!-- Tasks List -->
+    <div class="tasks-table-wrapper">
+      <div class="empty-tasks" *ngIf="filteredTasks.length === 0">
+        <mat-icon>playlist_add_check</mat-icon>
+        <p>No tasks found in category '{{ selectedCategory }}'.</p>
+      </div>
+
+      <div class="task-card-item" *ngFor="let task of filteredTasks">
+        <div class="task-main-col">
+          <div class="task-header-row">
+            <span class="category-tag tag-{{ (task.category || '').toLowerCase() }}">{{ task.category }}</span>
+            <span class="mandatory-tag" *ngIf="task.isMandatory">Mandatory</span>
+            <span class="optional-tag" *ngIf="!task.isMandatory">Optional</span>
+            <span class="due-text" *ngIf="task.dueDate">Due: {{ task.dueDate | date:'mediumDate' }}</span>
+          </div>
+          <h4 class="task-title">{{ task.taskName }}</h4>
+          <p class="task-desc" *ngIf="task.description">{{ task.description }}</p>
+
+          <div class="task-assignee-row">
+            <span class="assignee-label">
+              <mat-icon class="inline-icon">person_outline</mat-icon>
+              Assigned: <strong>{{ task.assignedEmployeeName || task.assignedRole || 'Department Queue' }}</strong>
+            </span>
+            <button
+              type="button"
+              class="btn-inline-reassign"
+              *ngIf="isAdminOrHr && (task.status === 'Pending' || task.status === 'InProgress')"
+              (click)="openReassign(task)"
+              title="Reassign Task Assignee">
+              <mat-icon>swap_horiz</mat-icon>
+              <span>Reassign</span>
+            </button>
+          </div>
+
+          <div class="task-meta-footer" *ngIf="task.clearedDate || task.remarks || task.waiveReason">
+            <span class="cleared-by-text" *ngIf="task.status === 'Completed' && task.clearedDate">
+              Cleared by {{ task.clearedByEmployeeName || 'Authorized User' }} on {{ task.clearedDate | date:'mediumDate' }}
+            </span>
+            <span class="waived-by-text" *ngIf="task.status === 'Waived'">
+              Waived by {{ task.waivedByEmployeeName || 'Authorized User' }} • Reason: <em>"{{ task.waiveReason }}"</em>
+            </span>
+            <span class="remarks-text" *ngIf="task.remarks && task.status !== 'Waived'">Remarks: {{ task.remarks }}</span>
+          </div>
+        </div>
+
+        <div class="task-action-col">
+          <span class="task-status-pill status-{{ (task.status || '').toLowerCase() }}">{{ task.status }}</span>
+
+          <div class="task-buttons-row" *ngIf="task.status === 'Pending' || task.status === 'InProgress'">
+            <button
+              type="button"
+              class="btn-clear"
+              [disabled]="task.canClear === false"
+              [title]="task.canClear === false ? 'You do not have clearance permission for this task or cannot clear your own exit' : 'Clear task'"
+              (click)="openTaskAction(task, 'Completed')">
+              <mat-icon>check</mat-icon>
+              <span>Clear</span>
+            </button>
+            <button
+              type="button"
+              class="btn-waive"
+              [disabled]="task.canWaive === false"
+              [title]="task.canWaive === false ? 'EXIT_TASK_WAIVE permission required' : 'Waive task with mandatory justification'"
+              (click)="openTaskAction(task, 'Waived')">
+              <mat-icon>block</mat-icon>
+              <span>Waive</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- In-Modal Action Prompt Drawer -->
+    <div class="action-drawer-overlay" *ngIf="activeTaskForAction">
+      <div class="action-drawer-card">
+        <div class="drawer-header">
+          <mat-icon class="drawer-icon" [ngClass]="(actionStatus === 'Waived' || actionStatus === 'Waive') ? 'icon-waive' : ''">
+            {{ (actionStatus === 'Waived' || actionStatus === 'Waive') ? 'warning_amber' : 'verified_user' }}
+          </mat-icon>
+          <h4>{{ (actionStatus === 'Waived' || actionStatus === 'Waive') ? 'Waive Clearance Task' : 'Confirm Clearance' }}: {{ activeTaskForAction.taskName }}</h4>
+        </div>
+        <p class="drawer-subtitle">
+          <span *ngIf="actionStatus !== 'Waived' && actionStatus !== 'Waive'">
+            Marking task as <strong>Completed</strong> under <strong>{{ activeTaskForAction.category }}</strong> category.
+          </span>
+          <span *ngIf="actionStatus === 'Waived' || actionStatus === 'Waive'" class="waive-warning">
+            Waiving this task bypasses standard department clearance. A mandatory audit justification is required.
+          </span>
+        </p>
+        <div class="drawer-input-group">
+          <label class="drawer-label">
+            {{ (actionStatus === 'Waived' || actionStatus === 'Waive') ? 'Mandatory Waive Reason *' : 'Clearance Notes / Remarks' }}
+          </label>
+          <textarea
+            [(ngModel)]="actionRemarks"
+            class="drawer-textarea"
+            rows="3"
+            [placeholder]="(actionStatus === 'Waived' || actionStatus === 'Waive') ? 'Explain why this clearance requirement is being waived for this employee...' : 'Add clearance remarks, verification notes, or serial references...'"></textarea>
+        </div>
+        <div class="drawer-actions">
+          <button type="button" class="btn-drawer-cancel" (click)="cancelTaskAction()">Cancel</button>
+          <button
+            type="button"
+            class="btn-drawer-confirm"
+            [ngClass]="(actionStatus === 'Waived' || actionStatus === 'Waive') ? 'btn-danger' : ''"
+            [disabled]="(actionStatus === 'Waived' || actionStatus === 'Waive') && !actionRemarks.trim()"
+            (click)="confirmTaskAction()">
+            Confirm {{ (actionStatus === 'Waived' || actionStatus === 'Waive') ? 'Waive' : 'Completion' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reassignment Drawer -->
+    <div class="action-drawer-overlay" *ngIf="reassignTaskId">
+      <div class="action-drawer-card">
+        <div class="drawer-header">
+          <mat-icon class="drawer-icon">person_search</mat-icon>
+          <h4>Reassign Task Clearance Authority</h4>
+        </div>
+        <p class="drawer-subtitle">
+          Assign a specific individual to clear this task, or leave unassigned to route to the department queue.
+        </p>
+        <div class="drawer-input-group">
+          <label class="drawer-label">Assignee</label>
+          <select [(ngModel)]="selectedAssigneeId" class="drawer-select">
+            <option [ngValue]="null">-- Department Queue (Default) --</option>
+            <option *ngFor="let emp of employeesList" [ngValue]="emp.id || emp.employeeId">
+              {{ emp.fullName || emp.name || (emp.firstName + ' ' + emp.lastName) }} ({{ emp.employeeCode || emp.designationName || 'Staff' }})
+            </option>
+          </select>
+        </div>
+        <div class="drawer-actions">
+          <button type="button" class="btn-drawer-cancel" (click)="cancelReassign()">Cancel</button>
+          <button type="button" class="btn-drawer-confirm" (click)="confirmReassign()">Save Assignee</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer">
+    <button type="button" class="btn-close-modal" (click)="closeModal()">
+      Close Dossier
+    </button>
+  </div>
+</div>

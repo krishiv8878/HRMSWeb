@@ -11,6 +11,22 @@ export interface PermissionMaster {
   description?: string;
   sortOrder: number;
   isActive: boolean;
+  isSensitive?: boolean;
+}
+
+export interface RolePermissionView {
+  permissionId: number;
+  permissionCode: string;
+  moduleName: string;
+  displayName: string;
+  description?: string;
+  scope: string;
+  isSensitive: boolean;
+}
+
+export interface RolePermissionAssignment {
+  permissionId: number;
+  scope: string;
 }
 
 @Injectable({
@@ -39,6 +55,15 @@ export class PermissionService {
     );
   }
 
+  getRolePermissionsWithScope(roleId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/Permission/GetRolePermissionsWithScope/${roleId}`).pipe(
+      catchError(err => {
+        console.error(`Error fetching scoped permissions for role ${roleId}:`, err);
+        return of({ statusCode: 500, data: [] });
+      })
+    );
+  }
+
   saveRolePermissions(roleId: number, permissionIds: number[]): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/Permission/SaveRolePermissions`, {
       roleId,
@@ -49,6 +74,14 @@ export class PermissionService {
         return of({ statusCode: 500, message: 'Failed to save permissions' });
       })
     );
+  }
+
+  saveRolePermissionsWithScope(roleId: number, permissions: RolePermissionAssignment[], reason: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/Permission/SaveRolePermissionsWithScope`, {
+      roleId,
+      permissions,
+      reason
+    });
   }
 
   getMyPermissions(): Observable<any> {

@@ -21,62 +21,50 @@
       <div class="success-icon-bubble">
         <mat-icon>verified</mat-icon>
       </div>
-      <h3>Employee Onboarding Successful!</h3>
+      <h3>Employee Successfully Created & Onboarded!</h3>
       <p class="success-desc">
-        <strong>{{ createdResponse?.fullName }}</strong> has been added to the Employee Directory and user account has been provisioned.
+        Candidate <strong>{{ createdResponse?.fullName }}</strong> has been added to Krishiv HRMS with Employee ID <strong>#{{ createdResponse?.employeeId }}</strong>.
       </p>
-    </div>
 
-    <!-- Credentials Card -->
-    <div class="credentials-summary-card">
-      <div class="summary-row">
-        <span class="label">System Employee ID:</span>
-        <span class="value font-mono">#{{ createdResponse?.employeeId }}</span>
-      </div>
-      <div class="summary-row">
-        <span class="label">Portal Username:</span>
-        <span class="value font-semibold text-blue">{{ createdResponse?.email }}</span>
-      </div>
-      <div class="summary-row">
-        <span class="label">Initial Password:</span>
-        <span class="value font-mono text-emerald font-bold">{{ createdResponse?.temporaryPassword }}</span>
-      </div>
-      <div class="summary-row">
-        <span class="label">Email Notification:</span>
-        <span class="value">
-          <span class="status-tag tag-success" *ngIf="createdResponse?.emailSent">
-            <mat-icon class="inline-icon">mark_email_read</mat-icon> Dispatched to Inbox
+      <div class="credentials-card">
+        <div class="cred-row">
+          <span class="cred-label">Login Username:</span>
+          <span class="cred-value">{{ createdResponse?.email }}</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Temporary Password:</span>
+          <span class="cred-value password-highlight">{{ createdResponse?.temporaryPassword }}</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Welcome Email Status:</span>
+          <span class="cred-badge" [ngClass]="createdResponse?.emailSent ? 'badge-success' : 'badge-warning'">
+            {{ createdResponse?.emailSent ? 'Dispatched with Login Link' : 'Not Sent / SMTP Warning' }}
           </span>
-          <span class="status-tag tag-neutral" *ngIf="!createdResponse?.emailSent">
-            <mat-icon class="inline-icon">info</mat-icon> Credentials Ready to Share
-          </span>
-        </span>
+        </div>
       </div>
-    </div>
 
-    <div class="success-actions-strip">
-      <button type="button" class="btn-copy-creds" (click)="copyCredentials()">
-        <mat-icon>content_copy</mat-icon>
-        <span>Copy Credentials</span>
-      </button>
-      <button type="button" class="btn-view-profile" (click)="viewNewEmployee()">
-        <mat-icon>account_circle</mat-icon>
-        <span>View Employee Profile</span>
-      </button>
+      <div class="success-actions">
+        <button type="button" class="btn-view-profile" (click)="navigateToEmployee(createdResponse?.employeeId)">
+          <mat-icon>person</mat-icon>
+          <span>View Employee Profile</span>
+        </button>
+        <button type="button" class="btn-done" (click)="closeModal()">
+          <span>Done</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Modal Body: Form -->
-  <form [formGroup]="onboardForm" (ngSubmit)="submitOnboarding()" *ngIf="!onboardSuccess" class="onboard-form">
-    <div class="modal-body-scrollable">
-
-      <!-- Candidate Banner -->
-      <div class="candidate-banner-strip">
-        <div class="avatar-circle">
-          {{ candidate.initials || ((candidate.firstName[0] || 'C') + (candidate.lastName[0] || 'D')) }}
+  <!-- Modal Body: Standard Form -->
+  <form [formGroup]="onboardForm" (ngSubmit)="onSubmit()" *ngIf="!onboardSuccess" class="modal-form-content">
+    <div class="modal-body scrollable-form-body">
+      <!-- Quick Candidate Preview Banner -->
+      <div class="candidate-preview-banner">
+        <div class="candidate-avatar">
+          {{ (candidate.firstName ? candidate.firstName.charAt(0) : 'C') + (candidate.lastName ? candidate.lastName.charAt(0) : '') }}
         </div>
-        <div class="banner-info">
-          <div class="name-row">
+        <div class="candidate-meta">
+          <div class="candidate-meta-top">
             <span class="candidate-full-name">{{ candidate.fullName || (candidate.firstName + ' ' + candidate.lastName) }}</span>
             <span class="badge-stage-pill">{{ candidate.stage || 'Selected' }}</span>
           </div>
@@ -84,6 +72,39 @@
             {{ candidate.appliedRole }} • {{ candidate.emailAddress }} • {{ candidate.mobileNumber }}
           </span>
         </div>
+      </div>
+
+      <!-- Former Employee Matching Hint Banner -->
+      <div class="former-employee-hint-alert" *ngIf="formerEmployeeMatches.length > 0">
+        <mat-icon class="hint-icon">history_edu</mat-icon>
+        <div class="hint-body" *ngFor="let match of formerEmployeeMatches">
+          <div class="hint-title-row">
+            <strong>⚠️ Possible Former Employee Detected: {{ match.fullName }}</strong>
+            <span class="hint-badge">Matched by: {{ match.matchedBy }}</span>
+          </div>
+          <p class="hint-text">
+            Former Code: <strong>{{ match.employeeCode }}</strong> | Exited: <strong>{{ match.exitDate | date:'mediumDate' }}</strong>
+            <span *ngIf="match.designation">({{ match.designation }})</span>
+          </p>
+          <div class="hint-actions">
+            <button type="button" class="btn-link-hint" (click)="linkAsRehire(match)">
+              <mat-icon>link</mat-icon> Link as Rehire (New Tenure)
+            </button>
+            <button type="button" class="btn-dismiss-hint" (click)="dismissFormerEmployeeMatch()">
+              Create as Brand New
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linked Rehire Indicator -->
+      <div class="linked-hint-banner" *ngIf="linkedFormerEmployee">
+        <mat-icon>verified</mat-icon>
+        <span>
+          Linking as a <strong>New Tenure</strong> of former employee <strong>{{ linkedFormerEmployee.fullName }}</strong> (Ex-Code: {{ linkedFormerEmployee.employeeCode }}).
+          Existing portal account will be reused with forced password reset.
+        </span>
+        <button type="button" class="btn-unlink-hint" (click)="unlinkFormerEmployee()">Unlink</button>
       </div>
 
       <!-- Section 1: Candidate Baseline Information -->
@@ -176,157 +197,116 @@
             </select>
           </div>
         </div>
+
+        <div class="grid-row grid-2">
+          <div class="form-field-wrapper">
+            <label class="field-label">Employment Type <span class="required">*</span></label>
+            <select formControlName="employmentType" class="form-select">
+              <option value="FullTime">Full-Time Regular</option>
+              <option value="Contract">Contract / Fixed Term</option>
+              <option value="Intern">Internship</option>
+              <option value="PartTime">Part-Time</option>
+            </select>
+          </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Probation End Date <span class="required">*</span></label>
+            <input type="date" formControlName="probationEndDate" class="form-input" />
+          </div>
+        </div>
       </div>
 
       <!-- Section 3: Final CTC & Dynamic Indian Payroll Breakdown -->
       <div class="form-section-group ctc-section-group">
         <div class="section-group-header">
-          <mat-icon class="section-icon text-emerald">payments</mat-icon>
-          <div class="header-split">
-            <h3>3. Final CTC & Payroll Compensation Breakdown</h3>
-            <span class="lpa-pill">{{ formatLpa(annualCtcNumber) }}</span>
+          <mat-icon class="section-icon">payments</mat-icon>
+          <div class="header-with-badge">
+            <h3>3. Compensation Structure & CTC Breakdown</h3>
+            <span class="badge-auto-calc">Auto-Computed Salary Structure</span>
           </div>
         </div>
 
-        <!-- Annual CTC Input Box -->
-        <div class="ctc-input-box">
-          <div class="ctc-input-col">
-            <label class="ctc-main-label">Final Annual CTC (Cost to Company in INR) <span class="required">*</span></label>
-            <div class="currency-input-group">
-              <span class="currency-prefix">₹</span>
-              <input
-                type="number"
-                formControlName="annualCtc"
-                (input)="onAnnualCtcInput($event)"
-                class="form-input font-bold ctc-primary-input"
-                placeholder="1200000"
-                min="50000"
-              />
+        <div class="grid-row grid-1">
+          <div class="form-field-wrapper ctc-input-wrapper">
+            <label class="field-label">Annual Cost to Company (CTC) <span class="required">*</span></label>
+            <div class="input-with-prefix">
+              <span class="prefix">₹</span>
+              <input type="number" formControlName="annualCtc" (input)="onAnnualCtcChange($event)" class="form-input font-bold" placeholder="e.g. 1200000" />
+              <span class="suffix">{{ formatInLacs(annualCtcNumber) }}</span>
             </div>
-            <span class="helper-text">Enter annual figure in INR. Monthly earnings and deductions recalculate automatically.</span>
-          </div>
-
-          <div class="ctc-highlight-stat">
-            <span class="stat-label">Net Monthly Take-Home</span>
-            <span class="stat-value font-mono">{{ formatCurrency(netTakeHomeMonthly) }}</span>
-            <span class="stat-sub">In-hand monthly bank transfer</span>
+            <span class="field-helper-text">Standard enterprise breakdown: 50% Basic, 20% HRA, 20% Special, 12% PF deduction</span>
           </div>
         </div>
 
-        <!-- Breakdown Grid (Monthly Components with editable adjustments) -->
-        <div class="payroll-breakdown-table">
-          <div class="breakdown-header-row">
-            <span>Salary Component</span>
-            <span>Monthly (₹)</span>
-            <span class="text-right">Annual (₹)</span>
+        <!-- Breakdown Grid Display -->
+        <div class="salary-breakdown-card">
+          <div class="breakdown-col">
+            <span class="item-title">Basic Salary (50%)</span>
+            <span class="item-val">₹{{ basicSalaryMonthly | number:'1.0-0' }} /mo</span>
+            <span class="item-sub">₹{{ (basicSalaryMonthly * 12) | number:'1.0-0' }} /yr</span>
           </div>
-
-          <!-- Basic Salary -->
-          <div class="breakdown-item-row">
-            <div class="component-desc">
-              <span class="name">Basic Salary</span>
-              <span class="note">50% of monthly CTC (Statutory baseline)</span>
-            </div>
-            <div class="input-cell">
-              <input type="number" formControlName="basicSalary" (input)="onComponentChange()" class="table-input" />
-            </div>
-            <div class="annual-cell text-right">
-              {{ formatCurrency(basicSalaryMonthly * 12) }}
-            </div>
+          <div class="breakdown-col">
+            <span class="item-title">House Rent (HRA - 20%)</span>
+            <span class="item-val">₹{{ hraMonthly | number:'1.0-0' }} /mo</span>
+            <span class="item-sub">₹{{ (hraMonthly * 12) | number:'1.0-0' }} /yr</span>
           </div>
-
-          <!-- HRA -->
-          <div class="breakdown-item-row">
-            <div class="component-desc">
-              <span class="name">House Rent Allowance (HRA)</span>
-              <span class="note">20% of monthly CTC (Tax exempt eligible)</span>
-            </div>
-            <div class="input-cell">
-              <input type="number" formControlName="hra" (input)="onComponentChange()" class="table-input" />
-            </div>
-            <div class="annual-cell text-right">
-              {{ formatCurrency(hraMonthly * 12) }}
-            </div>
+          <div class="breakdown-col">
+            <span class="item-title">Special Allowance (20%)</span>
+            <span class="item-val">₹{{ specialAllowanceMonthly | number:'1.0-0' }} /mo</span>
+            <span class="item-sub">₹{{ (specialAllowanceMonthly * 12) | number:'1.0-0' }} /yr</span>
           </div>
-
-          <!-- Special Allowance -->
-          <div class="breakdown-item-row">
-            <div class="component-desc">
-              <span class="name">Special & Flexible Allowances</span>
-              <span class="note">Balancing component for benefits</span>
-            </div>
-            <div class="input-cell">
-              <input type="number" formControlName="specialAllowance" (input)="onComponentChange()" class="table-input" />
-            </div>
-            <div class="annual-cell text-right">
-              {{ formatCurrency(specialAllowanceMonthly * 12) }}
-            </div>
+          <div class="breakdown-col deduction-col">
+            <span class="item-title">Provident Fund (PF - 12%)</span>
+            <span class="item-val">-₹{{ pfDeductionMonthly | number:'1.0-0' }} /mo</span>
+            <span class="item-sub">Statutory Retirals</span>
           </div>
-
-          <!-- PF Deduction -->
-          <div class="breakdown-item-row deduction-row">
-            <div class="component-desc">
-              <span class="name text-red">Provident Fund (PF Deduction)</span>
-              <span class="note">12% statutory employee contribution</span>
-            </div>
-            <div class="input-cell">
-              <input type="number" formControlName="pfDeduction" (input)="onComponentChange()" class="table-input" />
-            </div>
-            <div class="annual-cell text-right text-red">
-              - {{ formatCurrency(pfDeductionMonthly * 12) }}
-            </div>
-          </div>
-
-          <!-- Summary Summary Footers -->
-          <div class="breakdown-summary-row gross-row">
-            <span class="summary-label">Gross Monthly Pay</span>
-            <span class="summary-val font-mono">{{ formatCurrency(grossSalaryMonthly) }}</span>
-            <span class="summary-annual text-right font-mono">{{ formatCurrency(grossSalaryMonthly * 12) }}</span>
-          </div>
-
-          <div class="breakdown-summary-row net-row">
-            <span class="summary-label text-emerald font-bold">Net In-Hand (Take-Home)</span>
-            <span class="summary-val font-mono text-emerald font-bold">{{ formatCurrency(netTakeHomeMonthly) }}</span>
-            <span class="summary-annual text-right font-mono text-emerald font-bold">{{ formatCurrency(netTakeHomeMonthly * 12) }}</span>
+          <div class="breakdown-col take-home-col">
+            <span class="item-title">Est. Net Take Home</span>
+            <span class="item-val highlight-takehome">₹{{ netTakeHomeMonthly | number:'1.0-0' }} /mo</span>
+            <span class="item-sub">Monthly Disbursal</span>
           </div>
         </div>
       </div>
 
-      <!-- Section 4: Portal Credentials & Welcome Email -->
+      <!-- Section 4: Security Credentials & Direct Onboarding Dispatch -->
       <div class="form-section-group">
         <div class="section-group-header">
-          <mat-icon class="section-icon text-indigo">lock_person</mat-icon>
-          <h3>4. User Access Credentials & Email Notification</h3>
+          <mat-icon class="section-icon">vpn_key</mat-icon>
+          <h3>4. Initial Portal Access & First-Login Setup</h3>
         </div>
 
         <div class="grid-row grid-2">
           <div class="form-field-wrapper">
-            <label class="field-label">Generated Temporary Password <span class="required">*</span></label>
-            <input type="text" formControlName="temporaryPassword" class="form-input font-mono font-bold" />
-            <span class="helper-text">Employee will be prompted to reset this password upon first login.</span>
+            <label class="field-label">Temporary Password <span class="required">*</span></label>
+            <div class="input-with-action">
+              <input type="text" formControlName="temporaryPassword" class="form-input" />
+              <button type="button" class="btn-refresh-pw" (click)="regeneratePassword()" title="Generate Random Secure Password">
+                <mat-icon>autorenew</mat-icon>
+              </button>
+            </div>
+            <span class="field-helper-text">User will be prompted to reset password upon first portal sign-in.</span>
           </div>
 
-          <div class="form-field-wrapper flex-center-vertical">
-            <label class="checkbox-option">
-              <input type="checkbox" formControlName="sendCredentialsEmail" class="custom-checkbox" />
-              <div class="checkbox-text">
-                <span class="title">Email Login Credentials Immediately</span>
-                <span class="desc">Sends welcome email with portal link and temporary password to {{ onboardForm.get('emailAddress')?.value }}</span>
-              </div>
+          <div class="form-field-wrapper checkbox-field-wrapper">
+            <label class="field-label">Dispatch Email</label>
+            <label class="checkbox-container">
+              <input type="checkbox" formControlName="sendCredentialsEmail" />
+              <span class="checkmark"></span>
+              <span class="checkbox-label-text">Email login credentials and welcome pack directly to candidate</span>
             </label>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- Modal Footer -->
+    <!-- Modal Footer Actions -->
     <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeModal()">Cancel</button>
-      <button type="submit" class="btn-submit-onboard" [disabled]="isSubmitting || onboardForm.invalid">
-        <mat-icon *ngIf="!isSubmitting">person_add_alt_1</mat-icon>
-        <span *ngIf="isSubmitting" class="spinner-border"></span>
-        <span>{{ isSubmitting ? 'Onboarding Employee...' : 'Confirm & Complete Onboarding' }}</span>
+      <button type="button" class="btn-cancel" (click)="closeModal()" [disabled]="isSubmitting">
+        Cancel
+      </button>
+      <button type="submit" class="btn-submit" [disabled]="onboardForm.invalid || isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
+        <span *ngIf="!isSubmitting">Complete Onboarding & Create Login</span>
+        <span *ngIf="isSubmitting" class="loading-spinner">Processing Onboarding...</span>
       </button>
     </div>
   </form>

@@ -11,6 +11,8 @@ import { EmployeeService } from '../../services/employee/employee.service';
 import { EmployeeComponent } from '../../modal/employee/employee.component';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
+import { ChecklistModalComponent } from '../../modal/checklist-modal/checklist-modal.component';
+import { ResignationService } from '../../services/Resignation/resignation.service';
 
 export interface EmployeeItem {
   id: number;
@@ -39,6 +41,12 @@ export interface EmployeeItem {
   branch?: string;
   profileCompleteness?: number;
   rawRecord?: any;
+  probationEndDate?: string;
+  probationStatus?: string;
+  employmentStatus?: string;
+  employmentType?: string;
+  rehireDate?: string;
+  exitDate?: string;
 }
 
 @Component({
@@ -61,6 +69,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private globalFilterService = inject(GlobalFilterService);
+  private resignationService = inject(ResignationService);
   private filterSub?: Subscription;
   private routeSub?: Subscription;
 
@@ -281,7 +290,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       department: department,
       branch: item.branch || '',
       profileCompleteness: profileCompleteness,
-      rawRecord: item
+      rawRecord: item,
+      probationEndDate: item.probationEndDate,
+      probationStatus: item.probationStatus || 'Confirmed',
+      employmentStatus: item.employmentStatus || (item.isActive ? 'Active' : 'Exited'),
+      employmentType: item.employmentType || 'FullTime',
+      rehireDate: item.rehireDate,
+      exitDate: item.exitDate
     };
   }
 
@@ -375,7 +390,15 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
 
     if (this.selectedStatus === 'Active') {
-      result = result.filter(e => e.isActive);
+      result = result.filter(e => e.isActive && (!e.employmentStatus || e.employmentStatus.toLowerCase() === 'active'));
+    } else if (this.selectedStatus === 'Probation') {
+      result = result.filter(e => e.employmentStatus?.toLowerCase() === 'probation' || e.probationStatus?.toLowerCase() === 'underprobation');
+    } else if (this.selectedStatus === 'Notice Period' || this.selectedStatus === 'NoticePeriod') {
+      result = result.filter(e => e.employmentStatus?.toLowerCase() === 'noticeperiod' || e.employmentStatus?.toLowerCase() === 'notice period');
+    } else if (this.selectedStatus === 'Exited') {
+      result = result.filter(e => !e.isActive || e.employmentStatus?.toLowerCase() === 'exited');
+    } else if (this.selectedStatus === 'Inactive') {
+      result = result.filter(e => !e.isActive);
     } else if (this.selectedStatus === 'Inactive') {
       result = result.filter(e => !e.isActive);
     }
@@ -607,5 +630,63 @@ export class HomeComponent implements OnInit, OnDestroy {
     link.click();
     URL.revokeObjectURL(url);
     this.toaster.success('Employee directory exported successfully!', 'Export Complete');
+  }
+
+  openChecklist(emp: EmployeeItem): void {
+    const isExit = emp.employmentStatus?.toLowerCase() === 'noticeperiod' || emp.employmentStatus?.toLowerCase() === 'notice period' || emp.employmentStatus?.toLowerCase() === 'exited';
+    this.dialog.open(ChecklistModalComponent, {
+      width: '850px',
+      data: {
+        employeeId: emp.id,
+        employeeName: emp.fullName,
+        checklistType: isExit ? 'Offboarding' : 'Onboarding'
+      }
+    });
+  }
+
+  openProbationDecision(emp: EmployeeItem): void {
+    const action = window.prompt(`Probation Decision for ${emp.fullName}:\nEnter 'Confirm', 'Extend', or 'Terminate':`, 'Confirm');
+    if (!action) return;
+
+    const actLower = action.trim().toLowerCase();
+    let newDate: string | undefined = undefined;
+    if (actLower === 'extend') {
+      const dateInput = window.prompt('Enter new probation end date (YYYY-MM-DD):', new Date(Date.now() + 90 * 86400000).toISOString().substring(0, 10));
+      if (!dateInput) return;
+      newDate = dateInput;
+    }
+
+    const decisionStr = actLower === 'confirm' ? 'Confirm' : actLower === 'extend' ? 'Extend' : 'Terminate';
+    this.service.processProbationDecision(emp.id, {
+      decision: decisionStr,
+      newEndDate: newDate,
+      remarks: 'Processed via directory'
+    }).subscribe({
+      next: () => {
+        this.toaster.success(`Probation decision '${decisionStr}' processed for ${emp.fullName}`);
+        this.getAllData();
+      },
+      error: (err) => {
+        this.toaster.error(err?.error?.message || 'Failed to process probation decision');
+      }
+    });
+  }
+
+  openRehireModal(emp: EmployeeItem): void {
+    const dateInput = window.prompt(`Rehire ${emp.fullName}:\nEnter new joining date (YYYY-MM-DD):`, new Date().toISOString().substring(0, 10));
+    if (!dateInput) return;
+
+    this.resignationService.rehireEmployee(emp.id, {
+      newJoiningDate: dateInput,
+      remarks: 'Rehired through employee directory'
+    }).subscribe({
+      next: () => {
+        this.toaster.success(`${emp.fullName} has been rehired successfully!`);
+        this.getAllData();
+      },
+      error: (err) => {
+        this.toaster.error(err?.error?.message || 'Failed to rehire employee');
+      }
+    });
   }
 }

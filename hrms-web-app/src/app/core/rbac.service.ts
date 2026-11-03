@@ -79,4 +79,18 @@ export class RbacService {
   isEmployee(): boolean {
     return this.hasRole('Employee');
   }
+
+  hasPermission(permission: string): boolean {
+    if (this.isAdmin()) return true;
+    try {
+      const stored = localStorage.getItem('permissions') || localStorage.getItem('Permissions');
+      if (stored) {
+        const perms: string[] = JSON.parse(stored);
+        if (Array.isArray(perms) && perms.some(p => p.toLowerCase() === permission.toLowerCase())) {
+          return true;
+        }
+      }
+    } catch {}
+    return false;
+  }
 }

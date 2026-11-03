@@ -68,6 +68,8 @@ export class UserprofileComponent implements OnInit {
   isAdminOrHr: boolean = false;
   ctcBreakdown: any = null;
   disbursementsList: any[] = [];
+  previousEmployments: any[] = [];
+  isLoadingPreviousEmployments: boolean = false;
 
   // Profile Completeness System
   profileCompleteness: number = 0;
@@ -161,6 +163,9 @@ export class UserprofileComponent implements OnInit {
       this.loadSkills();
       this.loadBankInfo();
       this.calculateProfileCompleteness();
+      if (this.employedata?.id) {
+        this.loadPreviousEmploymentHistory(this.employedata.id);
+      }
     };
 
     if (userId) {
@@ -200,6 +205,35 @@ export class UserprofileComponent implements OnInit {
         },
         error: () => handleProfileResult(null)
       });
+    }
+  }
+
+  loadPreviousEmploymentHistory(employeeId: number): void {
+    this.isLoadingPreviousEmployments = true;
+    this.services.getPreviousEmploymentHistory(employeeId).subscribe({
+      next: (res: any) => {
+        this.isLoadingPreviousEmployments = false;
+        this.previousEmployments = res?.data || res || [];
+      },
+      error: () => {
+        this.isLoadingPreviousEmployments = false;
+        this.previousEmployments = [];
+      }
+    });
+  }
+
+  downloadPreviousDoc(item: any): void {
+    if (item.downloadUrl) {
+      window.open(item.downloadUrl, '_blank');
+    } else if (item.documentPath) {
+      const apiBase = (this.services as any).apiUrl || '';
+      const cleanPath = String(item.documentPath).replace(/^\\+|^\/+/, '');
+      const fullUrl = item.documentPath.startsWith('http')
+        ? item.documentPath
+        : `${apiBase.replace('/api', '')}/${cleanPath}`;
+      window.open(fullUrl, '_blank');
+    } else {
+      this.toaster.info(`Archived record for ${item.documentName || item.month || 'document'} is noted.`);
     }
   }
 

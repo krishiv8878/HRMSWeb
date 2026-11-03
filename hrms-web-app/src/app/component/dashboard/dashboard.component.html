@@ -183,6 +183,25 @@
             <span class="sub-stat">Client & Internal Initiatives</span>
           </div>
         </div>
+
+        <!-- 7. Exits Past LWD, Not Finalized (Exit Clearance Gate) -->
+        <div class="kpi-card card-rose" routerLink="/index/resignation" [class.kpi-card-alert]="overdueExitsCount > 0">
+          <div class="kpi-top">
+            <span class="kpi-label">Exits Past LWD, Not Finalized</span>
+            <div class="kpi-icon-wrap" [ngClass]="overdueExitsCount > 0 ? 'icon-rose pulse-alert' : 'icon-emerald'">
+              <mat-icon>{{ overdueExitsCount > 0 ? 'warning' : 'task_alt' }}</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" [class.text-danger]="overdueExitsCount > 0">{{ overdueExitsCount }}</span>
+            <span class="kpi-badge badge-rose" *ngIf="overdueExitsCount > 0">Sign-Off Overdue</span>
+            <span class="kpi-badge badge-emerald" *ngIf="overdueExitsCount === 0">All Finalized</span>
+          </div>
+          <div class="kpi-footer">
+            <span class="sub-stat" *ngIf="overdueExitsCount > 0"><strong>{{ overdueExitsCount }}</strong> exit(s) require HR finalization</span>
+            <span class="sub-stat text-success" *ngIf="overdueExitsCount === 0">Zero overdue exit dossiers</span>
+          </div>
+        </div>
       </div>
 
       <!-- TODAY'S ATTENDANCE DISTRIBUTION BAR -->

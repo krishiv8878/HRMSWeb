@@ -11,6 +11,10 @@ import { Subscription } from 'rxjs';
 import { EmailService } from '../../services/leaveRequest/email.service';
 import { LeavetypeService } from '../../services/leave/leavetype.service';
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
+import { LeaveLedgerService, LeaveBalanceSummary, LeaveLedgerRecord } from '../../services/leave-ledger/leave-ledger.service';
+import { LopConversionService, LopConversionItem } from '../../services/lop-conversion/lop-conversion.service';
+import { LeaveEncashmentService, EncashmentRequestItem } from '../../services/leave-encashment/leave-encashment.service';
+import { CompOffService, CompOffEligibleDate, CompOffGrantItem } from '../../services/comp-off/comp-off.service';
 import { LeaverequestComponent, LeaveTypeItem } from '../../modal/leaverequest/leaverequest.component';
 import { CancelLeaveModalComponent } from '../../modal/cancel-leave-modal/cancel-leave-modal.component';
 import { GlobalFilterService } from '../../services/filter/global-filter.service';
@@ -33,6 +37,10 @@ export interface SubmittedLeaveRequest {
   rejectionReason?: string;
   isActive?: boolean | number;
   isDeleted?: boolean | number;
+  isLop?: boolean;
+  isSandwichApplied?: boolean;
+  sandwichDays?: number;
+  isConvertedFromLop?: boolean;
 }
 
 @Component({
@@ -53,6 +61,10 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
   private emailService = inject(EmailService);
   private leaveTypeService = inject(LeavetypeService);
   private holidayService = inject(HolidayservicesService);
+  private leaveLedgerService = inject(LeaveLedgerService);
+  private lopConversionService = inject(LopConversionService);
+  private leaveEncashmentService = inject(LeaveEncashmentService);
+  private compOffService = inject(CompOffService);
   private dialog = inject(MatDialog);
   private toastr = inject(ToastrService);
   private globalFilterService = inject(GlobalFilterService);
@@ -61,7 +73,6 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
   private routeSub?: Subscription;
 
   holidays: any[] = [];
-
   Math = Math;
 
   // Session & Supervisor Separation
@@ -74,9 +85,33 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
     return Number(this.selectedEmployeeId) !== Number(this.loggedInEmployeeId);
   }
 
+  // Phase 5: Navigation View Tabs
+  activeViewTab: 'requests' | 'breakdown' | 'conversions' | 'compoff' | 'encashment' | 'ledger' = 'requests';
+
   allRequests: SubmittedLeaveRequest[] = [];
   filteredRequests: SubmittedLeaveRequest[] = [];
   leaveTypes: LeaveTypeItem[] = [];
+
+  // Phase 5 Data Collections
+  balanceSummaries: LeaveBalanceSummary[] = [];
+  conversionRequests: LopConversionItem[] = [];
+  eligibleLopLeaves: any[] = [];
+  compOffRequests: CompOffGrantItem[] = [];
+  eligibleCompOffDates: CompOffEligibleDate[] = [];
+  encashmentRequests: EncashmentRequestItem[] = [];
+  ledgerHistory: LeaveLedgerRecord[] = [];
+
+  // Quick Action Forms state
+  selectedConversionLopId: number = 0;
+  selectedConversionTargetLtId: number = 0;
+  selectedConversionDays: number = 1;
+  conversionReason: string = '';
+
+  selectedEncashLtId: number = 0;
+  selectedEncashDays: number = 1;
+  encashReason: string = '';
+
+  compOffReason: string = '';
 
   searchQuery: string = '';
   selectedStatus: string = 'All';
@@ -100,6 +135,28 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
   rejectedCount: number = 0;
   cancelledCount: number = 0;
   availableBalanceDays: number = 0;
+
+  getTargetEmployeeId(): number | undefined {
+    if (this.selectedEmployeeId && this.selectedEmployeeId !== 'All') {
+      return Number(this.selectedEmployeeId);
+    }
+    return this.loggedInEmployeeId > 0 ? this.loggedInEmployeeId : undefined;
+  }
+
+  setActiveViewTab(tab: 'requests' | 'breakdown' | 'conversions' | 'compoff' | 'encashment' | 'ledger') {
+    this.activeViewTab = tab;
+    if (tab === 'breakdown') {
+      this.loadBalanceBreakdown();
+    } else if (tab === 'conversions') {
+      this.loadConversionData();
+    } else if (tab === 'compoff') {
+      this.loadCompOffData();
+    } else if (tab === 'encashment') {
+      this.loadEncashmentData();
+    } else if (tab === 'ledger') {
+      this.loadLedgerHistory();
+    }
+  }
 
   setTab(tab: 'Pending' | 'Approved' | 'Cancelled' | 'Rejected' | 'All') {
     this.activeTab = tab;
@@ -137,6 +194,11 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
 
       if (empChanged) {
         this.loadLeaveBalance();
+        if (this.activeViewTab === 'breakdown') this.loadBalanceBreakdown();
+        if (this.activeViewTab === 'conversions') this.loadConversionData();
+        if (this.activeViewTab === 'compoff') this.loadCompOffData();
+        if (this.activeViewTab === 'encashment') this.loadEncashmentData();
+        if (this.activeViewTab === 'ledger') this.loadLedgerHistory();
       }
       if (this.allRequests.length > 0) {
         this.filterRequests();
@@ -202,9 +264,7 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
   }
 
   loadLeaveBalance() {
-    const targetEmpId = (this.selectedEmployeeId && this.selectedEmployeeId !== 'All')
-      ? Number(this.selectedEmployeeId)
-      : (this.loggedInEmployeeId > 0 ? this.loggedInEmployeeId : undefined);
+    const targetEmpId = this.getTargetEmployeeId();
 
     this.emailService.getEmployeeLeaveBalance(targetEmpId).subscribe({
       next: (res: any) => {
@@ -291,7 +351,11 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
               actionDate: item.actionDate,
               rejectionReason: item.rejectionReason || '',
               isActive: item.isActive !== undefined ? (item.isActive === 1 || item.isActive === true ? 1 : 0) : 1,
-              isDeleted: item.isDeleted === 1 || item.isDeleted === true ? 1 : 0
+              isDeleted: item.isDeleted === 1 || item.isDeleted === true ? 1 : 0,
+              isLop: item.isLop === true || item.isLop === 1 || item.isLop === 'true',
+              isSandwichApplied: item.isSandwichApplied === true || item.isSandwichApplied === 1,
+              sandwichDays: Number(item.sandwichDays || 0),
+              isConvertedFromLop: item.isConvertedFromLop === true || item.isConvertedFromLop === 1
             };
           });
         } else {
@@ -421,6 +485,8 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
       if (res) {
         this.loadLeaveBalance();
         this.loadData();
+        this.loadBalanceBreakdown();
+        this.loadLedgerHistory();
       }
     });
   }
@@ -428,14 +494,16 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
   onExport() {
     if (typeof window === 'undefined') return;
 
-    const headers = ['ID', 'Start Date', 'End Date', 'Leave Type', 'Reason', 'Status'];
+    const headers = ['ID', 'Start Date', 'End Date', 'Leave Type', 'Reason', 'Status', 'Is LOP', 'Sandwich Days'];
     const rows = this.allRequests.map(r => [
       `"${r.id}"`,
       `"${r.startDate}"`,
       `"${r.endDate}"`,
       `"${r.leaveTypeName || 'Annual Leave'}"`,
       `"${r.leaveReason || ''}"`,
-      `"${this.getStatusText(r)}"`
+      `"${this.getStatusText(r)}"`,
+      `"${r.isLop ? 'Yes' : 'No'}"`,
+      `"${r.sandwichDays || 0}"`
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
@@ -465,7 +533,6 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
   }
 
   canCancelLeave(req: SubmittedLeaveRequest): boolean {
-    // Only personal leave requests can be cancelled by the employee directly
     if (this.isViewingOtherEmployee) return false;
     if (req.employeeId && this.loggedInEmployeeId > 0 && Number(req.employeeId) !== Number(this.loggedInEmployeeId)) {
       return false;
@@ -473,7 +540,6 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
     const text = this.getStatusText(req);
     if (text === 'Pending') return true;
     if (text === 'Approved') {
-      // Approved leaves for past dates or days that have already passed cannot be cancelled
       if (!req.startDate) return false;
       const leaveStart = new Date(req.startDate);
       const today = new Date();
@@ -509,11 +575,290 @@ export class LeaveRequestComponent implements OnInit, OnDestroy {
             this.toastr.success('Leave request cancelled successfully. Quota has been restored.', 'Cancelled');
             this.loadLeaveBalance();
             this.loadData();
+            this.loadBalanceBreakdown();
+            this.loadLedgerHistory();
           },
           error: (err: any) => {
             this.toastr.error(err?.error?.message || 'Failed to cancel leave request.', 'Error');
           }
         });
+      }
+    });
+  }
+
+  // Phase 5: Balance Breakdown
+  loadBalanceBreakdown() {
+    this.leaveLedgerService.getBalanceSummary(this.getTargetEmployeeId()).subscribe({
+      next: (res: any) => {
+        this.balanceSummaries = res?.data || (Array.isArray(res) ? res : []);
+      },
+      error: (err) => {
+        console.error('Error loading balance breakdown:', err);
+        this.balanceSummaries = [];
+      }
+    });
+  }
+
+  // Phase 5: LOP Conversions
+  loadConversionData() {
+    this.lopConversionService.getAll().subscribe({
+      next: (res: any) => {
+        let list: LopConversionItem[] = res?.data || (Array.isArray(res) ? res : []);
+        const targetEmpId = this.getTargetEmployeeId();
+        if (targetEmpId && !this.isViewingOtherEmployee) {
+          list = list.filter(x => Number(x.employeeId) === targetEmpId);
+        }
+        this.conversionRequests = list;
+      },
+      error: () => {
+        this.conversionRequests = [];
+      }
+    });
+
+    this.lopConversionService.getEligibleLop(this.getTargetEmployeeId()).subscribe({
+      next: (res: any) => {
+        this.eligibleLopLeaves = res?.data || (Array.isArray(res) ? res : []);
+        if (this.eligibleLopLeaves.length > 0 && !this.selectedConversionLopId) {
+          this.selectedConversionLopId = this.eligibleLopLeaves[0].id;
+          this.selectedConversionDays = this.eligibleLopLeaves[0].lopDays || this.eligibleLopLeaves[0].totalDays || 1;
+        }
+      },
+      error: () => {
+        this.eligibleLopLeaves = [];
+      }
+    });
+  }
+
+  onLopSelectChange() {
+    const found = this.eligibleLopLeaves.find(l => l.id === Number(this.selectedConversionLopId));
+    if (found) {
+      this.selectedConversionDays = found.lopDays || found.totalDays || 1;
+    }
+  }
+
+  submitLopConversion() {
+    if (!this.selectedConversionLopId) {
+      this.toastr.warning('Please select an eligible LOP leave request.', 'Validation');
+      return;
+    }
+    if (!this.selectedConversionTargetLtId) {
+      this.toastr.warning('Please select target paid leave type.', 'Validation');
+      return;
+    }
+    if (!this.conversionReason || !this.conversionReason.trim()) {
+      this.toastr.warning('Please enter reason for conversion.', 'Validation');
+      return;
+    }
+
+    const payload = {
+      employeeId: this.getTargetEmployeeId() || this.loggedInEmployeeId,
+      originalLeaveRequestId: Number(this.selectedConversionLopId),
+      targetLeaveTypeId: Number(this.selectedConversionTargetLtId),
+      conversionDays: Number(this.selectedConversionDays),
+      reason: this.conversionReason.trim()
+    };
+
+    this.lopConversionService.apply(payload).subscribe({
+      next: () => {
+        this.toastr.success('LOP conversion request submitted successfully for approval.', 'Submitted');
+        this.conversionReason = '';
+        this.loadConversionData();
+        this.loadLeaveBalance();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to submit LOP conversion request.', 'Error');
+      }
+    });
+  }
+
+  approveConversion(id: number) {
+    this.lopConversionService.approve(id).subscribe({
+      next: () => {
+        this.toastr.success('LOP conversion request approved and ledger balance updated.', 'Approved');
+        this.loadConversionData();
+        this.loadLeaveBalance();
+        this.loadData();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to approve LOP conversion.', 'Error');
+      }
+    });
+  }
+
+  rejectConversion(id: number) {
+    const reason = prompt('Please enter rejection reason:');
+    if (reason === null) return;
+    this.lopConversionService.reject(id, reason || 'Rejected by Manager').subscribe({
+      next: () => {
+        this.toastr.info('LOP conversion request rejected.', 'Rejected');
+        this.loadConversionData();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to reject LOP conversion.', 'Error');
+      }
+    });
+  }
+
+  // Phase 5: Comp-Off
+  loadCompOffData() {
+    this.compOffService.getAll().subscribe({
+      next: (res: any) => {
+        let list: CompOffGrantItem[] = res?.data || (Array.isArray(res) ? res : []);
+        const targetEmpId = this.getTargetEmployeeId();
+        if (targetEmpId && !this.isViewingOtherEmployee) {
+          list = list.filter(x => Number(x.employeeId) === targetEmpId);
+        }
+        this.compOffRequests = list;
+      },
+      error: () => {
+        this.compOffRequests = [];
+      }
+    });
+
+    this.compOffService.getEligibleDates(this.getTargetEmployeeId()).subscribe({
+      next: (res: any) => {
+        this.eligibleCompOffDates = res?.data || (Array.isArray(res) ? res : []);
+      },
+      error: () => {
+        this.eligibleCompOffDates = [];
+      }
+    });
+  }
+
+  claimCompOff(item: CompOffEligibleDate) {
+    const payload = {
+      employeeId: this.getTargetEmployeeId() || this.loggedInEmployeeId,
+      attendanceDate: item.attendanceDate,
+      workedMinutes: item.workedMinutes,
+      eligibleDays: item.eligibleDays,
+      reason: this.compOffReason.trim() || `Worked on ${item.dayType} (${item.holidayName || item.attendanceDate})`
+    };
+
+    this.compOffService.apply(payload).subscribe({
+      next: () => {
+        this.toastr.success('Comp-Off claim submitted successfully for approval.', 'Submitted');
+        this.compOffReason = '';
+        this.loadCompOffData();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to claim Comp-Off.', 'Error');
+      }
+    });
+  }
+
+  approveCompOff(id: number) {
+    this.compOffService.approve(id).subscribe({
+      next: () => {
+        this.toastr.success('Comp-Off claim approved! Entitlement credited with 90-day validity.', 'Approved');
+        this.loadCompOffData();
+        this.loadLeaveBalance();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to approve Comp-Off.', 'Error');
+      }
+    });
+  }
+
+  rejectCompOff(id: number) {
+    const reason = prompt('Please enter rejection reason:');
+    if (reason === null) return;
+    this.compOffService.reject(id, reason || 'Rejected by Manager').subscribe({
+      next: () => {
+        this.toastr.info('Comp-Off claim rejected.', 'Rejected');
+        this.loadCompOffData();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to reject Comp-Off.', 'Error');
+      }
+    });
+  }
+
+  // Phase 5: Leave Encashment
+  loadEncashmentData() {
+    this.leaveEncashmentService.getAll().subscribe({
+      next: (res: any) => {
+        let list: EncashmentRequestItem[] = res?.data || (Array.isArray(res) ? res : []);
+        const targetEmpId = this.getTargetEmployeeId();
+        if (targetEmpId && !this.isViewingOtherEmployee) {
+          list = list.filter(x => Number(x.employeeId) === targetEmpId);
+        }
+        this.encashmentRequests = list;
+      },
+      error: () => {
+        this.encashmentRequests = [];
+      }
+    });
+  }
+
+  submitEncashment() {
+    if (!this.selectedEncashLtId) {
+      this.toastr.warning('Please select a leave type to encash.', 'Validation');
+      return;
+    }
+    if (!this.selectedEncashDays || this.selectedEncashDays <= 0) {
+      this.toastr.warning('Please enter valid number of days to encash.', 'Validation');
+      return;
+    }
+    if (!this.encashReason || !this.encashReason.trim()) {
+      this.toastr.warning('Please enter reason for encashment.', 'Validation');
+      return;
+    }
+
+    const payload = {
+      employeeId: this.getTargetEmployeeId() || this.loggedInEmployeeId,
+      leaveTypeId: Number(this.selectedEncashLtId),
+      requestedDays: Number(this.selectedEncashDays),
+      reason: this.encashReason.trim()
+    };
+
+    this.leaveEncashmentService.apply(payload).subscribe({
+      next: () => {
+        this.toastr.success('Leave encashment request submitted successfully for approval.', 'Submitted');
+        this.encashReason = '';
+        this.loadEncashmentData();
+        this.loadLeaveBalance();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to submit leave encashment request.', 'Error');
+      }
+    });
+  }
+
+  approveEncashment(id: number) {
+    this.leaveEncashmentService.approve(id).subscribe({
+      next: () => {
+        this.toastr.success('Leave encashment approved! Processed for payroll credit.', 'Approved');
+        this.loadEncashmentData();
+        this.loadLeaveBalance();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to approve leave encashment.', 'Error');
+      }
+    });
+  }
+
+  rejectEncashment(id: number) {
+    const reason = prompt('Please enter rejection reason:');
+    if (reason === null) return;
+    this.leaveEncashmentService.reject(id, reason || 'Rejected by HR/Finance').subscribe({
+      next: () => {
+        this.toastr.info('Leave encashment request rejected.', 'Rejected');
+        this.loadEncashmentData();
+      },
+      error: (err: any) => {
+        this.toastr.error(err?.error?.message || 'Failed to reject leave encashment.', 'Error');
+      }
+    });
+  }
+
+  // Phase 5: Ledger History
+  loadLedgerHistory() {
+    this.leaveLedgerService.getLedgerHistory(this.getTargetEmployeeId()).subscribe({
+      next: (res: any) => {
+        this.ledgerHistory = res?.data || (Array.isArray(res) ? res : []);
+      },
+      error: () => {
+        this.ledgerHistory = [];
       }
     });
   }

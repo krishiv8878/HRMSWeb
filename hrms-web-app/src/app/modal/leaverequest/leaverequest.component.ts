@@ -19,6 +19,11 @@ export interface LeaveTypeItem {
   leaveName?: string;
   type?: string;
   allowedDays?: number;
+  isPaid?: boolean;
+  sandwichRuleEnabled?: boolean;
+  maxSandwichLeavesAllowed?: number;
+  isNegativeBalanceAllowed?: boolean;
+  negativeBalanceLimit?: number;
 }
 
 @Component({
@@ -62,12 +67,68 @@ export class LeaverequestComponent implements OnInit {
   sickLeaveDays: number = 7;
   calculatedDays: number = 0;
 
-  // Loss of Pay (LOP) tracking
+  // Loss of Pay (LOP) & Policy tracking
   selectedLeaveRemaining: number | null = null;
   selectedLeaveQuota: number | null = null;
   selectedLeaveName: string = '';
   lopDays: number = 0;
   isFullLop: boolean = false;
+  isLopMode: boolean = false;
+  isSandwichActive: boolean = false;
+  maxSandwichAllowed: number = 1;
+  negativeBalanceAllowed: boolean = false;
+  negativeBalanceLimit: number = 0;
+
+  get availablePaidLimit(): number {
+    if (this.selectedLeaveRemaining === null) return 0;
+    return (this.selectedLeaveRemaining || 0) + (this.negativeBalanceAllowed ? this.negativeBalanceLimit : 0);
+  }
+
+  get hasBalanceShortfall(): boolean {
+    if (this.isLopMode) return false;
+    if (this.calculatedDays <= 0) return false;
+    if (this.selectedLeaveRemaining === null) return false;
+    return this.calculatedDays > this.availablePaidLimit;
+  }
+
+  get shortfallDays(): number {
+    if (!this.hasBalanceShortfall) return 0;
+    return Math.max(0, this.calculatedDays - this.availablePaidLimit);
+  }
+
+  get coveredPaidDays(): number {
+    if (this.isLopMode) return 0;
+    if (this.calculatedDays <= 0) return 0;
+    return Math.max(0, Math.min(this.calculatedDays, this.availablePaidLimit));
+  }
+
+  setLopMode(mode: boolean) {
+    this.isLopMode = mode;
+    if (mode) {
+      const lopType = this.leaveTypes.find(t => t.isPaid === false || 
+        t.leaveTypeName.toLowerCase().includes('loss of pay') || 
+        t.leaveTypeName.toLowerCase().includes('lop') ||
+        t.leaveTypeName.toLowerCase().includes('unpaid'));
+      if (lopType) {
+        this.leaveForm.patchValue({ leaveTypeId: lopType.id }, { emitEvent: false });
+      }
+    } else {
+      const currentSelected = this.leaveTypes.find(t => t.id === Number(this.leaveForm.get('leaveTypeId')?.value));
+      if (!currentSelected || currentSelected.isPaid === false || 
+          currentSelected.leaveTypeName.toLowerCase().includes('loss of pay') || 
+          currentSelected.leaveTypeName.toLowerCase().includes('lop') ||
+          currentSelected.leaveTypeName.toLowerCase().includes('unpaid')) {
+        const paidType = this.leaveTypes.find(t => t.isPaid !== false && 
+          !t.leaveTypeName.toLowerCase().includes('loss of pay') && 
+          !t.leaveTypeName.toLowerCase().includes('lop') &&
+          !t.leaveTypeName.toLowerCase().includes('unpaid'));
+        if (paidType) {
+          this.leaveForm.patchValue({ leaveTypeId: paidType.id }, { emitEvent: false });
+        }
+      }
+    }
+    this.updateCalculatedDays();
+  }
 
   constructor(
     @Optional() private dialogRef?: MatDialogRef<LeaverequestComponent>,
@@ -80,7 +141,20 @@ export class LeaverequestComponent implements OnInit {
     this.loadLeaveBalances();
     this.loadHolidays();
 
-    this.leaveForm.get('leaveTypeId')?.valueChanges.subscribe(() => this.updateCalculatedDays());
+    this.leaveForm.get('leaveTypeId')?.valueChanges.subscribe((val) => {
+      const selected = this.leaveTypes.find(t => t.id === Number(val));
+      if (selected) {
+        if (selected.isPaid === false || 
+            selected.leaveTypeName.toLowerCase().includes('loss of pay') || 
+            selected.leaveTypeName.toLowerCase().includes('lop') ||
+            selected.leaveTypeName.toLowerCase().includes('unpaid')) {
+          this.isLopMode = true;
+        } else {
+          this.isLopMode = false;
+        }
+      }
+      this.updateCalculatedDays();
+    });
     this.leaveForm.get('startDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('endDate')?.valueChanges.subscribe(() => this.updateCalculatedDays());
     this.leaveForm.get('leaveMode')?.valueChanges.subscribe(() => this.updateCalculatedDays());
@@ -162,21 +236,32 @@ export class LeaverequestComponent implements OnInit {
     const matchedType = this.leaveTypes.find(t => t.id === selectedTypeId);
 
     if (matchedBalance) {
-      this.selectedLeaveRemaining = Number(matchedBalance.remainingDays ?? 0);
+      this.selectedLeaveRemaining = Number(matchedBalance.availableDays !== undefined ? matchedBalance.availableDays : (matchedBalance.remainingDays ?? 0));
       this.selectedLeaveQuota = Number(matchedBalance.totalQuota ?? 0);
       this.selectedLeaveName = matchedBalance.leaveTypeName || '';
+      this.isSandwichActive = Boolean(matchedBalance.sandwichRuleEnabled);
+      this.maxSandwichAllowed = Number(matchedBalance.maxSandwichLeavesAllowed || 1);
+      this.negativeBalanceAllowed = Boolean(matchedBalance.negativeBalanceAllowed);
+      this.negativeBalanceLimit = Number(matchedBalance.negativeBalanceLimit || 0);
     } else if (matchedType) {
       this.selectedLeaveRemaining = Number(matchedType.allowedDays ?? 0);
       this.selectedLeaveQuota = Number(matchedType.allowedDays ?? 0);
       this.selectedLeaveName = matchedType.leaveTypeName;
+      this.isSandwichActive = Boolean(matchedType.sandwichRuleEnabled);
+      this.maxSandwichAllowed = Number(matchedType.maxSandwichLeavesAllowed || 1);
+      this.negativeBalanceAllowed = Boolean(matchedType.isNegativeBalanceAllowed);
+      this.negativeBalanceLimit = Number(matchedType.negativeBalanceLimit || 0);
     } else {
       this.selectedLeaveRemaining = null;
       this.selectedLeaveQuota = null;
       this.selectedLeaveName = '';
+      this.isSandwichActive = false;
+      this.negativeBalanceAllowed = false;
     }
 
-    if (this.selectedLeaveQuota === 0) {
+    if (this.selectedLeaveQuota === 0 || (matchedType && matchedType.isPaid === false)) {
       this.isFullLop = true;
+      this.isLopMode = true;
       this.lopDays = this.calculatedDays;
     } else if (this.selectedLeaveRemaining !== null) {
       this.isFullLop = false;
@@ -238,8 +323,31 @@ export class LeaverequestComponent implements OnInit {
           this.leaveTypes = rawList.map((item: any) => ({
             id: Number(item.id || item.leaveTypeId || 1),
             leaveTypeName: item.type || item.leaveTypeName || item.leaveName || 'Leave',
-            allowedDays: item.allowedDays !== undefined && item.allowedDays !== null ? Number(item.allowedDays) : 0
+            allowedDays: item.allowedDays !== undefined && item.allowedDays !== null ? Number(item.allowedDays) : 0,
+            isPaid: item.isPaid !== false,
+            sandwichRuleEnabled: Boolean(item.sandwichRuleEnabled),
+            maxSandwichLeavesAllowed: Number(item.maxSandwichLeavesAllowed || 1),
+            isNegativeBalanceAllowed: Boolean(item.isNegativeBalanceAllowed),
+            negativeBalanceLimit: Number(item.negativeBalanceLimit || 0)
           }));
+
+          // Default selection if not already selected
+          if (!this.leaveForm.get('leaveTypeId')?.value) {
+            if (this.isLopMode) {
+              const lopType = this.leaveTypes.find(t => t.isPaid === false || 
+                t.leaveTypeName.toLowerCase().includes('loss of pay') || 
+                t.leaveTypeName.toLowerCase().includes('lop') ||
+                t.leaveTypeName.toLowerCase().includes('unpaid'));
+              if (lopType) this.leaveForm.patchValue({ leaveTypeId: lopType.id }, { emitEvent: false });
+            } else {
+              const firstPaid = this.leaveTypes.find(t => t.isPaid !== false && 
+                !t.leaveTypeName.toLowerCase().includes('loss of pay') && 
+                !t.leaveTypeName.toLowerCase().includes('lop') &&
+                !t.leaveTypeName.toLowerCase().includes('unpaid'));
+              if (firstPaid) this.leaveForm.patchValue({ leaveTypeId: firstPaid.id }, { emitEvent: false });
+            }
+          }
+          this.updateCalculatedDays();
         } else {
           this.leaveTypes = [];
         }
@@ -280,17 +388,36 @@ export class LeaverequestComponent implements OnInit {
     this.isSubmitting = true;
 
     const formVal = this.leaveForm.getRawValue();
+    let selectedLtId = Number(formVal.leaveTypeId);
+
+    if (this.isLopMode) {
+      const selectedLt = this.leaveTypes.find(t => t.id === selectedLtId);
+      if (!selectedLt || selectedLt.isPaid !== false) {
+        const lopType = this.leaveTypes.find(t => t.isPaid === false || 
+          t.leaveTypeName.toLowerCase().includes('loss of pay') || 
+          t.leaveTypeName.toLowerCase().includes('lop') ||
+          t.leaveTypeName.toLowerCase().includes('unpaid'));
+        if (lopType) {
+          selectedLtId = lopType.id;
+        }
+      }
+    }
+
     const loggedEmpId = typeof window !== 'undefined' ? Number(localStorage.getItem('employeeId') || 1) : 1;
     let empId = loggedEmpId;
     if ((this.rbacService.isAdmin() || this.rbacService.isHR()) && this.data?.employeeId) {
       empId = Number(this.data.employeeId);
     }
 
+    const isExplicitLop = this.isLopMode || (this.hasBalanceShortfall && this.coveredPaidDays === 0);
+    const paidDays = isExplicitLop ? 0 : this.coveredPaidDays;
+    const lopDays = isExplicitLop ? this.calculatedDays : this.shortfallDays;
+
     const payload = {
       id: 0,
       leaveRequestId: 0,
       employeeId: empId,
-      leaveTypeId: Number(formVal.leaveTypeId) || 1,
+      leaveTypeId: selectedLtId || 1,
       leaveMode: formVal.leaveMode || 'Full Day',
       startDate: this.formatDateOnly(formVal.startDate),
       endDate: this.formatDateOnly(formVal.endDate),
@@ -300,7 +427,11 @@ export class LeaverequestComponent implements OnInit {
       actionDate: null,
       rejectionReason: null,
       isActive: true,
-      isDeleted: false
+      isDeleted: false,
+      isLop: isExplicitLop,
+      paidDays: paidDays,
+      lopDays: lopDays,
+      totalWorkingDays: this.calculatedDays
     };
 
     this.emailService.Leaverequest(payload).subscribe({

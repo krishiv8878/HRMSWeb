@@ -116,7 +116,7 @@ export class SalaryCreditModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.employee = this.data?.employee || {};
-    this.bankInfo = this.data?.bankInfo || null;
+    this.bankInfo = this.data?.bankInfo || this.data?.paymentInfo || null;
     this.selectedMonth = this.data?.selectedMonth || this.getDefaultCurrentMonth();
 
     this.extractCtcBreakdown();
@@ -428,9 +428,33 @@ export class SalaryCreditModalComponent implements OnInit {
       responsibilities: JSON.stringify(currentPayload)
     };
 
-    this.employeeService.updateData(updatedEmployee).subscribe({
+    const monthNames = ['', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    const parts = (formVal.monthYear || '').trim().split(/\s+/);
+    const mName = (parts[0] || '').toLowerCase();
+    const month = Math.max(1, monthNames.indexOf(mName));
+    const year = Number(parts[1]) || new Date().getFullYear();
+
+    const creditReq = {
+      employeeId: Number(this.employee.id),
+      month: month > 0 ? month : (new Date().getMonth() + 1),
+      year: year,
+      grossSalary: Number(formVal.grossSalary),
+      netSalary: Number(formVal.netSalaryCredited),
+      basicSalary: Number(this.basicSalary),
+      hra: Number(this.hra),
+      specialAllowance: Number(this.specialAllowance),
+      epfDeduction: Number(this.pfDeduction),
+      additionalDeductions: Number(formVal.additionalDeductions || 0),
+      bonusAmount: Number(formVal.bonusAmount || 0),
+      paymentMode: formVal.paymentMode,
+      transactionRef: (formVal.transactionRef || '').trim(),
+      paymentDate: formVal.creditDate,
+      deductionReason: (formVal.deductionReason || '').trim()
+    };
+
+    // DAT-01: Record official Payslip in database table and update status
+    this.payrollService.recordIndividualCredit(creditReq).subscribe({
       next: () => {
-        // Persist to database salary assignment table
         this.payrollService.assignSalary({
           employeeId: this.employee.id,
           annualCtc: Number(formVal.grossSalary) * 12,
@@ -448,10 +472,23 @@ export class SalaryCreditModalComponent implements OnInit {
         );
         this.dialogRef.close({ updated: true, disbursement: newRecord });
       },
-      error: (err) => {
-        this.isSubmitting = false;
-        console.error('Error updating salary disbursement:', err);
-        this.toaster.error('Failed to save salary credit record.', 'Update Error');
+      error: () => {
+        // Fallback to employee profile update
+        this.employeeService.updateData(updatedEmployee).subscribe({
+          next: () => {
+            this.isSubmitting = false;
+            this.toaster.success(
+              `Salary for ${this.employee.firstName} ${this.employee.lastName} marked as Credited for ${formVal.monthYear}!`,
+              'Salary Credited'
+            );
+            this.dialogRef.close({ updated: true, disbursement: newRecord });
+          },
+          error: (err) => {
+            this.isSubmitting = false;
+            console.error('Error updating salary disbursement:', err);
+            this.toaster.error('Failed to save salary credit record.', 'Update Error');
+          }
+        });
       }
     });
   }

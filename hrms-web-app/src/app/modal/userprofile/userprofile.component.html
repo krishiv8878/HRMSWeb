@@ -717,6 +717,110 @@
         </button>
       </div>
     </div>
+
+    <!-- Card 9: Previous Employment & Historical Tenures (Read-Only) -->
+    <div class="section-card span-full" *ngIf="previousEmployments && previousEmployments.length > 0">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="icon-box icon-purple">
+            <mat-icon>history</mat-icon>
+          </div>
+          <div class="header-title-group">
+            <h3>Previous Employment & Historical Tenures</h3>
+            <p>Archived personnel tenures, historical payslips, and compliance documents (Read-Only)</p>
+          </div>
+        </div>
+        <div class="header-actions-group">
+          <span class="section-badge-pill complete">
+            <mat-icon>verified</mat-icon>
+            <span>{{ previousEmployments.length }} Prior Tenure(s)</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tenures-container">
+        <div class="tenure-card" *ngFor="let tenure of previousEmployments">
+          <div class="tenure-header">
+            <div class="tenure-title-row">
+              <h4 class="tenure-title">{{ tenure.tenureTitle || (tenure.designation + ' Tenure') }}</h4>
+              <span class="tenure-status-pill status-exited">{{ tenure.employmentStatus || 'Exited' }}</span>
+            </div>
+            <div class="tenure-meta-row">
+              <span>Code: <strong>{{ tenure.employeeCode || ('#' + tenure.employeeId) }}</strong></span>
+              <span>• Designation: <strong>{{ tenure.designation }}</strong></span>
+              <span *ngIf="tenure.department">• Department: <strong>{{ tenure.department }}</strong></span>
+              <span>• Period: <strong>{{ tenure.dateOfJoining | date:'mediumDate' }}</strong> to <strong>{{ (tenure.exitDate | date:'mediumDate') || 'Relieved' }}</strong></span>
+            </div>
+          </div>
+
+          <!-- Historical Payslips -->
+          <div class="tenure-subblock" *ngIf="tenure.payslips && tenure.payslips.length > 0">
+            <h5 class="subblock-title">
+              <mat-icon class="sub-icon">receipt_long</mat-icon>
+              <span>Historical Payslips</span>
+            </h5>
+            <div class="subblock-table-wrap">
+              <table class="historical-table">
+                <thead>
+                  <tr>
+                    <th>Month & Year</th>
+                    <th>Net Disbursed</th>
+                    <th>Generated Date</th>
+                    <th style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let ps of tenure.payslips">
+                    <td><strong>{{ ps.month }} {{ ps.year }}</strong></td>
+                    <td class="font-mono">₹ {{ (ps.netSalary || 0).toLocaleString('en-IN') }}</td>
+                    <td>{{ (ps.generatedDate | date:'mediumDate') || 'Archived' }}</td>
+                    <td style="text-align: right;">
+                      <button type="button" class="btn-download-sm" (click)="downloadPreviousDoc(ps)" title="Download Payslip">
+                        <mat-icon>download</mat-icon>
+                        <span>Download</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Historical Documents -->
+          <div class="tenure-subblock" *ngIf="tenure.documents && tenure.documents.length > 0">
+            <h5 class="subblock-title">
+              <mat-icon class="sub-icon">folder_shared</mat-icon>
+              <span>Archived Employment Documents</span>
+            </h5>
+            <div class="subblock-table-wrap">
+              <table class="historical-table">
+                <thead>
+                  <tr>
+                    <th>Document Type</th>
+                    <th>Document Name</th>
+                    <th>Upload Date</th>
+                    <th style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let doc of tenure.documents">
+                    <td><span class="badge-doc-type">{{ doc.documentType || 'Official Record' }}</span></td>
+                    <td>{{ doc.documentName }}</td>
+                    <td>{{ (doc.uploadedDate | date:'mediumDate') || 'Archived' }}</td>
+                    <td style="text-align: right;">
+                      <button type="button" class="btn-download-sm" (click)="downloadPreviousDoc(doc)" title="Download Document">
+                        <mat-icon>download</mat-icon>
+                        <span>Download</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Core Skills & Competencies Footer Bar -->

@@ -23,6 +23,7 @@ import { AssetRequestService } from '../../services/asset-request/asset-request.
 import { HolidayservicesService } from '../../services/holiday/holidayservices.service';
 import { ProjectsService } from '../../services/project/projects.service';
 import { DocumentService } from '../../services/documnets/document.service';
+import { ResignationService } from '../../services/Resignation/resignation.service';
 
 import { EmployeeAttendComponent } from '../../modal/employee-attend/employee-attend.component';
 import { LeaverequestComponent } from '../../modal/leaverequest/leaverequest.component';
@@ -91,6 +92,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private holidayService = inject(HolidayservicesService);
   private projectService = inject(ProjectsService);
   private documentService = inject(DocumentService);
+  private resignationService = inject(ResignationService);
   private dialog = inject(MatDialog);
   private router = inject(Router);
   private toaster = inject(ToastrService);
@@ -154,6 +156,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   pendingTimesheetsCount: number = 0;
   pendingAssetTicketsCount: number = 0;
   pendingDocumentsCount: number = 0;
+  overdueExitsCount: number = 0;
 
   totalCandidatesCount: number = 0;
   candidatesInterviewCount: number = 0;
@@ -357,7 +360,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     forkJoin({
       employees: this.employeeService.getData().pipe(catchError(() => of([]))),
       attendanceAll: this.attendanceService.getAllData().pipe(catchError(() => of([]))),
-      attendanceLogs: of([]),
+      attendanceLogs: this.attendanceService.getAttendanceLogs().pipe(catchError(() => of([]))),
       leavesAll: this.leaveService.getAllData().pipe(catchError(() => of([]))),
       personalBalances: this.leaveService.getEmployeeLeaveBalance(this.loggedInEmployeeId).pipe(catchError(() => of([]))),
       attenRequests: this.attenRequestService.getAllData().pipe(catchError(() => of([]))),
@@ -368,9 +371,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       assetRequests: this.assetRequestService.fetchRequests().pipe(catchError(() => of([]))),
       holidays: this.holidayService.getHoliday().pipe(catchError(() => of([]))),
       projects: isExecutiveOrHR ? this.projectService.getAllData().pipe(catchError(() => of([]))) : of([]),
-      documentsAll: this.documentService.getAll().pipe(catchError(() => of([])))
+      documentsAll: this.documentService.getAll().pipe(catchError(() => of([]))),
+      overdueExits: isExecutiveOrHR ? this.resignationService.getOverdueExitsCount().pipe(catchError(() => of(0))) : of(0)
     }).subscribe({
       next: (res: any) => {
+        const rawOverdue = res.overdueExits?.data ?? res.overdueExits ?? 0;
+        this.overdueExitsCount = typeof rawOverdue === 'number' ? rawOverdue : (parseInt(rawOverdue, 10) || 0);
+
         this.cachedAttendanceAll = Array.isArray(res.attendanceAll) ? res.attendanceAll : (res.attendanceAll?.data || res.attendanceAll?.result || []);
         this.cachedAttendanceLogs = Array.isArray(res.attendanceLogs) ? res.attendanceLogs : (res.attendanceLogs?.data || res.attendanceLogs?.result || []);
         this.cachedLeavesAll = Array.isArray(res.leavesAll) ? res.leavesAll : (res.leavesAll?.data || res.leavesAll?.result || []);

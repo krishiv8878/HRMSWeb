@@ -453,6 +453,9 @@
 
     &.badge-active  { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; .dot { background-color: #10b981; } }
     &.badge-inactive{ background-color: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; .dot { background-color: #9ca3af; } }
+    &.badge-probation { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; .dot { background-color: #d97706; } }
+    &.badge-notice { background-color: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; .dot { background-color: #ea580c; } }
+    &.badge-exited { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; .dot { background-color: #ef4444; } }
   }
 }
 
@@ -477,6 +480,9 @@
       &.leave-btn:hover   { background-color: #fff7ed; border-color: #fed7aa; color: #c2410c; }
       &.edit-btn:hover    { background-color: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
       &.payroll-btn:hover { background-color: #f5f3ff; border-color: #ddd6fe; color: #7c3aed; }
+      &.checklist-btn:hover { background-color: #e0f2fe; border-color: #bae6fd; color: #0284c7; }
+      &.probation-btn:hover { background-color: #fef3c7; border-color: #fde68a; color: #b45309; }
+      &.rehire-btn:hover { background-color: #ecfdf5; border-color: #a7f3d0; color: #047857; }
 
       &.btn-toggle-off:hover { background-color: #fff7ed; border-color: #ffedd5; color: #c2410c; }
       &.btn-toggle-on:hover  { background-color: #ecfdf5; border-color: #a7f3d0; color: #047857; }

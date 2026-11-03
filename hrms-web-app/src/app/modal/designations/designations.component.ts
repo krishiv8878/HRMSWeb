@@ -44,6 +44,8 @@ export class DesignationsComponent implements OnInit {
     designationName: ['', [Validators.required, Validators.pattern('^[a-zA-Z0-9 .,\\-_/&]+$')]],
     departmentCategory: ['Engineering', [Validators.required]],
     careerLevel: ['Mid Level', [Validators.required]],
+    noticePeriodDays: [30, [Validators.required, Validators.min(0)]],
+    probationNoticePeriodDays: [null as any],
     isActive: [true]
   });
 
@@ -58,6 +60,8 @@ export class DesignationsComponent implements OnInit {
         designationName: this.data.designationName || '',
         departmentCategory: this.data.departmentCategory || this.data.department || 'Engineering',
         careerLevel: this.data.careerLevel || 'Mid Level',
+        noticePeriodDays: this.data.noticePeriodDays !== undefined && this.data.noticePeriodDays !== null ? Number(this.data.noticePeriodDays) : 30,
+        probationNoticePeriodDays: this.data.probationNoticePeriodDays !== undefined && this.data.probationNoticePeriodDays !== null ? Number(this.data.probationNoticePeriodDays) : null,
         isActive: this.data.isActive !== undefined ? Boolean(this.data.isActive) : true
       });
     }
@@ -97,6 +101,10 @@ export class DesignationsComponent implements OnInit {
       department: val.departmentCategory || 'Engineering',
       careerLevel: val.careerLevel || 'Mid Level',
       CareerLevel: val.careerLevel || 'Mid Level',
+      noticePeriodDays: Number(val.noticePeriodDays ?? 30),
+      NoticePeriodDays: Number(val.noticePeriodDays ?? 30),
+      probationNoticePeriodDays: (val.probationNoticePeriodDays !== null && val.probationNoticePeriodDays !== undefined && val.probationNoticePeriodDays !== '') ? Number(val.probationNoticePeriodDays) : null,
+      ProbationNoticePeriodDays: (val.probationNoticePeriodDays !== null && val.probationNoticePeriodDays !== undefined && val.probationNoticePeriodDays !== '') ? Number(val.probationNoticePeriodDays) : null,
       isActive: Boolean(val.isActive)
     };
 
