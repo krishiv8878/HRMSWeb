@@ -32,6 +32,9 @@ import { DashboardComponent } from './component/dashboard/dashboard.component';
 import { PmsComponent } from './component/pms/pms.component';
 import { ExpenseComponent } from './component/expense/expense.component';
 import { WorkflowConfigComponent } from './component/workflow-config/workflow-config.component';
+import { HelpdeskComponent } from './component/helpdesk/helpdesk.component';
+import { CompanyPolicyComponent } from './component/company-policy/company-policy.component';
+import { ReportsComponent } from './component/reports/reports.component';
 
 export const routes: Routes = [
     {
@@ -131,6 +134,15 @@ export const routes: Routes = [
             },
             {
                 path: 'workflow-config', component: WorkflowConfigComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin'] }
+            },
+            {
+                path: 'helpdesk', component: HelpdeskComponent
+            },
+            {
+                path: 'policies', component: CompanyPolicyComponent
+            },
+            {
+                path: 'reports', component: ReportsComponent, canActivate: [roleGuard], data: { roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] }
             }
         ]
     }

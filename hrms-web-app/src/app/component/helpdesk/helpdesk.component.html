@@ -1,0 +1,573 @@
+<div class="helpdesk-page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="header-badge">
+        <mat-icon>support_agent</mat-icon>
+        <span>Employee Service Desk</span>
+      </div>
+      <h1>Helpdesk & Ticketing Support</h1>
+      <p class="subtitle">Log IT, HR, and Admin issues, track assigned owners, maintain SLA turnaround, and view full status history</p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn-action primary" (click)="openCreateModal()">
+        <mat-icon>add_circle</mat-icon> + Create Ticket
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Banner -->
+  <div class="metrics-grid" *ngIf="metrics">
+    <div class="metric-card">
+      <div class="metric-icon blue"><mat-icon>confirmation_number</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Total Tickets</span>
+        <span class="metric-val">{{ metrics.totalTickets }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon amber"><mat-icon>pending</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Open / In Progress</span>
+        <span class="metric-val">{{ metrics.openTickets + metrics.inProgressTickets }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon rose"><mat-icon>priority_high</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Critical Priority</span>
+        <span class="metric-val">{{ metrics.criticalTicketsCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon emerald"><mat-icon>check_circle</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">SLA Compliance</span>
+        <span class="metric-val">{{ metrics.slaCompliancePercent | number:'1.0-1' }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Scope Navigation Tabs -->
+  <div class="queue-tabs-container">
+    <button type="button" class="queue-tab" [class.active]="activeQueueTab === 'my-tickets'" (click)="setQueueTab('my-tickets')">
+      <mat-icon>person_outline</mat-icon>
+      <span>My Requests</span>
+    </button>
+
+    <button type="button" class="queue-tab" [class.active]="activeQueueTab === 'assigned-to-me'" (click)="setQueueTab('assigned-to-me')">
+      <mat-icon>assignment_ind</mat-icon>
+      <span>Assigned to Me</span>
+    </button>
+
+    <button type="button" class="queue-tab alert-tab" [class.active]="activeQueueTab === 'unassigned'" (click)="setQueueTab('unassigned')">
+      <mat-icon>inbox</mat-icon>
+      <span>Unassigned Queue</span>
+    </button>
+
+    <button type="button" class="queue-tab" *ngIf="isAdminOrHr || rbacService.isManager()" [class.active]="activeQueueTab === 'all'" (click)="setQueueTab('all')">
+      <mat-icon>view_list</mat-icon>
+      <span>All Tickets</span>
+    </button>
+  </div>
+
+  <!-- Filter & Action Bar -->
+  <div class="filter-card">
+    <div class="search-box">
+      <mat-icon>search</mat-icon>
+      <input type="text" [(ngModel)]="searchQuery" (input)="applyFilter()" placeholder="Search by Ticket #, Subject, Requester, or Assignee..." />
+    </div>
+
+    <div class="filter-group">
+      <label>Category:</label>
+      <select [(ngModel)]="categoryFilter" (change)="onFilterChange()">
+        <option value="All">All Categories</option>
+        <option value="IT Support">IT Support</option>
+        <option value="HR Support">HR Support</option>
+        <option value="Admin & Facilities">Admin & Facilities</option>
+        <option value="Payroll & Finance">Payroll & Finance</option>
+        <option value="General">General</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Status:</label>
+      <select [(ngModel)]="statusFilter" (change)="applyFilter()">
+        <option value="All">All Statuses</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Pending User">Pending User</option>
+        <option value="Resolved">Resolved</option>
+        <option value="Closed">Closed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Priority:</label>
+      <select [(ngModel)]="priorityFilter" (change)="applyFilter()">
+        <option value="All">All Priorities</option>
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+        <option value="Critical">Critical</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tickets Table -->
+  <div class="table-container">
+    <table class="custom-table" *ngIf="!isLoading && filteredTickets.length > 0">
+      <thead>
+        <tr>
+          <th>Ticket #</th>
+          <th>Subject & Category</th>
+          <th>Requester</th>
+          <th>Assigned Owner</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>SLA Due</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of filteredTickets">
+          <td class="code-cell font-mono">{{ t.ticketNumber }}</td>
+          <td>
+            <div class="subject-cell">
+              <span class="subject-title">{{ t.subject }}</span>
+              <span class="category-badge">{{ t.departmentCategory }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="requester-cell">
+              <span class="req-name">{{ t.requesterName }}</span>
+              <span class="req-dept" *ngIf="t.requesterDepartment">{{ t.requesterDepartment }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="assignee-cell">
+              <div *ngIf="t.assignedToEmployeeId" class="assigned-user-pill">
+                <mat-icon class="inline-icon">account_circle</mat-icon>
+                <span>{{ t.assigneeName }}</span>
+                <button type="button" *ngIf="(isAdminOrHr || rbacService.isManager()) && t.status !== 'Closed' && t.status !== 'Cancelled'" class="btn-reassign-mini" (click)="openTicketDetails(t, true)">
+                  Reassign
+                </button>
+              </div>
+              <div *ngIf="!t.assignedToEmployeeId" class="unassigned-container">
+                <span class="unassigned-pill">Unassigned</span>
+                <div class="unassigned-actions">
+                  <button type="button" *ngIf="(isAdminOrHr || rbacService.isManager() || t.canCurrentUserClaim) && t.status !== 'Closed' && t.status !== 'Cancelled'" class="btn-claim-inline" (click)="claimTicket(t.id, $event)">
+                    Claim
+                  </button>
+                  <button type="button" *ngIf="(isAdminOrHr || rbacService.isManager() || t.canCurrentUserAssign) && t.status !== 'Closed' && t.status !== 'Cancelled'" class="btn-assign-inline" (click)="openTicketDetails(t, true)">
+                    Assign
+                  </button>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="priority-pill" [ngClass]="t.priority.toLowerCase()">
+              {{ t.priority }}
+            </span>
+          </td>
+          <td>
+            <span class="status-pill" [ngClass]="t.status.toLowerCase().replace(' ', '-')">
+              {{ t.status }}
+            </span>
+          </td>
+          <td>
+            <div class="sla-cell">
+              <span>{{ t.slaDueTime ? (t.slaDueTime | date:'short') : '-' }}</span>
+              <span class="sla-badge" [ngClass]="t.slaStatus === 'Resolved Past SLA' || t.slaStatus === 'Overdue' ? 'breached' : 'met'">
+                {{ t.slaStatus }}
+              </span>
+            </div>
+          </td>
+          <td class="date-cell">{{ t.createdDate | date:'mediumDate' }}</td>
+          <td>
+            <button type="button" class="btn-action table-btn" (click)="openTicketDetails(t)">
+              <mat-icon>visibility</mat-icon> Details
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Loading State -->
+    <div class="state-container" *ngIf="isLoading">
+      <mat-icon class="spinning">sync</mat-icon>
+      <p>Loading tickets...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div class="state-container empty" *ngIf="!isLoading && filteredTickets.length === 0">
+      <mat-icon>sentiment_satisfied_alt</mat-icon>
+      <h3>No tickets found</h3>
+      <p>There are no support tickets matching your current queue and filter criteria.</p>
+    </div>
+  </div>
+
+  <!-- Create Ticket Modal -->
+  <div class="modal-backdrop" *ngIf="showCreateModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <mat-icon>add_circle_outline</mat-icon>
+          <h3>Create Support Ticket</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeCreateModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Category <span class="required">*</span></label>
+          <select [(ngModel)]="newTicket.category">
+            <option value="IT Support">IT Support (Hardware, Software, Network, Access)</option>
+            <option value="HR Support">HR Support (Policies, Letters, Onboarding, Benefits)</option>
+            <option value="Admin & Facilities">Admin & Facilities (Workstation, ID Card, Assets)</option>
+            <option value="Payroll & Finance">Payroll & Finance (Salary, Tax, Deductions, Claims)</option>
+            <option value="General">General Inquiry</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Priority <span class="required">*</span></label>
+          <select [(ngModel)]="newTicket.priority">
+            <option value="Low">Low - General query (72h SLA)</option>
+            <option value="Medium">Medium - Standard issue (48h SLA)</option>
+            <option value="High">High - Impaired work (24h SLA)</option>
+            <option value="Critical">Critical - Blocker / System down (4h SLA)</option>
+          </select>
+        </div>
+
+        <!-- Optional Direct Assignment for HR, Admins & Managers -->
+        <div class="form-group" *ngIf="(isAdminOrHr || rbacService.isManager()) && supportAgents.length > 0">
+          <label>Directly Assign To Agent (Optional):</label>
+          <select [(ngModel)]="newTicket.assignedToEmployeeId">
+            <option [value]="0">Leave Unassigned (Queue triage)</option>
+            <option *ngFor="let agent of supportAgents" [value]="agent.id">
+              {{ agent.fullName }} ({{ agent.department || agent.designation || 'Staff' }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Subject <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newTicket.subject" placeholder="Brief summary of the issue..." />
+        </div>
+
+        <div class="form-group">
+          <label>Description <span class="required">*</span></label>
+          <textarea rows="4" [(ngModel)]="newTicket.description" placeholder="Provide complete details, steps to reproduce, or requested action..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-action secondary" (click)="closeCreateModal()">Cancel</button>
+        <button type="button" class="btn-action primary" (click)="submitNewTicket()">Submit Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Detail & Update Modal -->
+  <div class="modal-backdrop" *ngIf="showDetailModal && selectedTicket">
+    <div class="modal-card detail-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <mat-icon>receipt_long</mat-icon>
+          <h3>{{ selectedTicket.ticketNumber }} - {{ selectedTicket.subject }}</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeDetailModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Metadata Overview -->
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Requester:</span>
+            <span class="value">{{ selectedTicket.requesterName }} ({{ selectedTicket.requesterEmail || 'N/A' }})</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Category:</span>
+            <span class="value">{{ selectedTicket.departmentCategory }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Priority:</span>
+            <span class="value priority-pill" [ngClass]="selectedTicket.priority.toLowerCase()">{{ selectedTicket.priority }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Current Status:</span>
+            <span class="value status-pill" [ngClass]="selectedTicket.status.toLowerCase().replace(' ', '-')">{{ selectedTicket.status }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Logged Date:</span>
+            <span class="value">{{ selectedTicket.createdDate | date:'medium' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">SLA Target:</span>
+            <span class="value">{{ selectedTicket.slaDueTime ? (selectedTicket.slaDueTime | date:'medium') : 'None' }}</span>
+          </div>
+        </div>
+
+        <!-- Ownership & Assignment Banner -->
+        <div class="assignment-panel">
+          <div class="assignment-info" *ngIf="selectedTicket.assignedToEmployeeId">
+            <div class="info-left">
+              <mat-icon class="assigned-icon">assignment_ind</mat-icon>
+              <div>
+                <span class="panel-label">Assigned Support Agent:</span>
+                <strong class="panel-val">{{ selectedTicket.assigneeName }}</strong>
+              </div>
+            </div>
+            <button type="button" class="btn-action secondary btn-sm" *ngIf="canAssign" (click)="toggleAssignForm()">
+              <mat-icon>swap_horiz</mat-icon> {{ showAssignForm ? 'Cancel' : 'Reassign Ticket' }}
+            </button>
+          </div>
+
+          <div class="assignment-info unassigned" *ngIf="!selectedTicket.assignedToEmployeeId">
+            <div class="info-left">
+              <mat-icon class="unassigned-icon">warning_amber</mat-icon>
+              <div>
+                <span class="panel-label">Ticket Ownership:</span>
+                <strong class="panel-val">Unassigned (In Triage Queue)</strong>
+              </div>
+            </div>
+            <div class="assignment-buttons">
+              <button type="button" class="btn-action primary btn-sm" *ngIf="canClaim" (click)="claimTicket()">
+                <mat-icon>pan_tool</mat-icon> Claim Ticket
+              </button>
+              <button type="button" class="btn-action secondary btn-sm" *ngIf="canAssign" (click)="toggleAssignForm()">
+                <mat-icon>person_add</mat-icon> {{ showAssignForm ? 'Cancel' : 'Assign to Agent' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Assignment Form Drawer -->
+          <div class="assignment-drawer" *ngIf="showAssignForm">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Select Support Agent:</label>
+                <select [(ngModel)]="assignPayload.assignToEmployeeId">
+                  <option [value]="0">-- Choose Agent --</option>
+                  <option *ngFor="let agent of supportAgents" [value]="agent.id">
+                    {{ agent.fullName }} ({{ agent.department || agent.designation || 'Staff' }})
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Assignment Notes (Optional):</label>
+              <input type="text" [(ngModel)]="assignPayload.assignmentNotes" placeholder="Reason or instructions for this agent..." />
+            </div>
+            <div class="form-actions-inline">
+              <button type="button" class="btn-action secondary btn-sm" (click)="showAssignForm = false">Cancel</button>
+              <button type="button" class="btn-action primary btn-sm" (click)="saveAssignment()">Confirm Assignment</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Issue Description -->
+        <div class="description-section">
+          <h4>Issue Description</h4>
+          <div class="description-box">{{ selectedTicket.description }}</div>
+        </div>
+
+        <!-- Resolution Notes (if available) -->
+        <div class="description-section" *ngIf="selectedTicket.resolutionNotes">
+          <h4>Resolution Notes</h4>
+          <div class="resolution-box">{{ selectedTicket.resolutionNotes }}</div>
+        </div>
+
+        <!-- ================= ACTIONS & STATUS CONTROLS ================= -->
+
+        <!-- CASE 1: UNASSIGNED TICKET -->
+        <div class="unassigned-notice-box" *ngIf="!selectedTicket.assignedToEmployeeId">
+          <div class="notice-header">
+            <mat-icon>info</mat-icon>
+            <div class="notice-text">
+              <strong *ngIf="isRequester && !canAssign">Your ticket is awaiting agent assignment</strong>
+              <strong *ngIf="canAssign">Action Required: Ticket is unassigned</strong>
+              <p *ngIf="isRequester && !canAssign">A support agent will claim this ticket shortly. You will be notified when work begins.</p>
+              <p *ngIf="canAssign">Please claim or assign this ticket to an agent before changing its status.</p>
+            </div>
+          </div>
+          <!-- Requester can cancel if they no longer need help -->
+          <div class="requester-controls" *ngIf="isRequester && (selectedTicket.status === 'Open' || selectedTicket.status === 'In Progress')">
+            <button type="button" class="btn-action danger-outline btn-sm" (click)="cancelMyTicket()">
+              <mat-icon>cancel</mat-icon> Cancel My Request
+            </button>
+          </div>
+        </div>
+
+        <!-- CASE 2: ASSIGNED TICKET - SUPPORT AGENT / ADMIN STATUS CONTROLS -->
+        <div class="status-update-section" *ngIf="selectedTicket.assignedToEmployeeId && canAgentUpdateStatus">
+          <h4>
+            <mat-icon>tune</mat-icon>
+            Update Ticket Status (Agent Controls)
+          </h4>
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>Transition Status To:</label>
+              <select [(ngModel)]="updateStatusPayload.status">
+                <option value="In Progress">In Progress (Actively working)</option>
+                <option value="Pending User">Pending User (Waiting for employee reply)</option>
+                <option value="Resolved">Resolved (Solution provided - awaiting requester confirmation)</option>
+                <option *ngIf="rbacService.isAdmin()" value="Closed">Closed (Completed - Admin Override)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Resolution / Activity Notes:</label>
+            <textarea rows="2" [(ngModel)]="updateStatusPayload.resolutionNotes" placeholder="Explain the resolution, progress, or next steps..."></textarea>
+          </div>
+          <div class="form-actions-inline">
+            <button type="button" class="btn-action primary btn-sm" (click)="saveTicketStatus()">
+              Update Status
+            </button>
+          </div>
+        </div>
+
+        <!-- Informational Status Callouts for Non-Requesters (Support Agent / HR / Managers) -->
+        <div class="ticket-status-callout resolved-notice" *ngIf="selectedTicket.assignedToEmployeeId && selectedTicket.status === 'Resolved' && !isRequester">
+          <div class="callout-header">
+            <mat-icon class="icon-resolved">hourglass_top</mat-icon>
+            <div class="callout-text">
+              <strong>Resolution Awaiting Requester Confirmation</strong>
+              <p>This ticket has been marked as <strong>Resolved</strong>. The requester (<strong>{{ selectedTicket.requesterName }}</strong>) has been requested to review the solution and either accept &amp; close or reopen the ticket.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-status-callout closed-notice" *ngIf="selectedTicket.assignedToEmployeeId && selectedTicket.status === 'Closed' && !isRequester">
+          <div class="callout-header">
+            <mat-icon class="icon-closed">check_circle</mat-icon>
+            <div class="callout-text">
+              <strong>Ticket Confirmed &amp; Closed</strong>
+              <p>This ticket was confirmed and closed by the requester. Status changes are no longer allowed for support agents.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-status-callout cancelled-notice" *ngIf="selectedTicket.assignedToEmployeeId && selectedTicket.status === 'Cancelled' && !isRequester">
+          <div class="callout-header">
+            <mat-icon class="icon-cancelled">cancel</mat-icon>
+            <div class="callout-text">
+              <strong>Ticket Cancelled</strong>
+              <p>This ticket was cancelled by the requester. No further status changes can be made.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CASE 3: ASSIGNED TICKET - REQUESTER CONTROLS -->
+        <div class="requester-workflow-card" *ngIf="selectedTicket.assignedToEmployeeId && isRequester">
+          <!-- 3A: When Ticket is RESOLVED -->
+          <div class="resolved-action-box" *ngIf="selectedTicket.status === 'Resolved'">
+            <div class="action-alert">
+              <mat-icon class="success-icon">task_alt</mat-icon>
+              <div>
+                <strong>Support has marked your issue as Resolved!</strong>
+                <p>Please review the resolution above and confirm if this resolved your issue.</p>
+              </div>
+            </div>
+            <div class="action-buttons-row">
+              <button type="button" class="btn-action success btn-sm" (click)="confirmAndCloseTicket()">
+                <mat-icon>check_circle</mat-icon> Accept Resolution & Close Ticket
+              </button>
+              <button type="button" class="btn-action warning btn-sm" (click)="reopenTicket()">
+                <mat-icon>replay</mat-icon> Issue Not Solved (Reopen)
+              </button>
+            </div>
+          </div>
+
+          <!-- 3B: When Ticket is OPEN or IN PROGRESS -->
+          <div class="active-agent-info" *ngIf="selectedTicket.status === 'In Progress' || selectedTicket.status === 'Pending User' || selectedTicket.status === 'Open'">
+            <span>Assigned agent <strong>{{ selectedTicket.assigneeName }}</strong> is handling your request.</span>
+            <button type="button" class="btn-action danger-outline btn-sm" (click)="cancelMyTicket()">
+              <mat-icon>cancel</mat-icon> Cancel Request
+            </button>
+          </div>
+
+          <!-- 3C: When Ticket is CLOSED -->
+          <div class="closed-info" *ngIf="selectedTicket.status === 'Closed'">
+            <span>This ticket was resolved and closed.</span>
+            <button type="button" class="btn-action secondary btn-sm" (click)="reopenTicket()">
+              <mat-icon>replay</mat-icon> Reopen Ticket
+            </button>
+          </div>
+
+          <!-- 3D: When Ticket is CANCELLED -->
+          <div class="closed-info" *ngIf="selectedTicket.status === 'Cancelled'">
+            <span>This ticket has been cancelled.</span>
+          </div>
+        </div>
+
+        <!-- CASE 4: NON-ASSIGNEE MANAGER / HR NOTICE -->
+        <div class="ownership-notice" *ngIf="selectedTicket.assignedToEmployeeId && !isAgentOrAdmin && !isRequester && canAssign && selectedTicket.status !== 'Closed' && selectedTicket.status !== 'Cancelled'">
+          <mat-icon>info</mat-icon>
+          <span>This ticket is currently assigned to <strong>{{ selectedTicket.assigneeName }}</strong>. You can use the <strong>Reassign Ticket</strong> button above if you wish to transfer or take over ownership.</span>
+        </div>
+
+        <!-- Activity Timeline & Conversation History -->
+        <div class="activity-history-section">
+          <h4>
+            <mat-icon>history</mat-icon>
+            Status History & Activity Trail
+          </h4>
+
+          <div class="timeline-container" *ngIf="selectedTicket.activities && selectedTicket.activities.length > 0">
+            <div class="timeline-item" *ngFor="let act of selectedTicket.activities">
+              <div class="timeline-icon-box" [ngClass]="getActivityBadgeClass(act.activityType)">
+                <mat-icon>{{ getActivityIcon(act.activityType) }}</mat-icon>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-meta">
+                  <strong class="timeline-author">{{ act.performedByName }}</strong>
+                  <span class="timeline-badge" [ngClass]="getActivityBadgeClass(act.activityType)">{{ act.activityType }}</span>
+                  <span class="timeline-time">{{ act.timestamp | date:'short' }}</span>
+                </div>
+                <div class="timeline-body" *ngIf="act.activityType === 'StatusChange' || act.activityType === 'Resolution'">
+                  <span *ngIf="act.oldStatus && act.newStatus" class="status-change-label">
+                    Changed status: <span class="old-st">{{ act.oldStatus }}</span> &rarr; <span class="new-st">{{ act.newStatus }}</span>
+                  </span>
+                  <p class="timeline-comment">{{ act.comment }}</p>
+                </div>
+                <div class="timeline-body" *ngIf="act.activityType === 'Assigned'">
+                  <p class="timeline-comment">{{ act.comment }}</p>
+                </div>
+                <div class="timeline-body" *ngIf="act.activityType === 'Comment' || act.activityType === 'Created'">
+                  <p class="timeline-comment">{{ act.comment }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="timeline-empty" *ngIf="!selectedTicket.activities || selectedTicket.activities.length === 0">
+            <span>No activity logs recorded yet.</span>
+          </div>
+
+          <!-- Add Comment / Message Box -->
+          <div class="comment-box-container">
+            <h5>Add Comment or Follow-up Note</h5>
+            <textarea rows="2" [(ngModel)]="newCommentText" placeholder="Write a note, question, or reply..."></textarea>
+            <div class="comment-actions">
+              <button type="button" class="btn-action primary btn-sm" [disabled]="!newCommentText.trim() || isPostingComment" (click)="postComment()">
+                <mat-icon>send</mat-icon> Post Comment
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-action secondary" (click)="closeDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

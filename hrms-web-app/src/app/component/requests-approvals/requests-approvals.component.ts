@@ -624,7 +624,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
                 if (req) {
                   const statusStr: 'Pending' | 'Approved' | 'Rejected' =
                     req.status === 'Approved' ? 'Approved' : (req.status === 'Rejected' ? 'Rejected' : 'Pending');
-                  const last4 = req.accountNumber ? String(req.accountNumber).slice(-4) : '••••';
+                  const last4 = req.accountNumber ? String(req.accountNumber).slice(-4) : 'Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢';
                   const empName = req.employeeName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Employee';
                   const initials = ((emp.firstName?.[0] || 'E') + (emp.lastName?.[0] || '')).toUpperCase();
 
@@ -638,7 +638,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
                     startDate: req.requestedAt,
                     endDate: req.requestedAt,
                     durationText: req.requestedAt ? new Date(req.requestedAt).toLocaleDateString('en-GB') : 'Recent',
-                    reasonPreview: `Bank: ${req.bankName} | A/C: •••• ${last4} | IFSC: ${req.ifscCode} | Beneficiary: ${req.nameOnAccount}`,
+                    reasonPreview: `Bank: ${req.bankName} | A/C: Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢ ${last4} | IFSC: ${req.ifscCode} | Beneficiary: ${req.nameOnAccount}`,
                     status: statusStr,
                     actionBy: req.actionBy,
                     actionDate: req.actionDate,
@@ -980,6 +980,57 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     }
   }
 
+  // BL-05: Targeted synchronization after approval/rejection actions to prevent 9-endpoint fanout
+  refreshAfterAction(item?: ApprovalRequestItem, newStatus?: 'Approved' | 'Rejected' | 'NeedsRevision' | 'Cancelled'): void {
+    if (item && newStatus) {
+      item.status = newStatus;
+      item.canApprove = false;
+      item.canReturnForRevision = false;
+      item.canOverride = false;
+      item.canReassign = false;
+      this.updateMetricsAndFilter();
+    }
+
+    this.notificationService.refreshNotifications();
+
+    // Query centralized workflow inbox to update pending approval queues without 9-endpoint query fanout
+    this.workflowService.getPendingInbox().pipe(catchError(() => of([]))).subscribe({
+      next: (inboxRes: any) => {
+        const rawInbox: any[] = Array.isArray(inboxRes) ? inboxRes : (inboxRes?.data || []);
+        const wfMap = new Map<string, any>();
+        rawInbox.forEach((w: any) => {
+          if (w.requestType && w.requestId) {
+            wfMap.set(`${String(w.requestType).toLowerCase()}_${w.requestId}`, w);
+          }
+        });
+
+        this.allRequests.forEach(r => {
+          const key = `${r.category.toLowerCase()}_${r.id}`;
+          const match = wfMap.get(key);
+          if (match) {
+            r.workflowInstanceId = match.workflowInstanceId;
+            r.pendingWith = match.pendingWith;
+            r.canApprove = Boolean(match.canApprove);
+            r.canReturnForRevision = Boolean(match.canReturnForRevision);
+            r.canOverride = Boolean(match.canOverride);
+            r.canReassign = Boolean(match.canReassign);
+          } else if (r.workflowInstanceId && r.status === 'Pending') {
+            if (!item || r.id === item.id) {
+              r.status = newStatus || 'Approved';
+              r.canApprove = false;
+              r.canReturnForRevision = false;
+            }
+          }
+        });
+
+        this.updateMetricsAndFilter();
+      },
+      error: () => {
+        this.loadAllRequests();
+      }
+    });
+  }
+
   reviewTimesheet(item: ApprovalRequestItem, initialAction?: 'approve' | 'reject'): void {
     if (!this.rbacService.isAdmin() && !this.rbacService.isHR() && !this.rbacService.isManager()) {
       this.toaster.error('Only Managers, HR, and Administrators can review timesheets.', 'Access Denied');
@@ -1008,7 +1059,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           next: () => {
             this.toaster.success(`Timesheet for ${item.requesterName} Approved`, 'Approved');
             this.setSubmittingState(false);
-            this.loadAllRequests();
+            this.refreshAfterAction(item);
           },
           error: (err: any) => {
             const msg = err?.error?.message || 'Failed to approve timesheet';
@@ -1023,7 +1074,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           next: () => {
             this.toaster.warning(`Timesheet for ${item.requesterName} Rejected`, 'Rejected');
             this.setSubmittingState(false);
-            this.loadAllRequests();
+            this.refreshAfterAction(item);
           },
           error: (err: any) => {
             const msg = err?.error?.message || 'Failed to reject timesheet';
@@ -1063,7 +1114,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.success(`${item.requestType} for ${item.requesterName} Approved`, 'Approved');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to approve request via workflow';
@@ -1086,7 +1137,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.success(`Leave request for ${item.requesterName} Approved`, 'Approved');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to approve leave request';
@@ -1100,7 +1151,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.success(`Document "${item.requestType}" for ${item.requesterName} Approved`, 'Approved');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to approve document';
@@ -1114,7 +1165,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.success(`Timesheet for ${item.requesterName} Approved`, 'Approved');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to approve timesheet';
@@ -1167,7 +1218,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
                 next: () => {
                   this.toaster.success(`Bank details update for ${item.requesterName} Approved and active in payroll!`, 'Approved');
                   this.setSubmittingState(false);
-                  this.loadAllRequests();
+                  this.refreshAfterAction(item);
                 },
                 error: (err: any) => {
                   const msg = err?.error?.message || 'Failed to update employee banking status';
@@ -1198,7 +1249,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               next: () => {
                 this.toaster.success(`Resignation for ${item.requesterName} Approved, LWD locked, and Exit checklist initiated.`, 'Approved');
                 this.setSubmittingState(false);
-                this.loadAllRequests();
+                this.refreshAfterAction(item);
               },
               error: (err: any) => {
                 this.toaster.error(err?.error?.message || 'Failed to approve resignation', 'Approval Error');
@@ -1214,7 +1265,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
               next: () => {
                 this.toaster.success(`Resignation for ${item.requesterName} accepted and forwarded to HR.`, 'Accepted');
                 this.setSubmittingState(false);
-                this.loadAllRequests();
+                this.refreshAfterAction(item);
               },
               error: (err: any) => {
                 this.toaster.error(err?.error?.message || 'Failed to review resignation', 'Review Error');
@@ -1244,7 +1295,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.success(`Attendance request for ${item.requesterName} Approved`, 'Approved');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               console.error('Error approving attendance request:', err);
@@ -1287,7 +1338,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.warning(`${item.requestType} for ${item.requesterName} Rejected`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to reject request via workflow';
@@ -1311,7 +1362,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.warning(`Leave request for ${item.requesterName} Rejected`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to reject leave request';
@@ -1325,7 +1376,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.warning(`Document "${item.requestType}" for ${item.requesterName} Rejected`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to reject document';
@@ -1339,7 +1390,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.warning(`Timesheet for ${item.requesterName} Rejected`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to reject timesheet';
@@ -1376,12 +1427,12 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.warning(`Bank details request for ${item.requesterName} Rejected.`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: () => {
               this.toaster.warning(`Bank details request for ${item.requesterName} Rejected.`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             }
           });
         } else if (item.requestType?.includes('Resignation') || item.rawRecord?.resignationStatus !== undefined) {
@@ -1393,7 +1444,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.warning(`Resignation for ${item.requesterName} rejected.`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               this.toaster.error(err?.error?.message || 'Failed to reject resignation', 'Rejection Error');
@@ -1423,7 +1474,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.warning(`Attendance request for ${item.requesterName} Rejected`, 'Rejected');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               console.error('Error rejecting attendance request:', err);
@@ -1470,7 +1521,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.info(`Request for ${item.requesterName} returned for revision.`, 'Returned for Revision');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               const msg = err?.error?.message || 'Failed to return request for revision.';
@@ -1492,7 +1543,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.info(`Leave request for ${item.requesterName} returned for revision.`, 'Returned for Revision');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               this.toaster.error(err?.error?.message || 'Failed to return leave request.', 'Error');
@@ -1518,7 +1569,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             next: () => {
               this.toaster.info(`Attendance request for ${item.requesterName} returned for revision.`, 'Returned for Revision');
               this.setSubmittingState(false);
-              this.loadAllRequests();
+              this.refreshAfterAction(item);
             },
             error: (err: any) => {
               this.toaster.error(err?.error?.message || 'Failed to update attendance request.', 'Error');
@@ -1528,7 +1579,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
         } else {
           this.toaster.info(`Request for ${item.requesterName} marked as Needs Revision.`, 'Needs Revision');
           this.setSubmittingState(false);
-          this.loadAllRequests();
+          this.refreshAfterAction(item);
         }
       }
     });
@@ -1553,7 +1604,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       next: () => {
         this.toaster.success(`Request for ${item.requesterName} ${decision}d via administrative override.`, 'Override Executed');
         this.setSubmittingState(false);
-        this.loadAllRequests();
+        this.refreshAfterAction(item);
       },
       error: (err: any) => {
         const msg = err?.error?.message || 'Failed to execute administrative override';
@@ -1584,7 +1635,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       next: () => {
         this.toaster.success(`Approval step reassigned successfully.`, 'Reassigned');
         this.setSubmittingState(false);
-        this.loadAllRequests();
+        this.refreshAfterAction(item);
       },
       error: (err: any) => {
         const msg = err?.error?.message || 'Failed to reassign step';
@@ -1622,7 +1673,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     });
 
     dialogRef.afterClosed().subscribe(() => {
-      this.loadAllRequests();
+      this.refreshAfterAction(item);
     });
   }
 
@@ -1682,8 +1733,8 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       firstName: raw.firstName || item.requesterName?.split(' ')[0] || 'Candidate',
       lastName: raw.lastName || item.requesterName?.split(' ').slice(1).join(' ') || '',
       fullName: item.requesterName,
-      emailAddress: raw.emailAddress || '—',
-      mobileNumber: raw.mobileNumber || '—',
+      emailAddress: raw.emailAddress || 'Ã¢â‚¬â€',
+      mobileNumber: raw.mobileNumber || 'Ã¢â‚¬â€',
       appliedRole: raw.appliedRole || 'Applicant',
       stage: raw.stage || 'Technical Interview',
       totalExperience: raw.totalExperience || '0',
@@ -1774,7 +1825,7 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
           next: () => {
             this.toaster.success(`Leave request #${leaveId} has been cancelled and quota balance restored.`, 'Leave Cancelled');
             this.setSubmittingState(false);
-            this.loadAllRequests();
+            this.refreshAfterAction(item);
           },
           error: (err: any) => {
             console.error('Error cancelling leave:', err);

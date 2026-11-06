@@ -8,9 +8,19 @@
      <div class="col-xl-6 col-md-6 col-12 d-flex align-items-center justify-content-center">
         <div class="register-page">
             <form [formGroup]="registretion" (ngSubmit)="submit()">
-                <p>register</p>
+                <p>Complete Registration</p>
 
                 <p class="register-info"> Already have an account? <a href="login">login</a></p>
+
+                <div *ngIf="!invitationToken && invitationStatusChecked" class="alert alert-warning mb-3 p-3 text-center" style="background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 13px;">
+                    <strong class="d-block mb-1">Registration by Invitation Only</strong>
+                    Public self-registration is closed. Please use the secure invitation link sent by your HR administrator, or contact HR to request access.
+                </div>
+
+                <div *ngIf="invitationToken && isInvitationValid" class="alert alert-success mb-3 p-2 text-center" style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; color: #155724; font-size: 13px;">
+                    Invitation verified! Set your password and complete your profile below.
+                </div>
+
                 <div class="register-form">
                     <mat-form-field appearance="outline">
                         <mat-label>First Name</mat-label>
@@ -56,7 +66,7 @@
                     </mat-form-field>
 
                     <div class="register-btn">
-                        <button mat-flat-button>register</button>
+                        <button mat-flat-button [disabled]="!invitationToken || !isInvitationValid">Complete Registration</button>
                     </div>
 
                     <!-- OR Divider -->
@@ -66,12 +76,9 @@
                         <mat-divider></mat-divider>
                     </div>
 
-                    <!-- Social Icons -->
-                    <div class="social-icons">
-                        <button mat-icon-button><i class="fab fa-google"></i></button>
-                        <button mat-icon-button><i class="fab fa-facebook-f"></i></button>
-                        <button mat-icon-button><i class="fab fa-twitter"></i></button>
-                        <button mat-icon-button><i class="fab fa-linkedin-in"></i></button>
+                    <!-- Back to Login -->
+                    <div class="text-center mt-2">
+                        <a href="login" class="text-decoration-none">Return to Sign In</a>
                     </div>
 
                 </div>

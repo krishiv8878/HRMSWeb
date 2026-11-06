@@ -1,0 +1,285 @@
+<div class="policy-page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="header-badge">
+        <mat-icon>policy</mat-icon>
+        <span>Governance & Compliance</span>
+      </div>
+      <h1>Company Policies & Handbooks</h1>
+      <p class="subtitle">Review official organizational guidelines, code of conduct, and sign mandatory policy acknowledgements</p>
+    </div>
+
+    <div class="header-actions" *ngIf="canManagePolicies">
+      <button type="button" class="btn-action primary" (click)="openCreateModal()">
+        <mat-icon>add_circle</mat-icon> + Publish Policy
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Banner (For Admin/HR) -->
+  <div class="metrics-grid" *ngIf="canManagePolicies && complianceSummary">
+    <div class="metric-card">
+      <div class="metric-icon blue"><mat-icon>library_books</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Active Policies</span>
+        <span class="metric-val">{{ complianceSummary.activePolicies }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon amber"><mat-icon>fact_check</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Mandatory Policies</span>
+        <span class="metric-val">{{ complianceSummary.mandatoryAcknowledgementPolicies }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon emerald"><mat-icon>verified</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Compliance Rate</span>
+        <span class="metric-val">{{ complianceSummary.overallComplianceRatePercent | number:'1.0-1' }}%</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon indigo"><mat-icon>assignment_turned_in</mat-icon></div>
+      <div class="metric-data">
+        <span class="metric-label">Total Acknowledged</span>
+        <span class="metric-val">{{ complianceSummary.totalRecordedAcknowledgements }} / {{ complianceSummary.totalRequiredAcknowledgements }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Toolbar -->
+  <div class="filter-card">
+    <div class="search-box">
+      <mat-icon>search</mat-icon>
+      <input type="text" [(ngModel)]="searchQuery" (input)="applyFilter()" placeholder="Search policies by title or keyword..." />
+    </div>
+
+    <div class="filter-group">
+      <label>Category:</label>
+      <select [(ngModel)]="categoryFilter" (change)="onFilterChange()">
+        <option value="All">All Categories</option>
+        <option value="Code of Conduct">Code of Conduct</option>
+        <option value="Information Security">Information Security</option>
+        <option value="Leave & Attendance">Leave & Attendance</option>
+        <option value="Compensation & Benefits">Compensation & Benefits</option>
+        <option value="Work Environment">Work Environment</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Policies Grid -->
+  <div class="policies-grid" *ngIf="!isLoading && filteredPolicies.length > 0">
+    <div class="policy-card" *ngFor="let p of filteredPolicies" (click)="openReadModal(p)">
+      <div class="card-top">
+        <span class="category-pill">{{ p.category }}</span>
+        <span class="version-tag">v{{ p.version }}</span>
+      </div>
+
+      <h3 class="policy-title">{{ p.title }}</h3>
+
+      <div class="policy-meta">
+        <div class="meta-item">
+          <mat-icon>event</mat-icon>
+          <span>Effective: {{ p.effectiveDate | date:'mediumDate' }}</span>
+        </div>
+        <div class="meta-item" *ngIf="canManagePolicies">
+          <mat-icon>people_outline</mat-icon>
+          <span>{{ p.totalAcksCount }} Acknowledged</span>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <div class="status-indicator">
+          <ng-container *ngIf="p.requiresAcknowledgement">
+            <span class="ack-badge acked" *ngIf="p.isAcknowledgedByCurrentUser">
+              <mat-icon>check_circle</mat-icon> Acknowledged
+            </span>
+            <span class="ack-badge pending" *ngIf="!p.isAcknowledgedByCurrentUser">
+              <mat-icon>error_outline</mat-icon> Action Required
+            </span>
+          </ng-container>
+          <span class="ack-badge info" *ngIf="!p.requiresAcknowledgement">
+            <mat-icon>info</mat-icon> Informational
+          </span>
+        </div>
+
+        <div class="card-actions">
+          <button type="button" class="btn-read" (click)="openReadModal(p)">Read</button>
+          <button type="button" class="btn-icon" *ngIf="canManagePolicies" (click)="openEditModal(p, $event)" title="Edit Policy">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button type="button" class="btn-icon" *ngIf="canManagePolicies" (click)="viewAcknowledgements(p, $event)" title="View Compliance List">
+            <mat-icon>how_to_reg</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="state-container" *ngIf="isLoading">
+    <mat-icon class="spinning">sync</mat-icon>
+    <p>Loading policies...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div class="state-container empty" *ngIf="!isLoading && filteredPolicies.length === 0">
+    <mat-icon>menu_book</mat-icon>
+    <h3>No policies found</h3>
+    <p>There are no company policies available under the selected filter.</p>
+  </div>
+
+  <!-- Read Policy Modal -->
+  <div class="modal-backdrop" *ngIf="showReadModal && selectedPolicy">
+    <div class="modal-card reader-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <mat-icon>policy</mat-icon>
+          <div>
+            <h3>{{ selectedPolicy.title }}</h3>
+            <span class="version-subtitle">{{ selectedPolicy.category }} • Version {{ selectedPolicy.version }}</span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" (click)="closeReadModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="policy-content" [innerHTML]="selectedPolicy.contentHtml"></div>
+
+        <div class="ack-box" *ngIf="selectedPolicy.requiresAcknowledgement">
+          <div *ngIf="selectedPolicy.isAcknowledgedByCurrentUser" class="ack-status-success">
+            <mat-icon>verified</mat-icon>
+            <div>
+              <strong>Policy Acknowledged</strong>
+              <p>You acknowledged this version on {{ selectedPolicy.currentUserAcknowledgedAt | date:'medium' }}.</p>
+            </div>
+          </div>
+
+          <div *ngIf="!selectedPolicy.isAcknowledgedByCurrentUser" class="ack-action-banner">
+            <div>
+              <strong>Formal Compliance Acknowledgement Required</strong>
+              <p>By clicking "I Acknowledge", you confirm that you have read, understood, and agreed to abide by this policy.</p>
+            </div>
+            <button type="button" class="btn-action primary" (click)="acknowledgePolicy(selectedPolicy)">
+              <mat-icon>check_circle</mat-icon> I Acknowledge
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-action secondary" (click)="closeReadModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create / Edit Policy Modal -->
+  <div class="modal-backdrop" *ngIf="showCreateEditModal">
+    <div class="modal-card edit-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <mat-icon>{{ isEditing ? 'edit_note' : 'add_circle_outline' }}</mat-icon>
+          <h3>{{ isEditing ? 'Edit Company Policy' : 'Publish New Company Policy' }}</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeCreateEditModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Policy Title <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="policyForm.title" placeholder="e.g. Remote Work and Data Protection Policy" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Category <span class="required">*</span></label>
+            <select [(ngModel)]="policyForm.category">
+              <option value="Code of Conduct">Code of Conduct</option>
+              <option value="Information Security">Information Security</option>
+              <option value="Leave & Attendance">Leave & Attendance</option>
+              <option value="Compensation & Benefits">Compensation & Benefits</option>
+              <option value="Work Environment">Work Environment</option>
+            </select>
+          </div>
+
+          <div class="form-group flex-1">
+            <label>Effective Date <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="policyForm.effectiveDate" />
+          </div>
+        </div>
+
+        <div class="form-check-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="policyForm.requiresAcknowledgement" />
+            <span>Require employee acknowledgement on publish / update</span>
+          </label>
+
+          <label class="checkbox-label" *ngIf="isEditing">
+            <input type="checkbox" [(ngModel)]="policyForm.bumpVersion" />
+            <span>Bump version number (forces employees to re-acknowledge new version)</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Policy Content (HTML / Text) <span class="required">*</span></label>
+          <textarea rows="10" [(ngModel)]="policyForm.contentHtml" placeholder="Enter full policy guidelines, terms, rules, and expectations..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-action secondary" (click)="closeCreateEditModal()">Cancel</button>
+        <button type="button" class="btn-action primary" (click)="savePolicy()">{{ isEditing ? 'Update Policy' : 'Publish Policy' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acknowledgements Viewer Modal -->
+  <div class="modal-backdrop" *ngIf="showAcksModal && selectedPolicy">
+    <div class="modal-card detail-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <mat-icon>how_to_reg</mat-icon>
+          <h3>Acknowledgements: {{ selectedPolicy.title }}</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeAcksModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-sm text-slate-500 mb-3">Total recorded acknowledgements for this policy: <strong>{{ acknowledgementsList.length }}</strong></p>
+
+        <div class="table-container max-h-72 overflow-y-auto">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Version</th>
+                <th>Timestamp</th>
+                <th>Client IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of acknowledgementsList">
+                <td class="font-medium">{{ a.employeeName || ('Employee #' + a.employeeId) }}</td>
+                <td>v{{ a.policyVersion }}</td>
+                <td>{{ a.acknowledgedAt | date:'medium' }}</td>
+                <td class="font-mono text-xs">{{ a.ipAddress || 'Internal' }}</td>
+              </tr>
+              <tr *ngIf="acknowledgementsList.length === 0">
+                <td colspan="4" class="text-center py-4 text-slate-400">No employee acknowledgements recorded yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-action secondary" (click)="closeAcksModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

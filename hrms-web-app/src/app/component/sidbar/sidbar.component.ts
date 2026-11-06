@@ -77,6 +77,14 @@ export class SidbarComponent implements OnInit {
         { label: 'Email Templates', icon: 'mail', route: '/index/email-templates', roles: ['Admin', 'System Admin'] },
         { label: 'Workflows', icon: 'alt_route', route: '/index/workflow-config', roles: ['Admin', 'System Admin'] }
       ]
+    },
+    {
+      title: 'ORGANIZATION & SUPPORT',
+      items: [
+        { label: 'Helpdesk', icon: 'support_agent', route: '/index/helpdesk' },
+        { label: 'Company Policies', icon: 'policy', route: '/index/policies' },
+        { label: 'Reports & Analytics', icon: 'analytics', route: '/index/reports', roles: ['Admin', 'System Admin', 'HR', 'HR Operations', 'Manager', 'Management'] }
+      ]
     }
   ];
 

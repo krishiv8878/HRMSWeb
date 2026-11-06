@@ -1,0 +1,269 @@
+<div class="reports-page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="header-badge">
+        <mat-icon>analytics</mat-icon>
+        <span>Executive Insights</span>
+      </div>
+      <h1>Reports & Workforce Analytics</h1>
+      <p class="subtitle">Generate audit-ready reports, analyze statutory payroll reconciliation, and export data in CSV format</p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn-action export-btn" (click)="exportCurrentReport()">
+        <mat-icon>file_download</mat-icon> Export to CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="reports-tabs">
+    <button class="tab-btn" [class.active]="activeTab === 'attendance'" (click)="setTab('attendance')">
+      <mat-icon>schedule</mat-icon> Attendance Summary
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'leave'" (click)="setTab('leave')">
+      <mat-icon>event_busy</mat-icon> Leave Balances
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'payroll'" (click)="setTab('payroll')">
+      <mat-icon>payments</mat-icon> Payroll Reconciliation
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'headcount'" (click)="setTab('headcount')">
+      <mat-icon>pie_chart</mat-icon> Headcount & Demographics
+    </button>
+  </div>
+
+  <!-- Filters Toolbar (for tabular reports) -->
+  <div class="filter-card" *ngIf="activeTab !== 'headcount'">
+    <div class="filter-group" *ngIf="activeTab === 'attendance' || activeTab === 'payroll'">
+      <label>Month:</label>
+      <select [(ngModel)]="currentMonth" (change)="loadActiveTabReport()">
+        <option [value]="1">January</option>
+        <option [value]="2">February</option>
+        <option [value]="3">March</option>
+        <option [value]="4">April</option>
+        <option [value]="5">May</option>
+        <option [value]="6">June</option>
+        <option [value]="7">July</option>
+        <option [value]="8">August</option>
+        <option [value]="9">September</option>
+        <option [value]="10">October</option>
+        <option [value]="11">November</option>
+        <option [value]="12">December</option>
+      </select>
+    </div>
+
+    <div class="filter-group" *ngIf="activeTab === 'attendance' || activeTab === 'payroll'">
+      <label>Year:</label>
+      <select [(ngModel)]="currentYear" (change)="loadActiveTabReport()">
+        <option [value]="2024">2024</option>
+        <option [value]="2025">2025</option>
+        <option [value]="2026">2026</option>
+        <option [value]="2027">2027</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Department:</label>
+      <select [(ngModel)]="selectedDepartment" (change)="loadActiveTabReport()">
+        <option value="All">All Departments</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Product">Product</option>
+        <option value="HR">HR</option>
+        <option value="Finance">Finance</option>
+        <option value="Sales">Sales</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Operations">Operations</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 1. ATTENDANCE REPORT TAB -->
+  <div class="table-container" *ngIf="activeTab === 'attendance'">
+    <table class="custom-table" *ngIf="!isLoading && attendanceData.length > 0">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Present</th>
+          <th>Absent</th>
+          <th>Leave</th>
+          <th>Holiday</th>
+          <th>OT Hours</th>
+          <th>Late (Min)</th>
+          <th>Effective Hours</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of attendanceData">
+          <td class="font-medium">{{ item.employeeName }}</td>
+          <td>{{ item.department }}</td>
+          <td><span class="count-badge green">{{ item.totalPresentDays }}</span></td>
+          <td><span class="count-badge red">{{ item.totalAbsentDays }}</span></td>
+          <td><span class="count-badge orange">{{ item.totalLeaveDays }}</span></td>
+          <td>{{ item.totalHolidays }}</td>
+          <td>{{ item.totalOvertimeHours | number:'1.1-1' }} hrs</td>
+          <td>{{ item.totalLateMinutes }} min</td>
+          <td class="font-bold">{{ item.totalEffectiveHours | number:'1.1-1' }} hrs</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="state-container" *ngIf="isLoading">
+      <mat-icon class="spinning">sync</mat-icon>
+      <p>Generating attendance report...</p>
+    </div>
+    <div class="state-container empty" *ngIf="!isLoading && attendanceData.length === 0">
+      <mat-icon>search_off</mat-icon>
+      <h3>No attendance records</h3>
+      <p>No attendance data recorded for the selected period.</p>
+    </div>
+  </div>
+
+  <!-- 2. LEAVE BALANCE REPORT TAB -->
+  <div class="table-container" *ngIf="activeTab === 'leave'">
+    <table class="custom-table" *ngIf="!isLoading && leaveBalanceData.length > 0">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Leave Type</th>
+          <th>Total Allocated</th>
+          <th>Used</th>
+          <th>Pending Approval</th>
+          <th>Available Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of leaveBalanceData">
+          <td class="font-medium">{{ item.employeeName }}</td>
+          <td>{{ item.department }}</td>
+          <td><span class="type-pill">{{ item.leaveTypeName }}</span></td>
+          <td>{{ item.totalAllocated }}</td>
+          <td>{{ item.used }}</td>
+          <td>{{ item.pending }}</td>
+          <td><span class="balance-badge">{{ item.availableBalance }} days</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="state-container" *ngIf="isLoading">
+      <mat-icon class="spinning">sync</mat-icon>
+      <p>Generating leave balance report...</p>
+    </div>
+    <div class="state-container empty" *ngIf="!isLoading && leaveBalanceData.length === 0">
+      <mat-icon>search_off</mat-icon>
+      <h3>No leave balance records</h3>
+      <p>No leave ledger entries found for the selected department.</p>
+    </div>
+  </div>
+
+  <!-- 3. PAYROLL RECONCILIATION TAB -->
+  <div class="table-container" *ngIf="activeTab === 'payroll'">
+    <table class="custom-table" *ngIf="!isLoading && payrollData.length > 0">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Period</th>
+          <th>Gross Pay</th>
+          <th>PF</th>
+          <th>ESI</th>
+          <th>PT</th>
+          <th>TDS</th>
+          <th>Total Deductions</th>
+          <th>Net Pay</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of payrollData">
+          <td class="font-medium">{{ item.employeeName }}</td>
+          <td>{{ item.department }}</td>
+          <td>{{ item.payPeriod }}</td>
+          <td class="font-mono">₹{{ item.grossPay | number:'1.2-2' }}</td>
+          <td class="font-mono">₹{{ item.pfDeduction | number:'1.2-2' }}</td>
+          <td class="font-mono">₹{{ item.esiDeduction | number:'1.2-2' }}</td>
+          <td class="font-mono">₹{{ item.professionalTax | number:'1.2-2' }}</td>
+          <td class="font-mono">₹{{ item.taxDeductions | number:'1.2-2' }}</td>
+          <td class="font-mono text-rose-600">₹{{ item.totalDeductions | number:'1.2-2' }}</td>
+          <td class="font-mono font-bold text-emerald-700">₹{{ item.netPay | number:'1.2-2' }}</td>
+          <td><span class="status-pill">{{ item.status }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="state-container" *ngIf="isLoading">
+      <mat-icon class="spinning">sync</mat-icon>
+      <p>Generating payroll reconciliation report...</p>
+    </div>
+    <div class="state-container empty" *ngIf="!isLoading && payrollData.length === 0">
+      <mat-icon>search_off</mat-icon>
+      <h3>No payroll records</h3>
+      <p>No pay run records found for the selected month and department.</p>
+    </div>
+  </div>
+
+  <!-- 4. HEADCOUNT & DEMOGRAPHICS TAB -->
+  <div class="demographics-container" *ngIf="activeTab === 'headcount'">
+    <div class="state-container" *ngIf="isLoading">
+      <mat-icon class="spinning">sync</mat-icon>
+      <p>Aggregating headcount analytics...</p>
+    </div>
+
+    <div class="demographics-grid" *ngIf="!isLoading && headcountData">
+      <!-- Total Active Card -->
+      <div class="demo-card total-card">
+        <mat-icon>groups</mat-icon>
+        <div class="demo-data">
+          <span class="val">{{ headcountData.totalActiveEmployees }}</span>
+          <span class="lbl">Total Active Employees</span>
+        </div>
+      </div>
+
+      <!-- Department Breakdown -->
+      <div class="demo-card">
+        <h3>By Department</h3>
+        <div class="breakdown-list">
+          <div class="breakdown-row" *ngFor="let k of objectKeys(headcountData.byDepartment)">
+            <span class="row-label">{{ k }}</span>
+            <span class="row-val font-mono">{{ headcountData.byDepartment[k] }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employment Type Breakdown -->
+      <div class="demo-card">
+        <h3>By Employment Type</h3>
+        <div class="breakdown-list">
+          <div class="breakdown-row" *ngFor="let k of objectKeys(headcountData.byEmploymentType)">
+            <span class="row-label">{{ k }}</span>
+            <span class="row-val font-mono">{{ headcountData.byEmploymentType[k] }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gender Diversity Breakdown -->
+      <div class="demo-card">
+        <h3>By Gender</h3>
+        <div class="breakdown-list">
+          <div class="breakdown-row" *ngFor="let k of objectKeys(headcountData.byGender)">
+            <span class="row-label">{{ k }}</span>
+            <span class="row-val font-mono">{{ headcountData.byGender[k] }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Location Breakdown -->
+      <div class="demo-card">
+        <h3>By Location / Branch</h3>
+        <div class="breakdown-list">
+          <div class="breakdown-row" *ngFor="let k of objectKeys(headcountData.byLocation)">
+            <span class="row-label">{{ k }}</span>
+            <span class="row-val font-mono">{{ headcountData.byLocation[k] }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
