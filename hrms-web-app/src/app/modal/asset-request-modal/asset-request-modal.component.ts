@@ -1,12 +1,13 @@
-import { Component, Inject, inject, OnInit } from '@angular/core';
+import { Component, Inject, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
+import { Subscription } from 'rxjs';
 import { AssetItem } from '../../interface/asset.interface';
-import { AssetRequestPriority, AssetRequestType } from '../../interface/asset-request.interface';
+import { AssetRequestPriority, AssetRequestType, CreateAssetRequest } from '../../interface/asset-request.interface';
 import { AssetRequestService } from '../../services/asset-request/asset-request.service';
 import { AssetsmasterService } from '../../services/assetsmaster/assetsmaster.service';
 import { NotificationService } from '../../services/notification/notification.service';
@@ -21,6 +22,7 @@ export interface AssetRequestModalData {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatIconModule,
@@ -29,7 +31,7 @@ export interface AssetRequestModalData {
   templateUrl: './asset-request-modal.component.html',
   styleUrl: './asset-request-modal.component.scss'
 })
-export class AssetRequestModalComponent implements OnInit {
+export class AssetRequestModalComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private requestService = inject(AssetRequestService);
   private assetService = inject(AssetsmasterService);
@@ -45,6 +47,14 @@ export class AssetRequestModalComponent implements OnInit {
   isUploading = false;
   isSubmitting = false;
   submittedOnce = false;
+
+  // Available replacement assets from company stock
+  availableAssets: AssetItem[] = [];
+  matchingCategoryAssets: AssetItem[] = [];
+  otherCategoryAssets: AssetItem[] = [];
+  selectedReplacementAsset: AssetItem | null = null;
+  customPreferredModel: string = '';
+  private assetSub?: Subscription;
 
   get reasonCtrl() {
     return this.requestForm.get('reason');
@@ -121,16 +131,80 @@ export class AssetRequestModalComponent implements OnInit {
       requestType: [initialType, [Validators.required]],
       priority: ['Medium', [Validators.required]],
       reason: ['', [Validators.required]],
+      replacementAssetId: [initialType === 'Replacement' ? 'IT_DISCRETION' : ''],
+      customModelPreference: [''],
       description: ['', [Validators.required, Validators.minLength(5)]],
       employeeId: [currentEmpId, [Validators.required]]
     });
+
+    this.loadAvailableAssets();
+  }
+
+  ngOnDestroy() {
+    this.assetSub?.unsubscribe();
+  }
+
+  loadAvailableAssets() {
+    this.assetSub = this.assetService.assets$.subscribe((assets: AssetItem[]) => {
+      const currentId = String(this.data.asset?.id || '');
+      const currentType = (this.data.asset?.assetType || '').toLowerCase();
+
+      const currentTypeClean = (this.data.asset?.assetType || '').toLowerCase().trim();
+
+      // Only devices matching the requested asset type and currently Available / Unassigned
+      let available = (assets || []).filter(a =>
+        String(a.id) !== currentId &&
+        (currentTypeClean ? (a.assetType || '').toLowerCase().trim() === currentTypeClean : true) &&
+        (a.status === 'Available' || a.assignedTo === 'Unassigned' || !a.employeeId || (a.status || '').toLowerCase().includes('available'))
+      );
+
+      // Fallback: If no assets are explicitly marked Available, show all company hardware stock of this asset type
+      if (available.length === 0) {
+        available = (assets || []).filter(a =>
+          String(a.id) !== currentId &&
+          (currentTypeClean ? (a.assetType || '').toLowerCase().trim() === currentTypeClean : true)
+        );
+      }
+
+      this.availableAssets = available;
+      this.matchingCategoryAssets = available;
+      this.otherCategoryAssets = [];
+    });
+
+    this.assetService.fetchAssetsFromApi();
+  }
+
+  onReplacementAssetChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const val = select.value;
+    if (!val || val === 'IT_DISCRETION' || val === 'CUSTOM_SPEC') {
+      this.selectedReplacementAsset = null;
+      return;
+    }
+    this.selectedReplacementAsset = this.availableAssets.find(a => String(a.id) === String(val)) || null;
+  }
+
+  getAssetTypeIcon(type?: string): string {
+    const t = (type || '').toLowerCase();
+    if (t.includes('laptop') || t.includes('macbook')) return 'laptop_mac';
+    if (t.includes('monitor') || t.includes('display') || t.includes('screen')) return 'desktop_windows';
+    if (t.includes('phone') || t.includes('mobile')) return 'smartphone';
+    if (t.includes('tablet') || t.includes('ipad')) return 'tablet_mac';
+    if (t.includes('keyboard')) return 'keyboard';
+    if (t.includes('mouse')) return 'mouse';
+    if (t.includes('headset') || t.includes('audio')) return 'headphones';
+    return 'devices';
   }
 
   setRequestType(type: AssetRequestType) {
     this.requestForm.patchValue({
       requestType: type,
-      reason: '' // Reset reason on tab change
+      reason: '', // Reset reason on tab change
+      replacementAssetId: type === 'Replacement' ? 'IT_DISCRETION' : ''
     });
+    if (type !== 'Replacement') {
+      this.selectedReplacementAsset = null;
+    }
   }
 
   onFileSelected(event: Event) {
@@ -223,13 +297,41 @@ export class AssetRequestModalComponent implements OnInit {
 
       const formVal = this.requestForm.value;
 
-      const payload = {
+      let description = (formVal.description || '').trim();
+      let replacementId: number | undefined = undefined;
+      let replacementName: string | undefined = undefined;
+
+      if (formVal.requestType === 'Replacement') {
+        if (this.selectedReplacementAsset) {
+          replacementId = parseInt(String(this.selectedReplacementAsset.id).replace(/\D/g, ''), 10) || undefined;
+          replacementName = `${this.selectedReplacementAsset.modelName} (SN: ${this.selectedReplacementAsset.serialNumber || 'N/A'}, Asset ID #${this.selectedReplacementAsset.id})`;
+          const replacementHeader = `[Requested Replacement Device: ${this.selectedReplacementAsset.modelName} (SN: ${this.selectedReplacementAsset.serialNumber || 'N/A'}, Asset ID #${this.selectedReplacementAsset.id})]`;
+          description = `${replacementHeader}\n\n${description}`;
+        } else if (formVal.replacementAssetId === 'CUSTOM_SPEC') {
+          const customPref = (formVal.customModelPreference || this.customPreferredModel || '').trim();
+          replacementName = customPref || 'Custom Model Specification';
+          description = `[Requested Replacement Device: ${replacementName}]\n\n${description}`;
+        } else if (formVal.replacementAssetId && formVal.replacementAssetId !== 'IT_DISCRETION') {
+          const chosen = this.availableAssets.find(a => String(a.id) === String(formVal.replacementAssetId));
+          if (chosen) {
+            replacementId = parseInt(String(chosen.id).replace(/\D/g, ''), 10) || undefined;
+            replacementName = `${chosen.modelName} (SN: ${chosen.serialNumber || 'N/A'}, Asset ID #${chosen.id})`;
+            description = `[Requested Replacement Device: ${chosen.modelName} (SN: ${chosen.serialNumber || 'N/A'}, Asset ID #${chosen.id})]\n\n${description}`;
+          }
+        } else {
+          description = `[Requested Replacement Device: Any Available / Standard Equipment (IT Discretion)]\n\n${description}`;
+        }
+      }
+
+      const payload: CreateAssetRequest = {
         assetId: numericAssetId,
         employeeId: formVal.employeeId,
         requestType: formVal.requestType,
         priority: formVal.priority,
         reason: formVal.reason,
-        description: formVal.description,
+        description: description,
+        replacementAssetId: replacementId,
+        replacementAssetName: replacementName,
         imageUrls: uploadedImageUrls.length > 0 ? JSON.stringify(uploadedImageUrls) : undefined
       };
 

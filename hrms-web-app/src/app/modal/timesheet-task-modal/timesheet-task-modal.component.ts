@@ -40,7 +40,7 @@ export class TimesheetTaskModalComponent implements OnInit {
     this.taskForm = this.fb.group({
       projectId: [this.data?.projectId || '', [Validators.required]],
       taskDescription: [this.data?.taskDescription || '', [Validators.required, Validators.maxLength(500)]],
-      hours: [this.data?.hours || 1, [Validators.required, Validators.min(0.25), Validators.max(24)]]
+      hours: [this.data?.hours || 1, [Validators.required, Validators.min(0.15), Validators.max(24)]]
     });
 
     this.loadProjects();

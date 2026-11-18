@@ -61,6 +61,27 @@
         </span>
       </div>
 
+      <!-- Requested Timings for Regularization / Time Attendance -->
+      <div class="card-row timing-row" *ngIf="clockInDisplay || clockOutDisplay">
+        <span class="label">Timings:</span>
+        <div class="timing-group">
+          <span class="timing-badge in-badge" *ngIf="clockInDisplay" title="Requested Clock-In">
+            <mat-icon class="timing-icon in-icon">login</mat-icon>
+            <span class="timing-tag">In:</span>
+            <strong>{{ clockInDisplay }}</strong>
+          </span>
+          <span class="timing-badge out-badge" *ngIf="clockOutDisplay" title="Requested Clock-Out">
+            <mat-icon class="timing-icon out-icon">logout</mat-icon>
+            <span class="timing-tag">Out:</span>
+            <strong>{{ clockOutDisplay }}</strong>
+          </span>
+          <span class="hours-badge" *ngIf="totalRequestedHours" title="Total Requested Duration">
+            <mat-icon class="timing-icon">schedule</mat-icon>
+            <strong>{{ totalRequestedHours }}</strong>
+          </span>
+        </div>
+      </div>
+
       <div class="card-row" *ngIf="data?.leaveReason || data?.reason">
         <span class="label">Reason:</span>
         <span class="value reason-text">"{{ data?.leaveReason || data?.reason }}"</span>

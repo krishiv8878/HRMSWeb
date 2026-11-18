@@ -587,3 +587,230 @@
     }
   }
 }
+
+/* Replacement Device Selector Section */
+.replacement-selector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #7c3aed;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  transition: all 0.2s ease;
+
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #1e293b;
+
+    .section-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #7c3aed;
+    }
+  }
+
+  .stock-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #059669;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    padding: 3px 8px;
+    border-radius: 12px;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  .replacement-select {
+    font-weight: 500;
+    color: #1e293b;
+    border-color: #cbd5e1;
+
+    optgroup {
+      font-weight: 700;
+      color: #475569;
+      background: #f1f5f9;
+    }
+
+    option {
+      font-weight: 500;
+      color: #1e293b;
+      background: #ffffff;
+      padding: 6px 10px;
+    }
+  }
+
+  .empty-stock-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.76rem;
+    line-height: 1.4;
+    color: #b45309;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #d97706;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+  }
+
+  .replacement-card-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid #ddd6fe;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08);
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .preview-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: #f3e8ff;
+      color: #7c3aed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    .preview-text {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .preview-title-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+
+      .device-name {
+        font-size: 0.86rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+
+      .available-badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #15803d;
+        background: #dcfce7;
+        padding: 2px 6px;
+        border-radius: 10px;
+      }
+    }
+
+    .device-sub {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: #64748b;
+      flex-wrap: wrap;
+
+      .dot {
+        color: #cbd5e1;
+      }
+
+      .loc-mini {
+        font-size: 13px;
+        width: 13px;
+        height: 13px;
+        vertical-align: text-bottom;
+      }
+    }
+
+    .preview-specs-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      background: #faf5ff;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      line-height: 1.4;
+
+      .specs-tag {
+        font-weight: 700;
+        color: #6b21a8;
+        flex-shrink: 0;
+      }
+
+      .specs-val {
+        color: #3b0764;
+      }
+    }
+  }
+}
+
+.custom-model-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+
+  .field-sub-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .custom-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    background: #ffffff;
+    outline: none;
+
+    &:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
+    }
+  }
+}

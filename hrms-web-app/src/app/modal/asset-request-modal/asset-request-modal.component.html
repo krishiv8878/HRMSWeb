@@ -56,6 +56,79 @@
       </div>
     </div>
 
+    <!-- Replacement Asset Selection (Only visible when Request Action is Replacement) -->
+    <div class="replacement-selector-section" *ngIf="requestForm.get('requestType')?.value === 'Replacement'">
+      <div class="field-label-row">
+        <label class="field-label">
+          <mat-icon class="section-icon">swap_horizontal_circle</mat-icon>
+          Select Replacement Asset / Device <span class="required">*</span>
+        </label>
+        <span class="stock-count-badge" *ngIf="matchingCategoryAssets.length > 0">
+          <mat-icon>inventory_2</mat-icon> {{ matchingCategoryAssets.length }} {{ data.asset.assetType || 'Equipment' }}s available in inventory
+        </span>
+      </div>
+
+      <div class="input-wrapper">
+        <mat-icon class="input-icon">devices</mat-icon>
+        <select
+          formControlName="replacementAssetId"
+          (change)="onReplacementAssetChange($event)"
+          class="custom-select replacement-select"
+        >
+          <option value="IT_DISCRETION">⚡ Any Available Device (IT Team will allocate best matching model)</option>
+          <option value="CUSTOM_SPEC">✍️ Specify Custom Model / Specific Requirements</option>
+          <optgroup
+            *ngIf="matchingCategoryAssets.length > 0"
+            [label]="'Available ' + (data.asset.assetType || 'Equipment') + 's in Inventory'"
+          >
+            <option *ngFor="let a of matchingCategoryAssets" [value]="a.id">
+              {{ a.modelName }} (SN: {{ a.serialNumber || 'N/A' }}) • {{ a.location || 'In Inventory' }} [{{ a.status }}]
+            </option>
+          </optgroup>
+          <option *ngIf="matchingCategoryAssets.length === 0" disabled>
+            No other {{ data.asset.assetType || 'device' }}s currently available in inventory
+          </option>
+        </select>
+      </div>
+
+      <!-- Custom model input if chosen -->
+      <div class="custom-model-input-box mt-2" *ngIf="requestForm.get('replacementAssetId')?.value === 'CUSTOM_SPEC'">
+        <label class="field-sub-label">Enter Preferred Replacement Model & Specifications:</label>
+        <input
+          type="text"
+          formControlName="customModelPreference"
+          placeholder="e.g. MacBook Pro 16-inch M3 Max (32GB RAM) or Dell Latitude 5440"
+          class="custom-input"
+        />
+      </div>
+
+      <!-- Selected Replacement Asset Preview Card -->
+      <div class="replacement-card-preview" *ngIf="selectedReplacementAsset">
+        <div class="preview-header">
+          <div class="preview-icon-box">
+            <mat-icon>{{ getAssetTypeIcon(selectedReplacementAsset.assetType) }}</mat-icon>
+          </div>
+          <div class="preview-text">
+            <div class="preview-title-badge">
+              <strong class="device-name">{{ selectedReplacementAsset.modelName }}</strong>
+              <span class="available-badge">Available in Stock</span>
+            </div>
+            <div class="device-sub font-mono">
+              <span>SN: {{ selectedReplacementAsset.serialNumber || 'SN-N/A' }}</span>
+              <span class="dot">•</span>
+              <span>{{ selectedReplacementAsset.assetType }}</span>
+              <span class="dot">•</span>
+              <span><mat-icon class="loc-mini">location_on</mat-icon> {{ selectedReplacementAsset.location || 'Main HQ Office' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="preview-specs-row" *ngIf="selectedReplacementAsset.specifications">
+          <span class="specs-tag">Specs:</span>
+          <span class="specs-val">{{ selectedReplacementAsset.specifications }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Reason & Priority Grid -->
     <div class="form-row-2">
       <!-- Primary Reason Dropdown -->
@@ -148,8 +221,8 @@
       <!-- Attached Thumbnails Preview Grid -->
       <div *ngIf="imagePreviews.length > 0" class="previews-grid">
         <div *ngFor="let preview of imagePreviews; let i = index" class="preview-item">
-          <img [src]="preview" alt="Defect Photo" class="preview-img" />
-          <button type="button" class="remove-thumb-btn" (click)="removeFile(i)" title="Remove Photo">
+          <img [src]="preview" alt="Attachment Preview" class="preview-img" />
+          <button type="button" class="remove-btn" (click)="removeFile(i)" title="Remove photo">
             <mat-icon>close</mat-icon>
           </button>
         </div>
@@ -158,14 +231,13 @@
 
     <!-- Modal Footer Actions -->
     <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="onCancel()" [disabled]="isSubmitting || isUploading">
+      <button type="button" class="btn-cancel" (click)="onCancel()" [disabled]="isSubmitting">
         Cancel
       </button>
-      <button type="submit" class="btn-submit" [disabled]="isSubmitting || isUploading">
-        <mat-icon *ngIf="!isSubmitting && !isUploading">send</mat-icon>
-        <span *ngIf="isUploading">Uploading Photos...</span>
-        <span *ngIf="isSubmitting && !isUploading">Submitting Ticket...</span>
-        <span *ngIf="!isSubmitting && !isUploading">Submit {{ requestForm.get('requestType')?.value }} Request</span>
+      <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+        <mat-icon *ngIf="isSubmitting" class="spinning">sync</mat-icon>
+        <span>{{ isSubmitting ? (isUploading ? 'Uploading Photos...' : 'Submitting Request...') : 'Submit Request' }}</span>
       </button>
     </div>
   </form>

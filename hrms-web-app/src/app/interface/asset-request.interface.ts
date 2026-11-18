@@ -8,6 +8,8 @@ export interface CreateAssetRequest {
   priority?: AssetRequestPriority;
   reason: string;
   description?: string;
+  replacementAssetId?: number;
+  replacementAssetName?: string;
   imageUrls?: string;
 }
 
@@ -21,6 +23,8 @@ export interface UpdateAssetRequestStatus {
   remarks?: string;
   adminRemarks?: string;
   inspectionRemarks?: string;
+  replacementAssetId?: number;
+  replacementAssetName?: string;
 }
 
 export interface AssetRequestLog {
@@ -49,6 +53,8 @@ export interface AssetRequestItem {
   reason?: string;
   defectReason?: string;
   description?: string;
+  replacementAssetId?: number;
+  replacementAssetName?: string;
   imageUrls?: string;
   status: string;
   courierPartner?: string;

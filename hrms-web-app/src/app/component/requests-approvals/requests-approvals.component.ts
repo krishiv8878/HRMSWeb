@@ -335,22 +335,38 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
             avatarUrl = globalAvatar;
           }
 
+          const inTime = this.formatTimeOnly(x.clockIn || x.ClockIn || x.ClockInTime || x.clockInTime);
+          const outTime = this.formatTimeOnly(x.clockOut || x.ClockOut || x.ClockOutTime || x.clockOutTime);
+          const hrsText = this.computeHoursDiff(
+            x.clockIn || x.ClockIn || x.ClockInTime || x.clockInTime,
+            x.clockOut || x.ClockOut || x.ClockOutTime || x.clockOutTime
+          );
+
+          const timeDetails = inTime && outTime ? `${inTime} - ${outTime}` : (inTime ? `In: ${inTime}` : (x.requestedDate ? new Date(x.requestedDate).toLocaleDateString('en-GB') : 'Today'));
+
           return {
             id: Number(x.id || (idx + 100)),
             requesterName: empName,
             requesterRole: x.requestType || 'Time Attendance',
             avatarUrl: avatarUrl,
             initials: initials || 'AT',
-            requestType: x.requestType || 'CLOCK ADJUST',
+            requestType: x.requestType || 'Regularization',
             startDate: x.requestedDate,
             endDate: x.requestedDate,
-            durationText: x.requestedDate ? new Date(x.requestedDate).toLocaleDateString('en-GB') : 'Today',
+            durationText: timeDetails,
             reasonPreview: x.reason || 'Attendance adjustment request',
             status: statusStr,
             actionBy: x.actionBy || x.lastActionBy || undefined,
             actionDate: x.actionDate,
             category: 'Attendance',
-            rawRecord: x,
+            rawRecord: {
+              ...x,
+              clockIn: x.clockIn || x.ClockIn || x.ClockInTime || x.clockInTime,
+              clockOut: x.clockOut || x.ClockOut || x.ClockOutTime || x.clockOutTime,
+              workingHoursText: hrsText,
+              inTimeText: inTime,
+              outTimeText: outTime
+            },
             workflowInstanceId: wfMatch?.workflowInstanceId || (x.workflowInstanceId ? Number(x.workflowInstanceId) : undefined),
             pendingWith: wfMatch?.pendingWith || x.pendingWith,
             canApprove: wfMatch ? Boolean(wfMatch.canApprove) : (x.canApprove !== undefined ? Boolean(x.canApprove) : true),
@@ -734,6 +750,42 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
     }
   }
 
+  formatTimeOnly(val: any): string | null {
+    if (!val) return null;
+    try {
+      if (typeof val === 'string' && val.length === 5 && val.includes(':')) {
+        const [h, m] = val.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const displayH = h % 12 || 12;
+        return `${displayH}:${m < 10 ? '0' : ''}${m} ${period}`;
+      }
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return null;
+      if (typeof val === 'string' && (val.startsWith('0001-01-01') || val.startsWith('1970-01-01'))) return null;
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch {
+      return null;
+    }
+  }
+
+  computeHoursDiff(inVal: any, outVal: any): string | null {
+    if (!inVal || !outVal) return null;
+    try {
+      const dIn = new Date(inVal);
+      const dOut = new Date(outVal);
+      if (isNaN(dIn.getTime()) || isNaN(dOut.getTime())) return null;
+      if (dOut <= dIn) return null;
+      const diffMs = dOut.getTime() - dIn.getTime();
+      const diffHrs = diffMs / (1000 * 60 * 60);
+      const hrs = Math.floor(diffHrs);
+      const mins = Math.round((diffHrs - hrs) * 60);
+      if (mins === 0) return `${hrs} hrs`;
+      return `${hrs}h ${mins}m`;
+    } catch {
+      return null;
+    }
+  }
+
   updateMetricsAndFilter(): void {
     const pendingList = this.allRequests.filter(r => r.status === 'Pending' && (this.isApprover ? (r.canApprove || r.canOverride) : true));
     this.totalPendingCount = pendingList.length;
@@ -1099,7 +1151,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
       width: '420px',
-      data: { ...item.rawRecord, isApproved: true }
+      data: {
+        ...item.rawRecord,
+        fullName: item.requesterName,
+        requestType: item.requestType,
+        category: item.category,
+        isApproved: true
+      }
     });
 
     dialogRef.afterClosed().subscribe((res: any) => {
@@ -1321,7 +1379,13 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.dialog.open(RequestsApprovalsModalComponent, {
       width: '420px',
-      data: { ...item.rawRecord, isApproved: false }
+      data: {
+        ...item.rawRecord,
+        fullName: item.requesterName,
+        requestType: item.requestType,
+        category: item.category,
+        isApproved: false
+      }
     });
 
     dialogRef.afterClosed().subscribe((res: any) => {
@@ -1704,6 +1768,9 @@ export class RequestsApprovalsComponent implements OnInit, OnDestroy {
       width: '460px',
       data: {
         ...item.rawRecord,
+        fullName: item.requesterName,
+        requestType: item.requestType,
+        category: item.category,
         status: item.status,
         pendingWith: item.pendingWith,
         isViewOnly: true

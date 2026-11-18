@@ -216,6 +216,11 @@
     background-color: #fef2f2;
     color: #dc2626;
   }
+
+  &.pill-replacement {
+    background-color: #f5f3ff;
+    color: #7c3aed;
+  }
 }
 
 .status-cell-wrapper {
@@ -263,6 +268,12 @@
     color: #b45309;
     border-color: #fde68a;
   }
+
+    &.badge-replacement {
+      background-color: #f5f3ff;
+      color: #7c3aed;
+      border-color: #ddd6fe;
+    }
 
   &.badge-approved {
     background-color: #f5f3ff;

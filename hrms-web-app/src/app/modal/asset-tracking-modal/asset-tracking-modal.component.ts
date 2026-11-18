@@ -46,9 +46,35 @@ export class AssetTrackingModalComponent implements OnInit {
   parsedImageUrls: string[] = [];
   selectedImageModal: string | null = null;
 
+  // Replacement dispatch state
+  availableReplacementAssets: AssetItem[] = [];
+  matchingCategoryReplacementAssets: AssetItem[] = [];
+  otherCategoryReplacementAssets: AssetItem[] = [];
+  selectedDispatchReplacementId: string = '';
+  selectedDispatchReplacementAsset: AssetItem | null = null;
+
   get isAdmin(): boolean {
     if (this.rbacService.isAdmin()) return true;
     return this.data.isAdmin === true;
+  }
+
+  get replacementAssetName(): string | null {
+    if (this.request?.replacementAssetName) {
+      return this.request.replacementAssetName;
+    }
+    const desc = this.request?.description || '';
+    const match = desc.match(/(?:\[Selected Replacement Asset:|\[Requested Replacement Device:)\s*([^\]]+)\]/i);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    return null;
+  }
+
+  get cleanDescription(): string {
+    const desc = this.request?.description || '';
+    return desc
+      .replace(/\[(?:Selected Replacement Asset|Requested Replacement Device|Replacement Preference):\s*([^\]]+)\]/gi, '')
+      .trim();
   }
 
   // Admin action panels state
@@ -99,29 +125,92 @@ export class AssetTrackingModalComponent implements OnInit {
 
   get isAwaitingDeskHandoverAck(): boolean {
     const s = (this.request?.status || '').toLowerCase();
-    const isFinished = s.includes('received') || s.includes('repair') || s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
+    const isFinished = s.includes('received') || s.includes('repair') || s.includes('replacement in progress') || s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
     return (s.includes('desk') || s.includes('handed over') || s.includes('handover') || (this.isDirectDeskHandover && s.includes('transit'))) && !isFinished;
   }
 
   get isAwaitingCourierInTransit(): boolean {
     const s = (this.request?.status || '').toLowerCase();
-    const isFinished = s.includes('received') || s.includes('repair') || s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
+    const isFinished = s.includes('received') || s.includes('repair') || s.includes('replacement in progress') || s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
     return !this.isDirectDeskHandover && (s.includes('transit') || s.includes('picked up')) && !isFinished;
   }
 
   get canEmployeeSendDevice(): boolean {
     if (this.isAdmin) return false;
     const s = (this.request?.status || '').toLowerCase();
-    return s.includes('approved') && !s.includes('transit') && !s.includes('pickup') && !s.includes('desk') && !s.includes('handed over') && !s.includes('repair') && !s.includes('dispatch') && !s.includes('deliver') && !s.includes('received') && !s.includes('completed') && !s.includes('reject') && !s.includes('closed');
+    return s.includes('approved') && !s.includes('transit') && !s.includes('pickup') && !s.includes('desk') && !s.includes('handed over') && !s.includes('repair') && !s.includes('replacement in progress') && !s.includes('dispatch') && !s.includes('deliver') && !s.includes('received') && !s.includes('completed') && !s.includes('reject') && !s.includes('closed');
   }
 
   get canEmployeeConfirmPickup(): boolean {
     if (this.isAdmin) return false;
-    // CRITICAL: In-person desk handovers NEVER need courier pickup confirmation!
     if (this.isDirectDeskHandover) return false;
     const s = (this.request?.status || '').toLowerCase();
-    const isFinished = s.includes('received') || s.includes('repair') || s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
+    const isFinished = s.includes('received') || s.includes('repair') || s.includes('replacement in progress') || s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
     return (s.includes('pickup scheduled') || s.includes('awaiting courier pickup')) && !s.includes('picked up') && !isFinished;
+  }
+
+  // --- Strictly Phased Admin Action Stage Getters ---
+  get canAdminApproveOrReject(): boolean {
+    if (!this.isAdmin) return false;
+    const s = (this.request?.status || '').toLowerCase().trim();
+    return s === 'submitted' || s === 'replacement requested' || s === 'repair requested' || s === 'return initiated' || s === 'initiated';
+  }
+
+  get canAdminManagePickupOrDeskHandover(): boolean {
+    if (!this.isAdmin) return false;
+    const s = (this.request?.status || '').toLowerCase().trim();
+    return s === 'approved';
+  }
+
+  get canAdminAcknowledgeDeskHandover(): boolean {
+    if (!this.isAdmin) return false;
+    const s = (this.request?.status || '').toLowerCase().trim();
+    const isFinished = s.includes('received') || s.includes('repair') || s.includes('progress') || s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
+    return !isFinished && (this.isAwaitingDeskHandoverAck || s.includes('desk') || s.includes('handover'));
+  }
+
+  get canAdminAcknowledgeCourierArrival(): boolean {
+    if (!this.isAdmin) return false;
+    if (this.isDirectDeskHandover) return false;
+    const s = (this.request?.status || '').toLowerCase().trim();
+    return (s.includes('transit') || s.includes('pickup scheduled')) && !s.includes('received') && !s.includes('repair') && !s.includes('progress') && !s.includes('dispatch') && !s.includes('completed') && !s.includes('closed') && !s.includes('reject');
+  }
+
+  get canAdminDispatch(): boolean {
+    if (!this.isAdmin) return false;
+    const s = (this.request?.status || '').toLowerCase().trim();
+    const type = this.request?.requestType;
+
+    // Never show when pending approval, in transit, awaiting handover, or already dispatched/closed
+    const isPendingApproval = s === 'submitted' || s.includes('requested') || s.includes('initiated');
+    const isAwaitingHandover = s === 'approved' || s.includes('transit') || s.includes('pickup') || s === 'handed over at it desk';
+    const isAlreadyDispatchedOrClosed = s.includes('dispatch') || s.includes('deliver') || s.includes('completed') || s.includes('closed') || s.includes('reject');
+
+    if (isPendingApproval || isAwaitingHandover || isAlreadyDispatchedOrClosed) {
+      return false;
+    }
+
+    if (type === 'Replacement') {
+      return s.includes('replacement in progress') || s.includes('progress') || s.includes('received') || s === 'in repair';
+    }
+
+    if (type === 'Repair') {
+      return s === 'in repair' || s.includes('in repair') || s.includes('repaired');
+    }
+
+    return false;
+  }
+
+  get canAdminMarkDelivered(): boolean {
+    if (!this.isAdmin) return false;
+    const s = (this.request?.status || '').toLowerCase().trim();
+    return s.includes('dispatch') && !s.includes('deliver') && !s.includes('completed') && !s.includes('closed') && !s.includes('reject');
+  }
+
+  get canAdminInspectReturn(): boolean {
+    if (!this.isAdmin) return false;
+    const s = (this.request?.status || '').toLowerCase().trim();
+    return this.request?.requestType === 'Return' && s.includes('received') && !s.includes('completed') && !s.includes('closed') && !s.includes('reject');
   }
 
   get isRejected(): boolean {
@@ -221,6 +310,62 @@ export class AssetTrackingModalComponent implements OnInit {
       ];
     }
 
+    if (this.request?.requestType === 'Replacement') {
+      const isReplacementInPrep = s.includes('replacement') || s.includes('in repair') || s.includes('repaired') || s.includes('dispatch') || s.includes('deliver') || s.includes('received') || s.includes('completed') || isClosed;
+      return [
+        {
+          title: 'Replacement Requested',
+          subtitle: this.request.createdDate ? new Date(this.request.createdDate).toLocaleDateString() : 'Submitted',
+          isCompleted: isSubmitted,
+          isCurrent: s === 'submitted' || s.includes('requested') || s.includes('initiated'),
+          isRejected: false,
+          icon: 'swap_horiz'
+        },
+        {
+          title: 'Approved by IT',
+          subtitle: isApproved ? 'Replacement Authorized' : 'Under Review',
+          isCompleted: isApproved,
+          isCurrent: s.includes('approved') && !s.includes('transit') && !s.includes('pickup') && !s.includes('desk') && !s.includes('handed over') && !s.includes('replacement'),
+          isRejected: false,
+          icon: 'thumb_up'
+        },
+        {
+          title: isDirect ? 'Old Asset Handed Over' : 'Old Asset in Transit to IT',
+          subtitle: isDirect
+            ? (inTransitToIT ? (this.request.trackingNumber || 'In-Person Desk Handover') : 'Pending Desk Handover')
+            : (this.request.trackingNumber ? `${this.request.courierPartner || 'Courier'} (${this.request.trackingNumber})` : (inTransitToIT ? 'In Transit' : 'Pending Handover')),
+          isCompleted: inTransitToIT,
+          isCurrent: (s.includes('transit') || s.includes('pickup') || s.includes('desk') || s.includes('handed over')) && !isReplacementInPrep,
+          isRejected: false,
+          icon: isDirect ? 'desk' : 'local_shipping'
+        },
+        {
+          title: 'Preparing Replacement Device',
+          subtitle: isReplacementInPrep ? (this.replacementAssetName ? `Allocated: ${this.replacementAssetName}` : 'Allocated from Stock') : 'Pending Old Asset Handover',
+          isCompleted: isReplacementInPrep,
+          isCurrent: (s.includes('replacement') || s.includes('in repair') || s.includes('received')) && !isDispatched,
+          isRejected: false,
+          icon: 'devices'
+        },
+        {
+          title: 'Replacement Dispatched',
+          subtitle: isDispatched ? (this.request.trackingNumber ? `${this.request.courierPartner || 'Dispatched'} (${this.request.trackingNumber})` : 'Dispatched') : 'Pending Dispatch',
+          isCompleted: isDispatched,
+          isCurrent: s.includes('dispatch'),
+          isRejected: false,
+          icon: 'local_shipping'
+        },
+        {
+          title: 'New Device Received & Active',
+          subtitle: isDone ? 'Confirmed & Active' : (isDelivered ? 'Delivered' : 'Pending Receipt'),
+          isCompleted: isDone,
+          isCurrent: isDone,
+          isRejected: false,
+          icon: 'check_circle'
+        }
+      ];
+    }
+
     return [
       {
         title: 'Request Submitted',
@@ -284,6 +429,9 @@ export class AssetTrackingModalComponent implements OnInit {
   ngOnInit() {
     this.request = this.data.request;
     this.parseImages();
+    if (this.request?.requestType === 'Replacement') {
+      this.loadReplacementAssetsForDispatch();
+    }
     this.refreshRequestDetails();
   }
 
@@ -413,12 +561,14 @@ export class AssetTrackingModalComponent implements OnInit {
     const currentUserName = localStorage.getItem('UserName') || localStorage.getItem('userName') || 'Employee';
     const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
 
-    const payload = {
+    const payload: any = {
       requestId: this.request.id,
       newStatus: 'Completed',
       actionByEmployeeId: currentEmpId,
       actionByName: currentUserName,
-      remarks: 'Employee confirmed parcel receipt. Equipment verified functional and ticket completed.'
+      remarks: 'Employee confirmed parcel receipt. Equipment verified functional and ticket completed.',
+      replacementAssetId: this.request?.replacementAssetId,
+      replacementAssetName: this.request?.replacementAssetName || this.replacementAssetName || undefined
     };
 
     this.requestService.updateStatus(payload).subscribe({
@@ -442,6 +592,9 @@ export class AssetTrackingModalComponent implements OnInit {
     this.activeAdminAction = action;
     this.adminRemarks = '';
     this.rejectionReason = '';
+    if (this.request?.requestType === 'Replacement') {
+      this.loadReplacementAssetsForDispatch();
+    }
     if (action === 'pickup') {
       this.adminCourierPartner = 'BlueDart Express';
       this.adminTrackingNumber = '';
@@ -459,11 +612,137 @@ export class AssetTrackingModalComponent implements OnInit {
   }
 
   approveRequest() {
-    this.submitAdminStatusUpdate('Approved', this.adminRemarks || 'Diagnostics and service approved by IT Admin');
+    const isReplacement = this.request?.requestType === 'Replacement';
+    let repId: number | undefined = undefined;
+    let repName: string | undefined = undefined;
+
+    if (isReplacement && this.selectedDispatchReplacementAsset) {
+      repId = parseInt(String(this.selectedDispatchReplacementAsset.id).replace(/\D/g, ''), 10) || undefined;
+      repName = `${this.selectedDispatchReplacementAsset.modelName} (SN: ${this.selectedDispatchReplacementAsset.serialNumber || 'N/A'}, Asset ID #${this.selectedDispatchReplacementAsset.id})`;
+    } else if (isReplacement && this.selectedDispatchReplacementId && this.selectedDispatchReplacementId !== 'PROCURED_DEVICE') {
+      const chosen = this.availableReplacementAssets.find(a => String(a.id) === String(this.selectedDispatchReplacementId));
+      if (chosen) {
+        repId = parseInt(String(chosen.id).replace(/\D/g, ''), 10) || undefined;
+        repName = `${chosen.modelName} (SN: ${chosen.serialNumber || 'N/A'}, Asset ID #${chosen.id})`;
+      }
+    } else if (isReplacement && this.request?.replacementAssetId) {
+      repId = Number(this.request.replacementAssetId);
+      repName = this.request.replacementAssetName || this.replacementAssetName || undefined;
+    }
+
+    const remarks = this.adminRemarks || (isReplacement ? `Replacement request approved by IT Admin${repName ? ` (Allocated: ${repName})` : ''}` : 'Diagnostics and service approved by IT Admin');
+    this.submitAdminStatusUpdate('Approved', remarks, false, repId, repName);
   }
 
   sendToRepairVendor() {
+    if (this.request?.requestType === 'Replacement') {
+      this.acknowledgeReplacementReceived();
+      return;
+    }
     this.submitAdminStatusUpdate('In Repair', this.adminRemarks || 'Hardware sent to authorized repair vendor for servicing');
+  }
+
+  acknowledgeReplacementReceived() {
+    this.submitAdminStatusUpdate(
+      'Replacement In Progress',
+      this.adminRemarks || 'Old equipment received at IT Center. Replacement device being prepared for dispatch.'
+    );
+  }
+
+  loadReplacementAssetsForDispatch() {
+    this.assetService.assets$.subscribe((assets: AssetItem[]) => {
+      const currentId = String(this.request?.assetId || this.data.asset?.id || '');
+      const currentTypeClean = (this.request?.assetType || this.data.asset?.assetType || '').toLowerCase().trim();
+
+      // Only devices matching the requested asset type and currently Available / Unassigned
+      let available = (assets || []).filter(a =>
+        String(a.id) !== currentId &&
+        (currentTypeClean ? (a.assetType || '').toLowerCase().trim() === currentTypeClean : true) &&
+        (a.status === 'Available' || a.assignedTo === 'Unassigned' || !a.employeeId || (a.status || '').toLowerCase().includes('available'))
+      );
+
+      // Fallback: If no assets explicitly marked Available, show company hardware stock of this asset type
+      if (available.length === 0) {
+        available = (assets || []).filter(a =>
+          String(a.id) !== currentId &&
+          (currentTypeClean ? (a.assetType || '').toLowerCase().trim() === currentTypeClean : true)
+        );
+      }
+
+      this.availableReplacementAssets = available;
+      this.matchingCategoryReplacementAssets = available;
+      this.otherCategoryReplacementAssets = [];
+
+      // 1. Resolve exact target ID from request.replacementAssetId
+      let targetId: string | null = null;
+      if (this.request?.replacementAssetId) {
+        targetId = String(this.request.replacementAssetId);
+      }
+
+      // 2. Extract "Asset ID #X" or "#X" from description or replacementAssetName tag
+      if (!targetId) {
+        const desc = this.request?.description || this.replacementAssetName || '';
+        const idMatch = desc.match(/(?:Asset ID #|#)(\d+)/i);
+        if (idMatch && idMatch[1]) {
+          targetId = idMatch[1];
+        }
+      }
+
+      // 3. Match by targetId
+      if (targetId) {
+        const found = available.find(a => String(a.id) === targetId)
+                   || (assets || []).find(a => String(a.id) === targetId);
+        if (found) {
+          this.selectedDispatchReplacementId = String(found.id);
+          this.selectedDispatchReplacementAsset = found;
+          return;
+        }
+      }
+
+      // 4. Try matching by modelName or serialNumber from replacementAssetName
+      const reqName = this.replacementAssetName;
+      if (reqName) {
+        const found = available.find(a =>
+          (a.serialNumber && reqName.toLowerCase().includes(a.serialNumber.toLowerCase())) ||
+          (a.modelName && reqName.toLowerCase().includes(a.modelName.toLowerCase()))
+        );
+        if (found) {
+          this.selectedDispatchReplacementId = String(found.id);
+          this.selectedDispatchReplacementAsset = found;
+          return;
+        }
+      }
+
+      // 5. Default to first matching category asset if nothing selected
+      if (!this.selectedDispatchReplacementId && available.length > 0) {
+        this.selectedDispatchReplacementId = String(available[0].id);
+        this.selectedDispatchReplacementAsset = available[0];
+      }
+    });
+
+    this.assetService.fetchAssetsFromApi();
+  }
+
+  onDispatchReplacementAssetChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const val = select.value;
+    if (!val || val === 'PROCURED_DEVICE') {
+      this.selectedDispatchReplacementAsset = null;
+      return;
+    }
+    this.selectedDispatchReplacementAsset = this.availableReplacementAssets.find(a => String(a.id) === String(val)) || null;
+  }
+
+  getAssetTypeIcon(type?: string): string {
+    const t = (type || '').toLowerCase();
+    if (t.includes('laptop') || t.includes('macbook')) return 'laptop_mac';
+    if (t.includes('monitor') || t.includes('display') || t.includes('screen')) return 'desktop_windows';
+    if (t.includes('phone') || t.includes('mobile')) return 'smartphone';
+    if (t.includes('tablet') || t.includes('ipad')) return 'tablet_mac';
+    if (t.includes('keyboard')) return 'keyboard';
+    if (t.includes('mouse')) return 'mouse';
+    if (t.includes('headset') || t.includes('audio')) return 'headphones';
+    return 'devices';
   }
 
   schedulePickup() {
@@ -509,9 +788,29 @@ export class AssetTrackingModalComponent implements OnInit {
     const currentUserName = localStorage.getItem('UserName') || localStorage.getItem('userName') || 'IT Admin';
     const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
 
-    const nextStatus = this.request?.requestType === 'Return' ? 'Received by Admin' : 'In Repair';
+    const isReplacement = this.request?.requestType === 'Replacement';
+    let repId: number | undefined = undefined;
+    let repName: string | undefined = undefined;
 
-    const payload = {
+    if (isReplacement && this.selectedDispatchReplacementAsset) {
+      repId = parseInt(String(this.selectedDispatchReplacementAsset.id).replace(/\D/g, ''), 10) || undefined;
+      repName = `${this.selectedDispatchReplacementAsset.modelName} (SN: ${this.selectedDispatchReplacementAsset.serialNumber || 'N/A'}, Asset ID #${this.selectedDispatchReplacementAsset.id})`;
+    } else if (isReplacement && this.selectedDispatchReplacementId && this.selectedDispatchReplacementId !== 'PROCURED_DEVICE') {
+      const chosen = this.availableReplacementAssets.find(a => String(a.id) === String(this.selectedDispatchReplacementId));
+      if (chosen) {
+        repId = parseInt(String(chosen.id).replace(/\D/g, ''), 10) || undefined;
+        repName = `${chosen.modelName} (SN: ${chosen.serialNumber || 'N/A'}, Asset ID #${chosen.id})`;
+      }
+    } else if (isReplacement && this.request?.replacementAssetId) {
+      repId = Number(this.request.replacementAssetId);
+      repName = this.request.replacementAssetName || this.replacementAssetName || undefined;
+    }
+
+    const nextStatus = this.request?.requestType === 'Return' 
+      ? 'Received by Admin' 
+      : (isReplacement ? 'Replacement In Progress' : 'In Repair');
+
+    const payload: any = {
       requestId: this.request.id,
       newStatus: nextStatus,
       actionByEmployeeId: currentEmpId,
@@ -519,7 +818,11 @@ export class AssetTrackingModalComponent implements OnInit {
       courierPartner: 'Direct IT Desk Handover',
       trackingNumber: this.adminTrackingNumber.trim() || 'DESK-HANDOVER',
       adminRemarks: this.adminRemarks || 'Device received directly from employee at IT Helpdesk.',
-      remarks: `Device handed over in person at IT Desk. Note: ${this.adminRemarks || 'In-Person Handover'}`
+      remarks: isReplacement && repName
+        ? `Old device received at IT Desk. Pre-allocated replacement device: ${repName}. Note: ${this.adminRemarks || 'In-Person Handover'}`
+        : `Device handed over in person at IT Desk. Note: ${this.adminRemarks || 'In-Person Handover'}`,
+      replacementAssetId: repId,
+      replacementAssetName: repName
     };
 
     this.requestService.updateStatus(payload).subscribe({
@@ -574,16 +877,30 @@ export class AssetTrackingModalComponent implements OnInit {
     const currentUserName = localStorage.getItem('UserName') || localStorage.getItem('userName') || 'Employee';
     const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
 
-    const nextStatus = this.request?.requestType === 'Return' ? 'Received by Admin' : 'In Repair';
+    const nextStatus = this.request?.requestType === 'Return' ? 'Received by Admin' : (this.request?.requestType === 'Replacement' ? 'Replacement In Progress' : 'In Repair');
 
-    const payload = {
+    let repId: number | undefined = undefined;
+    let repName: string | undefined = undefined;
+    if (this.request?.requestType === 'Replacement') {
+      if (this.request?.replacementAssetId) {
+        repId = Number(this.request.replacementAssetId);
+      } else {
+        const idMatch = (this.request?.description || '').match(/(?:Asset ID #|#)(\d+)/i);
+        if (idMatch && idMatch[1]) repId = Number(idMatch[1]);
+      }
+      repName = this.request?.replacementAssetName || this.replacementAssetName || undefined;
+    }
+
+    const payload: any = {
       requestId: this.request.id,
       newStatus: nextStatus,
       actionByEmployeeId: currentEmpId,
       actionByName: currentUserName,
       courierPartner: 'Direct IT Desk Handover',
       trackingNumber: this.request?.trackingNumber || 'DESK-HANDOVER',
-      remarks: `Employee confirmed equipment physically handed over and received at IT Helpdesk.`
+      remarks: `Employee confirmed equipment physically handed over and received at IT Helpdesk.`,
+      replacementAssetId: repId,
+      replacementAssetName: repName
     };
 
     this.requestService.updateStatus(payload).subscribe({
@@ -617,27 +934,56 @@ export class AssetTrackingModalComponent implements OnInit {
     const partner = isDirect ? 'Direct IT Desk Handover' : this.adminCourierPartner;
     const tracking = isDirect ? (this.adminTrackingNumber.trim() || 'DESK-HANDOVER') : this.adminTrackingNumber.trim();
 
-    const payload = {
+    const isReplacement = this.request?.requestType === 'Replacement';
+    let repId: number | undefined = undefined;
+    let repName: string | undefined = undefined;
+
+    if (isReplacement && this.selectedDispatchReplacementAsset) {
+      repId = parseInt(String(this.selectedDispatchReplacementAsset.id).replace(/\D/g, ''), 10) || undefined;
+      repName = `${this.selectedDispatchReplacementAsset.modelName} (SN: ${this.selectedDispatchReplacementAsset.serialNumber || 'N/A'}, Asset ID #${this.selectedDispatchReplacementAsset.id})`;
+    } else if (isReplacement && this.selectedDispatchReplacementId && this.selectedDispatchReplacementId !== 'PROCURED_DEVICE') {
+      const chosen = this.availableReplacementAssets.find(a => String(a.id) === String(this.selectedDispatchReplacementId));
+      if (chosen) {
+        repId = parseInt(String(chosen.id).replace(/\D/g, ''), 10) || undefined;
+        repName = `${chosen.modelName} (SN: ${chosen.serialNumber || 'N/A'}, Asset ID #${chosen.id})`;
+      }
+    }
+
+    if (isReplacement && !repId && this.request?.replacementAssetId) {
+      repId = Number(this.request.replacementAssetId);
+      repName = this.request.replacementAssetName || this.replacementAssetName || undefined;
+    }
+
+    const newStatus = isDirect ? 'Completed' : 'Dispatched';
+
+    const payload: any = {
       requestId: this.request.id,
-      newStatus: 'Dispatched',
+      newStatus: newStatus,
       actionByEmployeeId: currentEmpId,
       actionByName: currentUserName,
       courierPartner: partner,
       trackingNumber: tracking,
-      adminRemarks: this.adminRemarks || (isDirect ? 'Direct IT Desk Handover' : `Dispatched via ${partner}`),
+      adminRemarks: this.adminRemarks || (isDirect ? (isReplacement ? `Replacement device (${repName || 'New Equipment'}) handed over directly at IT Desk` : 'Direct IT Desk Handover') : `Dispatched via ${partner}`),
       remarks: isDirect
-        ? `Equipment handed over directly at IT desk. Note: ${this.adminRemarks || 'In-Person Handover'}`
-        : `Parcel dispatched via ${partner}. Tracking AWB: ${tracking}`
+        ? (isReplacement ? `Replacement device (${repName || 'New Equipment'}) handed over directly at IT desk. Service ticket completed.` : `Equipment handed over directly at IT desk. Note: ${this.adminRemarks || 'In-Person Handover'}`)
+        : (isReplacement ? `Replacement device (${repName || 'New Equipment'}) dispatched via ${partner}. Tracking AWB: ${tracking}` : `Parcel dispatched via ${partner}. Tracking AWB: ${tracking}`),
+      replacementAssetId: repId,
+      replacementAssetName: repName
     };
 
     this.requestService.updateStatus(payload).subscribe({
       next: () => {
         this.isProcessingAction = false;
         this.activeAdminAction = null;
-        this.toastr.success(`Equipment marked as Dispatched via ${partner}!`, 'Parcel Dispatched');
+        this.toastr.success(
+          isDirect
+            ? 'Replacement device handed over directly to employee! Asset assigned.'
+            : `Equipment marked as Dispatched via ${partner}! Replacement asset assigned.`,
+          'Handover Successful'
+        );
         this.assetService.fetchAssetsFromApi();
         this.notificationService.refreshNotifications();
-        this.refreshRequestDetails();
+        this.dialogRef.close(true);
       },
       error: (err) => {
         this.isProcessingAction = false;
@@ -698,18 +1044,20 @@ export class AssetTrackingModalComponent implements OnInit {
     this.submitAdminStatusUpdate('Rejected', this.rejectionReason.trim(), true);
   }
 
-  private submitAdminStatusUpdate(newStatus: string, remarks: string, closeOnFinish: boolean = false) {
+  private submitAdminStatusUpdate(newStatus: string, remarks: string, closeOnFinish: boolean = false, repAssetId?: number, repAssetName?: string) {
     this.isProcessingAction = true;
     const currentUserName = localStorage.getItem('UserName') || localStorage.getItem('userName') || 'IT Admin';
     const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
 
-    const payload = {
+    const payload: any = {
       requestId: this.request.id,
       newStatus,
       actionByEmployeeId: currentEmpId,
       actionByName: currentUserName,
       adminRemarks: remarks,
-      remarks
+      remarks,
+      replacementAssetId: repAssetId,
+      replacementAssetName: repAssetName
     };
 
     this.requestService.updateStatus(payload).subscribe({

@@ -216,6 +216,7 @@ export class AssetTableComponent implements OnInit, OnChanges, OnDestroy {
       case 'Active': return 'pill-active';
       case 'Available': return 'pill-available';
       case 'In Repair': return 'pill-repair';
+      case 'In Replacement': return 'pill-replacement';
       default: return 'pill-available';
     }
   }
@@ -271,6 +272,7 @@ export class AssetTableComponent implements OnInit, OnChanges, OnDestroy {
     const s = (status || '').toLowerCase();
     if (s.includes('dispatch') || s.includes('transit')) return 'badge-dispatched';
     if (s.includes('deliver')) return 'badge-delivered';
+    if (s.includes('replacement')) return 'badge-replacement';
     if (s.includes('repair')) return 'badge-repair';
     if (s.includes('approved')) return 'badge-approved';
     if (s.includes('submitted') || s.includes('requested') || s.includes('initiated')) return 'badge-submitted';
@@ -282,6 +284,7 @@ export class AssetTableComponent implements OnInit, OnChanges, OnDestroy {
     const s = (status || '').toLowerCase();
     if (s.includes('dispatch') || s.includes('transit')) return 'local_shipping';
     if (s.includes('deliver')) return 'markunread_mailbox';
+    if (s.includes('replacement')) return 'swap_horiz';
     if (s.includes('repair')) return 'build';
     if (s.includes('approved')) return 'thumb_up';
     if (s.includes('submitted') || s.includes('requested') || s.includes('initiated')) return 'schedule';
@@ -295,12 +298,10 @@ export class AssetTableComponent implements OnInit, OnChanges, OnDestroy {
       data: { asset, defaultType }
     });
 
-    dialogRef.afterClosed().subscribe(res => {
-      if (res) {
-        const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
-        this.requestService.fetchRequests(this.isAdmin ? undefined : currentEmpId).subscribe();
-        this.assetService.fetchAssetsFromApi();
-      }
+    dialogRef.afterClosed().subscribe(() => {
+      const currentEmpId = Number(localStorage.getItem('employeeId')) || undefined;
+      this.requestService.fetchRequests(this.isAdmin ? undefined : currentEmpId).subscribe();
+      this.assetService.fetchAssetsFromApi();
     });
   }
 

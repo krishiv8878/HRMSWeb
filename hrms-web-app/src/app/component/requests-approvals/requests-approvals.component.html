@@ -535,6 +535,9 @@
 
             <td class="col-details">
               <span class="duration-text">{{ item.durationText || 'N/A' }}</span>
+              <span class="sub-date" *ngIf="item.category === 'Attendance' && item.startDate" style="display: block; font-size: 11px; color: #64748b; margin-top: 2px;">
+                {{ item.startDate | date:'dd MMM yyyy' }}
+              </span>
             </td>
 
             <td class="col-duration">
@@ -542,7 +545,7 @@
                 {{ item.startDate && item.endDate ? formatDateRange(item.startDate, item.endDate) : 'Leave' }}
               </span>
               <span class="meta-pill" *ngIf="item.category === 'Attendance'">
-                {{ item.durationText || 'Single Day' }}
+                {{ item.rawRecord?.workingHoursText || 'Single Day' }}
               </span>
             </td>
 

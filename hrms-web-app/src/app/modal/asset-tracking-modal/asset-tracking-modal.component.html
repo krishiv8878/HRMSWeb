@@ -58,8 +58,8 @@
 
       <!-- Action Buttons Row (When No Form Expanded) -->
       <div class="admin-buttons-row" *ngIf="!activeAdminAction">
-        <!-- If Requested / Submitted: Approve or Reject -->
-        <ng-container *ngIf="request.status.toLowerCase().includes('requested') || request.status.toLowerCase().includes('submitted') || request.status.toLowerCase().includes('initiated')">
+        <!-- Step 1: If Requested / Submitted: Approve or Reject -->
+        <ng-container *ngIf="canAdminApproveOrReject">
           <button type="button" class="admin-action-btn btn-approve" (click)="openAdminAction('approve')">
             <mat-icon>thumb_up</mat-icon> Approve Request
           </button>
@@ -68,9 +68,8 @@
           </button>
         </ng-container>
 
-        <!-- If Approved & Awaiting Handover from Employee (Not yet handed over or shipped) -->
-        <ng-container *ngIf="request.status.toLowerCase().includes('approved') && !request.status.toLowerCase().includes('transit') && !request.status.toLowerCase().includes('pickup') && !request.status.toLowerCase().includes('desk') && !request.status.toLowerCase().includes('handover')">
-          <!-- Schedule reverse courier pickup from employee -->
+        <!-- Step 2: If Approved & Awaiting Handover from Employee -->
+        <ng-container *ngIf="canAdminManagePickupOrDeskHandover">
           <button
             type="button"
             class="admin-action-btn btn-pickup"
@@ -78,8 +77,6 @@
           >
             <mat-icon>schedule</mat-icon> Schedule Reverse Courier Pickup
           </button>
-
-          <!-- Acknowledge direct in-person IT desk handover (Admin initiating) -->
           <button
             type="button"
             class="admin-action-btn btn-desk-handover"
@@ -89,8 +86,8 @@
           </button>
         </ng-container>
 
-        <!-- If Employee Handed Over at IT Desk (Awaiting Admin Desk Receipt Acknowledgment) -->
-        <ng-container *ngIf="isAwaitingDeskHandoverAck || request.status.toLowerCase().includes('desk') || request.status.toLowerCase().includes('handover')">
+        <!-- Step 3: If Employee Handed Over at IT Desk -->
+        <ng-container *ngIf="canAdminAcknowledgeDeskHandover">
           <button
             type="button"
             class="admin-action-btn btn-repair"
@@ -101,17 +98,28 @@
           </button>
         </ng-container>
 
-        <!-- If In Transit via Courier or Pickup Scheduled (Awaiting Courier Arrival at IT) -->
-        <ng-container *ngIf="!isDirectDeskHandover && (request.status.toLowerCase().includes('transit') || request.status.toLowerCase().includes('pickup')) && !request.status.toLowerCase().includes('received') && !request.status.toLowerCase().includes('repair') && !request.status.toLowerCase().includes('dispatch')">
-          <!-- Mark received at IT for Repair / Replacement -->
+        <!-- Step 3b: If In Transit via Courier or Pickup Scheduled -->
+        <ng-container *ngIf="canAdminAcknowledgeCourierArrival">
+          <!-- Mark received at IT for Repair -->
           <button
-            *ngIf="request.requestType !== 'Return'"
+            *ngIf="request.requestType === 'Repair'"
             type="button"
             class="admin-action-btn btn-repair"
             (click)="sendToRepairVendor()"
             [disabled]="isProcessingAction"
           >
-            <mat-icon>build</mat-icon> Acknowledge Device Received at IT
+            <mat-icon>build</mat-icon> Acknowledge Device Received (Send to Repair)
+          </button>
+
+          <!-- Mark received at IT for Replacement -->
+          <button
+            *ngIf="request.requestType === 'Replacement'"
+            type="button"
+            class="admin-action-btn btn-dispatch-replacement"
+            (click)="acknowledgeReplacementReceived()"
+            [disabled]="isProcessingAction"
+          >
+            <mat-icon>swap_horiz</mat-icon> Acknowledge Device Received (Prepare Replacement)
           </button>
 
           <!-- For Return: Mark received by Admin -->
@@ -126,22 +134,38 @@
           </button>
         </ng-container>
 
-        <!-- If In Repair: Dispatch Repaired Asset to Employee -->
-        <ng-container *ngIf="request.status.toLowerCase().includes('in repair') || request.status.toLowerCase().includes('repaired')">
-          <button type="button" class="admin-action-btn btn-dispatch" (click)="openAdminAction('dispatch')">
+        <!-- Step 4: If In Service / Replacement In Progress: Ready to Dispatch -->
+        <ng-container *ngIf="canAdminDispatch">
+          <!-- Dispatch for Repair -->
+          <button
+            *ngIf="request.requestType === 'Repair'"
+            type="button"
+            class="admin-action-btn btn-dispatch"
+            (click)="openAdminAction('dispatch')"
+          >
             <mat-icon>local_shipping</mat-icon> Dispatch Repaired Device
+          </button>
+
+          <!-- Dispatch for Replacement -->
+          <button
+            *ngIf="request.requestType === 'Replacement'"
+            type="button"
+            class="admin-action-btn btn-dispatch-replacement"
+            (click)="openAdminAction('dispatch')"
+          >
+            <mat-icon>swap_horiz</mat-icon> Dispatch Replacement Device
           </button>
         </ng-container>
 
-        <!-- If Dispatched: Admin Can Mark as Delivered -->
-        <ng-container *ngIf="request.status.toLowerCase().includes('dispatch') && !request.status.toLowerCase().includes('deliver')">
+        <!-- Step 5: If Dispatched: Admin Can Mark as Delivered -->
+        <ng-container *ngIf="canAdminMarkDelivered">
           <button type="button" class="admin-action-btn btn-deliver" (click)="markAsDelivered()" [disabled]="isProcessingAction">
             <mat-icon>markunread_mailbox</mat-icon> Mark Delivered (Courier Confirmed)
           </button>
         </ng-container>
 
         <!-- Return Workflow: Inspect & Complete Return -->
-        <ng-container *ngIf="request.requestType === 'Return' && request.status.toLowerCase().includes('received') && !request.status.toLowerCase().includes('completed')">
+        <ng-container *ngIf="canAdminInspectReturn">
           <button type="button" class="admin-action-btn btn-qa" (click)="openAdminAction('qa')">
             <mat-icon>verified</mat-icon> Conduct QA Inspection & Accept Return
           </button>
@@ -153,11 +177,74 @@
         <div class="panel-header">
           <div class="panel-title">
             <mat-icon class="panel-icon">local_shipping</mat-icon>
-            <h5>Dispatch Repaired / Replacement Equipment</h5>
+            <h5>{{ request.requestType === 'Replacement' ? 'Dispatch Replacement Device to Employee' : 'Dispatch Repaired Equipment' }}</h5>
           </div>
           <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
         </div>
         <div class="panel-body">
+          <!-- REPLACEMENT DEVICE SELECTION FOR ADMIN -->
+          <div *ngIf="request.requestType === 'Replacement'" class="replacement-dispatch-box mb-3">
+            <div class="field-label-row mb-1">
+              <label class="selection-label">
+                <mat-icon class="label-mini-icon">swap_horiz</mat-icon>
+                <span>Select Replacement Device from Inventory <span class="required">*</span></span>
+              </label>
+              <span class="stock-badge" *ngIf="availableReplacementAssets.length > 0">
+                {{ availableReplacementAssets.length }} available in inventory
+              </span>
+            </div>
+
+            <div *ngIf="replacementAssetName" class="requested-hint-banner mb-2">
+              <mat-icon>lightbulb</mat-icon>
+              <span>Employee requested model: <strong>{{ replacementAssetName }}</strong></span>
+            </div>
+
+            <div class="input-wrapper">
+              <select
+                [(ngModel)]="selectedDispatchReplacementId"
+                (change)="onDispatchReplacementAssetChange($event)"
+                class="panel-select replacement-dropdown"
+              >
+                <option value="" disabled>-- Choose equipment to dispatch as replacement --</option>
+                <optgroup
+                  *ngIf="matchingCategoryReplacementAssets.length > 0"
+                  [label]="'Available ' + (data.asset.assetType || 'Equipment') + 's in Inventory'"
+                >
+                  <option *ngFor="let a of matchingCategoryReplacementAssets" [value]="a.id">
+                    {{ a.modelName }} (SN: {{ a.serialNumber || 'N/A' }}) • {{ a.location || 'In Inventory' }} [{{ a.status }}]
+                  </option>
+                </optgroup>
+                <option *ngIf="matchingCategoryReplacementAssets.length === 0" disabled>
+                  No available {{ data.asset.assetType || 'device' }}s currently in inventory
+                </option>
+                <option *ngIf="availableReplacementAssets.length === 0" value="PROCURED_DEVICE">
+                  ⚡ New / Directly Procured Device (Details in Dispatch Note)
+                </option>
+              </select>
+            </div>
+
+            <!-- Preview Card of Selected Replacement Device -->
+            <div *ngIf="selectedDispatchReplacementAsset" class="dispatch-device-preview mt-2">
+              <div class="preview-mini-header">
+                <div class="preview-icon-box">
+                  <mat-icon>{{ getAssetTypeIcon(selectedDispatchReplacementAsset.assetType) }}</mat-icon>
+                </div>
+                <div class="preview-mini-info">
+                  <div class="preview-mini-title">
+                    <strong class="device-name">{{ selectedDispatchReplacementAsset.modelName }}</strong>
+                    <span class="stock-pill">Ready to Dispatch</span>
+                  </div>
+                  <div class="device-sub font-mono">
+                    <span>SN: {{ selectedDispatchReplacementAsset.serialNumber || 'N/A' }}</span>
+                    <span>•</span>
+                    <span>{{ selectedDispatchReplacementAsset.assetType }}</span>
+                    <span>•</span>
+                    <span>{{ selectedDispatchReplacementAsset.location || 'Stock' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="modern-mode-selector mb-3">
             <div
               class="mode-card"
@@ -280,6 +367,28 @@
         </div>
         <div class="panel-body">
           <p class="qa-notice mb-2">Record that the employee has physically brought and handed over the device in person at the IT helpdesk. <strong>No courier or AWB tracking required.</strong></p>
+
+          <!-- PRE-ALLOCATED REPLACEMENT DEVICE NOTICE (IF ANY) -->
+          <div *ngIf="request.requestType === 'Replacement' && (selectedDispatchReplacementAsset || replacementAssetName)" class="dispatch-device-preview mb-3">
+            <div class="preview-mini-header">
+              <div class="preview-icon-box">
+                <mat-icon>{{ getAssetTypeIcon(selectedDispatchReplacementAsset?.assetType || data.asset.assetType) }}</mat-icon>
+              </div>
+              <div class="preview-mini-info">
+                <div class="preview-mini-title">
+                  <strong class="device-name">{{ selectedDispatchReplacementAsset?.modelName || replacementAssetName }}</strong>
+                  <span class="stock-pill">Pre-Allocated Replacement</span>
+                </div>
+                <div class="device-sub font-mono" *ngIf="selectedDispatchReplacementAsset">
+                  <span>SN: {{ selectedDispatchReplacementAsset.serialNumber || 'N/A' }}</span>
+                  <span>•</span>
+                  <span>{{ selectedDispatchReplacementAsset.assetType }}</span>
+                  <span>•</span>
+                  <span>Allocated for Dispatch</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="panel-field">
             <label>IT Desk Location / Receiving Person (Optional)</label>
             <input type="text" [(ngModel)]="adminTrackingNumber" placeholder="e.g. Received at Main Office IT Helpdesk, 2nd Floor" class="panel-input" />
@@ -307,6 +416,64 @@
           <button type="button" class="btn-panel-close" (click)="closeAdminAction()"><mat-icon>close</mat-icon></button>
         </div>
         <div class="panel-body">
+          <!-- REPLACEMENT DEVICE ALLOCATION ON APPROVAL -->
+          <div *ngIf="request.requestType === 'Replacement'" class="replacement-dispatch-box mb-3">
+            <div class="field-label-row mb-1">
+              <label class="selection-label">
+                <mat-icon class="label-mini-icon">swap_horiz</mat-icon>
+                <span>Allocate Replacement Device from Inventory (Optional)</span>
+              </label>
+              <span class="stock-badge" *ngIf="availableReplacementAssets.length > 0">
+                {{ availableReplacementAssets.length }} available in inventory
+              </span>
+            </div>
+
+            <div *ngIf="replacementAssetName" class="requested-hint-banner mb-2">
+              <mat-icon>lightbulb</mat-icon>
+              <span>Employee requested model: <strong>{{ replacementAssetName }}</strong></span>
+            </div>
+
+            <div class="input-wrapper">
+              <select
+                [(ngModel)]="selectedDispatchReplacementId"
+                (change)="onDispatchReplacementAssetChange($event)"
+                class="panel-select replacement-dropdown"
+              >
+                <option value="">-- Auto/Standard Allocation (Choose during handover/dispatch) --</option>
+                <optgroup
+                  *ngIf="matchingCategoryReplacementAssets.length > 0"
+                  [label]="'Available ' + (data.asset.assetType || 'Equipment') + 's in Inventory'"
+                >
+                  <option *ngFor="let a of matchingCategoryReplacementAssets" [value]="a.id">
+                    {{ a.modelName }} (SN: {{ a.serialNumber || 'N/A' }}) • {{ a.location || 'In Inventory' }} [{{ a.status }}]
+                  </option>
+                </optgroup>
+                <option *ngIf="matchingCategoryReplacementAssets.length === 0" disabled>
+                  No available {{ data.asset.assetType || 'device' }}s currently in inventory
+                </option>
+              </select>
+            </div>
+
+            <div *ngIf="selectedDispatchReplacementAsset" class="dispatch-device-preview mt-2">
+              <div class="preview-mini-header">
+                <div class="preview-icon-box">
+                  <mat-icon>{{ getAssetTypeIcon(selectedDispatchReplacementAsset.assetType) }}</mat-icon>
+                </div>
+                <div class="preview-mini-info">
+                  <div class="preview-mini-title">
+                    <strong class="device-name">{{ selectedDispatchReplacementAsset.modelName }}</strong>
+                    <span class="stock-pill">Pre-Allocated</span>
+                  </div>
+                  <div class="device-sub font-mono">
+                    <span>SN: {{ selectedDispatchReplacementAsset.serialNumber || 'N/A' }}</span>
+                    <span>•</span>
+                    <span>{{ selectedDispatchReplacementAsset.assetType }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="panel-field">
             <label>Approval Remarks / Assignment Notes (Optional)</label>
             <input type="text" [(ngModel)]="adminRemarks" placeholder="e.g. Approved. Technician assigned for diagnostics." class="panel-input" />
@@ -732,6 +899,13 @@
           <span class="d-label">Primary Reason:</span>
           <span class="d-val"><strong>{{ request.reason }}</strong></span>
         </div>
+        <div class="detail-row" *ngIf="request.requestType === 'Replacement' && replacementAssetName">
+          <span class="d-label">Requested Replacement:</span>
+          <span class="replacement-device-pill">
+            <mat-icon>devices</mat-icon>
+            <strong>{{ replacementAssetName }}</strong>
+          </span>
+        </div>
         <div class="detail-row">
           <span class="d-label">Urgency / Priority:</span>
           <span class="priority-badge" [ngClass]="'priority-' + (request.priority || 'medium').toLowerCase()">
@@ -740,7 +914,7 @@
         </div>
         <div class="detail-block">
           <span class="d-label">Description / Problem Statement:</span>
-          <p class="description-box">{{ request.description }}</p>
+          <p class="description-box">{{ cleanDescription || request.description }}</p>
         </div>
         <div class="detail-block" *ngIf="request.adminRemarks">
           <span class="d-label text-blue">IT / Admin Feedback:</span>

@@ -1,4 +1,4 @@
-export type AssetStatus = 'Active' | 'Available' | 'In Repair' | 'Inactive' | 'Deactivated';
+export type AssetStatus = 'Active' | 'Available' | 'In Repair' | 'In Replacement' | 'Inactive' | 'Deactivated';
 export type AssetType = 'Laptop' | 'Monitor' | 'Tablet' | 'Furniture' | 'Peripherals';
 
 export interface AssetItem {
