@@ -15,6 +15,9 @@ export interface LeaveBalanceSummary {
   carriedForwardDays: number;
   reservedDays: number;
   availableDays: number;
+  confirmedBalance?: number;
+  netBalance?: number;
+  maxAvailablePaidDays?: number;
   negativeBalanceAllowed: boolean;
   negativeBalanceLimit: number;
   encashmentAllowed: boolean;

@@ -15,7 +15,7 @@ export class RbacService {
     }
 
     // 1. Prioritize roles decoded directly from the signed JWT payload (tamper-proof)
-    const token = localStorage.getItem('LoginTokan');
+    const token = localStorage.getItem('LoginToken') || localStorage.getItem('LoginTokan');
     if (token) {
       try {
         const parts = token.split('.');
@@ -42,7 +42,7 @@ export class RbacService {
         .filter(r => r.length > 0);
     }
 
-    return ['Employee'];
+    return [];
   }
 
   /**

@@ -78,9 +78,13 @@ export class LeaverequestComponent implements OnInit {
   maxSandwichAllowed: number = 1;
   negativeBalanceAllowed: boolean = false;
   negativeBalanceLimit: number = 0;
+  maxAvailablePaidDays: number | null = null;
 
   get availablePaidLimit(): number {
     if (this.selectedLeaveRemaining === null) return 0;
+    if (this.maxAvailablePaidDays !== null && this.maxAvailablePaidDays !== undefined) {
+      return this.maxAvailablePaidDays;
+    }
     return (this.selectedLeaveRemaining || 0) + (this.negativeBalanceAllowed ? this.negativeBalanceLimit : 0);
   }
 
@@ -243,6 +247,13 @@ export class LeaverequestComponent implements OnInit {
       this.maxSandwichAllowed = Number(matchedBalance.maxSandwichLeavesAllowed || 1);
       this.negativeBalanceAllowed = Boolean(matchedBalance.negativeBalanceAllowed);
       this.negativeBalanceLimit = Number(matchedBalance.negativeBalanceLimit || 0);
+      if (matchedBalance.maxAvailablePaidDays !== undefined) {
+        this.maxAvailablePaidDays = Number(matchedBalance.maxAvailablePaidDays);
+      } else {
+        const net = matchedBalance.netBalance !== undefined ? Number(matchedBalance.netBalance) : this.selectedLeaveRemaining;
+        const floor = this.negativeBalanceAllowed ? -this.negativeBalanceLimit : 0;
+        this.maxAvailablePaidDays = Math.max(0, net - floor);
+      }
     } else if (matchedType) {
       this.selectedLeaveRemaining = Number(matchedType.allowedDays ?? 0);
       this.selectedLeaveQuota = Number(matchedType.allowedDays ?? 0);
@@ -251,12 +262,14 @@ export class LeaverequestComponent implements OnInit {
       this.maxSandwichAllowed = Number(matchedType.maxSandwichLeavesAllowed || 1);
       this.negativeBalanceAllowed = Boolean(matchedType.isNegativeBalanceAllowed);
       this.negativeBalanceLimit = Number(matchedType.negativeBalanceLimit || 0);
+      this.maxAvailablePaidDays = this.selectedLeaveRemaining + (this.negativeBalanceAllowed ? this.negativeBalanceLimit : 0);
     } else {
       this.selectedLeaveRemaining = null;
       this.selectedLeaveQuota = null;
       this.selectedLeaveName = '';
       this.isSandwichActive = false;
       this.negativeBalanceAllowed = false;
+      this.maxAvailablePaidDays = null;
     }
 
     if (this.selectedLeaveQuota === 0 || (matchedType && matchedType.isPaid === false)) {

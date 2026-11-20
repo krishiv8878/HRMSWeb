@@ -363,9 +363,10 @@ export class RolemastersComponent implements OnInit {
                 this.toaster.success('New role and scoped permissions created successfully', 'Created');
                 this.dialogRef.close(true);
               },
-              error: () => {
+              error: (permErr) => {
                 this.isSaving = false;
-                this.toaster.success('New role added to security matrix', 'Created');
+                const msg = permErr?.error?.message || 'Role created, but failed to assign permissions.';
+                this.toaster.error(msg, 'Permission Warning');
                 this.dialogRef.close(true);
               }
             });

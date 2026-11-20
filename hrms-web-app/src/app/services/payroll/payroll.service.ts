@@ -80,7 +80,7 @@ export interface PayRunEmployeeDetail {
   netPay: number;
   paymentStatus: string;
   bankName: string;
-  accountNumber?: number;
+  accountNumber?: string;
   ifscCode: string;
   isOnHold?: boolean;
   holdReason?: string;

@@ -25,18 +25,10 @@ export class RoleservicesService {
 
   updateData(data: any, RoleId?: any): Observable<any> {
     const rId = RoleId || data.id || '';
-    return this.http.put<any>(this.apiUrl + `/RoleMaster/UpdateRole/` + rId, data).pipe(
-      catchError(() => {
-        return this.http.post<any>(this.apiUrl + `/RoleMaster/UpdateRole/` + rId, data);
-      })
-    );
+    return this.http.put<any>(this.apiUrl + `/RoleMaster/UpdateRole/` + rId, data);
   }
 
   DeleteData(RoleMasterId: any): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + `/RoleMaster/DeleteRole/` + RoleMasterId).pipe(
-      catchError(() => {
-        return this.http.delete<any>(this.apiUrl + `/RoleMaster/DeleteRole?id=` + RoleMasterId);
-      })
-    );
+    return this.http.delete<any>(this.apiUrl + `/RoleMaster/DeleteRole/` + RoleMasterId);
   }
 }

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatCard } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
@@ -17,33 +17,41 @@ import { ToastrService } from 'ngx-toastr';
   styleUrl: './resetpassword.component.scss'
 })
 export class ResetpasswordComponent {
-  constructor() { }
-  formbuilder = inject(FormBuilder)
-  services = inject(AuthService)
-  toster = inject(ToastrService)
+  formbuilder = inject(FormBuilder);
+  services = inject(AuthService);
+  toster = inject(ToastrService);
+
+  getClientCallbackUrl(): string {
+    if (typeof window !== 'undefined' && window.location && window.location.origin) {
+      return `${window.location.origin}/forgot-password`;
+    }
+    return 'http://localhost:4200/forgot-password';
+  }
 
   passwordResetForm = this.formbuilder.group({
-    email: [''],
-    ClientUrl: [`http://localhost:4200/forgot-password`]
-  })
+    email: ['', [Validators.required, Validators.email]],
+    ClientUrl: [this.getClientCallbackUrl()]
+  });
 
   onSubmit() {
-
-    const email = this.passwordResetForm.value.email;
-    // ✅ Save email to localStorage
-    if (email) {
-      localStorage.setItem('resetEmail', email);
+    if (this.passwordResetForm.invalid) {
+      this.toster.error('Please enter a valid email address.', 'Validation Error');
+      return;
     }
 
+    const payload = {
+      email: this.passwordResetForm.value.email || '',
+      clientUrl: this.passwordResetForm.value.ClientUrl || this.getClientCallbackUrl()
+    };
 
-    this.services.resetPassword(this.passwordResetForm.value).subscribe({
-      next: (res) => {
-        this.toster.success('successfully Send Email')
-
-      }, error: (err) => {
-        console.log(err)
-        this.toster.error("Invalid credentials")
+    this.services.forgotPassword(payload).subscribe({
+      next: () => {
+        this.toster.success('If an account matches this email, a reset link has been dispatched.', 'Email Sent');
+      },
+      error: (err) => {
+        console.error('Password reset request error:', err);
+        this.toster.error('Unable to send password reset link. Please try again later.', 'Request Failed');
       }
-    })
+    });
   }
 }

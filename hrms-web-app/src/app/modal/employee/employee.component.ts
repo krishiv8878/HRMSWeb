@@ -86,7 +86,7 @@ export class EmployeeComponent implements OnInit {
     designationId: [1],
     designation: [''],
     shiftId: [null as any],
-    roleIds: [<any[]>[1]],
+    roleIds: [<any[]>[]],
     managerId: [0],
     skillIds: [<any[]>[]],
     projectIds: [<any[]>[]],
@@ -120,7 +120,7 @@ export class EmployeeComponent implements OnInit {
 
       const rIds = (Array.isArray(this.data.roleIds) && this.data.roleIds.length > 0)
         ? this.data.roleIds
-        : (this.data.roleId ? [this.data.roleId] : [1]);
+        : (this.data.roleId ? [this.data.roleId] : []);
 
       const sIds = Array.isArray(this.data.skillIds)
         ? this.data.skillIds
@@ -272,12 +272,8 @@ export class EmployeeComponent implements OnInit {
         this.roles = Array.isArray(res) ? res : (res?.data || []);
       },
       error: () => {
-        this.roles = [
-          { id: 1, roleName: 'Admin' },
-          { id: 2, roleName: 'Manager' },
-          { id: 3, roleName: 'HR' },
-          { id: 4, roleName: 'Employee' }
-        ];
+        this.roles = [];
+        this.toaster.error('Failed to load system roles. Please contact administrator.', 'Roles Unavailable');
       }
     });
 
@@ -418,8 +414,13 @@ export class EmployeeComponent implements OnInit {
 
     const rawRoles: any = val.roleIds;
     const roleIdsArray = (Array.isArray(rawRoles) && rawRoles.length > 0)
-      ? rawRoles.map((r: any) => Number(r))
-      : [1];
+      ? rawRoles.map((r: any) => Number(r)).filter((r: number) => !isNaN(r) && r > 0)
+      : [];
+
+    if (roleIdsArray.length === 0) {
+      this.toaster.error('Please assign at least one active security role to this employee.', 'Role Required');
+      return;
+    }
 
     const rawSkills: any = val.skillIds;
     const skillIdsArray = (Array.isArray(rawSkills) && rawSkills.length > 0)
